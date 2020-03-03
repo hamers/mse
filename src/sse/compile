@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/local/bin/g++-9 evolv1.o zcnsts.o deltat.o hrdiag.o kick.o mlwind.o mrenv.o ran3.o star.o zfuncs.o call_sse.cpp -lgfortran -o a.out

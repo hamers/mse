@@ -32,7 +32,7 @@ int compute_mass_transfer_rates(ParticlesMap *particlesMap, double *dt_binary_ev
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *donor = (*it_p).second;
-        if (donor->is_binary == 0)
+        if (donor->is_binary == false)
         {
             if (donor->RLOF_flag == 1)
             {

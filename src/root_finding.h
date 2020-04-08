@@ -8,6 +8,8 @@ int root_finding_functions(realtype t, N_Vector y, realtype *root_functions, voi
 double roche_radius_pericenter_eggleton(double rp, double q);
 double roche_radius_pericenter_sepinsky(double rp, double q, double e, double f);
 
+int investigate_roots_in_system(ParticlesMap *particlesMap);
+
 int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found);
 int check_for_initial_roots(ParticlesMap *particlesMap);
 }

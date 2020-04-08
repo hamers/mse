@@ -4,7 +4,6 @@ extern "C"
 
 int ODE_handle_stellar_winds(Particle *p);
 int ODE_handle_RLOF(Particle *p, Particle *child1, Particle *child2);
-int check_if_RLOF_has_occurred(ParticlesMap *particlesMap);
 
 int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, double x, double E_0);
 int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2);

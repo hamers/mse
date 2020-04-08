@@ -7,10 +7,10 @@
 extern "C"
 {
 
-int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits)
+int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int integration_flag)
 {
     int flag;
-    double vx,vy,vz;
+    double VX,VY,VZ;
     ParticlesMapIterator it_p;
     //std::vector<int>::iterator it_parent_p,it_parent_q;
 
@@ -23,26 +23,32 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits)
         if (p->is_binary == 0 and p->evolve_as_star == 1)
         {
             /* delta m was calculated in evolve_stars (stellar_evolution.cpp) */
-            p->instantaneous_perturbation_delta_x = 0.0;
-            p->instantaneous_perturbation_delta_y = 0.0;
-            p->instantaneous_perturbation_delta_z = 0.0;
+            p->instantaneous_perturbation_delta_X = 0.0;
+            p->instantaneous_perturbation_delta_Y = 0.0;
+            p->instantaneous_perturbation_delta_Z = 0.0;
 
             if (fabs(p->instantaneous_perturbation_delta_mass) > 0.0)
             {
-                flag = sample_kick_velocity(p,&vx,&vy,&vz);
-                printf("SNe.cpp -- vk %g % g %g\n",vx,vy,vz);
-                p->instantaneous_perturbation_delta_vx = vx;
-                p->instantaneous_perturbation_delta_vy = vy;
-                p->instantaneous_perturbation_delta_vz = vz;
+                flag = sample_kick_velocity(p,&VX,&VY,&VZ);
+                printf("SNe.cpp -- vk %g % g %g\n",VX,VY,VZ);
+                p->instantaneous_perturbation_delta_VX = VX;
+                p->instantaneous_perturbation_delta_VY = VY;
+                p->instantaneous_perturbation_delta_VZ = VZ;
                 index+=1;
             }
             
         }
     }
 
-
-    apply_user_specified_instantaneous_perturbation(particlesMap);
-
+    if (integration_flag == 0) /* secular case */
+    {
+        apply_user_specified_instantaneous_perturbation(particlesMap);
+    }
+    else
+    {
+        apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
+    }
+    
     *unbound_orbits = check_for_unbound_orbits(particlesMap);
     
     reset_instantaneous_perturbation_quantities(particlesMap);
@@ -93,7 +99,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 bool check_for_unbound_orbits(ParticlesMap *particlesMap)
 {
     ParticlesMapIterator it_p;
-    double h_vec[3],e_vec[3];
+//    double h_vec[3],e_vec[3];
     double e;
     
     bool unbound_orbits = false;
@@ -103,8 +109,8 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
         Particle *p = (*it_p).second;
         if (p->is_binary == 1)
         {
-            get_e_and_h_vectors_from_particle(p,e_vec,h_vec);
-            e = norm3(e_vec);
+            //get_e_and_h_vectors_from_particle(p,e_vec,h_vec);
+            e = norm3(p->e_vec);
             
             if (e<0 or e > 1.0)
             {

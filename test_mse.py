@@ -1,13 +1,17 @@
 import numpy as np
-
+import argparse
+import time
+        
 from mse import MSE,Particle,Tools
 
 """
 Several routines for testing the code/installation. 
-To use, run `python test_MSE.py i', where i is
-the test number.
+To run all tests, simply run `python test_mse.py'.
+Specific tests can be run with the command line --t i, where i is the
+number of the test. Use --verbose for verbose terminal output, and --plot to
+make and show plots if applicable (required Matplotlib).
 
-Adrian Hamers, June 2019
+Adrian Hamers, March 2020
 """
 
 try:
@@ -16,75 +20,127 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
+def add_bool_arg(parser, name, default=False,help=None):
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('--' + name, dest=name, action='store_true',help="Enable %s"%help)
+    group.add_argument('--no-' + name, dest=name, action='store_false',help="Disable %s"%help)
+    parser.set_defaults(**{name:default})
+
+def parse_arguments():
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("--t",                           type=int,     dest="test",                        default=0,              help="Test number")
+    
+    ### boolean arguments ###
+    add_bool_arg(parser, 'verbose',                         default=False,         help="verbose terminal output")
+    add_bool_arg(parser, 'plot',                            default=False,         help="make plots")
+    
+    args = parser.parse_args()
+
+    return args
 
 class test_mse():
-    def test0(self):
-        code = MSE()
 
-    def test1(self):
-        """
-        test reference system of Naoz et al. (2009)
-        """
+    def test1(self,args):
+        print("Basic test using reference system of Naoz et al. (2009)")
 
-        particles = Tools.create_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        particles = Tools.create_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.0],[0.0,0.0])
+        binaries = [x for x in particles if x.is_binary==True]
+        inner_binary = binaries[0]
+        outer_binary = binaries[1]
+        bodies = [x for x in particles if x.is_binary==False]
+        
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
 
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+        
         code = MSE()
         code.add_particles(particles)
-        inner_binary = code.particles[3]
-        outer_binary = code.particles[4]
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
         
         e_print = []
         INCL_print = []
         rel_INCL_print = []
         t_print = []
         
+        start = time.time()
+    
         t = 0.0
         N = 1000
         tend = 3.0e7
+
         dt = tend/float(N)
         while t<=tend:
             code.evolve_model(t)
             t+=dt
         
-            print( 't',t,'e',inner_binary.e,'INCL',inner_binary.INCL,outer_binary.INCL)
+            if args.verbose==True:
+                print( 't',t,'es',[x.e for x in binaries],'INCL_parent',inner_binary.INCL_parent,[x.mass for x in bodies])
                         
-            #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
             rel_INCL_print.append(inner_binary.INCL_parent)
             e_print.append(inner_binary.e)
             INCL_print.append(inner_binary.INCL)
             t_print.append(t)
+        
+        if args.verbose==True:
+            print('wall time',time.time()-start)
+        
         t_print = np.array(t_print)
         rel_INCL_print = np.array(rel_INCL_print)
         e_print = np.array(e_print)
+
+        assert round(e_print[-1],3) == 0.204
+        assert round(rel_INCL_print[-1],3) == 1.217
         
-        if HAS_MATPLOTLIB==True:
+        print("Test passed")
+
+        code.reset()
+                
+        if HAS_MATPLOTLIB==True and args.plot==True:
             fig=pyplot.figure()
             plot1=fig.add_subplot(2,1,1)
             plot2=fig.add_subplot(2,1,2,yscale="log")
-            #plot1.plot(t_print,np.array(INCL_print)*180.0/np.pi)
             plot1.plot(1.0e-6*t_print,rel_INCL_print*180.0/np.pi)
             plot2.plot(1.0e-6*t_print,1.0-e_print)
+            plot2.set_xlabel("$t/\mathrm{Myr}$")
+            plot1.set_ylabel("$i_\mathrm{rel}/\mathrm{deg}$")
+            plot2.set_ylabel("$1-e_\mathrm{in}$")
             pyplot.show()
 
-    def test2(self):
-        pass
-        """
-        test 1PN precession in 2-body system
-        """
+    def test2(self,args):
+        print("Test 1PN precession in 2-body system")
+
         particles = Tools.create_nested_multiple(2,[1.0, 1.0], [1.0], [0.99], [0.01], [0.01], [0.01])
         binaries = [x for x in particles if x.is_binary == True]
+        bodies = [x for x in particles if x.is_binary == False]
+
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
 
         for b in binaries:
             b.include_pairwise_1PN_terms = True
-
+            b.include_pairwise_25PN_terms = False
+        
         code = MSE()
         code.add_particles(particles)
 
-        binaries = [particles[2]]
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
 
+        code.absolute_tolerance_eccentricity_vectors = 1.0e-14 ### need to set lower than default to get more accurate result and compare to analytic expression
         t = 0.0
-        N=100
-        tend = 1.0e6
+        N=1000
+        tend = 1.0e7
         dt=tend/float(N)
 
         t_print_array = []
@@ -96,11 +152,13 @@ class test_mse():
             t+=dt
             code.evolve_model(t)
 
-            print( 't/Myr',t,'omega',binaries[0].AP)
+            if args.verbose==True:
+                print( 't/Myr',t,'omega',binaries[0].AP)
             t_print_array.append(t)
             a_print_array.append(binaries[0].a)
             e_print_array.append(binaries[0].e)
             AP_print_array.append(binaries[0].AP)
+        
         t_print_array = np.array(t_print_array)
         a_print_array = np.array(a_print_array)
         e_print_array = np.array(e_print_array)
@@ -109,26 +167,35 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
 
+        # Theoretical prediction #
         a = binaries[0].a
         e = binaries[0].e
         M = binaries[0].mass
         rg = CONST_G*M/(CONST_C**2)
         P = 2.0*np.pi*np.sqrt(a**3/(CONST_G*M))
         t_1PN = (1.0/3.0)*P*(1.0-e**2)*(a/rg)
+
+        AP = 0.01 +2.0*np.pi*tend/t_1PN
+        AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
         
-        
-        if HAS_MATPLOTLIB == True:
+        N_r=4
+        assert round(AP_print_array[-1],3) == round(AP,N_r)
+        print("Test passed")
+
+        code.reset()
+                
+        if HAS_MATPLOTLIB == True and args.plot==True:
             fig = pyplot.figure(figsize=(16,10))
             plot1 = fig.add_subplot(4,1,1)
             plot2 = fig.add_subplot(4,1,2,yscale="log")
             plot3 = fig.add_subplot(4,1,3,yscale="log")
             plot4 = fig.add_subplot(4,1,4,yscale="log")
 
-            plot1.plot(t_print_array*1.0e-6,AP_print_array, color='r')
+            plot1.plot(t_print_array*1.0e-6,AP_print_array, color='r',label="$\mathrm{SecularMultiple}$")
             points = np.linspace(0.0,tend*1.0e-6,N)
             AP = 0.01 +2.0*np.pi*points/(t_1PN*1.0e-6)
             AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
-            plot1.plot(points,AP,color='g')
+            plot1.plot(points,AP,color='g',label="$\mathrm{Analytic}$")
 
             plot2.plot(t_print_array*1.0e-6,np.fabs( (AP - AP_print_array)/AP ), color='r')
             plot3.plot(t_print_array*1.0e-6,np.fabs((a-a_print_array)/a), color='r')
@@ -139,67 +206,84 @@ class test_mse():
             plot2.set_ylabel("$|(\omega_p-\omega)/\omega_p|$",fontsize=fontsize)
             plot3.set_ylabel("$|(a_0-a)/a_0|$",fontsize=fontsize)
             plot4.set_ylabel("$|(e_0-e)/e_0|$",fontsize=fontsize)
+            
+            handles,labels = plot1.get_legend_handles_labels()
+            plot1.legend(handles,labels,loc="upper left",fontsize=0.6*fontsize)
 
             pyplot.show()
 
-    def test3(self):
-        """
-        test GW emission in 2-body system + collision detection
-        """
+    def test3(self,args):
+        print("Test GW emission in 2-body system + collision detection")
+
+        code = MSE()
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+
         a0 = 1.0
         e0 = 0.999
         m1 = 1.0
         m2 = 1.0
         particles = Tools.create_nested_multiple(2,[m1, m2], [a0], [e0], [0.01], [0.01], [0.01])
+        bodies = [x for x in particles if x.is_binary == False]
+        binaries = [x for x in particles if x.is_binary == True]
 
-        binary = particles[2]
-        #stars = particles - binaries
-        code = MSE()
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
+            b.check_for_RLOF_at_pericentre = False
+
+        code.include_flybys = False
+        code.enable_tides = False
         code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
+        
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = True
+            b.check_for_physical_collision_or_orbit_crossing = True
         
         rg = (m1+m2)*CONST_G/(CONST_C**2)
-        print( 'rg/AU',rg)
-        for i in range(2):
-            particles[i].radius = 100.0*rg
+        
+        for b in bodies:
+            b.radius = 100.0*rg
 
-        binary.check_for_physical_collision_or_orbit_crossing = True
-        binary.include_pairwise_25PN_terms = True
-
-
+        binary = binaries[0]
 
         code.add_particles(particles)
-        binary = code.particles[2]
 
         t_print_array = []
         a_print_array = []
         e_print_array = []
         AP_print_array = []
 
-        tend = 1.0e8
-        N = 0
+        tend = 1e8
+        N = 1000
+        dt = tend/float(N)
         t = 0.0
-        dt = 1.0e6
         while (t<tend):
             t+=dt
-            N+=1
+
             code.evolve_model(t)
-            flag = code.flag
+            flag = code.CVODE_flag
 
             t_print_array.append(t*1.0e-6)
             a_print_array.append(binary.a)
             e_print_array.append(binary.e)
             AP_print_array.append(binary.AP)
 
-
-            print( 'e',binary.e,'a',binary.a)
-
+            if args.verbose==True:
+                print("t",t*1e-6,'a/AU',binary.a,'e',binary.e)
+            
             if flag == 2:
-                print( 'root found')
+                if args.verbose==True:
+                    print( 'root found')
                 break
 
-        if HAS_MATPLOTLIB == True:
+        assert round(t*1e-6,1) == 97.3
+        print("Test passed")
+        
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             e_print_array = np.array(e_print_array)
             
             fig = pyplot.figure(figsize=(16,10))
@@ -227,15 +311,13 @@ class test_mse():
 
             pyplot.show()
 
-    
-    def test4(self):
-        """
-        test tidal friction in 2-body system
-        """
+    def test4(self,args):
+        print("Test tidal friction in 2-body system")
         
         code = MSE()
         code.enable_tides = True
-        code.enable_root_finding = True
+        code.include_flybys = False
+        code.enable_root_finding = False
 
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
@@ -244,7 +326,7 @@ class test_mse():
         second = day/(24.0*3600.0)
 
         M = 0.0009546386983890755 ### Jupiter mass
-        R = 40.0*0.1027922358015816*CONST_R_SUN ### Jupiter radius = 0.1 R_SUN
+        R = 40.0*0.1027922358015816*CONST_R_SUN ### 40 R_J
         m_per = 1.0
         mu = m_per*M/(m_per+M)
         a0 = 0.1
@@ -256,9 +338,13 @@ class test_mse():
         nF = np.sqrt( CONST_G*(M+m_per)/(aF**3) )
 
         particles = Tools.create_nested_multiple(2, [m_per, M], [a0], [e0], [0.01], [0.01], [0.01])
+        binaries = [x for x in particles if x.is_binary==True]
         binary = particles[2]
-        
-        
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+
         particles[0].radius = CONST_R_SUN
         particles[1].radius = R
         particles[1].spin_vec_x = 0.0
@@ -274,9 +360,12 @@ class test_mse():
         alpha = I/(mu*a0**2)
         T = R**3/(CONST_G*M*tau)
         t_V = 3.0*(1.0 + 1.0/k_L)*T
-        print( 't_V',t_V,'M',M,'R',R)
+        if args.verbose==True:
+            print( 't_V',t_V,'M',M,'R',R)
 
         particles[0].include_tidal_friction_terms = False
+        particles[0].include_tidal_bulges_precession_terms = False
+        particles[0].include_rotation_precession_terms = False
         
         particles[1].tides_method = 1
         particles[1].include_tidal_friction_terms = True
@@ -284,21 +373,20 @@ class test_mse():
         particles[1].include_rotation_precession_terms = False
         particles[1].minimum_eccentricity_for_tidal_precession = 1.0e-8
 
-        particles[1].tides_apsidal_motion_constant = k_AM
+        particles[1].apsidal_motion_constant = k_AM
         particles[1].tides_viscous_time_scale = t_V
-        particles[1].tides_gyration_radius = rg
+        particles[1].gyration_radius = rg
+        particles[1].tides_viscous_time_scale_prescription = 0
 
         tD = M*aF**8/(3.0*k_L*tau*CONST_G*m_per*(M+m_per)*R**5)
         particles[2].check_for_physical_collision_or_orbit_crossing = True
 
         code.add_particles(particles)
         binary = code.particles[2]
-        #code.parameters.relative_tolerance = 1.0e-14
-
 
         t = 0.0
         N=100
-        tend = 1.0e2
+        tend = 1.0e4
         dt = tend/float(N)
 
         t_print_array = []
@@ -311,7 +399,8 @@ class test_mse():
         while (t<tend):
             t+=dt
             code.evolve_model(t)
-            print( 'flag',code.flag,t,'a/AU',binary.a,'e',binary.e)
+            if args.verbose==True:
+                print( 'flag',code.CVODE_flag,'t/yr',t,'a/AU',binary.a,'e',binary.e)
 
 
             t_print_array.append(t)
@@ -322,14 +411,23 @@ class test_mse():
             spin_print_array.append( np.sqrt( particles[1].spin_vec_x**2 + particles[1].spin_vec_y**2 + particles[1].spin_vec_z**2) )
 
             bodies = particles[0:2]
-            for body in bodies:
-                print( 'S_x',body.spin_vec_x)
-                print( 'S_y',body.spin_vec_y)
-                print( 'S_z',body.spin_vec_z)
-            print( '='*50)
+            if args.verbose==True:
+                for body in bodies:
+                    print( 'S_x',body.spin_vec_x)
+                    print( 'S_y',body.spin_vec_y)
+                    print( 'S_z',body.spin_vec_z)
+                print( '='*50)
 
-        if HAS_MATPLOTLIB == True:
-            fig = pyplot.figure()
+        N_r = 2
+        assert round(spin_print_array[-1],N_r) == round(n_print_array[-1],N_r)
+        assert round(a_print_array[-1],N_r) == round(aF,N_r)
+        assert len([x for x in range(len(t_print_array)) if round(aF,N_r) not in [round(a*(1.0-e**2),N_r) for a,e in zip( a_print_array,e_print_array)] ] ) == 0
+        print("Test passed")
+
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
+            fig = pyplot.figure(figsize=(10,10))
             fontsize=12
     
             t_print_array = np.array(t_print_array)
@@ -362,12 +460,10 @@ class test_mse():
 
             pyplot.show()
 
-    def test5(self):
-        """
-        test precession due to tidal bulges
-        """
+    def test5(self,args):
+        print("Test precession due to tidal bulges")
+
         code = MSE()
-        code.enable_root_finding = True
         code.enable_tides = True
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
@@ -414,33 +510,41 @@ class test_mse():
         g_dot_TB = (15.0/8.0)*n0*(8.0+12.0*e0**2+e0**4)*(m_per/M)*k_AM*pow(R/a0,5.0)/pow(1.0-e0**2,5.0)
         t_TB = 2.0*np.pi/g_dot_TB
 
-        N=0
         while (t<tend):
             t+=dt
             code.evolve_model(t)
-            print( 'flag',code.flag,t,binary.a,binary.e)
+            if args.verbose==True:
+                print( 'flag',code.flag,'t',t,'a/AU',binary.a,'e',binary.e)
 
             t_print_array.append(t*1.0e-6)
             a_print_array.append(binary.a)
             e_print_array.append(binary.e)
             AP_print_array.append(binary.AP)
 
-            N+=1
-        if HAS_MATPLOTLIB == True:
+        AP = 0.01 +2.0*np.pi*tend/(t_TB)
+        AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
+        
+        N_r = 8
+        assert round(AP,N_r) == round(AP_print_array[-1],N_r)
+        print("Test passed")
+
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             
             t_print_array = np.array(t_print_array)
             a_print_array = np.array(a_print_array)
             e_print_array = np.array(e_print_array)
             AP_print_array = np.array(AP_print_array)
             
-            fig = pyplot.figure(figsize=(16,10))
+            fig = pyplot.figure(figsize=(10,10))
             plot1 = fig.add_subplot(4,1,1)
             plot2 = fig.add_subplot(4,1,2,yscale="log")
             plot3 = fig.add_subplot(4,1,3,yscale="log")
             plot4 = fig.add_subplot(4,1,4,yscale="log")
 
             plot1.plot(t_print_array,AP_print_array, color='r')
-            points = np.linspace(0.0,tend*1.0e-6,N)
+            points = np.linspace(0.0,tend*1.0e-6,len(t_print_array))
             AP = 0.01 +2.0*np.pi*points/(t_TB*1.0e-6)
             AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
             plot1.plot(points,AP,color='g',linestyle='dotted',linewidth=2)
@@ -450,20 +554,19 @@ class test_mse():
             plot4.plot(t_print_array,np.fabs((e0-e_print_array)/e0), color='r')
 
             fontsize = 15
-            plot1.set_ylabel("$\omega$",fontsize=fontsize)
+            plot1.set_ylabel("$\omega/\mathrm{rad}$",fontsize=fontsize)
             plot2.set_ylabel("$|(\omega_p-\omega)/\omega_p|$",fontsize=fontsize)
             plot3.set_ylabel("$|(a_0-a)/a_0|$",fontsize=fontsize)
             plot4.set_ylabel("$|(e_0-e)/e_0|$",fontsize=fontsize)
+            
+            plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
 
             pyplot.show()
-        #exit(-1)
-    def test6(self):
-        """
-        test precession due to rotation
-        """
+
+    def test6(self,args):
+        print("Test precession due to rotation")
 
         code = MSE()
-        code.enable_root_finding = True
         code.enable_tides = True
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
@@ -491,7 +594,6 @@ class test_mse():
         Omega_PS0 = n0*(33.0/10.0)*pow(a0/aF,3.0/2.0)
         particles[1].spin_vec_z = Omega_PS0
 
-
         k_L = 0.51
         k_AM = k_L/2.0
         rg = 0.25
@@ -516,17 +618,14 @@ class test_mse():
 
         Omega_vec = [particles[1].spin_vec_x,particles[1].spin_vec_y,particles[1].spin_vec_z]
         Omega = np.sqrt(Omega_vec[0]**2 + Omega_vec[1]**2 + Omega_vec[2]**2)
-        print( 'Omega/n',Omega/n0)
+        if args.verbose==True:
+            print( 'Omega/n',Omega/n0)
 
-        g_dot_rot = n0*(1.0 + m_per/M)*k_AM*pow(R/a0,5.0)*(Omega/n0)**2/((1.0-e0**2)**2)
-        t_rot = 2.0*np.pi/g_dot_rot
-        print( 't_rot/Myr',t_rot*1.0e-6)
-
-        N=0
         while (t<tend):
             t+=dt
             code.evolve_model(t)
-            print( 'flag',code.flag,t,binary.a,binary.e)
+            if args.verbose==True:
+                print( 'flag',code.flag,'t',t,'a',binary.a,'e',binary.e)
 
 
             t_print_array.append(t*1.0e-6)
@@ -534,21 +633,32 @@ class test_mse():
             e_print_array.append(binary.e)
             AP_print_array.append(binary.AP)
 
-            N+=1
-        if HAS_MATPLOTLIB == True:
+        g_dot_rot = n0*(1.0 + m_per/M)*k_AM*pow(R/a0,5.0)*(Omega/n0)**2/((1.0-e0**2)**2)
+        t_rot = 2.0*np.pi/g_dot_rot
+
+        AP = 0.01 + 2.0*np.pi*tend/(t_rot)
+        AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
+
+        N_r = 1
+        assert round(AP,N_r) == round(AP_print_array[-1],N_r)
+        print("Test passed")
+
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             t_print_array = np.array(t_print_array)
             a_print_array = np.array(a_print_array)
             e_print_array = np.array(e_print_array)
             AP_print_array = np.array(AP_print_array)
 
-            fig = pyplot.figure(figsize=(16,10))
+            fig = pyplot.figure(figsize=(10,10))
             plot1 = fig.add_subplot(4,1,1)
             plot2 = fig.add_subplot(4,1,2,yscale="log")
             plot3 = fig.add_subplot(4,1,3,yscale="log")
             plot4 = fig.add_subplot(4,1,4,yscale="log")
 
             plot1.plot(t_print_array,AP_print_array, color='r')
-            points = np.linspace(0.0,tend*1.0e-6,N)
+            points = np.linspace(0.0,tend*1.0e-6,len(t_print_array))
             AP = 0.01 +2.0*np.pi*points/(t_rot*1.0e-6)
             AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
             plot1.plot(points,AP,color='g',linestyle='dotted',linewidth=2)
@@ -558,40 +668,35 @@ class test_mse():
             plot4.plot(t_print_array,np.fabs((e0-e_print_array)/e0), color='r')
 
             fontsize = 15
-            plot1.set_ylabel("$\omega$",fontsize=fontsize)
+            plot1.set_ylabel("$\omega/\mathrm{rad}$",fontsize=fontsize)
             plot2.set_ylabel("$|(\omega_p-\omega)/\omega_p|$",fontsize=fontsize)
             plot3.set_ylabel("$|(a_0-a)/a_0|$",fontsize=fontsize)
             plot4.set_ylabel("$|(e_0-e)/e_0|$",fontsize=fontsize)
 
+            plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             pyplot.show()
 
-    def test7(self):
-        """
-        test collision detection in 3-body system
-        """
-        code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
-        day = 1.0/365.25
-        second = day/(24.0*3600.0)
-        
+    def test7(self,args):
+        print("Test collision detection in 3-body system")
 
+        code = MSE()
+        
         particles = Tools.create_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
         binaries[0].check_for_physical_collision_or_orbit_crossing = True
+        R = 0.03 ### AU
         for body in bodies:
-            body.radius = 0.03
+            body.radius = R
 
         code.add_particles(particles)
 
         t = 0.0
         dt = 1.0e4
         tend = 1.0e6
-
+        t_root = 0.0
+        
         t_print_array = []
         a_print_array = []
         e_print_array = []
@@ -601,46 +706,48 @@ class test_mse():
             code.evolve_model(t)
             flag = code.flag
 
-            print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
-            print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
-            print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
-            print( 'minimum_periapse_distance_has_occurred',binaries[0].minimum_periapse_distance_has_occurred)
-            print( 'RLOF_at_pericentre_has_occurred',binaries[0].RLOF_at_pericentre_has_occurred)
+            if args.verbose==True:
+                print("="*50)
+                print("t/Myr",t*1e-6,"rp/AU",binaries[0].a*(1.0 - binaries[0].e) )
+                print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
+                print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
+                print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
+                print( 'minimum_periapse_distance_has_occurred',binaries[0].minimum_periapse_distance_has_occurred)
+                print( 'RLOF_at_pericentre_has_occurred',binaries[0].RLOF_at_pericentre_has_occurred)
 
             t_print_array.append(t*1.0e-6)
             a_print_array.append(binaries[0].a)
             e_print_array.append(binaries[0].e)
 
             if flag == 2:
-                print( 'root found')
+                t_root = code.model_time
+                if args.verbose==True:
+                    print( 'root found at t=',t_root)
                 break
-            print( 't_end',code.model_time)
+        
+        N_r = 5
+        assert round(a_print_array[-1]*(1.0 - e_print_array[-1]),N_r) == round(2.0*R,N_r)
+        print("Test passed")
 
-
-        if HAS_MATPLOTLIB == True:
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             a_print_array = np.array(a_print_array)
             e_print_array = np.array(e_print_array)
             
             fig = pyplot.figure()
-            plot = fig.add_subplot(2,1,1)
-            plot.plot(t_print_array,e_print_array)
-
-            plot = fig.add_subplot(2,1,2)
+            plot = fig.add_subplot(1,1,1)
             plot.plot(t_print_array,a_print_array*(1.0-e_print_array))
             plot.axhline(y = bodies[0].radius + bodies[1].radius,color='k')
+            plot.set_ylabel("$r_\mathrm{p}/\mathrm{AU}$")
+            plot.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
 
-    def test8(self):
-        """
-        test minimum periapse occurrence
-        """
+    def test8(self,args):
+        print("Test minimum periapse occurrence")
 
         code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
         
         particles = Tools.create_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
         bodies = [x for x in particles if x.is_binary==False]
@@ -655,7 +762,8 @@ class test_mse():
         t = 0.0
         dt = 1.0e4
         tend = 1.0e6
-
+        t_root = 0.0
+        
         t_print_array = []
         a_print_array = []
         e_print_array = []
@@ -665,46 +773,48 @@ class test_mse():
             code.evolve_model(t)
             flag = code.flag
 
-            print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
-            print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
-            print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
-            print( 'minimum_periapse_distance_has_occurred',binaries[0].minimum_periapse_distance_has_occurred)
-            print( 'RLOF_at_pericentre_has_occurred',binaries[0].RLOF_at_pericentre_has_occurred)
+            if args.verbose==True:
+                print("="*50)
+                print("t/Myr",t*1e-6,"rp/AU",binaries[0].a*(1.0 - binaries[0].e) )
+                print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
+                print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
+                print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
+                print( 'minimum_periapse_distance_has_occurred',binaries[0].minimum_periapse_distance_has_occurred)
+                print( 'RLOF_at_pericentre_has_occurred',binaries[0].RLOF_at_pericentre_has_occurred)
 
             t_print_array.append(t*1.0e-6)
             a_print_array.append(binaries[0].a)
             e_print_array.append(binaries[0].e)
 
             if flag == 2:
-                print( 'root found')
+                t_root = code.model_time
+                if args.verbose==True:
+                    print( 'root found at t=',t_root)
                 break
-            print( 't_end',code.model_time)
+        
+        N_r = 5
+        assert round(a_print_array[-1]*(1.0 - e_print_array[-1]),N_r) == round(rp_min,N_r)
+        print("Test passed")
 
-
-        if HAS_MATPLOTLIB == True:
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             a_print_array = np.array(a_print_array)
             e_print_array = np.array(e_print_array)
             
             fig = pyplot.figure()
-            plot = fig.add_subplot(2,1,1)
-            plot.plot(t_print_array,e_print_array)
-
-            plot = fig.add_subplot(2,1,2)
+            plot = fig.add_subplot(1,1,1)
             plot.plot(t_print_array,a_print_array*(1.0-e_print_array))
             plot.axhline(y = rp_min,color='k')
+            plot.set_ylabel("$r_\mathrm{p}/\mathrm{AU}$")
+            plot.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
 
-    def test9(self):
-        """
-        test adiabatic mass loss
-        """
+    def test9(self,args):
+        print("Test adiabatic mass loss")
 
         code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
         
         m1i = 1.0
         m2i = 1.2
@@ -715,19 +825,14 @@ class test_mse():
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
-#        for index,body in enumerate(bodies):
-#            if index==0:
         m1dot = -1.0e-7
-        m2dot = -1.0e-7
-        m3dot = -1.0e-7
-        bodies[0].mass_dot = m1dot
-        bodies[1].mass_dot = m2dot
-        bodies[2].mass_dot = m3dot
+        m2dot = -1.0e-8
+        m3dot = -1.0e-9
+        mdots = [m1dot,m2dot,m3dot]
+        for index,body in enumerate(bodies):
+            body.mass_dot = mdots[index]
 
         code.add_particles(particles)
-        #particles = code.particles
-        #bodies = [x for x in particles if x.is_binary==False]
-        #binaries = [x for x in particles if x.is_binary==True]
 
         t = 0.0
         dt = 1.0e4
@@ -743,18 +848,29 @@ class test_mse():
             code.evolve_model(t)
             flag = code.flag
 
+            if args.verbose==True:
+                print( 't/Myr',t*1e-6,'m1',bodies[0].mass,'m2',bodies[1].mass,'m3',bodies[2].mass,'a/AU',binaries[0].a)
+
             t_print_array.append(t*1.0e-6)
             a1_print_array.append(binaries[0].a)
             a2_print_array.append(binaries[1].a)
             e_print_array.append(binaries[0].e)
 
-            if flag == 2:
-                print( 'root found')
-                break
-            print( 't_end',code.model_time,bodies[0].mass,bodies[1].mass,bodies[2].mass,binaries[0].a)
+        m1 = m1i + m1dot*tend
+        m2 = m2i + m2dot*tend
+        m3 = m3i + m3dot*tend
+            
+        a1 = a1i*(m1i+m2i)/(m1+m2)
+        a2 = a2i*(m1i+m2i+m3i)/(m1+m2+m3)
 
+        N_r = 4
+        assert round(a1,N_r) == round(a1_print_array[-1],N_r)
+        assert round(a2,N_r) == round(a2_print_array[-1],N_r)
+        print("Test passed")
 
-        if HAS_MATPLOTLIB == True:
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             a1_print_array = np.array(a1_print_array)
             a2_print_array = np.array(a2_print_array)
             e_print_array = np.array(e_print_array)
@@ -767,70 +883,420 @@ class test_mse():
             a1 = a1i*(m1i+m2i)/(m1+m2)
             a2 = a2i*(m1i+m2i+m3i)/(m1+m2+m3)
 
-            fig = pyplot.figure()
-            plot = fig.add_subplot(1,1,1,yscale="log")
-            plot.plot(t_print_array,a1_print_array,color='k',linestyle='solid',label='$a_1$')
-            plot.plot(t_print_array,a2_print_array,color='k',linestyle='solid',label='$a_2$')
+            fig = pyplot.figure(figsize=(10,8))
+            plot1 = fig.add_subplot(2,1,1,yscale="log")
+            plot2 = fig.add_subplot(2,1,2,yscale="log")
+            plot1.plot(t_print_array,a1_print_array,color='k',linestyle='solid',label='$a_1$',zorder=10)
+            plot2.plot(t_print_array,a2_print_array,color='k',linestyle='solid',label='$a_2$',zorder=10)
             
-            plot.plot(t*1.0e-6,a1,color='g',linestyle='dashed',linewidth=2,label='$a_1\,(\mathrm{an})$')
-            plot.plot(t*1.0e-6,a2,color='g',linestyle='dashed',linewidth=2,label='$a_2\,(\mathrm{an})$')
+            plot1.plot(t*1.0e-6,a1,color='g',linestyle='dashed',linewidth=3,label='$a_1\,(\mathrm{an})$')
+            plot2.plot(t*1.0e-6,a2,color='g',linestyle='dashed',linewidth=3,label='$a_2\,(\mathrm{an})$')
 
-            handles,labels = plot.get_legend_handles_labels()
-            plot.legend(handles,labels,loc="lower left",fontsize=18)
+            handles,labels = plot1.get_legend_handles_labels()
+            plot1.legend(handles,labels,loc="lower left",fontsize=18)
 
-#            plot = fig.add_subplot(2,1,2)
-#            plot.plot(t_print_array,a_print_array*(1.0-e_print_array))
-
+            plot1.set_ylabel("$a_1$")
+            plot2.set_ylabel("$a_2$")
+            plot2.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
 
-    def test10(self):
-        """
-        test flybys module: numerically integrating over perturber's orbit
-        """
+    def test10(self,args):
+        print("Test hybrid integration")
+
+        m1=1.0
+        m2=1.0e-6
+        m3=1.0
+        e1=0
+        e2=0.4
+        a1=1.0
+        a2=10.0
+
+        i1=0.01
+        i2=65.0*np.pi/180.0
+        AP1=0
+        AP2=0
+        LAN1=0
+        LAN2=0
+
+        particles = Tools.create_nested_multiple(3, [m1,m2,m3],[a1,a2],[e1,e2],[i1,i2],[AP1,AP2],[LAN1,LAN2])
+        
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+        N_binaries = len(binaries)
+        
+
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
 
         code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
+
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
+        code.absolute_tolerance_eccentricity_vectors = 1.0e-14 ### need to set lower than default to get more accurate result and compare to analytic expression
         
-        a = 10.0
-        e = 0.1
-        masses = [1.0, 0.8]
-        m = masses[0] + masses[1]
-        M = 1.0
-        E = 10.0
-        Q = 100.0
-        INCL = 0.5*np.pi
-        AP = 0.25*np.pi
-        LAN = 0.25*np.pi
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        integration_methods = [0,2]
+        KS_use_V = [True,True]
+        terms = [False,True,True,True,True,True]
+        
+        binaries[0].integration_method = integration_methods[0]
+        binaries[1].integration_method = integration_methods[1]
+
+        binaries[0].KS_use_perturbing_potential = KS_use_V[0]
+        binaries[1].KS_use_perturbing_potential = KS_use_V[1]
+
+        CONST_G = code.CONST_G
+        P1=2.0*np.pi*np.sqrt(a1**3/(CONST_G*(m1+m2)))
+        P2=2.0*np.pi*np.sqrt(a2**3/(CONST_G*(m1+m2+m3)))
+        P_LK12 = (P2**2/P1)*((m1+m2+m3)/m3)*pow(1.0-e2**2,3.0/2.0)
+        if args.verbose==True:
+            print("P_orbs/yr",P1,P2)
+            print("P_LK/yr",P_LK12)
+
+
+        code.add_particles(particles)        
+        code.include_double_averaging_corrections = terms[0]
+        code.include_quadrupole_order_terms = terms[1]
+        code.include_octupole_order_binary_pair_terms = terms[2]
+        code.include_octupole_order_binary_triplet_terms = terms[3]
+        code.include_hexadecupole_order_binary_pair_terms = terms[4]
+        code.include_dotriacontupole_order_binary_pair_terms = terms[5]
+        
+        a_print = [[] for x in range(N_binaries)]
+        e_print = [[] for x in range(N_binaries)]
+        t_print = []
+        rel_INCL_print = []
+        
+
+        #code.enable_root_finding = True
+        binaries[0].check_for_physical_collision_or_orbit_crossing=True
+        bodies[0].radius=1.0e-5
+        bodies[1].radius=1.0e-5
+        
+        import time
         
         t = 0.0
-        #t_ref = 1.0e-2 | units.Myr
-        t_ref = 1.0e5
-        tend = 2.0*t_ref
-        Nsteps = 100
+        N = 1000
+        tend = 1.e3
+        dt = tend/float(N)
+                
+        start = time.time()
+        while t<tend:
+            t+=dt
+            code.evolve_model(t)
+            
+            if args.verbose==True:
+                print( 't/Myr',t*1e-6,'es',[x.e for x in binaries],'smas',[x.a for x in binaries])
+
+            rel_INCL_print.append(binaries[0].INCL_parent)                        
+            for i in range(N_binaries):
+                a_print[i].append(binaries[i].a)
+                e_print[i].append(binaries[i].e)
+            t_print.append(t)
+            
+            flag=code.CVODE_flag
+            if flag==2:
+                print("RF")
+                break
+        wall_time = time.time()-start
+
+        t_print = np.array(t_print)
+        rel_INCL_print = np.array(rel_INCL_print)
+        for i in range(N_binaries):
+            a_print[i] = np.array(a_print[i])
+            e_print[i] = np.array(e_print[i])
+
+        N_r = 4
+        print(round(e_print[0][-1],N_r))
+        #assert round(e_print[0][-1],N_r) == 0.5274
+       # print("Test passed")
+
+        code.reset()
+        
+        if HAS_MATPLOTLIB==True and args.plot==True:
+            if 1==0:
+                pyplot.rc('text',usetex=True)
+                pyplot.rc('legend',fancybox=True)
+
+            
+            fig=pyplot.figure(figsize=(10,8))
+            plot1=fig.add_subplot(2,1,1)
+            plot2=fig.add_subplot(2,1,2,yscale="log")
+
+            plot1.plot(1.0e-6*t_print,rel_INCL_print*180.0/np.pi)
+            plot2.plot(1.0e-6*t_print,1-e_print[0])
+
+            fontsize=18
+
+            plot1.set_ylabel("$i_\mathrm{rel}\,(\mathrm{deg})$",fontsize=fontsize)
+            plot2.set_ylabel("$1-e$",fontsize=fontsize)
+
+            plot2.set_xlabel("$t/\mathrm{Myr}$")
+            
+            pyplot.show()
+
+    def test11(self,args):
+        print("Test flybys module: instantaneous change -- SNe in binary")
+
+        code = MSE()
+        CONST_G = code.CONST_G
+        CONST_km_per_s_to_AU_per_yr = code.CONST_KM_PER_S
+                
+        a1 = 10.0
+        e1 = 0.1
+        m1 = 1.0
+        m2 = 0.8
+
+        INCL1 = 0.1
+        AP1 = 0.2
+        LAN1 = 0.3
+        f1 = 60.5*np.pi/180.0
+
+        particles = Tools.create_nested_multiple(2, [m1,m2], [a1], [e1], [INCL1], [AP1], [LAN1] )
+
+        binary = particles[2]
+        binary.sample_orbital_phase_randomly = False
+        binary.TA = f1
+        
+        delta_m1 = -0.5
+        V_k_vec = np.array([0.0,1.0,2.0])*CONST_km_per_s_to_AU_per_yr
+        #V_k_vec = np.array([0.0,0.0,0.0])
+
+        particles[0].instantaneous_perturbation_delta_mass = delta_m1
+        particles[0].instantaneous_perturbation_delta_VX = V_k_vec[0]
+        particles[0].instantaneous_perturbation_delta_VY = V_k_vec[1]
+        particles[0].instantaneous_perturbation_delta_VZ = V_k_vec[2]
+
+        code.add_particles(particles)
+
+        if args.verbose==True:
+            print( '='*50)
+            print( 'pre')
+            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass,'TA',binary.TA)
+
+        code.apply_user_specified_instantaneous_perturbation()
+        
+        if args.verbose==True:
+            print( '='*50)
+            print( 'post')
+            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass,'TA',binary.TA)
+
+        ### Compute analytic result (e.g., https://ui.adsabs.harvard.edu/abs/2016ComAC...3....6T/abstract) ###
+        r1 = a1*(1.0-e1**2)/(1.0 + e1*np.cos(f1))
+        v1_tilde = np.sqrt( CONST_G*(m1+m2)/(a1*(1.0-e1**2) ) )
+        e1_vec_hat,j1_vec_hat = compute_e_and_j_hat_vectors(INCL1,AP1,LAN1)
+        q1_vec_hat = np.cross(j1_vec_hat,e1_vec_hat)
+        r1_vec = r1*( e1_vec_hat * np.cos(f1) + q1_vec_hat * np.sin(f1) )
+        v1_vec = v1_tilde*( -e1_vec_hat * np.sin(f1) + q1_vec_hat * (e1 + np.cos(f1) ) )
+
+        r1_dot_v1 = np.sum([x*y for x,y in zip(r1_vec,v1_vec)])
+        r1_dot_V_k = np.sum([x*y for x,y in zip(r1_vec,V_k_vec)])
+        v1_dot_V_k = np.sum([x*y for x,y in zip(v1_vec,V_k_vec)])
+        V_k_dot_V_k = np.sum([x*y for x,y in zip(V_k_vec,V_k_vec)])
+        v1c_sq = CONST_G*(m1+m2)/a1
+        
+        a1_p = a1*(1.0 + delta_m1/(m1+m2))*pow( 1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq, -1.0)
+        j1_p = pow( (m1+m2)/(m1+m2+delta_m1), 2.0)*(1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq)*( 1.0 - e1**2 \
+            + (1.0/(CONST_G*(m1+m2)*a1))*( r1**2*( 2.0*v1_dot_V_k + V_k_dot_V_k) - 2.0*r1_dot_v1*r1_dot_V_k - r1_dot_V_k**2) )
+        e1_p = np.sqrt(1.0 - j1_p)
+        
+        if args.verbose==True:
+            print( 'analytic results Toonen+16: ','new a1 = ',a1_p,'; new e1 = ',e1_p)
+        
+        N_r = 10
+        assert round(binary.a,N_r) == round(a1_p,N_r)
+        assert round(binary.e,N_r) == round(e1_p,N_r)
+        
+        print("Test passed")
+
+        code.reset()
+        
+    def test12(self,args):
+        print("Test flybys module: instantaneous change -- SNe in triple")
+
+        code = MSE()
+        CONST_G = code.CONST_G
+        CONST_km_per_s_to_AU_per_yr = code.CONST_KM_PER_S        
+        
+        m1 = 1.0
+        m2 = 0.8
+        m3 = 1.2
+        a1 = 10.0
+        a2 = 100.0
+        e1 = 0.1
+        e2 = 0.3
+        INCL1 = 0.1
+        INCL2 = 0.5
+        AP1 = 0.1
+        AP2 = 1.0
+        LAN1 = 0.1
+        LAN2 = 2.0
+        f1 = 60.5*np.pi/180.0
+        f2 = 30.5*np.pi/180.0
+
+        INCLs = [INCL1,INCL2]
+        APs = [AP1,AP2]
+        LANs = [LAN1,LAN2]
+        masses = [m1,m2,m3]
+        particles = Tools.create_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs)
+        
+        inner_binary = particles[3]
+        outer_binary = particles[4]
+        inner_binary.sample_orbital_phase_randomly = 0
+        outer_binary.sample_orbital_phase_randomly = 0
+        inner_binary.TA = f1
+        outer_binary.TA = f2
+        
+        delta_m1 = -0.3
+        
+        km_p_s_to_AU_p_yr = 0.21094502112788768
+        V_k_vec = np.array([1.0,2.0,2.0])*CONST_km_per_s_to_AU_per_yr
+        V_k_vec = np.array([0.0,0.0,0.0])
+        
+        particles[0].instantaneous_perturbation_delta_mass = delta_m1
+        particles[0].instantaneous_perturbation_delta_VX = V_k_vec[0]
+        particles[0].instantaneous_perturbation_delta_VY = V_k_vec[1]
+        particles[0].instantaneous_perturbation_delta_VZ = V_k_vec[2]
+
+        code.add_particles(particles)
+        
+        if args.verbose==True:
+            print( '='*50)
+            print( 'pre')
+            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
+            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
+        
+        code.apply_user_specified_instantaneous_perturbation()
+        
+        if args.verbose==True:
+            print( '='*50)
+            print( 'post')
+            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
+            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
+
+        
+        ### Compute analytic result (e.g., https://ui.adsabs.harvard.edu/abs/2016ComAC...3....6T/abstract) ###
+        r1 = a1*(1.0-e1**2)/(1.0 + e1*np.cos(f1))
+        v1_tilde = np.sqrt( CONST_G*(m1+m2)/(a1*(1.0-e1**2) ) )
+        e1_vec_hat,j1_vec_hat = compute_e_and_j_hat_vectors(INCL1,AP1,LAN1)
+        q1_vec_hat = np.cross(j1_vec_hat,e1_vec_hat)
+        r1_vec = r1*( e1_vec_hat * np.cos(f1) + q1_vec_hat * np.sin(f1) )
+        v1_vec = v1_tilde*( -e1_vec_hat * np.sin(f1) + q1_vec_hat * (e1 + np.cos(f1) ) )
+
+        r1_dot_v1 = np.sum([x*y for x,y in zip(r1_vec,v1_vec)])
+        r1_dot_V_k = np.sum([x*y for x,y in zip(r1_vec,V_k_vec)])
+        v1_dot_V_k = np.sum([x*y for x,y in zip(v1_vec,V_k_vec)])
+        V_k_dot_V_k = np.sum([x*y for x,y in zip(V_k_vec,V_k_vec)])
+        v1c_sq = CONST_G*(m1+m2)/a1
+
+        r2 = a2*(1.0-e2**2)/(1.0 + e2*np.cos(f2))
+        v2_tilde = np.sqrt( CONST_G*(m1+m2+m3)/(a2*(1.0-e2**2) ) )
+        e2_vec_hat,j2_vec_hat = compute_e_and_j_hat_vectors(INCL2,AP2,LAN2)
+        q2_vec_hat = np.cross(j2_vec_hat,e2_vec_hat)
+        r2_vec = r2*( e2_vec_hat * np.cos(f2) + q2_vec_hat * np.sin(f2) )
+        v2_vec = v2_tilde*( -e2_vec_hat * np.sin(f2) + q2_vec_hat * (e2 + np.cos(f2) ) )
+    
+        Delta_r2_vec = (delta_m1/( (m1+m2) + delta_m1) ) * (m2/(m1+m2)) * r1_vec
+        Delta_v2_vec = (delta_m1/( (m1+m2) + delta_m1) ) * ( (m2/(m1+m2)) * v1_vec + V_k_vec*(1.0 + m1/delta_m1) )
+        r2_vec_p = r2_vec + Delta_r2_vec
+        r2p = np.sqrt(np.dot(r2_vec_p,r2_vec_p))
+
+
+        r2_dot_v2 = np.sum([x*y for x,y in zip(r2_vec,v2_vec)])
+        r2_dot_V_k = np.sum([x*y for x,y in zip(r2_vec,V_k_vec)])
+        v2c_sq = CONST_G*(m1+m2+m3)/a2
+        v2_dot_Delta_v2_vec = np.dot(v2_vec,Delta_v2_vec)
+        Delta_v2_vec_dot_Delta_v2_vec = np.dot(Delta_v2_vec,Delta_v2_vec)
+        
+        a1_p = a1*(1.0 + delta_m1/(m1+m2))*pow( 1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq, -1.0)
+        j1_p = pow( (m1+m2)/(m1+m2+delta_m1), 2.0)*(1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq)*( 1.0 - e1**2 \
+            + (1.0/(CONST_G*(m1+m2)*a1))*( r1**2*( 2.0*v1_dot_V_k + V_k_dot_V_k) - 2.0*r1_dot_v1*r1_dot_V_k - r1_dot_V_k**2) )
+        e1_p = np.sqrt(1.0 - j1_p)
+
+        a2_p = a2*(1.0 + delta_m1/(m1+m2+m3))*pow( 1.0 + 2.0*(a2/r2p)*(delta_m1/(m1+m2+m3)) - 2.0*v2_dot_Delta_v2_vec/v2c_sq - Delta_v2_vec_dot_Delta_v2_vec/v2c_sq + 2.0*a2*(r2-r2p)/(r2*r2p), -1.0)
+
+        alpha = (-delta_m1/(m1+m2+delta_m1)) * m2/(m1+m2)
+        j2_p = ((m1+m2+m3)/(m1+m2+m3+delta_m1))**2 * (1.0 + 2.0*(a2/r2p)*(delta_m1/(m1+m2+m3)) + 2.0*a2*(r2-r2p)/(r2*r2p) - 2.0*np.dot(v2_vec,Delta_v2_vec)/v2c_sq - Delta_v2_vec_dot_Delta_v2_vec/v2c_sq)*( (1.0-e2**2) + (1.0/(CONST_G*(m1+m2+m3)*a2))*( r2**2*(2.0*np.dot(v2_vec,Delta_v2_vec) + np.dot(Delta_v2_vec,Delta_v2_vec)) + (-2.0*alpha*np.dot(r1_vec,r2_vec) + alpha**2*r1**2)*np.dot(v2_vec + Delta_v2_vec,v2_vec+Delta_v2_vec) + 2.0*np.dot(r2_vec,v2_vec)*( alpha*np.dot(r1_vec,v2_vec) - np.dot(r2_vec,Delta_v2_vec) + alpha*np.dot(r1_vec,Delta_v2_vec)) - (-alpha*np.dot(r1_vec,v2_vec) + np.dot(r2_vec,Delta_v2_vec) - alpha*np.dot(r1_vec,Delta_v2_vec))**2 ) ) 
+        e2_p = np.sqrt(1.0 - j2_p)
+        
+        if args.verbose==True:
+            print( 'analytic results Toonen+16: ','new a1 = ',a1_p,'; new e1 = ',e1_p)
+            print( 'analytic results Toonen+16: ','new a2 = ',a2_p,'; new e2 = ',e2_p)
+        
+        N_r = 10
+        assert round(inner_binary.a,N_r) == round(a1_p,N_r)
+        assert round(inner_binary.e,N_r) == round(e1_p,N_r)
+
+        assert round(outer_binary.a,N_r) == round(a2_p,N_r)
+        assert round(outer_binary.e,N_r) == round(e2_p,N_r)
+
+        print("Test passed")
+
+        code.reset()
+        
+    def test13(self,args):
+        print("Test flybys module: numerically integrating over perturber's orbit")
+
+        code = MSE()
+        CONST_G = code.CONST_G
+        
+        ### binary orbit ###
+        a = 1.0
+        e = 0.1
+        m1 = 1.0
+        m2 = 0.8
+        M_per = 1.0
+        E = 2.0
+        Q = 100.0
+        INCL = 0.4*np.pi
+        AP = 0.25*np.pi
+        LAN = 0.25*np.pi
+
+        masses = [m1,m2]
+        m = m1 + m2
+        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+
+        t_per = np.sqrt(CONST_G*(m+M_per)/(Q**3))
+
+        t = 0.0
+        t_ref = 1.0e4
+        tend = 4.0*t_ref
+        Nsteps = 1000
         dt = tend/float(Nsteps)
 
-        import np.random as randomf
-        randomf.seed(0)
-        N=1
-        external_particle = Particle(mass = M, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+        
+        external_particle = Particle(mass = M_per, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
 
         particles.append(external_particle)
 
-        
-        
         code = MSE()
         code.add_particles(particles)
         binary = code.particles[2]
         
-        #code.parameters.include_quadrupole_order_terms = True
-        #code.parameters.include_octupole_order_binary_pair_terms = True
-        #code.parameters.include_hexadecupole_order_binary_pair_terms = True
-        #code.parameters.include_dotriacontupole_order_binary_pair_terms = True
+        code.include_quadrupole_order_terms = True
+        code.include_octupole_order_binary_pair_terms = True
+        code.include_hexadecupole_order_binary_pair_terms = False
+        code.include_dotriacontupole_order_binary_pair_terms = False
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
 
         t_print_array = []
         a_print_array = []
@@ -839,26 +1305,48 @@ class test_mse():
         AP_print_array = []
         LAN_print_array = []
         
-        N = 0
         while (t<tend):
-
             t+=dt
-            N+=1
-
             code.evolve_model(t)
              
-            
             t_print_array.append(t)
             a_print_array.append(binary.a)
             e_print_array.append(binary.e)
-#            INCL_print_array.append(binaries[0].inclination | units.none)            
-#            AP_print_array.append(binaries[0].argument_of_pericenter | units.none)            
-#            LAN_print_array.append(binaries[0].longitude_of_ascending_node | units.none)            
             
-        Delta_e = binary.e-e
-        print( 'Delta_e',Delta_e)
+            if args.verbose==True:
+                print("t/yr",t,"a",binary.a,"e",binary.e)
             
-        if HAS_MATPLOTLIB == True:
+        Delta_e = binary.e - e
+            
+        ### compute analytic result (https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.5630H/abstract) ###
+        e_vec_hat,j_vec_hat = compute_e_and_j_hat_vectors(INCL,AP,LAN)
+        e_vec = e_vec_hat*e
+        j_vec = j_vec_hat*np.sqrt(1.0-e**2)
+
+        ex = e_vec[0]
+        ey = e_vec[1]
+        ez = e_vec[2]
+        jx = j_vec[0]
+        jy = j_vec[1]
+        jz = j_vec[2]
+
+        eps_SA = (M_per/np.sqrt(m*(m+M_per)))*pow(a/Q,3.0/2.0)*pow(1.0 + E,-3.0/2.0)
+        eps_oct = (a/Q)*(m1-m2)/((1.0+E)*m)
+        Delta_e_an = (5*eps_SA*(np.sqrt(1 - E**(-2))*((1 + 2*E**2)*ey*ez*jx + (1 - 4*E**2)*ex*ez*jy + 2*(-1 + E**2)*ex*ey*jz) + 3*E*ez*(ey*jx - ex*jy)*np.arccos(-1.0/E)))/(2.*E*np.sqrt(ex**2 + ey**2 + ez**2))
+        
+        Delta_e_an += -(5*eps_oct*eps_SA*(np.sqrt(1 - E**(-2))*(ez*jy*(14*ey**2 + 6*jx**2 - 2*jy**2 + 8*E**4*(-1 + ey**2 + 8*ez**2 + 2*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 - 7*jx**2 + 9*jy**2)) - ey*(2*(7*ey**2 + jx**2 - jy**2) + 8*E**4*(-1 + ey**2 + 8*ez**2 + 4*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 + 11*jx**2 + 9*jy**2))*jz + ex**2*(-((14 + 45*E**2 + 160*E**4)*ez*jy) + 3*(14 - 27*E**2 + 16*E**4)*ey*jz) + 2*(-2 + 9*E**2 + 8*E**4)*ex*jx*(7*ey*ez + jy*jz)) + 3*E**3*(ez*jy*(-4 - 3*ey**2 + 32*ez**2 + 5*jx**2 + 5*jy**2) + ey*(4 + 3*ey**2 - 32*ez**2 - 15*jx**2 - 5*jy**2)*jz + ex**2*(-73*ez*jy + 3*ey*jz) + 10*ex*jx*(7*ey*ez + jy*jz))*np.arccos(-1.0/E)))/(32.*E**2*np.sqrt(ex**2 + ey**2 + ez**2))
+
+        if args.verbose==True:
+            print( 'Numerically integrated: Delta e = ',Delta_e,'; analytic expression: Delta e = ',Delta_e_an)
+
+        N_r = 6
+        assert round(Delta_e,N_r) == round(Delta_e_an,N_r)
+
+        print("Test passed")
+        
+        code.reset()
+        
+        if HAS_MATPLOTLIB == True and args.plot==True:
             fig = pyplot.figure(figsize=(8,6))
             plot1 = fig.add_subplot(1,1,1)
             
@@ -866,549 +1354,105 @@ class test_mse():
             e_print_array = np.array(e_print_array)
             
             plot1.plot(t_print_array*1.0e-6,e_print_array, color='k')
-            #plot2.plot(t_print_array*1.0e-6,(180.0/np.pi)*INCL_print_array.value_in(units.none), color='k')
-            #plot3.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*AP_print_array.value_in(units.none), color='k')
-            #plot4.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*LAN_print_array.value_in(units.none), color='k')
-            
             
             fontsize = 15
             plot1.set_ylabel("$e$",fontsize=fontsize)
-            
+            plot1.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             
             pyplot.show()
-        exit(-1)
     
-    def test11(self):
-        """
-        test flybys module: using analytic formulae
-        """
+    def test14(self,args):
+        print("Test flybys module: using analytic formulae")
 
         code = MSE()
-        code.enable_root_finding = True
         CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
         
-        a = 10.0
+        ### binary orbit ###
+        a = 1.0
         e = 0.1
-        masses = [1.0, 0.8]
-        m = masses[0] + masses[1]
-        M = 1.0
-        E = 10.0
+        m1 = 1.0
+        m2 = 0.8
+        M_per = 1.0
+        E = 2.0
         Q = 100.0
-        INCL = 0.5*np.pi
+        INCL = 0.4*np.pi
         AP = 0.25*np.pi
         LAN = 0.25*np.pi
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
         
-        t = 0.0
-        #t_ref = 1.0e-2 | units.Myr
-        t_ref = 1.0e5
-        tend = 2.0*t_ref
-        Nsteps = 100
-        dt = tend/float(Nsteps)
+        masses = [m1,m2]
+        m = m1 + m2
+        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+        binary = particles[2]
 
-        import np.random as randomf
-        randomf.seed(0)
-        N=1
-        external_particle = Particle(mass = M, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
 
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+
+        t_ref = 1.0e5 ### not actually used in this case, but needs to be specified for external particles
+
+        external_particle = Particle(mass = M_per, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
+        #external_particle.evolve_as_star = False
+        
         particles.append(external_particle)
 
-        
-        
         code = MSE()
         code.add_particles(particles)
-        binary = code.particles[2]
-        
-        #code.parameters.include_quadrupole_order_terms = True
-        #code.parameters.include_octupole_order_binary_pair_terms = True
-        #code.parameters.include_hexadecupole_order_binary_pair_terms = True
-        #code.parameters.include_dotriacontupole_order_binary_pair_terms = True
+
+        code.include_quadrupole_order_terms = True
+        code.include_octupole_order_binary_pair_terms = True
+        code.include_hexadecupole_order_binary_pair_terms = False
+        code.include_dotriacontupole_order_binary_pair_terms = False
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
         
         code.apply_external_perturbation_assuming_integrated_orbits()
-            
         Delta_e = binary.e-e
-        print( 'Delta_e',Delta_e)
 
-        exit(-1)
+        ### compute analytic result (https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.5630H/abstract) ###
+        e_vec_hat,j_vec_hat = compute_e_and_j_hat_vectors(INCL,AP,LAN)
+        e_vec = e_vec_hat*e
+        j_vec = j_vec_hat*np.sqrt(1.0-e**2)
+        ex = e_vec[0]
+        ey = e_vec[1]
+        ez = e_vec[2]
+        jx = j_vec[0]
+        jy = j_vec[1]
+        jz = j_vec[2]
 
-    def test12(self):
-        """
-        test flybys module: instantaneous change -- binary
-        """
+        eps_SA = (M_per/np.sqrt(m*(m+M_per)))*pow(a/Q,3.0/2.0)*pow(1.0 + E,-3.0/2.0)
+        eps_oct = (a/Q)*(m1-m2)/((1.0+E)*m)
+        Delta_e_an = (5*eps_SA*(np.sqrt(1 - E**(-2))*((1 + 2*E**2)*ey*ez*jx + (1 - 4*E**2)*ex*ez*jy + 2*(-1 + E**2)*ex*ey*jz) + 3*E*ez*(ey*jx - ex*jy)*np.arccos(-1.0/E)))/(2.*E*np.sqrt(ex**2 + ey**2 + ez**2))
+        
+        Delta_e_an += -(5*eps_oct*eps_SA*(np.sqrt(1 - E**(-2))*(ez*jy*(14*ey**2 + 6*jx**2 - 2*jy**2 + 8*E**4*(-1 + ey**2 + 8*ez**2 + 2*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 - 7*jx**2 + 9*jy**2)) - ey*(2*(7*ey**2 + jx**2 - jy**2) + 8*E**4*(-1 + ey**2 + 8*ez**2 + 4*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 + 11*jx**2 + 9*jy**2))*jz + ex**2*(-((14 + 45*E**2 + 160*E**4)*ez*jy) + 3*(14 - 27*E**2 + 16*E**4)*ey*jz) + 2*(-2 + 9*E**2 + 8*E**4)*ex*jx*(7*ey*ez + jy*jz)) + 3*E**3*(ez*jy*(-4 - 3*ey**2 + 32*ez**2 + 5*jx**2 + 5*jy**2) + ey*(4 + 3*ey**2 - 32*ez**2 - 15*jx**2 - 5*jy**2)*jz + ex**2*(-73*ez*jy + 3*ey*jz) + 10*ex*jx*(7*ey*ez + jy*jz))*np.arccos(-1.0/E)))/(32.*E**2*np.sqrt(ex**2 + ey**2 + ez**2))
 
-        code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
-        
-        a = 10.0
-        e = 0.1
-        masses = [1.0, 0.8]
-        m = masses[0] + masses[1]
-        INCL = 0.1
-        AP = 0.2
-        LAN = 0.3
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
-        
-        binary = particles[2]
-        binary.sample_orbital_phase_randomly = 0
-        binary.TA = 60.5*np.pi/180.0
-        
-        delta_m1 = -0.5
-        #delta_m1 = 0.0
-        #delta_m1 = 0.0 | units.MSun
-        
-        
-        
-        km_p_s_to_AU_p_yr = 0.21094502112788768
-        V_k_vec = np.array([0.0,1.0,1.0])*km_p_s_to_AU_p_yr
-        #V_k_vec = [0.0,0.0,0.0]
-        particles[0].instantaneous_perturbation_delta_mass = delta_m1
-        particles[0].instantaneous_perturbation_delta_vx = V_k_vec[0]
-        particles[0].instantaneous_perturbation_delta_vy = V_k_vec[1]
-        particles[0].instantaneous_perturbation_delta_vz = V_k_vec[2]
+        if args.verbose==True:
+            print( 'SecularMultiple Delta e = ',Delta_e,'; analytic expression: Delta e = ',Delta_e_an)
 
-        #particles[0].instantaneous_perturbation_delta_mass = 0 | units.MSun
-        
-#        import np.random as randomf
-#        randomf.seed(0)
+        N_r = 8
+        assert round(Delta_e,N_r) == round(Delta_e_an,N_r)
 
-        #binaries.include_pairwise_25PN_terms = True
-        
-        code.add_particles(particles)
-        binary = code.particles[2]
-        #code.external_particles.add_particles(external_particles)
-        
-        #code.parameters.include_quadrupole_order_terms = True
-        #code.parameters.include_octupole_order_binary_pair_terms = True
-        #code.parameters.include_hexadecupole_order_binary_pair_terms = True
-        #code.parameters.include_dotriacontupole_order_binary_pair_terms = True
+        print("Test passed")
 
-        print( '='*50)
-        print( 'pre')
-        print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass)
-#        print 'r',particles.position_x,particles.position_y,particles.position_z
-#        print 'v',particles.velocity_x.value_in(units.km/units.s),particles.velocity_y.value_in(units.km/units.s),particles.velocity_z.value_in(units.km/units.s)
-        
-#        c1 = particles[0]
-#        c2 = particles[1]
-        
-#        r1_vec = [c1.position_x - c2.position_x,c1.position_y - c2.position_y,c1.position_z - c2.position_z]
-#        v1_vec = [c1.velocity_x - c2.velocity_x,c1.velocity_y - c2.velocity_y,c1.velocity_z - c2.velocity_z]
-
-#        code.parameters.orbital_phases_random_seed = 1
-        
-        code.apply_user_specified_instantaneous_perturbation()
-        
-        #channel_from_code_external.copy()
-
-        print( '='*50)
-        print( 'post')
-        print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass)
-      
-        exit(-1)
-        print( 'r',particles.position_x,particles.position_y,particles.position_z)
-        print( 'v',particles.velocity_x.value_in(units.km/units.s),particles.velocity_y.value_in(units.km/units.s),particles.velocity_z.value_in(units.km/units.s))
-
-        #code.apply_external_perturbation_assuming_integrated_orbits()
-
-        
-            
-        t += 1.0 | units.Myr ### arbitrary
-        t_print_array.append(t)
-        a_print_array.append(binaries[0].semimajor_axis)
-        e_print_array.append(binaries[0].eccentricity | units.none)
-        INCL_print_array.append(binaries[0].inclination | units.none)            
-        AP_print_array.append(binaries[0].argument_of_pericenter | units.none)            
-        LAN_print_array.append(binaries[0].longitude_of_ascending_node | units.none)            
-
-        print( 'a_print_array',a_print_array.value_in(units.AU))
-        print( 'e_print_array',e_print_array)
-        print( 'INCL_print_array',INCL_print_array*(180.0/np.pi))
-        print( 'AP_print_array',AP_print_array*(180.0/np.pi))
-        print( 'LAN_print_array',LAN_print_array*(180.0/np.pi))
-        
-        f1 = binaries.true_anomaly
-        print( 'true_anomaly',f1)
-        
-        m1 = masses[0]
-        m2 = masses[1]
-        a1 = semimajor_axes[0]
-        e1 = eccentricities[0]
-        
-        r1 = a1*(1.0-e1**2)/(1.0 + e1*np.cos(f1))
-        
-
-        r1_dot_v1 = np.sum([x*y for x,y in zip(r1_vec,v1_vec)])
-        r1_dot_V_k = np.sum([x*y for x,y in zip(r1_vec,V_k_vec)])
-        v1_dot_V_k = np.sum([x*y for x,y in zip(v1_vec,V_k_vec)])
-        V_k_dot_V_k = np.sum([x*y for x,y in zip(V_k_vec,V_k_vec)])
-        v1c_sq =constants.G*(m1+m2)/a1
-        
-        
-        a1_p = a1*(1.0 + delta_m1/(m1+m2))*pow( 1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq, -1.0)
-        j1_p = pow( (m1+m2)/(m1+m2+delta_m1), 2.0)*(1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq)*( 1.0 - e1**2 \
-            + (1.0/(constants.G*(m1+m2)*a1))*( r1**2*( 2.0*v1_dot_V_k + V_k_dot_V_k) - 2.0*r1_dot_v1*r1_dot_V_k - r1_dot_V_k**2) )
-        e1_p = np.sqrt(1.0 - j1_p)
-        
-        print( 'analytic results Toonen+16',a1_p.value_in(units.AU),e1_p)
-        
-        if HAS_MATPLOTLIB == True and 1==0:
-            fig = pyplot.figure(figsize=(8,6))
-            plot1 = fig.add_subplot(2,2,1)
-            plot2 = fig.add_subplot(2,2,2)
-            plot3 = fig.add_subplot(2,2,3)
-            plot4 = fig.add_subplot(2,2,4)
-            
-            plot1.plot(t_print_array.value_in(units.Myr),e_print_array.value_in(units.none), color='k')
-            plot2.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*INCL_print_array.value_in(units.none), color='k')
-            plot3.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*AP_print_array.value_in(units.none), color='k')
-            plot4.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*LAN_print_array.value_in(units.none), color='k')
-            
-            fontsize = 15
-            plot1.set_ylabel("$e$",fontsize=fontsize)
-            plot2.set_ylabel("$i$",fontsize=fontsize)
-            plot3.set_ylabel("$\omega$",fontsize=fontsize)
-            plot4.set_ylabel("$\Omega$",fontsize=fontsize)
-            
-#            fontsize = 15
-#            plot1.set_ylabel("$e$",fontsize=fontsize)
-            
-            pyplot.show()
+        code.reset()
 
 
-    def test13(self):
-        """
-        test flybys module: instantaneous change -- triple
-        """
-
-        code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
+    def test15(self,args):
+        print('Triple with stellar evolution')
         
-        a1 = 10.0
-        a2 = 100.0
-        e1 = 0.1
-        e2 = 0.3
-        masses = [1.0, 0.8,1.2]
-        m = masses[0] + masses[1]
-        INCLs = [0.1,0.5]
-        APs = [0.1,1.0]
-        LANs = [0.1,2.0]
-        particles = Tools.create_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs)
+        N_bodies=3
         
-        inner_binary = particles[3]
-        outer_binary = particles[4]
-        inner_binary.sample_orbital_phase_randomly = 0
-        outer_binary.sample_orbital_phase_randomly = 0
-        inner_binary.TA = 60.5*np.pi/180.0
-        outer_binary.TA = 30.5*np.pi/180.0
-        
-
-        delta_m1 = -0.3
-        #delta_m1 = 0.0
-        #delta_m1 = 0.0 | units.MSun
-        
-        km_p_s_to_AU_p_yr = 0.21094502112788768
-        V_k_vec = np.array([1.0,2.0,2.0])*km_p_s_to_AU_p_yr
-        #V_k_vec = [0.0,0.0,0.0]
-        particles[0].instantaneous_perturbation_delta_mass = delta_m1
-        particles[0].instantaneous_perturbation_delta_vx = V_k_vec[0]
-        particles[0].instantaneous_perturbation_delta_vy = V_k_vec[1]
-        particles[0].instantaneous_perturbation_delta_vz = V_k_vec[2]
-
-        #particles[0].instantaneous_perturbation_delta_mass = 0 | units.MSun
-        
-#        import np.random as randomf
-#        randomf.seed(0)
-
-        #binaries.include_pairwise_25PN_terms = True
-        
-        code.add_particles(particles)
-        binary = code.particles[2]
-        #code.external_particles.add_particles(external_particles)
-        
-        #code.parameters.include_quadrupole_order_terms = True
-        #code.parameters.include_octupole_order_binary_pair_terms = True
-        #code.parameters.include_hexadecupole_order_binary_pair_terms = True
-        #code.parameters.include_dotriacontupole_order_binary_pair_terms = True
-
-        print( '='*50)
-        print( 'pre')
-        print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
-        print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
-#        print 'r',particles.position_x,particles.position_y,particles.position_z
-#        print 'v',particles.velocity_x.value_in(units.km/units.s),particles.velocity_y.value_in(units.km/units.s),particles.velocity_z.value_in(units.km/units.s)
-        
-#        c1 = particles[0]
-#        c2 = particles[1]
-        
-#        r1_vec = [c1.position_x - c2.position_x,c1.position_y - c2.position_y,c1.position_z - c2.position_z]
-#        v1_vec = [c1.velocity_x - c2.velocity_x,c1.velocity_y - c2.velocity_y,c1.velocity_z - c2.velocity_z]
-
-#        code.parameters.orbital_phases_random_seed = 1
-        
-        code.apply_user_specified_instantaneous_perturbation()
-        
-        #channel_from_code_external.copy()
-
-        print( '='*50)
-        print( 'post')
-        print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
-        print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
-
-      
-        exit(-1)
-        print( 'r',particles.position_x,particles.position_y,particles.position_z)
-        print( 'v',particles.velocity_x.value_in(units.km/units.s),particles.velocity_y.value_in(units.km/units.s),particles.velocity_z.value_in(units.km/units.s))
-
-        #code.apply_external_perturbation_assuming_integrated_orbits()
-
-        
-            
-        t += 1.0 | units.Myr ### arbitrary
-        t_print_array.append(t)
-        a_print_array.append(binaries[0].semimajor_axis)
-        e_print_array.append(binaries[0].eccentricity | units.none)
-        INCL_print_array.append(binaries[0].inclination | units.none)            
-        AP_print_array.append(binaries[0].argument_of_pericenter | units.none)            
-        LAN_print_array.append(binaries[0].longitude_of_ascending_node | units.none)            
-
-        print( 'a_print_array',a_print_array.value_in(units.AU))
-        print( 'e_print_array',e_print_array)
-        print( 'INCL_print_array',INCL_print_array*(180.0/np.pi))
-        print( 'AP_print_array',AP_print_array*(180.0/np.pi))
-        print( 'LAN_print_array',LAN_print_array*(180.0/np.pi))
-        
-        f1 = binaries.true_anomaly
-        print( 'true_anomaly',f1)
-        
-        m1 = masses[0]
-        m2 = masses[1]
-        a1 = semimajor_axes[0]
-        e1 = eccentricities[0]
-        
-        r1 = a1*(1.0-e1**2)/(1.0 + e1*np.cos(f1))
-        
-
-        r1_dot_v1 = np.sum([x*y for x,y in zip(r1_vec,v1_vec)])
-        r1_dot_V_k = np.sum([x*y for x,y in zip(r1_vec,V_k_vec)])
-        v1_dot_V_k = np.sum([x*y for x,y in zip(v1_vec,V_k_vec)])
-        V_k_dot_V_k = np.sum([x*y for x,y in zip(V_k_vec,V_k_vec)])
-        v1c_sq =constants.G*(m1+m2)/a1
-        
-        
-        a1_p = a1*(1.0 + delta_m1/(m1+m2))*pow( 1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq, -1.0)
-        j1_p = pow( (m1+m2)/(m1+m2+delta_m1), 2.0)*(1.0 + 2.0*(a1/r1)*(delta_m1/(m1+m2)) - 2.0*v1_dot_V_k/v1c_sq - V_k_dot_V_k/v1c_sq)*( 1.0 - e1**2 \
-            + (1.0/(constants.G*(m1+m2)*a1))*( r1**2*( 2.0*v1_dot_V_k + V_k_dot_V_k) - 2.0*r1_dot_v1*r1_dot_V_k - r1_dot_V_k**2) )
-        e1_p = np.sqrt(1.0 - j1_p)
-        
-        print( 'analytic results Toonen+16',a1_p.value_in(units.AU),e1_p)
-        
-        if HAS_MATPLOTLIB == True and 1==0:
-            fig = pyplot.figure(figsize=(8,6))
-            plot1 = fig.add_subplot(2,2,1)
-            plot2 = fig.add_subplot(2,2,2)
-            plot3 = fig.add_subplot(2,2,3)
-            plot4 = fig.add_subplot(2,2,4)
-            
-            plot1.plot(t_print_array.value_in(units.Myr),e_print_array.value_in(units.none), color='k')
-            plot2.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*INCL_print_array.value_in(units.none), color='k')
-            plot3.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*AP_print_array.value_in(units.none), color='k')
-            plot4.plot(t_print_array.value_in(units.Myr),(180.0/np.pi)*LAN_print_array.value_in(units.none), color='k')
-            
-            fontsize = 15
-            plot1.set_ylabel("$e$",fontsize=fontsize)
-            plot2.set_ylabel("$i$",fontsize=fontsize)
-            plot3.set_ylabel("$\omega$",fontsize=fontsize)
-            plot4.set_ylabel("$\Omega$",fontsize=fontsize)
-            
-#            fontsize = 15
-#            plot1.set_ylabel("$e$",fontsize=fontsize)
-            
-            pyplot.show()
-
-    def development_test(self):
-        """
-        Tests related to development -- not for production tests
-        """
-        SM = MSE()
-        
-        #primary = Particle(is_binary=False, mass=1.0)
-        #secondary = Particle(is_binary=False, mass=0.5)
-        #binary = Particle(is_binary=True, child1=primary,child2=secondary,a=1.0,e=0.0,INCL=0.0,AP=0.0,LAN=0.0)
-
-    #    primary = Particle(is_binary=False, mass=1.0)
-    #    secondary = Particle(is_binary=False, mass=1.0e-3)
-    #    tertiary = Particle(is_binary=False, mass=40.0e-3)
-    #    inner_binary = Particle(is_binary=True, child1=primary,child2=secondary,a=6.0,e=0.001,INCL=0.0001,AP=45.0*np.pi/180.0,LAN=0.01)
-    #    outer_binary = Particle(is_binary=True, child1=inner_binary,child2=tertiary,a=100.0,e=0.6,INCL=65.0*np.pi/180.0,AP=0.01,LAN=0.01)
-        
-        #particles = create_nested_multiple(3,[1.0|units.MSun, 1.0|units.MJupiter, 40.0|units.MJupiter], [6.0|units.AU,100.0|units.AU], [0.001,0.6], [0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.0001],[0.01,0.01])
-        #print primary.is_binary
-    #    print 'p',primary
-    #    particles = [primary,secondary,tertiary,inner_binary,outer_binary]
-
-        code = MSE()
-        code.enable_root_finding = True
-        CONST_G = code.CONST_G
-        CONST_C = code.CONST_C
-        CONST_R_SUN = code.CONST_R_SUN
-        
-        a = 10.0
-        e = 0.1
-        masses = [1.0, 0.8]
-        m = masses[0] + masses[1]
-        M = 1.0
-        E = 10.0
-        Q = 100.0
-        INCL = 0.5*np.pi
-        AP = 0.4*np.pi
-        LAN = 0.25*np.pi
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
-        
-        t = 0.0
-        #t_ref = 1.0e-2 | units.Myr
-        t_ref = 1.0e5
-        tend = 2.0*t_ref
-        Nsteps = 100
-        dt = tend/float(Nsteps)
-
-        import np.random as randomf
-        randomf.seed(0)
-        N=1
-        external_particle = Particle(mass = M, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
-
-        particles.append(external_particle)
-
-        code = MSE()
-        code.add_particles(particles)
-        binary = code.particles[2]
-        
-        #code.parameters.include_quadrupole_order_terms = True
-        #code.parameters.include_octupole_order_binary_pair_terms = True
-        #code.parameters.include_hexadecupole_order_binary_pair_terms = True
-        #code.parameters.include_dotriacontupole_order_binary_pair_terms = True
-
-        t_print_array = []
-        a_print_array = []
-        e_print_array = []
-        INCL_print_array = []
-        AP_print_array = []
-        LAN_print_array = []
-        
-        if 1==0:
-            N = 0
-            while (t<tend):
-
-                t+=dt
-                N+=1
-
-                code.evolve_model(t)
-                 
-                
-                t_print_array.append(t)
-                a_print_array.append(binary.a)
-                e_print_array.append(binary.e)
-        #            INCL_print_array.append(binaries[0].inclination | units.none)            
-        #            AP_print_array.append(binaries[0].argument_of_pericenter | units.none)            
-        #            LAN_print_array.append(binaries[0].longitude_of_ascending_node | units.none)            
-                
-                print( 't',t,'e',binary.e)
-                                
-
-            Delta_e_num = e_print_array[-1] - e
-        else:
-            code.apply_external_perturbation_assuming_integrated_orbits()
-            Delta_e_num = binary.e - e
-            
-        eps_SA = np.sqrt( (M**2/(m*(m+M)))*(a/Q)**3*1.0/((1.0 + E)**3))
-        i=INCL
-        Delta_e_an = (-5*np.sqrt(e**2 - e**4)*eps_SA*(-3*E*np.arccos(-1.0/E)*np.cos(AP)*np.sin(i)**2*np.sin(AP) + np.sqrt(1 - E**(-2))*(-((-1 + E**2)*np.cos(i)**2*np.cos(2*LAN)*np.sin(2*AP)) - ((3*E**2 + (-1 + E**2)*np.cos(2*LAN))*np.sin(i)**2*np.sin(2*AP))/2. + ((-1 + E**2)*np.cos(i)*(-2 - 2*np.cos(2*i) + np.cos(2*(i - AP)) - 6*np.cos(2*AP) + np.cos(2*(i + AP)))*np.sin(2*LAN))/8. + (-1 + E**2)*np.cos(i)**3*np.sin(AP)**2*np.sin(2*LAN))))/(2.*E)
-        
-        print( 'Delta e num',Delta_e_num,'Delta_e_an',Delta_e_an)
-        
-        exit(0)
-
-
-        particles = Tools.create_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        #particles = Tools.create_nested_multiple(3, [1.0,1.0e-3,1.0e-3,1.0e-3],[1.0,6.0,40.0],[0.001,0.2,0.4],[0.0001,50.0*np.pi/180.0,55.0*np.pi/180.0],[45.0*np.pi/180.0,0.01,0.01*np.pi/180.0],[0.01,0.01,0.01])
-        binaries = [x for x in particles if x.is_binary==True]
-        #binaries[0].include_1PN_terms = True
-        #print 'b',particles
-
-        SM.add_particles(particles)
-        primary = SM.particles[0]
-        inner_binary = SM.particles[3]
-        outer_binary = SM.particles[4]
-
-        #SM.enable_tides = True
-        #SM.enable_root_finding = True
-        
-        e_print = []
-        INCL_print = []
-        rel_INCL_print = []
-        t_print = []
-        
-        t = 0.0
-        N = 1000
-        tend = 3.0e7
-        dt = tend/float(N)
-        import time
-        start = time.time()
-        while t<=tend:
-            print( 't',t)
-            SM.evolve_model(t)
-            t+=dt
-        
-            print( 't',t,'e',inner_binary.e,'INCL',inner_binary.INCL,outer_binary.INCL,primary.spin_vec_x)
-            
-            #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
-            rel_INCL_print.append(inner_binary.INCL_parent)
-            e_print.append(inner_binary.e)
-            INCL_print.append(inner_binary.INCL)
-            t_print.append(t)
-        print( 'wall time',time.time()-start)
-        t_print = np.array(t_print)
-        rel_INCL_print = np.array(rel_INCL_print)
-        e_print = np.array(e_print)
-        
-        from matplotlib import pyplot
-        fig=pyplot.figure()
-        plot1=fig.add_subplot(2,1,1)
-        plot2=fig.add_subplot(2,1,2,yscale="log")
-        #plot1.plot(t_print,np.array(INCL_print)*180.0/np.pi)
-        plot1.plot(1.0e-6*t_print,rel_INCL_print*180.0/np.pi)
-        plot2.plot(1.0e-6*t_print,1.0-e_print)
-        pyplot.show()
-        
-        
-        #print 'p',primary
-
-    #    print 'test 1',SM.particles
-
-    #    SM.delete_particle(inner_binary)
-    #    print 'test 2',SM.particles
-
-        #print 'C1',SM.CONST_M_SUN
-        #SM.CONST_G = 2.0
-        #print 'C2',SM.CONST_C
-    
-
-    def test14(self):
-        print('test14')
-        
-        N_bodies=4
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,3.5,2.0],[35.0,400.0,5000.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0,1.0],[10.0,200.0],[0.1,0.6],[0.0001,89.8*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0],[1.0],[0.1],[0.0001,],[45.0*np.pi/180.0,],[0.01])
         
@@ -1544,8 +1588,8 @@ class test_mse():
         
         print("Final properties -- ","masses/MSun",[m_print[i][-1] for i in range(N_bodies)])
         
-        if HAS_MATPLOTLIB==True:
-            if 1==1:
+        if HAS_MATPLOTLIB==True and args.plot==True:
+            if 1==0:
                 pyplot.rc('text',usetex=True)
                 pyplot.rc('legend',fancybox=True)  
         
@@ -1587,171 +1631,258 @@ class test_mse():
         
 
 
-    def test15(self):
-        print('test15')
+    def test16(self,args):
+        print('Dynamically unstable quadruple')
         
-        #ms = np.linspace(1.0,20.0,20)
-        ms = np.linspace(1.0,20.0,1)
+        N_bodies=4
         
-        for index,m in enumerate(ms):
-            print( 'index',index,'m',m)
-            N_bodies=4
-            
-            #particles = Tools.create_nested_multiple(N_bodies, [m*5,m*4,m*3],[20.0,400.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-            
-            particles = Tools.create_nested_multiple(N_bodies, [m*5,m*4,m*3,m*2],[35.0,1000.0,10000.0],[0.1,0.6,0.3],[0.0001,65.0*np.pi/180.0,43.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
-            #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0,1.0],[10.0,200.0],[0.1,0.6],[0.0001,89.8*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-            #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0],[1.0],[0.1],[0.0001,],[45.0*np.pi/180.0,],[0.01])
-            
-            #particles = [Particle(is_binary=False,mass=m,metallicity=0.02)]
-            #particles = [Particle(is_binary=False,mass=10.0),Particle(is_binary=False,mass=10.1)]
-            orbits = [x for x in particles if x.is_binary==True]
-            bodies = [x for x in particles if x.is_binary==False]
+        #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,3.5,2.0],[35.0,400.0,5000.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0,1.0],[10.0,200.0],[0.1,0.6],[0.0001,89.8*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0],[1.0],[0.1],[0.0001,],[45.0*np.pi/180.0,],[0.01])
+        
+        #particles = [Particle(is_binary=False,mass=8.5,metallicity=0.02)]
+        #particles = [Particle(is_binary=False,mass=10.0),Particle(is_binary=False,mass=10.1)]
+        orbits = [x for x in particles if x.is_binary==True]
+        bodies = [x for x in particles if x.is_binary==False]
 
-            N_orbits = len(orbits)
-            
-            for orbit in orbits:
-                orbit.check_for_physical_collision_or_orbit_crossing = True
+        N_orbits = len(orbits)
+        
+       # for orbit in orbits:
+       #     orbit.check_for_physical_collision_or_orbit_crossing = True
 
-            for b in bodies:
-                b.metallicity = 0.02
+       #     orbit.include_tidal_friction_terms = False
 
-            
-    #        masses=[10.0,9.5,8.5]
-    #        N_bodies=len(masses)
-    #        for index in range(N_bodies):
-    #            particle = Particle(is_binary=False,mass=masses[index])
-    #            particle.evolve_as_star = True
-    #            particles.append(particle)
+        for b in bodies:
+            b.kick_distribution_sigma = 0.0
+       #     b.metallicity = 0.02
+       #     b.include_tidal_friction_terms = True
 
-            
-            
-            code = MSE()
-            code.enable_root_finding = True
-            code.add_particles(particles)
-            code.orbital_phases_random_seed = 1
-            
-            e_print = []
-            INCL_print = []
-            rel_INCL_print = []
-            t_print = []
-            k_print = [[] for x in range(N_bodies)]
-            m_print = [[] for x in range(N_bodies)]
-            R_print = [[] for x in range(N_bodies)]
-            Rc_print = [[] for x in range(N_bodies)]
-            mc_print = [[] for x in range(N_bodies)]
-            a_print = [[] for x in range(N_orbits)]
-            e_print = [[] for x in range(N_orbits)]
-            rel_INCL_print = [[] for x in range(N_orbits)]
-            t = 0.0
+        
+#        masses=[10.0,9.5,8.5]
+#        N_bodies=len(masses)
+#        for index in range(N_bodies):
+#            particle = Particle(is_binary=False,mass=masses[index])
+#            particle.evolve_as_star = True
+#            particles.append(particle)
 
-            if 1==0:
-                for index in range(N_bodies):
-                    m_print[index].append(particles[index].mass)
-                    k_print[index].append(particles[index].stellar_type)
-                    R_print[index].append(particles[index].radius)
-                    Rc_print[index].append(particles[index].convective_envelope_radius)
-                    mc_print[index].append(particles[index].convective_envelope_mass)
+        
+        
+        code = MSE()
+        code.enable_root_finding = True
+        code.add_particles(particles)
+        code.orbital_phases_random_seed = 1
+        
+        code.include_flybys = False
+        #code.flybys_reference_binary = orbits[0].index
+        #print 'a',orbits[0].a
+        code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
+        code.flybys_encounter_sphere_radius = 1.0e5
+
+
+
+#        INCL_print = []
+        t_print = [[]]
+        k_print = [[[] for x in range(N_bodies)]]
+        m_print = [[[] for x in range(N_bodies)]]
+        R_print = [[[] for x in range(N_bodies)]]
+        Rc_print = [[[] for x in range(N_bodies)]]
+        R_L_print = [[[] for x in range(N_bodies)]]
+        t_V_print = [[[] for x in range(N_bodies)]]
+        mc_print = [[[] for x in range(N_bodies)]]
+        a_print = [[[] for x in range(N_orbits)]]
+        e_print = [[[] for x in range(N_orbits)]]
+        rel_INCL_print = [[[] for x in range(N_orbits)]]
+        
+        N_orbits_status = [N_orbits]
+        N_bodies_status = [N_bodies]
+        
+        t = 0.0
+        integration_flags = [[]]
+
+#        if 1==0:
+#            for index in range(N_bodies):
+#                m_print[index].append(particles[index].mass)
+#                k_print[index].append(particles[index].stellar_type)
+#                R_print[index].append(particles[index].radius)
+#                t_V_print[index].append(particles[index].tides_viscous_time_scale)
+#                Rc_print[index].append(particles[index].convective_envelope_radius)
+#                mc_print[index].append(particles[index].convective_envelope_mass)
+        #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
+        #rel_INCL_print.append(inner_binary.INCL_parent)
+        #e_print.append(inner_binary.e)
+        #INCL_print.append(inner_binary.INCL)
+        #t_print.append(t)
+        N = 10
+        tend = 1e10
+
+        N =1000
+        tend = 1e9
+        #tend = 1e8
+
+        i_status = 0
+        #print("rel_INCL_print",rel_INCL_print[0][2])
+        seed=1
+        dt = tend/float(N)
+        i = 0
+        while t<tend:
+
+            t+=dt
+            code.evolve_model(t)
+            
+            flag = code.CVODE_flag
+            state = code.state
+        
+            if state != 0:
+                print("Restructuring of system!")
+                particles = code.particles
+                orbits = [x for x in particles if x.is_binary==True]
+                bodies = [x for x in particles if x.is_binary==False]
+                N_orbits = len(orbits)
+                N_bodies = len(bodies)
+                
+                t_print.append([])
+                integration_flags.append([])
+                k_print.append([[] for x in range(N_bodies)])
+                m_print.append([[] for x in range(N_bodies)])
+                R_print.append([[] for x in range(N_bodies)])
+                Rc_print.append([[] for x in range(N_bodies)])
+                R_L_print.append([[] for x in range(N_bodies)])
+                t_V_print.append([[] for x in range(N_bodies)])
+                mc_print.append([[] for x in range(N_bodies)])
+                a_print.append([[] for x in range(N_orbits)])
+                e_print.append([[] for x in range(N_orbits)])
+                rel_INCL_print.append([[] for x in range(N_orbits)])
+                
+                N_orbits_status.append(N_orbits)
+                N_bodies_status.append(N_bodies)
+                
+                i_status += 1
+            #if t > 50: i_status += 1
+                
+            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'as',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
+            print("bound",[x.is_bound for x in bodies])
+            
+            if state != 0:
+                print("Restructuring of system!")
+                
+                #exit(0)
+
+            for index in range(N_orbits):
+                print(i_status,index)
+                #print("in ",[o.index for o in orbits])
+                rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
+                e_print[i_status][index].append(orbits[index].e)
+                a_print[i_status][index].append(orbits[index].a)
+            for index in range(N_bodies):
+                m_print[i_status][index].append(particles[index].mass)
+                k_print[i_status][index].append(particles[index].stellar_type)
+                R_print[i_status][index].append(particles[index].radius)
+                t_V_print[i_status][index].append(particles[index].tides_viscous_time_scale)
+                Rc_print[i_status][index].append(particles[index].convective_envelope_radius)
+                R_L_print[i_status][index].append(particles[index].roche_lobe_radius_pericenter)
+                mc_print[i_status][index].append(particles[index].convective_envelope_mass)
             #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
             #rel_INCL_print.append(inner_binary.INCL_parent)
             #e_print.append(inner_binary.e)
             #INCL_print.append(inner_binary.INCL)
-                t_print.append(t)
-            N = 10
-            tend = 1e10
+            t_print[i_status].append(t)        
+            integration_flags[i_status].append(code.integration_flag)
+            if flag==2:
+                print("Root",t,'RLOF',[o.RLOF_at_pericentre_has_occurred for o in orbits],'col',[o.physical_collision_or_orbit_crossing_has_occurred for o in orbits],'dyn inst',[o.dynamical_instability_has_occurred for o in orbits],'sec break',[o.secular_breakdown_has_occurred for o in orbits],'min peri',[o.minimum_periapse_distance_has_occurred for o in orbits],'GW',[o.GW_condition_has_occurred for o in orbits])
+                break
+            if flag==3:
+                print("SNe")
+                break
+            if state==3:
+                print("unbound")
+                break
+            code.random_seed = seed
+            seed += 1
+            
+            i += 1
 
-            N =5000
-            tend = 1e9
-            #tend = 1.4e10
+        N_status = i_status+1
+        
+        for i_status in range(N_status):
+            t_print[i_status] = np.array(t_print[i_status])
+        #for index in range(N_bodies):
+        #        m_print[index] = np.array(m_print[index])
+        #        t_V_print[index] = np.array(t_V_print[index])
+        #for index in range(N_orbits):
 
-            seed=1
-            dt = tend/float(N)
-            while t<tend:
+#            rel_INCL_print[index] = np.array(rel_INCL_print[index])
+#            e_print[index] = np.array(e_print[index])
+#            a_print[index] = np.array(a_print[index])
 
-                t+=dt
-                code.evolve_model(t)
+        #rel_INCL_print = np.array(rel_INCL_print)
+        #e_print = np.array(e_print)
+        
+        print("Final properties -- ","masses/MSun",[m_print[-1][i][-1] for i in range(N_bodies)])
+        
+        if HAS_MATPLOTLIB==True and args.plot==True:
+            if 1==1:
+                pyplot.rc('text',usetex=True)
+                pyplot.rc('legend',fancybox=True)  
+        
+            fig=pyplot.figure(figsize=(8,8))
+            Np=3
+            plot1=fig.add_subplot(Np,1,1)
+            plot2=fig.add_subplot(Np,1,2,yscale="log")
+            plot3=fig.add_subplot(Np,1,3,yscale="linear")
+            #plot1.plot(t_print,np.array(INCL_print)*180.0/np.pi)
+            
+            
+            colors = ['k','tab:red','tab:green','tab:blue','y']
+            for i_status in range(N_status):
+                color = colors[i_status]
+                N_bodies = N_bodies_status[i_status]
+                N_orbits = N_orbits_status[i_status]
+
                 
-                flag = code.CVODE_flag
-                state = code.state
-            
-                #print( 't',t,orbits[0].e,flag)
-
-                for index in range(N_orbits):
-                    rel_INCL_print[index].append(orbits[index].INCL_parent)
-                    e_print[index].append(orbits[index].e)
-                    a_print[index].append(orbits[index].a)
-                for index in range(N_bodies):
-                    m_print[index].append(particles[index].mass)
-                    k_print[index].append(particles[index].stellar_type)
-                    R_print[index].append(particles[index].radius)
-                    Rc_print[index].append(particles[index].convective_envelope_radius)
-                    mc_print[index].append(particles[index].convective_envelope_mass)
-                #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
-                #rel_INCL_print.append(inner_binary.INCL_parent)
-                #e_print.append(inner_binary.e)
-                #INCL_print.append(inner_binary.INCL)
-                t_print.append(t)        
-                if flag==2:
-                    print("Root",t,[o.RLOF_at_pericentre_has_occurred for o in orbits],[o.physical_collision_or_orbit_crossing_has_occurred for o in orbits])
-                    break
-                if flag==3:
-                    print("SNe")
-                    break
-                if state==3:
-                    print("unbound")
-                    break
-                code.random_seed = seed
-                seed += 1
-
-            code.reset()
-            t_print = np.array(t_print)
-            for index in range(N_bodies):
-                    m_print[index] = np.array(m_print[index])
-            for index in range(N_orbits):
-
-                e_print[index] = np.array(e_print[index])
-                a_print[index] = np.array(a_print[index])
-
-            #rel_INCL_print = np.array(rel_INCL_print)
-            #e_print = np.array(e_print)
-            
-            print("Final properties -- ","masses/MSun",[m_print[i][-1] for i in range(N_bodies)])
-            
-            if HAS_MATPLOTLIB==True:
-                fig=pyplot.figure(figsize=(8,8))
-                plot1=fig.add_subplot(2,1,1)
-                plot2=fig.add_subplot(2,1,2,yscale="log")
-                #plot3=fig.add_subplot(2,1,3,yscale="log")
-                #plot1.plot(t_print,np.array(INCL_print)*180.0/np.pi)
+                
                 linewidth=1.0
+                
+                plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color=color,linestyle='dotted',linewidth=linewidth)
+                
                 for index in range(N_bodies):
-                    plot1.plot(1.0e-6*t_print,m_print[index],color='k')
-                    plot1.plot(1.0e-6*t_print,mc_print[index],color='k',linestyle='dotted',linewidth=linewidth)
-                    #plot1.plot(1.0e-6*t_print,k_print[index],color='r',linestyle='dotted',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print,R_print[index],color='r',linestyle='solid',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print,Rc_print[index],color='r',linestyle='dotted',linewidth=linewidth)
-                    linewidth+=1.0
+                    plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
+                    plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
+                    plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],R_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],Rc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
+                    #if index in [0,1]:
+                        #plot2.plot(1.0e-6*t_print,R_L_print[index],color='g',linestyle='dotted',linewidth=linewidth)
+                    #plot3.plot(1.0e-6*t_print,t_V_print[index],color='k',linestyle='solid',linewidth=linewidth)
+                    linewidth+=0.8
+                    
                 linewidth=1.0
                 for index in range(N_orbits):
-                    plot2.plot(1.0e-6*t_print,a_print[index],color='k',linestyle='dotted',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print,a_print[index]*(1.0-e_print[index]),color='k',linestyle='solid',linewidth=linewidth)
-                    linewidth+=1.0
+                    smas = np.array(a_print[i_status][index])
+                    es = np.array(e_print[i_status][index])
+                    plot2.plot(1.0e-6*t_print[i_status],smas,color=color,linestyle='dotted',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
+                    #plot3.plot(1.0e-6*t_print,(180.0/np.pi)*rel_INCL_print[index],color='k',linestyle='solid',linewidth=linewidth)
+                    linewidth+=0.8
 
-                #plot3.plot(1.0e-6*t_print,a_print[0]*(m_print[0]+m_print[1]),color='k')
-                #plot3.plot(1.0e-6*t_print,a_print[1]*(m_print[0]+m_print[1]+m_print[2]),color='g')
-                #plot3.plot(1.0e-6*t_print,a_print[2]*(m_print[0]+m_print[1]+m_print[2]+m_print[3]),color='b')
-                fontsize=18
-                plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
-                plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
-                plot2.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
-                plot2.set_ylim(1.0e-2,1.0e4)
-                #pyplot.show()
-            
-        pyplot.show()
+            #plot3.plot(1.0e-6*t_print,a_print[0]*(m_print[0]+m_print[1]),color='k')
+            #plot3.plot(1.0e-6*t_print,a_print[1]*(m_print[0]+m_print[1]+m_print[2]),color='g')
+            #plot3.plot(1.0e-6*t_print,a_print[2]*(m_print[0]+m_print[1]+m_print[2]+m_print[3]),color='b')
+            fontsize=18
+            plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
+            plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
+            plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
+            plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
+            plot2.set_ylim(1.0e-5,1.0e5)
+            fig.savefig("test16.pdf")
+            pyplot.show()
+        
 
 
-    def test16(self):
-        print('test16')
+    def test17(self):
+        print('test17')
         
         N_bodies=3
         
@@ -1933,8 +2064,8 @@ class test_mse():
             plot2.set_ylim(1.0e-2,1.0e4)
             pyplot.show()
 
-    def test17(self):
-        print('test17')
+    def test18(self):
+        print('test18')
         """
         test mass transfer
         """
@@ -2127,204 +2258,43 @@ class test_mse():
 
 
 
-    def test18(self):
-        """
-        Test running on parallel environment using mpi4py
-        """
-
-        print('test18')
 
 
-
-        #ms = np.linspace(1.0,20.0,20)
-        ms = np.linspace(1.0,5.0,1000)
-        system_particles = []
-        
-        for index,m in enumerate(ms):
-            N_bodies=4
-            particles = Tools.create_nested_multiple(N_bodies, [m*5,m*4,m*3,m*2],[35.0,1000.0,10000.0],[0.1,0.6,0.3],[0.0001,65.0*np.pi/180.0,43.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
-            system_particles.append(particles)
-
-        import math
-        from mpi4py import MPI
-        comm = MPI.COMM_WORLD
-        rank = comm.Get_rank()
-        N_threads = comm.Get_size()
-        N_jobs = len(system_particles)
-        N_jobs_per_thread = int(math.ceil( float(N_jobs)/float(N_threads) ))
-        py_name = "test_mse.py"
-        print(py_name,'-- rank',rank,'; N_threads = ',N_threads,'; N_jobs_per_thread',N_jobs_per_thread)
-
-        indices = range(rank,N_jobs,N_threads)
-#        print(py_name,'--rank',rank,'-- will run systems with indices ',[x.index for x in [simulation_parameters_particles[i] for i in indices]])
-
-        for index_rank,index_sys in enumerate(indices):
-            particles = system_particles[index_sys]
-
-            run_system(index_sys,particles)
-
-            #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0,1.0],[10.0,200.0],[0.1,0.6],[0.0001,89.8*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-            #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0],[1.0],[0.1],[0.0001,],[45.0*np.pi/180.0,],[0.01])
-            
-            #particles = [Particle(is_binary=False,mass=m,metallicity=0.02)]
-            #particles = [Particle(is_binary=False,mass=10.0),Particle(is_binary=False,mass=10.1)]
-
-def run_system(index_system,particles):
+def compute_e_and_j_hat_vectors(INCL,AP,LAN):
+    sin_INCL = np.sin(INCL)
+    cos_INCL = np.cos(INCL)
+    sin_AP = np.sin(AP)
+    cos_AP = np.cos(AP)
+    sin_LAN = np.sin(LAN)
+    cos_LAN = np.cos(LAN)
     
-    orbits = [x for x in particles if x.is_binary==True]
-    bodies = [x for x in particles if x.is_binary==False]
-
-    print("mass",bodies[0].mass)
-    N_orbits = len(orbits)
-    N_bodies = len(bodies)
+    e_hat_vec_x = (cos_LAN*cos_AP - sin_LAN*sin_AP*cos_INCL);
+    e_hat_vec_y = (sin_LAN*cos_AP + cos_LAN*sin_AP*cos_INCL);
+    e_hat_vec_z = (sin_AP*sin_INCL);
     
-    for orbit in orbits:
-        orbit.check_for_physical_collision_or_orbit_crossing = True
+    j_hat_vec_x = sin_LAN*sin_INCL;
+    j_hat_vec_y = -cos_LAN*sin_INCL;
+    j_hat_vec_z = cos_INCL;
 
-    for b in bodies:
-        b.metallicity = 0.02
+    e_hat_vec = np.array([e_hat_vec_x,e_hat_vec_y,e_hat_vec_z])
+    j_hat_vec = np.array([j_hat_vec_x,j_hat_vec_y,j_hat_vec_z])
+
+    return e_hat_vec,j_hat_vec
     
-#        masses=[10.0,9.5,8.5]
-#        N_bodies=len(masses)
-#        for index in range(N_bodies):
-#            particle = Particle(is_binary=False,mass=masses[index])
-#            particle.evolve_as_star = True
-#            particles.append(particle)
-    
-    code = MSE()
-    code.enable_root_finding = True
-    code.add_particles(particles)
-    code.orbital_phases_random_seed = 1
-    
-    e_print = []
-    INCL_print = []
-    rel_INCL_print = []
-    t_print = []
-    k_print = [[] for x in range(N_bodies)]
-    m_print = [[] for x in range(N_bodies)]
-    R_print = [[] for x in range(N_bodies)]
-    Rc_print = [[] for x in range(N_bodies)]
-    mc_print = [[] for x in range(N_bodies)]
-    a_print = [[] for x in range(N_orbits)]
-    e_print = [[] for x in range(N_orbits)]
-    rel_INCL_print = [[] for x in range(N_orbits)]
-    t = 0.0
-
-    if 1==0:
-        for index in range(N_bodies):
-            m_print[index].append(particles[index].mass)
-            k_print[index].append(particles[index].stellar_type)
-            R_print[index].append(particles[index].radius)
-            Rc_print[index].append(particles[index].convective_envelope_radius)
-            mc_print[index].append(particles[index].convective_envelope_mass)
-    #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
-    #rel_INCL_print.append(inner_binary.INCL_parent)
-    #e_print.append(inner_binary.e)
-    #INCL_print.append(inner_binary.INCL)
-        t_print.append(t)
-    N = 10
-    tend = 1e10
-
-    N =5000
-    tend = 1e8
-    #tend = 1.4e10
-
-    seed=1
-    dt = tend/float(N)
-    while t<tend:
-
-        t+=dt
-        code.evolve_model(t)
-        
-        flag = code.CVODE_flag
-        state = code.state
-    
-        #print( 't',t,orbits[0].e,flag)
-
-        for index in range(N_orbits):
-            rel_INCL_print[index].append(orbits[index].INCL_parent)
-            e_print[index].append(orbits[index].e)
-            a_print[index].append(orbits[index].a)
-        for index in range(N_bodies):
-            m_print[index].append(particles[index].mass)
-            k_print[index].append(particles[index].stellar_type)
-            R_print[index].append(particles[index].radius)
-            Rc_print[index].append(particles[index].convective_envelope_radius)
-            mc_print[index].append(particles[index].convective_envelope_mass)
-        #rel_INCL_print.append(compute_mutual_inclination(inner_binary.INCL,outer_binary.INCL,inner_binary.LAN,outer_binary.LAN))
-        #rel_INCL_print.append(inner_binary.INCL_parent)
-        #e_print.append(inner_binary.e)
-        #INCL_print.append(inner_binary.INCL)
-        t_print.append(t)        
-        if flag==2:
-            print("Root",t,[o.RLOF_at_pericentre_has_occurred for o in orbits],[o.physical_collision_or_orbit_crossing_has_occurred for o in orbits])
-            break
-        if flag==3:
-            print("SNe")
-            break
-        if state==3:
-            print("unbound")
-            break
-        code.random_seed = seed
-        seed += 1
-
-    code.reset()
-    t_print = np.array(t_print)
-    for index in range(N_bodies):
-            m_print[index] = np.array(m_print[index])
-    for index in range(N_orbits):
-
-        e_print[index] = np.array(e_print[index])
-        a_print[index] = np.array(a_print[index])
-
-    #rel_INCL_print = np.array(rel_INCL_print)
-    #e_print = np.array(e_print)
-    
-    print("Final properties -- ","masses/MSun",[m_print[i][-1] for i in range(N_bodies)])
-    
-    if HAS_MATPLOTLIB==True:
-        fig=pyplot.figure(figsize=(8,8))
-        plot1=fig.add_subplot(2,1,1)
-        plot2=fig.add_subplot(2,1,2,yscale="log")
-        #plot3=fig.add_subplot(2,1,3,yscale="log")
-        #plot1.plot(t_print,np.array(INCL_print)*180.0/np.pi)
-        linewidth=1.0
-        for index in range(N_bodies):
-            plot1.plot(1.0e-6*t_print,m_print[index],color='k')
-            plot1.plot(1.0e-6*t_print,mc_print[index],color='k',linestyle='dotted',linewidth=linewidth)
-            #plot1.plot(1.0e-6*t_print,k_print[index],color='r',linestyle='dotted',linewidth=linewidth)
-            plot2.plot(1.0e-6*t_print,R_print[index],color='r',linestyle='solid',linewidth=linewidth)
-            plot2.plot(1.0e-6*t_print,Rc_print[index],color='r',linestyle='dotted',linewidth=linewidth)
-            linewidth+=1.0
-        linewidth=1.0
-        for index in range(N_orbits):
-            plot2.plot(1.0e-6*t_print,a_print[index],color='k',linestyle='dotted',linewidth=linewidth)
-            plot2.plot(1.0e-6*t_print,a_print[index]*(1.0-e_print[index]),color='k',linestyle='solid',linewidth=linewidth)
-            linewidth+=1.0
-
-        #plot3.plot(1.0e-6*t_print,a_print[0]*(m_print[0]+m_print[1]),color='k')
-        #plot3.plot(1.0e-6*t_print,a_print[1]*(m_print[0]+m_print[1]+m_print[2]),color='g')
-        #plot3.plot(1.0e-6*t_print,a_print[2]*(m_print[0]+m_print[1]+m_print[2]+m_print[3]),color='b')
-        fontsize=18
-        plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
-        plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
-        plot2.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
-        plot2.set_ylim(1.0e-2,1.0e4)
-        #pyplot.show()
-        
-        fig.savefig("figs/system_" + str(index_system) + ".pdf")
-
-
-
 if __name__ == '__main__':
-    import sys
-    t=test_mse()
-    if len(sys.argv)>1:
-        i = int(sys.argv[1])
-        if i<0:
-            t.development_test()
-        else:
-            print( 'Running test',i)
-            function = getattr(t, 'test%s'%i)
-            function()
+    args = parse_arguments()
+    
+    N_tests = 14
+    if args.test==0:
+        tests = range(1,N_tests+1)
+    else:
+        tests = [args.test]
 
+    t=test_mse()
+    for i in tests:
+        print( 'Running test number',i,'; verbose =',args.verbose,'; plot =',args.plot)
+        function = getattr(t, 'test%s'%i)
+        function(args)
+    
+    print("="*50)
+    print("All tests passed!")

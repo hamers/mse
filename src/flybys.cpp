@@ -7,7 +7,7 @@
 extern "C"
 {
 
-int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits)
+int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits, int integration_flag)
 {
     //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
 
@@ -30,7 +30,7 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound
     
     if (initialize == false and apply_flyby == true)
     {
-        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, unbound_orbits);
+        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, unbound_orbits, integration_flag);
         //printf("flybys.cpp -- compute_effects_of_flyby_on_system\n");
     }
     
@@ -191,14 +191,17 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
         if (flybys_reference_binary != -1) /* Default value -1: use center of mass (keep R_vec and V_vec fixed) */
         {
             Particle *p = (*particlesMap)[flybys_reference_binary];
+            double *r = p->R_vec;
+            double *v = p->V_vec;
+            #ifdef IGNORE
             double r[3],v[3];
-            r[0] = p->x;
-            r[1] = p->y;
-            r[2] = p->z;
-            v[0] = p->vx;
-            v[1] = p->vy;
-            v[2] = p->vz;
-            
+            r[0] = p->X;
+            r[1] = p->Y;
+            r[2] = p->Z;
+            v[0] = p->VX;
+            v[1] = p->VY;
+            v[2] = p->VZ;
+            #endif
             for (k=0; k<3; k++)
             {
                 //printf("0 %g %g\n",r[k],v[k]);
@@ -220,7 +223,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 }
 
 
-int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits)
+int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, int integration_flag)
 {
     int flag;
     double vx,vy,vz;
@@ -238,7 +241,7 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     }
     
     double b_i_vec[3],Delta_V_vec[3];
-    double R_vec[3];
+    double *R_vec;
     double b_per_vec_minus_R_vec[3];
     double b_per_vec_minus_R_vec_dot_V_per_vec_unit,b_i_temp;
     
@@ -249,14 +252,15 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
         {
             /* Careful: is it OK to set these to zero here? */
             p->instantaneous_perturbation_delta_mass = 0.0;
-            p->instantaneous_perturbation_delta_x = 0.0;
-            p->instantaneous_perturbation_delta_y = 0.0;
-            p->instantaneous_perturbation_delta_z = 0.0;
+            p->instantaneous_perturbation_delta_X = 0.0;
+            p->instantaneous_perturbation_delta_Y = 0.0;
+            p->instantaneous_perturbation_delta_Z = 0.0;
 
-            set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used */
-            R_vec[0] = p->x;
-            R_vec[1] = p->y;
-            R_vec[2] = p->z;
+            if (integration_flag == 0)
+            {
+                set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used in secular case */
+            }
+            R_vec = p->R_vec;
 
             for (k=0; k<3; k++)
             {
@@ -275,14 +279,21 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
                 Delta_V_vec[k] = b_i_temp*b_i_vec[k];
             }
             
-            p->instantaneous_perturbation_delta_vx = Delta_V_vec[0];
-            p->instantaneous_perturbation_delta_vy = Delta_V_vec[1];
-            p->instantaneous_perturbation_delta_vz = Delta_V_vec[2];
+            p->instantaneous_perturbation_delta_VX = Delta_V_vec[0];
+            p->instantaneous_perturbation_delta_VY = Delta_V_vec[1];
+            p->instantaneous_perturbation_delta_VZ = Delta_V_vec[2];
             
         }
     }
-
-    apply_user_specified_instantaneous_perturbation(particlesMap);
+    
+    if (integration_flag == 0)
+    {
+        apply_user_specified_instantaneous_perturbation(particlesMap);
+    }
+    else
+    {
+        apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
+    }
 
     *unbound_orbits = check_for_unbound_orbits(particlesMap);
             

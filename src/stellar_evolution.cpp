@@ -22,6 +22,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     double z;
     double *zpars;
 
+    int i;
     int kw;
     double tm,tn;
     double age;
@@ -32,7 +33,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == 0 and p->evolve_as_star == 1)
+        if (p->is_binary == false and p->evolve_as_star == true)
         {
             z = p->metallicity;
             
@@ -76,15 +77,20 @@ int initialize_stars(ParticlesMap *particlesMap)
 
             /* Set up spins parallel with parent orbit */
             Particle *parent = (*particlesMap)[p->parent];
-            double h_vec[3] = {parent->h_vec_x,parent->h_vec_y,parent->h_vec_z};
+            //double h_vec[3] = {parent->h_vec_x,parent->h_vec_y,parent->h_vec_z};
+            double *h_vec = parent->h_vec;
             double h = norm3(h_vec);
             
-            p->spin_vec_x = ospin*h_vec[0]/h;
-            p->spin_vec_y = ospin*h_vec[1]/h;
-            p->spin_vec_z = ospin*h_vec[2]/h;
+            for (i=0; i<3; i++)
+            {
+                p->spin_vec[i] = ospin*h_vec[i]/h;
+            }
+            //p->spin_vec_x = ospin*h_vec[0]/h;
+            //p->spin_vec_y = ospin*h_vec[1]/h;
+            //p->spin_vec_z = ospin*h_vec[2]/h;
             //printf("initialize %g %d %g %g %g\n",ospin,p->index,p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             
-            p->check_for_RLOF_at_pericentre = 1;
+            p->check_for_RLOF_at_pericentre = true;
         }
     }
 
@@ -156,10 +162,10 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
         Particle *p = (*it_p).second;
         if (p->is_binary == 1)
         {
-            double h_vec[3];
-            h_vec[0] = p->h_vec_x;
-            h_vec[1] = p->h_vec_y;
-            h_vec[2] = p->h_vec_z;
+            //double h_vec[3];
+            //h_vec[0] = p->h_vec_x;
+            //h_vec[1] = p->h_vec_y;
+            //h_vec[2] = p->h_vec_z;
             //printf("old h %g \n",norm3(h_vec));
             p->child1_mass_old = p->child1_mass;
             p->child2_mass_old = p->child2_mass;
@@ -169,7 +175,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == 0 and p->evolve_as_star == 1)
+        if (p->is_binary == false and p->evolve_as_star == true)
         {
             /* Extract stellar evolution parameters */
             mt = mt_old = p->mass;
@@ -181,10 +187,11 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             z = p->metallicity;
             zpars = p->zpars;
 
-            spin_vec[0] = p->spin_vec_x;
-            spin_vec[1] = p->spin_vec_y;
-            spin_vec[2] = p->spin_vec_z;
-            ospin_old = ospin = norm3(spin_vec);
+            //spin_vec[0] = p->spin_vec_x;
+            //spin_vec[1] = p->spin_vec_y;
+            //spin_vec[2] = p->spin_vec_z;
+            //ospin_old = ospin = norm3(spin_vec);
+            ospin_old = ospin = norm3(p->spin_vec);
             //printf("extract ? %g %g %g\n",spin_vec[0],spin_vec[1],spin_vec[2]);
 
             sse_time_step = p->sse_time_step*yr_to_Myr;
@@ -195,7 +202,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             double desired_tphysf = tphysf;
             
             dtp = 0.0;
-            #ifdef VERBOSE
+            #ifdef DEBUG
             printf("sse1 kw %d mt %g R %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
             #endif
             //printf("Sx %g Sy %g Sz %g\n",p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
@@ -217,7 +224,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 
                 age = tphysf - epoch;
                 sse_time_step = get_new_dt(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
-                #ifdef VERBOSE
+                #ifdef DEBUG
                 printf("sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
                 #endif
 
@@ -226,6 +233,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 {
                     dt = end_time - start_time;
                     p->mass_dot_wind = (mt - mt_old)/dt;
+                    //printf("SE %.15f \n",p->mass_dot_wind);
                     //p->radius_dot = (r*CONST_R_SUN - p->radius)/dt;
                     p->radius_dot = CONST_R_SUN*(r - r_old)/dt;
                     //printf("p->radius_dot %g\n",p->radius_dot);
@@ -271,9 +279,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 //if (ospin_old != 0.0)
                 if (1==0)
                 {
-                    p->spin_vec_x *= ospin/ospin_old;
-                    p->spin_vec_y *= ospin/ospin_old;
-                    p->spin_vec_z *= ospin/ospin_old;
+                    //p->spin_vec_x *= ospin/ospin_old;
+                    //p->spin_vec_y *= ospin/ospin_old;
+                    //p->spin_vec_z *= ospin/ospin_old;
                 }
                 
                 p->age = age*Myr_to_yr;
@@ -299,7 +307,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     //printf("sse dt %g\n",dt_min);
     *stellar_evolution_timestep = dt_min;
     
-    
+    #ifdef IGNORE
     if (reset_h_vectors == true)
     {
         int N_bodies, N_binaries, N_root_finding;
@@ -327,6 +335,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
         }
     }
+    #endif
     
     return 0;
 }

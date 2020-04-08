@@ -15,24 +15,22 @@ extern "C"
 /* basic interface *
  ******************/
  
- 
-int add_particle(int *index, int is_binary, int is_external)
+int add_particle(int *index, bool is_binary, bool is_external)
 {
-    *index = highest_particle_index;
+    *index = particlesMap.size();
 
-    Particle *p = new Particle(highest_particle_index, is_binary);
-    particlesMap[highest_particle_index] = p;
+    Particle *p = new Particle(*index, is_binary);
+    particlesMap[*index] = p;
 
     p->is_external = is_external;
-    
-    highest_particle_index++;
+    //highest_particle_index = *index;
+       
     return 0;
 }
 
-
 int delete_particle(int index)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -44,7 +42,7 @@ int delete_particle(int index)
 
 int set_children(int index, int child1, int child2)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -57,7 +55,7 @@ int set_children(int index, int child1, int child2)
 }
 int get_children(int index, int *child1, int *child2)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -69,9 +67,43 @@ int get_children(int index, int *child1, int *child2)
     return 0;
 }
 
+int get_number_of_particles(int *N_particles)
+{
+    *N_particles = particlesMap.size();
+    
+    return 0;
+}
+
+int get_is_binary(int index, bool *is_binary)
+{
+    if (index > particlesMap.size())
+    {
+      return -1;
+    }
+  
+    Particle * p = particlesMap[index];
+    *is_binary = p->is_binary;
+    
+    return 0;
+}
+
+int get_is_bound(int index, bool *is_bound)
+{
+    if (index > particlesMap.size())
+    {
+      return -1;
+    }
+  
+    Particle *p = particlesMap[index];
+    //printf("getisb %d %d\n",index,p->is_bound);
+    *is_bound = p->is_bound;
+    
+    return 0;
+}    
+
 int set_mass(int index, double mass)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -84,7 +116,7 @@ int set_mass(int index, double mass)
 }
 int get_mass(int index, double *mass)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -92,21 +124,21 @@ int get_mass(int index, double *mass)
     *mass = p->mass;
     return 0;
 }
-//int set_mass_dot(int index, double mass_dot)
-//{
-//    if (index > highest_particle_index)
-//    {
-//      return -1;
-//    }
+int set_mass_transfer_terms(int index, bool include_mass_transfer_terms)
+{
+    if (index > particlesMap.size())
+    {
+      return -1;
+    }
 
-//    Particle *p = particlesMap[index];
-//    p->mass_dot = mass_dot;
-
-//    return 0;
-//}
+    Particle *p = particlesMap[index];
+    p->include_mass_transfer_terms = include_mass_transfer_terms;
+    
+    return 0;
+}
 int get_mass_dot(int index, double *mass_dot)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -119,7 +151,7 @@ int get_mass_dot(int index, double *mass_dot)
 
 int set_radius(int index, double radius, double radius_dot)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -132,7 +164,7 @@ int set_radius(int index, double radius, double radius_dot)
 }
 int get_radius(int index, double *radius, double *radius_dot)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -140,6 +172,19 @@ int get_radius(int index, double *radius, double *radius_dot)
     Particle * p = particlesMap[index];
     *radius = p->radius;
     *radius_dot = p->radius_dot;
+    
+    return 0;
+}
+int set_integration_method(int index, int integration_method, bool KS_use_perturbing_potential)
+{
+    if (index > particlesMap.size())
+    {
+      return -1;
+    }
+
+    Particle * p = particlesMap[index];
+    p->integration_method = integration_method;
+    p->KS_use_perturbing_potential = KS_use_perturbing_potential;
     
     return 0;
 }
@@ -152,106 +197,109 @@ int get_radius(int index, double *radius, double *radius_dot)
 int set_orbital_vectors(int index, double e_vec_x, double e_vec_y, double e_vec_z, \
     double h_vec_x, double h_vec_y, double h_vec_z)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle *p = particlesMap[index];
-    p->e_vec_x = e_vec_x;
-    p->e_vec_y = e_vec_y;
-    p->e_vec_z = e_vec_z;
-    p->h_vec_x = h_vec_x;
-    p->h_vec_y = h_vec_y;
-    p->h_vec_z = h_vec_z;
-    //printf("ok %g %g %g %g %g %g\n",e_vec_x,e_vec_y,e_vec_z,h_vec_x,h_vec_y,h_vec_z);
+
+    p->e_vec[0] = e_vec_x;
+    p->e_vec[1] = e_vec_y;
+    p->e_vec[2] = e_vec_z;
+    p->h_vec[0] = h_vec_x;
+    p->h_vec[1] = h_vec_y;
+    p->h_vec[2] = h_vec_z;
+    
     return 0;
 }
 int get_orbital_vectors(int index, double *e_vec_x, double *e_vec_y, double *e_vec_z, \
     double *h_vec_x, double *h_vec_y, double *h_vec_z)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle *p = particlesMap[index];
-    *e_vec_x = p->e_vec_x;
-    *e_vec_y = p->e_vec_y;
-    *e_vec_z = p->e_vec_z;
-    *h_vec_x = p->h_vec_x;
-    *h_vec_y = p->h_vec_y;
-    *h_vec_z = p->h_vec_z;
+
+    *e_vec_x = p->e_vec[0];
+    *e_vec_y = p->e_vec[1];
+    *e_vec_z = p->e_vec[2];
+    *h_vec_x = p->h_vec[0];
+    *h_vec_y = p->h_vec[1];
+    *h_vec_z = p->h_vec[2];
 
     return 0;
 }
 
 int set_orbital_elements(int index, double semimajor_axis, double eccentricity, double true_anomaly, \
-    double inclination, double argument_of_pericenter, double longitude_of_ascending_node, int sample_orbital_phase_randomly)
+    double inclination, double argument_of_pericenter, double longitude_of_ascending_node, bool sample_orbital_phase_randomly)
 {
-
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
 
     Particle * p = particlesMap[index];    
-
+    
     if (p->is_binary == false)
     {
         return 0;
     }
 
     /* determine masses in all binaries */
-    int N_bodies, N_binaries, N_root_finding;
-    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding);
+    int N_bodies, N_binaries, N_root_finding,N_ODE_equations;
+
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
+
     set_binary_masses_from_body_masses(&particlesMap);
 
     compute_orbital_vectors_from_orbital_elements(p->child1_mass, p->child2_mass, semimajor_axis, eccentricity, \
         inclination, argument_of_pericenter, longitude_of_ascending_node, \
-        &(p->e_vec_x), &(p->e_vec_y), &(p->e_vec_z), &(p->h_vec_x), &(p->h_vec_y), &(p->h_vec_z) );
-
+        &(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) );
+    
     p->true_anomaly = true_anomaly;
     p->sample_orbital_phase_randomly = sample_orbital_phase_randomly;
-//    printf("soe a %g e %g TA %g I %g AP %g LAN %g SOPR %d\n",semimajor_axis,eccentricity,true_anomaly,inclination,argument_of_pericenter,longitude_of_ascending_node,sample_orbital_phase_randomly);
-//    printf("set_orbital_elements %g %g %g %g %g %g\n",p->e_vec_x,p->e_vec_y,p->e_vec_z,p->h_vec_x,p->h_vec_y,p->h_vec_z);
+    //printf("soe a %g e %g TA %g I %g AP %g LAN %g SOPR %d\n",semimajor_axis,eccentricity,true_anomaly,inclination,argument_of_pericenter,longitude_of_ascending_node,sample_orbital_phase_randomly);
+    //printf("set_orbital_elements %g %g %g %g %g %g\n",p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2]);
     
     return 0;
 }
-int get_orbital_elements(int index, double *semimajor_axis, double *eccentricity, \
+int get_orbital_elements(int index, double *semimajor_axis, double *eccentricity, double *true_anomaly, \
     double *inclination, double *argument_of_pericenter, double *longitude_of_ascending_node)
 {
-
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
   
     Particle * p = particlesMap[index];    
-
+    
     if (p->is_binary == false)
     {
         return 0;
     }
-
+    
+    *true_anomaly = p->true_anomaly;
+    
     double h_tot_vec[3];
     compute_h_tot_vector(&particlesMap,h_tot_vec);
 
     /* determine masses in all binaries */
-    int N_bodies, N_binaries, N_root_finding;
-    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding);
+    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
     set_binary_masses_from_body_masses(&particlesMap);
     
     compute_orbital_elements_from_orbital_vectors(p->child1_mass, p->child2_mass, h_tot_vec, \
-        p->e_vec_x,p->e_vec_y,p->e_vec_z,p->h_vec_x,p->h_vec_y,p->h_vec_z,
+        p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
         semimajor_axis, eccentricity, inclination, argument_of_pericenter, longitude_of_ascending_node);
     return 0;
 }
 
-
 int get_level(int index, int *value)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -263,11 +311,11 @@ int get_level(int index, int *value)
 }
 
         
-int set_stellar_evolution_properties(int index, int stellar_type, int evolve_as_star, double sse_initial_mass, double metallicity, double sse_time_step, double epoch, double age, 
-    double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale)
+int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as_star, double sse_initial_mass, double metallicity, double sse_time_step, double epoch, double age, 
+    double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription)
 {
     //printf("set_stellar_evolution_properties %g\n",metallicity);
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -288,14 +336,15 @@ int set_stellar_evolution_properties(int index, int stellar_type, int evolve_as_
     p->apsidal_motion_constant = apsidal_motion_constant;
     p->gyration_radius = gyration_radius;
     p->tides_viscous_time_scale = tides_viscous_time_scale;
+    p->tides_viscous_time_scale_prescription = tides_viscous_time_scale_prescription;
     
     return 0;
 }
-int get_stellar_evolution_properties(int index, int *stellar_type, int *evolve_as_star, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
+int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_as_star, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter)
 
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -317,31 +366,35 @@ int get_stellar_evolution_properties(int index, int *stellar_type, int *evolve_a
     *gyration_radius = p->gyration_radius;
     *tides_viscous_time_scale = p->tides_viscous_time_scale;
     
-    if (p->is_binary == 0) /* TO DO: streamline with same code in root_finding.cpp */
+    if (p->is_binary == false) /* TO DO: streamline with same code in root_finding.cpp */
     {
-        Particle *parent = (particlesMap)[p->parent];
-        Particle *sibling = (particlesMap)[p->sibling];
-                    
-        double a = parent->a;
-        double e = parent->e;
-        double rp = a*(1.0 - e);
-        double subject_mass = p->mass;
-        double companion_mass = sibling->mass;
-    
-        double spin_angular_frequency = p->spin_vec_norm;
-        double orbital_angular_frequency_periapse = sqrt( CONST_G*(subject_mass + companion_mass)*(1.0 + e)/(rp*rp*rp) );
-        double f = spin_angular_frequency/orbital_angular_frequency_periapse;
+        if (p->is_bound == true) /* only update parameters below for bodies in bound orbits */
+        {
             
-        double roche_radius_pericenter;
-        if (p->check_for_RLOF_at_pericentre_use_sepinsky_fit == 0)
-        {
-            roche_radius_pericenter = roche_radius_pericenter_eggleton(rp, subject_mass/companion_mass);
+            Particle *parent = (particlesMap)[p->parent];
+            Particle *sibling = (particlesMap)[p->sibling];
+                        
+            double a = parent->a;
+            double e = parent->e;
+            double rp = a*(1.0 - e);
+            double subject_mass = p->mass;
+            double companion_mass = sibling->mass;
+        
+            double spin_angular_frequency = p->spin_vec_norm;
+            double orbital_angular_frequency_periapse = sqrt( CONST_G*(subject_mass + companion_mass)*(1.0 + e)/(rp*rp*rp) );
+            double f = spin_angular_frequency/orbital_angular_frequency_periapse;
+                
+            double roche_radius_pericenter;
+            if (p->check_for_RLOF_at_pericentre_use_sepinsky_fit == 0)
+            {
+                roche_radius_pericenter = roche_radius_pericenter_eggleton(rp, subject_mass/companion_mass);
+            }
+            else
+            {
+                roche_radius_pericenter = roche_radius_pericenter_sepinsky(rp, subject_mass/companion_mass, e, f);
+            }
+            *roche_lobe_radius_pericenter = roche_radius_pericenter;
         }
-        else
-        {
-            roche_radius_pericenter = roche_radius_pericenter_sepinsky(rp, subject_mass/companion_mass, e, f);
-        }
-        *roche_lobe_radius_pericenter = roche_radius_pericenter;
     }
     
     return 0;
@@ -350,7 +403,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, int *evolve_a
 int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma)
 {
     //printf("set_stellar_evolution_properties %g\n",metallicity);
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -364,7 +417,7 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
 int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma)
 
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -381,9 +434,9 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
  * instantaneous perturbations *
  * ****************************/
 
-int set_instantaneous_perturbation_properties(int index, double delta_mass, double delta_x, double delta_y, double delta_z, double delta_vx, double delta_vy, double delta_vz)
+int set_instantaneous_perturbation_properties(int index, double delta_mass, double delta_X, double delta_Y, double delta_Z, double delta_VX, double delta_VY, double delta_VZ)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -391,12 +444,12 @@ int set_instantaneous_perturbation_properties(int index, double delta_mass, doub
     Particle *p = particlesMap[index];
 
     p->instantaneous_perturbation_delta_mass = delta_mass;
-    p->instantaneous_perturbation_delta_x = delta_x;
-    p->instantaneous_perturbation_delta_y = delta_y;
-    p->instantaneous_perturbation_delta_z = delta_z;
-    p->instantaneous_perturbation_delta_vx = delta_vx;
-    p->instantaneous_perturbation_delta_vy = delta_vy;
-    p->instantaneous_perturbation_delta_vz = delta_vz;
+    p->instantaneous_perturbation_delta_X = delta_X;
+    p->instantaneous_perturbation_delta_Y = delta_Y;
+    p->instantaneous_perturbation_delta_Z = delta_Z;
+    p->instantaneous_perturbation_delta_VX = delta_VX;
+    p->instantaneous_perturbation_delta_VY = delta_VY;
+    p->instantaneous_perturbation_delta_VZ = delta_VZ;
     
     return 0;
 }
@@ -408,26 +461,24 @@ int set_instantaneous_perturbation_properties(int index, double delta_mass, doub
 
 int set_external_particle_properties(int index, double external_t_ref, double e, double external_r_p, double INCL, double AP, double LAN)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
 
     Particle *p = particlesMap[index];    
     
-    /* determine masses in all binaries */
-//    int N_bodies, N_binaries, N_root_finding;
-//    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding);
-//    set_binary_masses_from_body_masses(&particlesMap);
-    
     p->external_t_ref = external_t_ref;
     p->external_e = e;
     p->external_r_p = external_r_p;
+    
     /* e & h vectors for external particles are understood to be unit vectors */
-    compute_orbital_vectors_from_orbital_elements_unit(INCL,AP,LAN,&(p->e_vec_x), &(p->e_vec_y), &(p->e_vec_z), &(p->h_vec_x), &(p->h_vec_y), &(p->h_vec_z) ); 
+    compute_orbital_vectors_from_orbital_elements_unit(INCL,AP,LAN,&(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) ); 
+    
+    p->evolve_as_star = false; // if enabled, can lead to segfaults in stellar_evolution.cpp
     
     //printf("set_external_particle_properties inputs %g %g %g %g %g\n",external_t_ref, e, external_r_p, INCL, AP, LAN);
-    //printf("set_external_particle_properties OE %g %g %g %g %g %g\n",p->e_vec_x,p->e_vec_y,p->e_vec_z,p->h_vec_x,p->h_vec_y,p->h_vec_z);
+    //printf("set_external_particle_properties OE %g %g %g %g %g %g\n",p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2]);
     
     return 0;
 }
@@ -441,36 +492,36 @@ int set_external_particle_properties(int index, double external_t_ref, double e,
 
 int set_spin_vector(int index, double spin_vec_x, double spin_vec_y, double spin_vec_z)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle * p = particlesMap[index];
-    p->spin_vec_x = spin_vec_x;
-    p->spin_vec_y = spin_vec_y;
-    p->spin_vec_z = spin_vec_z;
-    //printf("set spin %g %g %g\n",spin_vec_x,spin_vec_y,spin_vec_z);
+    p->spin_vec[0] = spin_vec_x;
+    p->spin_vec[1] = spin_vec_y;
+    p->spin_vec[2] = spin_vec_z;
+
     return 0;
 }
 int get_spin_vector(int index, double *spin_vec_x, double *spin_vec_y, double *spin_vec_z)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle * p = particlesMap[index];
-    *spin_vec_x = p->spin_vec_x;
-    *spin_vec_y = p->spin_vec_y;
-    *spin_vec_z = p->spin_vec_z;
+    *spin_vec_x = p->spin_vec[0];
+    *spin_vec_y = p->spin_vec[1];
+    *spin_vec_z = p->spin_vec[2];
     
     return 0;
 }
 
 int set_spin_vector_dot(int index, double spin_vec_x_dot, double spin_vec_y_dot, double spin_vec_z_dot)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -484,7 +535,7 @@ int set_spin_vector_dot(int index, double spin_vec_x_dot, double spin_vec_y_dot,
 }
 int get_spin_vector_dot(int index, double *spin_vec_x_dot, double *spin_vec_y_dot, double *spin_vec_z_dot)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
@@ -498,104 +549,39 @@ int get_spin_vector_dot(int index, double *spin_vec_x_dot, double *spin_vec_y_do
 }
 
 
-int set_orbital_vectors_dot(int index, double e_vec_x_dot, double e_vec_y_dot, double e_vec_z_dot, \
-    double h_vec_x_dot, double h_vec_y_dot, double h_vec_z_dot)
+int get_relative_position_and_velocity(int index, double *x, double *y, double *z, double *vx, double *vy, double *vz)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle * p = particlesMap[index];
-    p->e_vec_x_dot = e_vec_x_dot;
-    p->e_vec_y_dot = e_vec_y_dot;
-    p->e_vec_z_dot = e_vec_z_dot;
-    p->h_vec_x_dot = h_vec_x_dot;
-    p->h_vec_y_dot = h_vec_y_dot;
-    p->h_vec_z_dot = h_vec_z_dot;
-    
-    return 0;
-}
-int get_orbital_vectors_dot(int index, double *e_vec_x_dot, double *e_vec_y_dot, double *e_vec_z_dot, \
-    double *h_vec_x_dot, double *h_vec_y_dot, double *h_vec_z_dot)
-{
-    if (index > highest_particle_index)
-    {
-      return -1;
-    }
-  
-    Particle * p = particlesMap[index];
-    *e_vec_x_dot = p->e_vec_x_dot;
-    *e_vec_y_dot = p->e_vec_y_dot;
-    *e_vec_z_dot = p->e_vec_z_dot;
-    *h_vec_x_dot = p->h_vec_x_dot;
-    *h_vec_y_dot = p->h_vec_y_dot;
-    *h_vec_z_dot = p->h_vec_z_dot;
-    
-    return 0;
-}
-
-
-int set_position_vector(int index, double x, double y, double z)
-{
-    if (index > highest_particle_index)
-    {
-      return -1;
-    }
-  
-    Particle * p = particlesMap[index];
-    p->x = x;
-    p->x = y;
-    p->x = z;
+    *x = p->r_vec[0];
+    *y = p->r_vec[1];
+    *z = p->r_vec[2];
+    *vx = p->v_vec[0];
+    *vy = p->v_vec[1];
+    *vz = p->v_vec[2];
    
     return 0;
 }
-int get_position_vector(int index, double *x, double *y, double *z)
+int get_absolute_position_and_velocity(int index, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ)
 {
-    //printf("get_position_vector\n");
-    if (index > highest_particle_index)
-    {
-      return -1;
-    }
-  
-    set_positions_and_velocities(&particlesMap);
-    
-    Particle * p = particlesMap[index];
-    *x = p->x;
-    *y = p->x;
-    *z = p->x;
-    
-    return 0;
-}
-
-int set_velocity_vector(int index, double x, double y, double z)
-{
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
       return -1;
     }
   
     Particle * p = particlesMap[index];
-    p->vx = x;
-    p->vy = y;
-    p->vz = z;
-   
-    return 0;
-}
-int get_velocity_vector(int index, double *x, double *y, double *z)
-{
-    if (index > highest_particle_index)
-    {
-      return -1;
-    }
-
-    set_positions_and_velocities(&particlesMap);
     
-    Particle * p = particlesMap[index];
-    *x = p->vx;
-    *y = p->vy;
-    *z = p->vz;
-    
+    *X = p->R_vec[0];
+    *Y = p->R_vec[1];
+    *Z = p->R_vec[2];
+    *VX = p->V_vec[0];
+    *VY = p->V_vec[1];
+    *VZ = p->V_vec[2];
+      
     return 0;
 }
 
@@ -605,7 +591,7 @@ int get_velocity_vector(int index, double *x, double *y, double *z)
 
 int set_PN_terms(int index, int include_pairwise_1PN_terms, int include_pairwise_25PN_terms)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -618,7 +604,7 @@ int set_PN_terms(int index, int include_pairwise_1PN_terms, int include_pairwise
 }
 int get_PN_terms(int index, int *include_pairwise_1PN_terms, int *include_pairwise_25PN_terms)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -635,11 +621,10 @@ int get_PN_terms(int index, int *include_pairwise_1PN_terms, int *include_pairwi
 /*********
 /* tides *
  *********/
-#ifdef IGNORE
-int set_tides_terms(int index, int include_tidal_friction_terms, int tides_method, int include_tidal_bulges_precession_terms, int include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, 
-    double tides_apsidal_motion_constant, double tides_gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription, double convective_envelope_mass, double convective_envelope_radius, double luminosity)
+
+int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_method, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -651,21 +636,13 @@ int set_tides_terms(int index, int include_tidal_friction_terms, int tides_metho
     p->include_tidal_bulges_precession_terms = include_tidal_bulges_precession_terms;
     p->include_rotation_precession_terms = include_rotation_precession_terms;
     p->minimum_eccentricity_for_tidal_precession = minimum_eccentricity_for_tidal_precession;
-    p->tides_apsidal_motion_constant = tides_apsidal_motion_constant;
-    p->tides_gyration_radius = tides_gyration_radius;
-    p->tides_viscous_time_scale = tides_viscous_time_scale;
-    p->tides_viscous_time_scale_prescription = tides_viscous_time_scale_prescription;
-    p->convective_envelope_mass = convective_envelope_mass;
-    p->convective_envelope_radius = convective_envelope_radius;
-    p->luminosity = luminosity;
     //printf("set tides1 %d %d %d %g\n",include_tidal_friction_terms,include_tidal_bulges_precession_terms,include_rotation_precession_terms,minimum_eccentricity_for_tidal_precession);
     //printf("set tides2 %g %g %g %d %g %g %g\n",tides_apsidal_motion_constant,tides_gyration_radius,tides_viscous_time_scale,tides_viscous_time_scale_prescription,convective_envelope_mass,convective_envelope_radius,luminosity);
     return 0;
 }
-int get_tides_terms(int index, int *include_tidal_friction_terms, int *tides_method, int *include_tidal_bulges_precession_terms, int *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession, 
-    double *tides_apsidal_motion_constant, double *tides_gyration_radius, double *tides_viscous_time_scale, int *tides_viscous_time_scale_prescription, double *convective_envelope_mass, double *convective_envelope_radius, double *luminosity)
+int get_tides_terms(int index, bool *include_tidal_friction_terms, bool *tides_method, bool *include_tidal_bulges_precession_terms, bool *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -677,16 +654,9 @@ int get_tides_terms(int index, int *include_tidal_friction_terms, int *tides_met
     *include_tidal_bulges_precession_terms = p->include_tidal_bulges_precession_terms;
     *include_rotation_precession_terms = p->include_rotation_precession_terms;
     *minimum_eccentricity_for_tidal_precession = p->minimum_eccentricity_for_tidal_precession;
-    *tides_apsidal_motion_constant = p->tides_apsidal_motion_constant;
-    *tides_gyration_radius = p->tides_gyration_radius;
-    *tides_viscous_time_scale = p->tides_viscous_time_scale;
-    *tides_viscous_time_scale_prescription = p->tides_viscous_time_scale_prescription;
-    *convective_envelope_mass = p->convective_envelope_mass;
-    *convective_envelope_radius = p->convective_envelope_radius;
-    *luminosity = p->luminosity;
     return 0;
 }
-#endif
+
 
 /****************
  * VRR          *
@@ -699,7 +669,7 @@ int set_VRR_properties(int index, int VRR_model, int VRR_include_mass_precession
 	double VRR_initial_time, double VRR_final_time)
 {
 	
-	if (index > highest_particle_index)
+	if (index > particlesMap.size())
     {
         return -1;
     }
@@ -731,10 +701,10 @@ int set_VRR_properties(int index, int VRR_model, int VRR_include_mass_precession
 /****************
 /* root finding *
  ****************/
-int set_root_finding_terms(int index, int check_for_secular_breakdown, int check_for_dynamical_instability, int dynamical_instability_criterion, int dynamical_instability_central_particle, int dynamical_instability_K_parameter,
-    int check_for_physical_collision_or_orbit_crossing, int check_for_minimum_periapse_distance, double check_for_minimum_periapse_distance_value, int check_for_RLOF_at_pericentre, int check_for_RLOF_at_pericentre_use_sepinsky_fit, int check_for_GW_condition)
+int set_root_finding_terms(int index, bool check_for_secular_breakdown, bool check_for_dynamical_instability, int dynamical_instability_criterion, int dynamical_instability_central_particle, double dynamical_instability_K_parameter,
+    bool check_for_physical_collision_or_orbit_crossing, bool check_for_minimum_periapse_distance, double check_for_minimum_periapse_distance_value, bool check_for_RLOF_at_pericentre, bool check_for_RLOF_at_pericentre_use_sepinsky_fit, bool check_for_GW_condition)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -753,10 +723,10 @@ int set_root_finding_terms(int index, int check_for_secular_breakdown, int check
     p->check_for_GW_condition = check_for_GW_condition;
     return 0;
 }
-int get_root_finding_terms(int index, int *check_for_secular_breakdown, int *check_for_dynamical_instability, int *dynamical_instability_criterion, int *dynamical_instability_central_particle, int *dynamical_instability_K_parameter,
-    int *check_for_physical_collision_or_orbit_crossing, int *check_for_minimum_periapse_distance, double *check_for_minimum_periapse_distance_value, int *check_for_RLOF_at_pericentre, int *check_for_RLOF_at_pericentre_use_sepinsky_fit, int *check_for_GW_condition)
+int get_root_finding_terms(int index, bool *check_for_secular_breakdown, bool *check_for_dynamical_instability, int *dynamical_instability_criterion, int *dynamical_instability_central_particle, double *dynamical_instability_K_parameter,
+    bool *check_for_physical_collision_or_orbit_crossing, bool *check_for_minimum_periapse_distance, double *check_for_minimum_periapse_distance_value, bool *check_for_RLOF_at_pericentre, bool *check_for_RLOF_at_pericentre_use_sepinsky_fit, bool *check_for_GW_condition)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -777,9 +747,9 @@ int get_root_finding_terms(int index, int *check_for_secular_breakdown, int *che
 }
 
 /* retrieve root finding state */
-int set_root_finding_state(int index, int secular_breakdown_has_occurred, int dynamical_instability_has_occurred, int physical_collision_or_orbit_crossing_has_occurred, int minimum_periapse_distance_has_occurred, int RLOF_at_pericentre_has_occurred, int GW_condition_has_occurred)
+int set_root_finding_state(int index, bool secular_breakdown_has_occurred, bool dynamical_instability_has_occurred, bool physical_collision_or_orbit_crossing_has_occurred, bool minimum_periapse_distance_has_occurred, bool RLOF_at_pericentre_has_occurred, bool GW_condition_has_occurred)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -795,9 +765,9 @@ int set_root_finding_state(int index, int secular_breakdown_has_occurred, int dy
     
     return 0;
 }
-int get_root_finding_state(int index, int *secular_breakdown_has_occurred, int *dynamical_instability_has_occurred, int *physical_collision_or_orbit_crossing_has_occurred, int* minimum_periapse_distance_has_occurred, int *RLOF_at_pericentre_has_occurred, int *GW_condition_has_occurred)
+int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool *dynamical_instability_has_occurred, bool *physical_collision_or_orbit_crossing_has_occurred, bool *minimum_periapse_distance_has_occurred, bool *RLOF_at_pericentre_has_occurred, bool *GW_condition_has_occurred)
 {
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
@@ -814,18 +784,17 @@ int get_root_finding_state(int index, int *secular_breakdown_has_occurred, int *
     return 0;
 }
 
-
 /********************
 /* evolve interface *
  ********************/
 
-int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code)
+int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
     //printf("interface %g %g\n",start_time,time_step);
     srand(random_seed);
 
     //printf("setting seed %d\n",random_seed);
-    int result = evolve(&particlesMap, start_time, end_time, output_time, hamiltonian, state, CVODE_flag, CVODE_error_code);
+    int result = evolve(&particlesMap, start_time, end_time, output_time, hamiltonian, state, CVODE_flag, CVODE_error_code, integration_flag);
     
     return result;
 }
@@ -835,8 +804,8 @@ int evolve_interface(double start_time, double end_time, double *output_time, do
 int determine_binary_parents_levels_and_masses_interface()
 {
     //printf("determine_binary_parents_levels_and_masses_interface\n");
-    int N_bodies, N_binaries, N_root_finding;
-    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding);
+    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
     set_binary_masses_from_body_masses(&particlesMap);
     
     return 0;
@@ -863,18 +832,26 @@ int clear_internal_particles()
 {
     //printf("clear_internal_particles\n");
     particlesMap.clear();
-	highest_particle_index = 0;
+	//highest_particle_index = 0;
     return 0;
 }
 
 int initialize_code()
 {
-    bool unbound_orbits;
-    printf("interface.cpp -- set_up_flybys\n");
-    handle_next_flyby(&particlesMap,true,&unbound_orbits);
-    
+    #ifdef DEBUG
+    printf("interface.cpp -- initialize_code; set_up_flybys and initialize stars\n");
+    #endif
+
+    int integration_flag = 0;
+
+    if (include_flybys == true)
+    {
+        bool unbound_orbits;        
+        handle_next_flyby(&particlesMap,true,&unbound_orbits,integration_flag);
+    }
+
     initialize_stars(&particlesMap);
-    
+
     return 0;
 }
 
@@ -891,13 +868,13 @@ int set_positions_and_velocities_interface()
 int get_de_dt(int index, double *de_dt)
 {
 
-    if (index > highest_particle_index)
+    if (index > particlesMap.size())
     {
         return -1;
     }
   
     Particle * p = particlesMap[index];
-    if (p->is_binary == 0)
+    if (p->is_binary == false)
     {
         *de_dt = 0.0;
         return 0;
@@ -906,44 +883,6 @@ int get_de_dt(int index, double *de_dt)
     *de_dt = dot3(p->e_vec_unit,p->de_vec_dt);
 
     return 0;
-}
-
-
-void get_position_and_velocity_vectors_from_particle(Particle *p, double r[3], double v[3])
-{
-    r[0] = p->x;
-    r[1] = p->y;
-    r[2] = p->z;
-    v[0] = p->vx;
-    v[1] = p->vy;
-    v[2] = p->vz;
-}
-void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], double v[3])
-{
-    p->x = r[0];
-    p->y = r[1];
-    p->z = r[2];
-    p->vx = v[0];
-    p->vy = v[1];
-    p->vz = v[2];
-}
-void get_e_and_h_vectors_from_particle(Particle *p, double e_vec[3], double h_vec[3])
-{
-    e_vec[0] = p->e_vec_x;
-    e_vec[1] = p->e_vec_y;
-    e_vec[2] = p->e_vec_z;
-    h_vec[0] = p->h_vec_x;    
-    h_vec[1] = p->h_vec_y;    
-    h_vec[2] = p->h_vec_z;    
-}
-void set_e_and_h_vectors_in_particle(Particle *p, double e_vec[3], double h_vec[3])
-{
-    p->e_vec_x = e_vec[0];
-    p->e_vec_y = e_vec[1];
-    p->e_vec_z = e_vec[2];
-    p->h_vec_x = h_vec[0];
-    p->h_vec_y = h_vec[1];
-    p->h_vec_z = h_vec[2];
 }
 
 
@@ -977,7 +916,7 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
 
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
      bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
-     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_, 
+     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
      bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
      double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
      double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_)
@@ -989,6 +928,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      include_octupole_order_binary_triplet_terms = include_octupole_order_binary_triplet_terms_;
      include_hexadecupole_order_binary_pair_terms = include_hexadecupole_order_binary_pair_terms_;
      include_dotriacontupole_order_binary_pair_terms = include_dotriacontupole_order_binary_pair_terms_;
+     include_double_averaging_corrections = include_double_averaging_corrections_;
      
      include_flybys = include_flybys_;
      flybys_correct_for_gravitational_focussing = flybys_correct_for_gravitational_focussing_;
@@ -1004,72 +944,6 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 
      return 0;
-}
- 
-int get_relative_tolerance(double *value)
-{
-    *value = relative_tolerance;
-    return 0;
-}
-int set_relative_tolerance(double value)
-{
-    relative_tolerance = value;
-    return 0;
-}
-int get_absolute_tolerance_eccentricity_vectors(double *value)
-{
-    *value = absolute_tolerance_eccentricity_vectors;
-    return 0;
-}
-int set_absolute_tolerance_eccentricity_vectors(double value)
-{
-    absolute_tolerance_eccentricity_vectors = value;
-    return 0;
-}
-
-int get_include_quadrupole_order_terms(int *value){
-    *value = include_quadrupole_order_terms ? 1 : 0;
-    return 0;
-}
-int set_include_quadrupole_order_terms(int value){
-    include_quadrupole_order_terms = value == 1;
-    return 0;
-}
-
-int get_include_octupole_order_binary_pair_terms(int *value){
-    *value = include_octupole_order_binary_pair_terms ? 1 : 0;
-    return 0;
-}
-int set_include_octupole_order_binary_pair_terms(int value){
-    include_octupole_order_binary_pair_terms = value == 1;
-    return 0;
-}
-
-int get_include_octupole_order_binary_triplet_terms(int *value){
-    *value = include_octupole_order_binary_triplet_terms ? 1 : 0;
-    return 0;
-}
-int set_include_octupole_order_binary_triplet_terms(int value){
-    include_octupole_order_binary_triplet_terms = value == 1;
-    return 0;
-}
-
-int get_include_hexadecupole_order_binary_pair_terms(int *value){
-    *value = include_hexadecupole_order_binary_pair_terms ? 1 : 0;
-    return 0;
-}
-int set_include_hexadecupole_order_binary_pair_terms(int value){
-    include_hexadecupole_order_binary_pair_terms = value == 1;
-    return 0;
-}
-
-int get_include_dotriacontupole_order_binary_pair_terms(int *value){
-    *value = include_dotriacontupole_order_binary_pair_terms ? 1 : 0;
-    return 0;
-}
-int set_include_dotriacontupole_order_binary_pair_terms(int value){
-    include_dotriacontupole_order_binary_pair_terms = value == 1;
-    return 0;
 }
 
 int get_random_seed(int *value)

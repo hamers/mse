@@ -5,8 +5,8 @@ CXX = g++-9
 
 FC = gfortran
 
-CXXSRC = interface.cpp src/types.cpp src/evolve.cpp src/structure.cpp src/ODE_system.cpp src/root_finding.cpp src/newtonian.cpp src/postnewtonian.cpp src/tides.cpp src/external.cpp src/VRR.cpp src/stellar_evolution.cpp src/SNe.cpp src/flybys.cpp src/tools.cpp src/mass_changes.cpp src/binary_evolution.cpp
-CSRC = src/cvode/cvode.c src/cvode/cvode_dense.c src/cvode/cvode_direct.c src/cvode/cvode_io.c src/cvode/nvector_serial.c src/cvode/sundials_dense.c src/cvode/sundials_direct.c src/cvode/sundials_math.c src/cvode/sundials_nvector.c
+CXXSRC = interface.cpp src/types.cpp src/evolve.cpp src/structure.cpp src/ODE_system.cpp src/root_finding.cpp src/newtonian.cpp src/postnewtonian.cpp src/tides.cpp src/external.cpp src/VRR.cpp src/stellar_evolution.cpp src/SNe.cpp src/flybys.cpp src/tools.cpp src/mass_changes.cpp src/binary_evolution.cpp src/nbody_evolution.cpp
+CSRC = src/cvode/cvode.c src/cvode/cvode_dense.c src/cvode/cvode_direct.c src/cvode/cvode_io.c src/cvode/nvector_serial.c src/cvode/sundials_dense.c src/cvode/sundials_direct.c src/cvode/sundials_math.c src/cvode/sundials_nvector.c src/mstar/mst.c src/mstar/pn.c
 FSRC = src/sse/evolv1.f src/sse/zcnsts.f src/sse/deltat.f src/sse/hrdiag.f src/sse/kick.f src/sse/mlwind.f src/sse/mrenv.f src/sse/ran3.f src/sse/star.f src/sse/zfuncs.f
 
 #CXXHEADERS = interface.h src/types.h src/evolve.h src/structure.h src/ODE_system.h src/root_finding.h src/newtonian.h src/postnewtonian.h src/tides.h src/external.h src/VRR.h
@@ -19,8 +19,12 @@ CXXHEADERS = $(CXXSRC:.cpp=.h)
 CHEADERS = $(CSRC:.c=.h)
 FHEADERS = src/sse/const_bse.h src/sse/zdata.h 
 
-CPPFLAGS = -fPIC -shared -O3 -lgfortran
+CPPFLAGS = -fPIC -shared -O2 -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings -g
 FFLAGS = -fPIC
+
+ifeq ($(DEBUG),1)
+        CPPFLAGS += -DDEBUG
+endif
 
 all: $(COBJ) libmse.so
 
@@ -54,7 +58,7 @@ cleansse:
 	$(RM) src/sse/*.o*
 cleanc:
 	@echo "Removing compiled C/C++ libraries"
-	$(RM) libmse.so src/*.o* src/cvode/*.o*
+	$(RM) libmse.so src/*.o* src/cvode/*.o* src/mstar/*.o*
 cleanlib:
 	@echo "Removing libmse library"
 	$(RM) libmse.so

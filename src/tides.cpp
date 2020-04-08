@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "tides.h"
-#include "newtonian.h" /* for orbital_period */
+#include "tools.h" /* for orbital_period */
 #include <stdio.h>
 
 extern "C"
@@ -65,7 +65,7 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
     if (tides_viscous_time_scale_prescription == 0)
     {
         t_V = star->tides_viscous_time_scale;
-        //printf("compute_t_V 0\n");
+//        printf("compute_t_V 0\n");
     }
     else if (tides_viscous_time_scale_prescription == 1)
     {
@@ -237,8 +237,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
  * h_vec_SecularMultiple = mu*h_vec_Eggleton where mu = m*M/(m+M) is the reduced mass.
  * In particular, note the line `star->dspin_vec_dt[i] += -dh_vec_dt_star[i]/I;' */
 {
-//    printf("tides BO full\n");
-//    printf("TIDES %d %d %d\n",binary_index,star_index,companion_index);
+   
     Particle *binary = (*particlesMap)[binary_index];
     Particle *star = (*particlesMap)[star_index];
     Particle *companion = (*particlesMap)[companion_index];
@@ -283,6 +282,10 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
+
+    #ifdef DEBUG
+    printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
+    #endif
 
     //t_V *= 1.0e-10;
     if (t_V!=t_V)

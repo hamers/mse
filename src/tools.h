@@ -2,6 +2,8 @@
 extern "C"
 {
 
+double compute_orbital_period(Particle *particle);
+
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3]);
 double sample_from_y_times_maxwellian_distribution(double sigma);
 int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double r_hat_vec[3], double theta_hat_vec[3], double phi_hat_vec[3]);
@@ -14,8 +16,15 @@ int compute_orbital_elements_from_orbital_vectors(double child1_mass, double chi
 void compute_eccentric_anomaly_from_mean_anomaly(double mean_anomaly, double eccentricity, double *cos_eccentric_anomaly, double *sin_eccentric_anomaly);
 void compute_true_anomaly_from_eccentric_anomaly(double cos_eccentric_anomaly, double sin_eccentric_anomaly, double eccentricity, double *cos_true_anomaly, double *sin_true_anomaly);
 double compute_true_anomaly_from_mean_anomaly(double mean_anomaly, double eccentricity);
+double compute_mean_anomaly_from_true_anomaly(double true_anomaly, double eccentricity);
+void compute_true_anomaly_from_mean_anomaly_hyperbolic_orbit(double mean_anomaly, double eccentricity,double *cos_true_anomaly,double *sin_true_anomaly);
 double sample_random_true_anomaly(double eccentricity);
 void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, double e_vec[3], double h_vec[3], double true_anomaly, double r[3], double v[3]);
-void from_cartesian_to_orbital_vectors(double child1_mass, double child2_mass, double r[3], double v[3], double e_vec[3], double h_vec[3]);
+void from_cartesian_to_orbital_vectors(double child1_mass, double child2_mass, double r[3], double v[3], double e_vec[3], double h_vec[3], double *true_anomaly);
+void compute_semimajor_axis_and_eccentricity_from_orbital_vectors(double m1, double m2, double e_vec[3], double h_vec[3], double *semimajor_axis, double *eccentricity);
 
+void get_position_and_velocity_vectors_from_particle(Particle *p, double r[3], double v[3]);
+void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], double v[3]);
+
+void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
 }

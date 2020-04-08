@@ -213,45 +213,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 }
 
 
-int check_if_RLOF_has_occurred(ParticlesMap *particlesMap)
-{
-    int return_flag = 0;
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == 0)
-        {
-            if (p->RLOF_at_pericentre_has_occurred == 1)
-            {
-                //#ifdef VERBOSE
-                
-                p->RLOF_at_pericentre_has_occurred = 0; /* Reset ODE root found flag */
-                
-                //#endif
-                if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == 1)
-                {
-                    
-                    p->RLOF_flag = 1;
-                }
-                else if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == 0)
-                {
-                    //p->check_for_RLOF_at_pericentre = 1;
-                    p->RLOF_flag = 0;
-                }
-                printf("evolve.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
-                
-                //p->check_for_RLOF_at_pericentre = 0; /* do not subsequently check for RLOF during ODE integration */
-                //printf("test %d\n",p->RLOF_at_pericentre_has_occurred_entering_RLOF);
-                
-                return_flag = 1;
-            }
-                
-        }
-    }
-    
-    return return_flag;
-}
 
 int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
 {
@@ -261,35 +222,41 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
     bool in_RLOF;
     
     /* child1 -> child2 */
-    q = child1->mass/child2->mass;
-    R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
-    //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
-    x = R_Lc/child1->radius;
-    determine_E_0(e, x, &E_0, &in_RLOF);
-    //printf("1 x %g q %g E_0 %g\n",x,q,E_0);
-    if (in_RLOF == true)
+    if (child1->include_mass_transfer_terms==true)
     {
-        compute_RLOF_emt_model(p,child1,child2,x,E_0);
-        //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
-        //#ifdef VERBOSE
-        //printf("mass_changes.cpp -- IN RLOF *1 index %d x %g E_0 %g\n",child1->index,x,E_0);
-        //#endif
+        q = child1->mass/child2->mass;
+        R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
+        //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
+        x = R_Lc/child1->radius;
+        determine_E_0(e, x, &E_0, &in_RLOF);
+        //printf("1 x %g q %g E_0 %g\n",x,q,E_0);
+        if (in_RLOF == true)
+        {
+            compute_RLOF_emt_model(p,child1,child2,x,E_0);
+            //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
+            #ifdef DEBUG
+            printf("mass_changes.cpp -- IN RLOF *1 index %d x %g E_0 %g\n",child1->index,x,E_0);
+            #endif
+        }
     }
 
     /* child2 -> child1 */
-    q = child2->mass/child1->mass;
-    R_Lc = roche_radius_pericenter_eggleton(a,q);
-    x = R_Lc/child2->radius;
-    determine_E_0(e, x, &E_0, &in_RLOF);
-    //printf("2 x %g q %g E_0 %g\n",x,q,E_0);
-    if (in_RLOF == true)
+    if (child2->include_mass_transfer_terms==true)
     {
-        compute_RLOF_emt_model(p,child2,child1,x,E_0);
-        #ifdef VERBOSE
-        printf("mass_changes.cpp -- IN RLOF *2 index %d x %g E_0 %g\n",child2->index,x,E_0);
-        #endif
+        q = child2->mass/child1->mass;
+        R_Lc = roche_radius_pericenter_eggleton(a,q);
+        x = R_Lc/child2->radius;
+        determine_E_0(e, x, &E_0, &in_RLOF);
+        //printf("2 x %g q %g E_0 %g\n",x,q,E_0);
+        if (in_RLOF == true and child2->include_mass_transfer_terms==true)
+        {
+            compute_RLOF_emt_model(p,child2,child1,x,E_0);
+            #ifdef DEBUG
+            printf("mass_changes.cpp -- IN RLOF *2 index %d x %g E_0 %g\n",child2->index,x,E_0);
+            #endif
+        }
     }
-
+    
     return 0;
 }
 

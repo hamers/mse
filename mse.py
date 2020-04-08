@@ -37,6 +37,7 @@ class MSE(object):
         self.__CONST_KM_PER_S = 0.210862
         self.__CONST_PER_PC3 = 1.14059e-16
 
+
         self.__relative_tolerance = 1.0e-14
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-10
         self.__include_quadrupole_order_terms = True
@@ -44,6 +45,7 @@ class MSE(object):
         self.__include_octupole_order_binary_triplet_terms = True
         self.__include_hexadecupole_order_binary_pair_terms = True
         self.__include_dotriacontupole_order_binary_pair_terms = True
+        self.__include_double_averaging_corrections = False
 
         self.__particles_committed = False
         self.model_time = 0.0
@@ -52,12 +54,13 @@ class MSE(object):
         self.state = 0
         self.CVODE_flag = 0
         self.CVODE_error_code = 0
+        self.integration_flag = 0 # start with secular approach 
         
         self.__random_seed = 0
         
-        #self.enable_tides = True ### TO DO: remove
-        self.enable_root_finding = True ### TO DO: remove
-        self.__include_VRR = False ### TO DO: change to __include_VRR
+        self.enable_tides = True
+        self.enable_root_finding = True
+        self.enable_VRR = False
         
         self.__include_flybys = True
         self.__flybys_correct_for_gravitational_focussing = True
@@ -88,7 +91,7 @@ class MSE(object):
         self.particles = []
 
     def init_lib(self):
-        self.lib.add_particle.argtypes = (ctypes.POINTER(ctypes.c_int),ctypes.c_int,ctypes.c_int)
+        self.lib.add_particle.argtypes = (ctypes.POINTER(ctypes.c_int),ctypes.c_bool,ctypes.c_bool)
         self.lib.add_particle.restype = ctypes.c_int
         
         self.lib.delete_particle.argtypes = (ctypes.c_int,)
@@ -100,6 +103,15 @@ class MSE(object):
         self.lib.get_children.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.get_children.restype = ctypes.c_int
 
+        self.lib.get_number_of_particles.argtypes = (ctypes.POINTER(ctypes.c_int),)
+        self.lib.get_number_of_particles.restype = ctypes.c_int
+
+        self.lib.get_is_binary.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_is_binary.restype = ctypes.c_int
+
+        self.lib.get_is_bound.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_is_bound.restype = ctypes.c_int
+
         self.lib.set_mass.argtypes = (ctypes.c_int,ctypes.c_double)
         self.lib.set_mass.restype = ctypes.c_int
 
@@ -108,6 +120,9 @@ class MSE(object):
 
 #        self.lib.set_mass_dot.argtypes = (ctypes.c_int,ctypes.c_double)
 #        self.lib.set_mass_dot.restype = ctypes.c_int
+
+        self.lib.set_mass_transfer_terms.argtypes = (ctypes.c_int,ctypes.c_bool)
+        self.lib.set_mass_transfer_terms.restype = ctypes.c_int
 
         self.lib.get_mass_dot.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
         self.lib.get_mass_dot.restype = ctypes.c_int
@@ -124,10 +139,10 @@ class MSE(object):
         self.lib.get_spin_vector.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_spin_vector.restype = ctypes.c_int
 
-        self.lib.set_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
+        self.lib.set_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
         self.lib.set_stellar_evolution_properties.restype = ctypes.c_int
 
-        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_stellar_evolution_properties.restype = ctypes.c_int
 
         ### kicks ###
@@ -148,19 +163,28 @@ class MSE(object):
         self.lib.get_inclination_relative_to_parent.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
         self.lib.get_inclination_relative_to_parent.restype = ctypes.c_int
 
+        self.lib.get_relative_position_and_velocity.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_relative_position_and_velocity.restype = ctypes.c_int
+
+        self.lib.get_absolute_position_and_velocity.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_absolute_position_and_velocity.restype = ctypes.c_int
+        
+        self.lib.set_integration_method.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool)
+        self.lib.set_integration_method.restype = ctypes.c_int
+
         self.lib.set_PN_terms.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int)
         self.lib.set_PN_terms.restype = ctypes.c_int
 
-        #self.lib.set_tides_terms.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double)
-        #self.lib.set_tides_terms.restype = ctypes.c_int
+        self.lib.set_tides_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_double)
+        self.lib.set_tides_terms.restype = ctypes.c_int
 
-        self.lib.set_root_finding_terms.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_int,ctypes.c_int,ctypes.c_int)
+        self.lib.set_root_finding_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool);
         self.lib.set_root_finding_terms.restype = ctypes.c_int
 
-        self.lib.set_root_finding_state.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int)
+        self.lib.set_root_finding_state.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
         self.lib.set_root_finding_state.restype = ctypes.c_int
 
-        self.lib.get_root_finding_state.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
+        self.lib.get_root_finding_state.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool))
         self.lib.get_root_finding_state.restype = ctypes.c_int
 
         self.lib.set_constants.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
@@ -168,7 +192,7 @@ class MSE(object):
 
         self.__set_constants_in_code()
 
-        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
+        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
             ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
          
@@ -241,19 +265,21 @@ class MSE(object):
         self.particles.remove(particle)
 
     def commit_particles(self):
+        
         flag = self.__update_particles_in_code()
-
+        
         self.lib.initialize_code()
+        
         self.__update_particles_from_code()
-
+        
         end_time,initial_hamiltonian,state,CVODE_flag,CVODE_error_code = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
         evolve_flag = self.lib.evolve_interface(0.0,0.0,ctypes.byref(end_time),ctypes.byref(initial_hamiltonian), \
             ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code))
-        
+
         self.initial_hamiltonian = initial_hamiltonian.value
         
         self.__particles_committed = True
-        
+
     def evolve_model(self,end_time):
         
         if end_time is None:
@@ -267,10 +293,10 @@ class MSE(object):
         start_time = self.model_time
 #        time_step = end_time - start_time   
 
-        output_time,hamiltonian,state,CVODE_flag,CVODE_error_code = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+        output_time,hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(self.integration_flag)
         evolve_flag = self.lib.evolve_interface(start_time,end_time,ctypes.byref(output_time),ctypes.byref(hamiltonian), \
-            ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code))
-        output_time,hamiltonian,state,CVODE_flag,CVODE_error_code = output_time.value,hamiltonian.value,state.value,CVODE_flag.value,CVODE_error_code.value
+            ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code),ctypes.byref(integration_flag))
+        output_time,hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = output_time.value,hamiltonian.value,state.value,CVODE_flag.value,CVODE_error_code.value,integration_flag.value
 
         ### compute energy error ###
         self.hamiltonian = hamiltonian
@@ -285,11 +311,16 @@ class MSE(object):
         if (flag==99):
             print('Error occurred during ODE integration; error code is {0}'.format(error_code))
 
-        self.__update_particles_from_code()
-
         self.CVODE_flag = CVODE_flag
         self.CVODE_error_code = CVODE_error_code
         self.state = state
+        self.integration_flag = integration_flag
+
+        if self.state != 0:
+            self.__copy_particle_structure_from_code()
+
+        self.__update_particles_from_code()
+
 
         return self.state,self.CVODE_flag,self.CVODE_error_code
 
@@ -297,7 +328,7 @@ class MSE(object):
         self.__update_particles_in_code()
         self.lib.apply_external_perturbation_assuming_integrated_orbits_interface()
         self.__update_particles_from_code()
-
+        
     def apply_user_specified_instantaneous_perturbation(self):
         self.__update_particles_in_code(set_instantaneous_perturbation_properties=True)
         self.lib.apply_user_specified_instantaneous_perturbation_interface()
@@ -306,37 +337,59 @@ class MSE(object):
     def __update_particle_in_code(self,particle,set_instantaneous_perturbation_properties=False):
         flag = self.lib.set_mass(particle.index,particle.mass)
 
-        #if self.enable_tides == True:
-            #flag += self.lib.set_tides_terms(particle.index,particle.include_tidal_friction_terms,particle.tides_method,particle.include_tidal_bulges_precession_terms,particle.include_rotation_precession_terms, \
-                #particle.minimum_eccentricity_for_tidal_precession,particle.tides_apsidal_motion_constant,particle.tides_gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription, \
-                #particle.convective_envelope_mass,particle.convective_envelope_radius,particle.luminosity)
-        if self.enable_root_finding == True:
-            flag += self.lib.set_root_finding_terms(particle.index,particle.check_for_secular_breakdown,particle.check_for_dynamical_instability,particle.dynamical_instability_criterion,particle.dynamical_instability_central_particle,particle.dynamical_instability_K_parameter, \
+#        if self.enable_tides == True:
+#            particle.include_tidal_friction_terms = True
+#            particle.tides_method = 1
+#            particle.include_tidal_bulges_precession_terms = True
+#            particle.include_rotation_precession_terms = True
+        if self.enable_tides == False:
+            particle.include_tidal_friction_terms = False
+            particle.tides_method = 1
+            particle.include_tidal_bulges_precession_terms = False
+            particle.include_rotation_precession_terms = False
+            
+        flag += self.lib.set_tides_terms(particle.index,particle.include_tidal_friction_terms,particle.tides_method,particle.include_tidal_bulges_precession_terms,particle.include_rotation_precession_terms, \
+            particle.minimum_eccentricity_for_tidal_precession)
+            
+        if self.enable_root_finding == False:
+            particle.check_for_secular_breakdown = False
+            particle.check_for_dynamical_instability = False
+            particle.check_for_physical_collision_or_orbit_crossing = False
+            particle.check_for_RLOF_at_pericentre = False
+            particle.check_for_GW_condition = False
+            
+        flag += self.lib.set_root_finding_terms(particle.index,particle.check_for_secular_breakdown,particle.check_for_dynamical_instability,particle.dynamical_instability_criterion,particle.dynamical_instability_central_particle,particle.dynamical_instability_K_parameter, \
                 particle.check_for_physical_collision_or_orbit_crossing,particle.check_for_minimum_periapse_distance,particle.check_for_minimum_periapse_distance_value,particle.check_for_RLOF_at_pericentre,particle.check_for_RLOF_at_pericentre_use_sepinsky_fit,particle.check_for_GW_condition)
-            flag += self.lib.set_root_finding_state(particle.index,particle.secular_breakdown_has_occurred,particle.dynamical_instability_has_occurred, \
+        flag += self.lib.set_root_finding_state(particle.index,particle.secular_breakdown_has_occurred,particle.dynamical_instability_has_occurred, \
                 particle.physical_collision_or_orbit_crossing_has_occurred,particle.minimum_periapse_distance_has_occurred,particle.RLOF_at_pericentre_has_occurred,particle.GW_condition_has_occurred)
-        if self.__include_VRR == True:
+
+        if self.enable_VRR == True:
             flag += self.lib.set_VRR_properties(particle.index,particle.VRR_model,particle.VRR_include_mass_precession,particle.VRR_mass_precession_rate, \
                 particle.VRR_Omega_vec_x,particle.VRR_Omega_vec_y,particle.VRR_Omega_vec_z, \
                 particle.VRR_eta_20_init,particle.VRR_eta_a_22_init,particle.VRR_eta_b_22_init,particle.VRR_eta_a_21_init,particle.VRR_eta_b_21_init, \
                 particle.VRR_eta_20_final,particle.VRR_eta_a_22_final,particle.VRR_eta_b_22_final,particle.VRR_eta_a_21_final,particle.VRR_eta_b_21_final,particle.VRR_initial_time,particle.VRR_final_time)
+
         if particle.is_external==False:
+            
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
                 flag += self.lib.set_orbital_elements(particle.index,particle.a, particle.e, particle.TA, particle.INCL, particle.AP, particle.LAN, particle.sample_orbital_phase_randomly)
                 flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms)
+                flag += self.lib.set_integration_method(particle.index,particle.integration_method,particle.KS_use_perturbing_potential)
             else:
                 flag += self.lib.set_radius(particle.index,particle.radius,particle.radius_dot)
                 #flag += self.lib.set_mass_dot(particle.index,particle.mass_dot)
+                flag += self.lib.set_mass_transfer_terms(particle.index,particle.include_mass_transfer_terms)
                 flag += self.lib.set_spin_vector(particle.index,particle.spin_vec_x,particle.spin_vec_y,particle.spin_vec_z)
                 flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.evolve_as_star,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
-                    particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale)
+                    particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription)
                 flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma)
 
                 if set_instantaneous_perturbation_properties==True:
                     flag += self.lib.set_instantaneous_perturbation_properties(particle.index,particle.instantaneous_perturbation_delta_mass, \
-                        particle.instantaneous_perturbation_delta_x,particle.instantaneous_perturbation_delta_y,particle.instantaneous_perturbation_delta_z, \
-                        particle.instantaneous_perturbation_delta_vx,particle.instantaneous_perturbation_delta_vy,particle.instantaneous_perturbation_delta_vz)
+                        particle.instantaneous_perturbation_delta_X,particle.instantaneous_perturbation_delta_Y,particle.instantaneous_perturbation_delta_Z, \
+                        particle.instantaneous_perturbation_delta_VX,particle.instantaneous_perturbation_delta_VY,particle.instantaneous_perturbation_delta_VZ)
+                        
         else:
             flag += self.lib.set_external_particle_properties(particle.index, particle.external_t_ref, particle.e, particle.external_r_p, particle.INCL, particle.AP, particle.LAN)
     
@@ -363,9 +416,9 @@ class MSE(object):
         mass = ctypes.c_double(0.0)
         flag = self.lib.get_mass(particle.index,ctypes.byref(mass))
         particle.mass = mass.value
-        
+
         if self.enable_root_finding == True:
-            secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+            secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
             flag += self.lib.get_root_finding_state(particle.index,ctypes.byref(secular_breakdown_has_occurred),ctypes.byref(dynamical_instability_has_occurred), \
                 ctypes.byref(physical_collision_or_orbit_crossing_has_occurred),ctypes.byref(minimum_periapse_distance_has_occurred),ctypes.byref(RLOF_at_pericentre_has_occurred),ctypes.byref(GW_condition_has_occurred))
             particle.secular_breakdown_has_occurred = secular_breakdown_has_occurred.value
@@ -376,66 +429,121 @@ class MSE(object):
             particle.GW_condition_has_occurred = GW_condition_has_occurred.value
 
         if particle.is_binary==True:
-            a,e,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-            flag += self.lib.get_orbital_elements(particle.index,ctypes.byref(a),ctypes.byref(e),ctypes.byref(INCL),ctypes.byref(AP),ctypes.byref(LAN))
+            a,e,TA,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+            flag += self.lib.get_orbital_elements(particle.index,ctypes.byref(a),ctypes.byref(e),ctypes.byref(TA),ctypes.byref(INCL),ctypes.byref(AP),ctypes.byref(LAN))
             particle.a = a.value
             particle.e = e.value
+            particle.TA = TA.value
             particle.INCL = INCL.value
             particle.AP = AP.value
             particle.LAN = LAN.value
+            
             INCL_parent = ctypes.c_double(0.0)
             flag += self.lib.get_inclination_relative_to_parent(particle.index,ctypes.byref(INCL_parent))
             particle.INCL_parent = INCL_parent.value
-        else:
-            radius,radius_dot = ctypes.c_double(0.0),ctypes.c_double(0.0)
-            flag += self.lib.get_radius(particle.index,ctypes.byref(radius),ctypes.byref(radius_dot))
-            particle.radius = radius.value
-            particle.radius_dot = radius_dot.value
-
-            stellar_type,evolve_as_star,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter = ctypes.c_int(0),ctypes.c_int(0), \
-                ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-            flag += self.lib.get_stellar_evolution_properties(particle.index,ctypes.byref(stellar_type),ctypes.byref(evolve_as_star),ctypes.byref(sse_initial_mass),ctypes.byref(metallicity),ctypes.byref(sse_time_step), \
-                ctypes.byref(epoch),ctypes.byref(age),ctypes.byref(convective_envelope_mass),ctypes.byref(convective_envelope_radius),ctypes.byref(core_mass),ctypes.byref(core_radius),ctypes.byref(luminosity),ctypes.byref(apsidal_motion_constant),ctypes.byref(gyration_radius),ctypes.byref(tides_viscous_time_scale),ctypes.byref(roche_lobe_radius_pericenter))
-            particle.stellar_type = stellar_type.value
-            particle.evolve_as_star = evolve_as_star.value
-            particle.sse_initial_mass = sse_initial_mass.value
-            particle.metallicity = metallicity.value
-            particle.sse_time_step = sse_time_step.value
-            particle.epoch = epoch.value
-            particle.age = age.value
-            particle.convective_envelope_mass = convective_envelope_mass.value
-            particle.convective_envelope_radius = convective_envelope_radius.value
-            particle.core_mass = core_mass.value
-            particle.core_radius = core_radius.value
-            particle.luminosity = luminosity.value
-            particle.apsidal_motion_constant = apsidal_motion_constant
-            particle.gyration_radius = gyration_radius
-            particle.tides_viscous_time_scale = tides_viscous_time_scale.value
-            particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
-
-            kick_distribution,kick_distribution_sigma = ctypes.c_int(0),ctypes.c_double(0.0)
-            flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_sigma))
-            particle.kick_distribution = kick_distribution.value
-            particle.kick_distribution_sigma = kick_distribution_sigma.value
-
-
-            mass_dot = ctypes.c_double(0.0)
-            flag = self.lib.get_mass_dot(particle.index,ctypes.byref(mass_dot))
-            particle.mass_dot = mass_dot.value
-
-            spin_vec_x,spin_vec_y,spin_vec_z = ctypes.c_double(0.0), ctypes.c_double(0.0), ctypes.c_double(0.0)
-            flag += self.lib.get_spin_vector(particle.index,ctypes.byref(spin_vec_x),ctypes.byref(spin_vec_y),ctypes.byref(spin_vec_z))
-            particle.spin_vec_x = spin_vec_x.value
-            particle.spin_vec_y = spin_vec_y.value
-            particle.spin_vec_z = spin_vec_z.value
             
+            x,y,z,vx,vy,vz = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+            flag = self.lib.get_relative_position_and_velocity(particle.index,ctypes.byref(x),ctypes.byref(y),ctypes.byref(z),ctypes.byref(vx),ctypes.byref(vy),ctypes.byref(vz))
+            particle.x = x.value
+            particle.y = y.value
+            particle.z = z.value
+            particle.vx = vx.value
+            particle.vy = vy.value
+            particle.vz = vz.value
+        else:
+            X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+            flag = self.lib.get_absolute_position_and_velocity(particle.index,ctypes.byref(X),ctypes.byref(Y),ctypes.byref(Z),ctypes.byref(VX),ctypes.byref(VY),ctypes.byref(VZ))
+            particle.X = X.value
+            particle.Y = Y.value
+            particle.Z = Z.value
+            particle.VX = VX.value
+            particle.VY = VY.value
+            particle.VZ = VZ.value
+
+            if particle.is_external==False:
+                is_bound = ctypes.c_bool(True)
+                flag += self.lib.get_is_bound(particle.index,ctypes.byref(is_bound))
+                particle.is_bound = is_bound.value
+                
+                radius,radius_dot = ctypes.c_double(0.0),ctypes.c_double(0.0)
+                flag += self.lib.get_radius(particle.index,ctypes.byref(radius),ctypes.byref(radius_dot))
+                particle.radius = radius.value
+                particle.radius_dot = radius_dot.value
+
+                stellar_type,evolve_as_star,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter = ctypes.c_int(0),ctypes.c_bool(False), \
+                    ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                flag += self.lib.get_stellar_evolution_properties(particle.index,ctypes.byref(stellar_type),ctypes.byref(evolve_as_star),ctypes.byref(sse_initial_mass),ctypes.byref(metallicity),ctypes.byref(sse_time_step), \
+                    ctypes.byref(epoch),ctypes.byref(age),ctypes.byref(convective_envelope_mass),ctypes.byref(convective_envelope_radius),ctypes.byref(core_mass),ctypes.byref(core_radius),ctypes.byref(luminosity),ctypes.byref(apsidal_motion_constant),ctypes.byref(gyration_radius),ctypes.byref(tides_viscous_time_scale),ctypes.byref(roche_lobe_radius_pericenter))
+                particle.stellar_type = stellar_type.value
+                particle.evolve_as_star = evolve_as_star.value
+                particle.sse_initial_mass = sse_initial_mass.value
+                particle.metallicity = metallicity.value
+                particle.sse_time_step = sse_time_step.value
+                particle.epoch = epoch.value
+                particle.age = age.value
+                particle.convective_envelope_mass = convective_envelope_mass.value
+                particle.convective_envelope_radius = convective_envelope_radius.value
+                particle.core_mass = core_mass.value
+                particle.core_radius = core_radius.value
+                particle.luminosity = luminosity.value
+                particle.apsidal_motion_constant = apsidal_motion_constant
+                particle.gyration_radius = gyration_radius
+                particle.tides_viscous_time_scale = tides_viscous_time_scale.value
+                particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
+
+                kick_distribution,kick_distribution_sigma = ctypes.c_int(0),ctypes.c_double(0.0)
+                flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_sigma))
+                particle.kick_distribution = kick_distribution.value
+                particle.kick_distribution_sigma = kick_distribution_sigma.value
+
+                mass_dot = ctypes.c_double(0.0)
+                flag = self.lib.get_mass_dot(particle.index,ctypes.byref(mass_dot))
+                particle.mass_dot = mass_dot.value
+
+                spin_vec_x,spin_vec_y,spin_vec_z = ctypes.c_double(0.0), ctypes.c_double(0.0), ctypes.c_double(0.0)
+                flag += self.lib.get_spin_vector(particle.index,ctypes.byref(spin_vec_x),ctypes.byref(spin_vec_y),ctypes.byref(spin_vec_z))
+                particle.spin_vec_x = spin_vec_x.value
+                particle.spin_vec_y = spin_vec_y.value
+                particle.spin_vec_z = spin_vec_z.value
+
         return flag
         
     def __update_particles_from_code(self):
+        
         flag = 0
         for index,particle in enumerate(self.particles):
             flag += self.__update_particle_from_code(particle)
         return flag
+
+    def __copy_particle_structure_from_code(self):
+        self.particles = []
+        N_particles = ctypes.c_int(0)
+        flag = self.lib.get_number_of_particles(ctypes.byref(N_particles))
+        N_particles = N_particles.value
+        
+        for index in range(N_particles):
+            
+            is_binary = ctypes.c_bool(False)
+            flag = self.lib.get_is_binary(index,ctypes.byref(is_binary))
+            is_binary = is_binary.value
+
+            mass = ctypes.c_double(0.0)
+            flag = self.lib.get_mass(index,ctypes.byref(mass))
+            mass = mass.value
+
+            child1,child2 = None,None
+            if is_binary==True:
+                child1,child2 = ctypes.c_int(0),ctypes.c_int(0)
+                self.lib.get_children(index,ctypes.byref(child1),ctypes.byref(child2))
+                child1 = self.particles[child1.value]
+                child2 = self.particles[child2.value]
+
+            print("isb",N_particles,index,mass,is_binary,child1,child2)
+            p = Particle(is_binary=is_binary,mass=mass,child1=child1,child2=child2,a=0.0,e=0.0,INCL=0.0,AP=0.0,LAN=0.0) ### orbital elements should be updated later
+            p.index = index
+                #a==None or e==None or INCL==None or LAN==None:
+            self.particles.append(p)
+        
 
     def __set_constants_in_code(self):
         self.lib.set_constants(self.__CONST_G,self.__CONST_C,self.__CONST_M_SUN,self.__CONST_R_SUN,self.__CONST_L_SUN,self.__CONST_KM_PER_S,self.__CONST_PER_PC3)
@@ -444,7 +552,7 @@ class MSE(object):
     def __set_parameters_in_code(self):
          self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__include_quadrupole_order_terms, \
              self.__include_octupole_order_binary_pair_terms,self.__include_octupole_order_binary_triplet_terms, \
-             self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, \
+             self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
              self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
              self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
              self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion)
@@ -585,16 +693,23 @@ class MSE(object):
         self.__include_dotriacontupole_order_binary_pair_terms = value
         self.__set_parameters_in_code()
 
-
-
     @property
-    def include_VRR(self):
-        return self.__include_VRR
-    
-    @include_VRR.setter
-    def include_VRR(self, value):
-        self.__include_VRR = value
+    def include_double_averaging_corrections(self):
+        return self.__include_double_averaging_corrections
+
+    @include_double_averaging_corrections.setter
+    def include_double_averaging_corrections(self, value):
+        self.__include_double_averaging_corrections = value
         self.__set_parameters_in_code()
+
+#    @property
+#    def include_VRR(self):
+#        return self.__include_VRR
+    
+#    @include_VRR.setter
+#    def include_VRR(self, value):
+#        self.__include_VRR = value
+#        self.__set_parameters_in_code()
 
 
     @property
@@ -699,19 +814,21 @@ class MSE(object):
         
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
-            stellar_type=1, evolve_as_star=1, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
+            integration_method = 0, KS_use_perturbing_potential = True, \
+            stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
+            include_mass_transfer_terms=True, \
             kick_distribution = 1, kick_distribution_sigma = 265.0, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
-            include_tidal_friction_terms=False, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
+            include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0, convective_envelope_radius=1.0, luminosity=1.0, \
-            check_for_secular_breakdown=False,check_for_dynamical_instability=False,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
+            check_for_secular_breakdown=False,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
             check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
             secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, \
             is_external=False, external_t_ref=0.0, external_r_p=0.0, \
-            sample_orbital_phase_randomly=True, instantaneous_perturbation_delta_mass=0.0, instantaneous_perturbation_delta_x=0.0, instantaneous_perturbation_delta_y=0.0, instantaneous_perturbation_delta_z=0.0, \
-            instantaneous_perturbation_delta_vx=0.0, instantaneous_perturbation_delta_vy=0.0, instantaneous_perturbation_delta_vz=0.0, \
+            sample_orbital_phase_randomly=True, instantaneous_perturbation_delta_mass=0.0, instantaneous_perturbation_delta_X=0.0, instantaneous_perturbation_delta_Y=0.0, instantaneous_perturbation_delta_Z=0.0, \
+            instantaneous_perturbation_delta_VX=0.0, instantaneous_perturbation_delta_VY=0.0, instantaneous_perturbation_delta_VZ=0.0, \
             VRR_model=0, VRR_include_mass_precession=0, VRR_mass_precession_rate=0.0, VRR_Omega_vec_x=0.0, VRR_Omega_vec_y=0.0, VRR_Omega_vec_z=0.0, \
             VRR_eta_20_init=0.0, VRR_eta_a_22_init=0.0, VRR_eta_b_22_init=0.0, VRR_eta_a_21_init=0.0, VRR_eta_b_21_init=0.0, \
             VRR_eta_20_final=0.0, VRR_eta_a_22_final=0.0, VRR_eta_b_22_final=0.0, VRR_eta_a_21_final=0.0, VRR_eta_b_21_final=0.0, \
@@ -747,6 +864,8 @@ class Particle(object):
         self.tides_viscous_time_scale=tides_viscous_time_scale
         self.tides_viscous_time_scale_prescription=tides_viscous_time_scale_prescription
 
+        self.include_mass_transfer_terms = include_mass_transfer_terms
+
         self.kick_distribution = kick_distribution
         self.kick_distribution_sigma = kick_distribution_sigma
           
@@ -771,12 +890,12 @@ class Particle(object):
 
         self.sample_orbital_phase_randomly=sample_orbital_phase_randomly
         self.instantaneous_perturbation_delta_mass=instantaneous_perturbation_delta_mass
-        self.instantaneous_perturbation_delta_x=instantaneous_perturbation_delta_x
-        self.instantaneous_perturbation_delta_y=instantaneous_perturbation_delta_y
-        self.instantaneous_perturbation_delta_z=instantaneous_perturbation_delta_z
-        self.instantaneous_perturbation_delta_vx=instantaneous_perturbation_delta_vx
-        self.instantaneous_perturbation_delta_vy=instantaneous_perturbation_delta_vy
-        self.instantaneous_perturbation_delta_vz=instantaneous_perturbation_delta_vz
+        self.instantaneous_perturbation_delta_X=instantaneous_perturbation_delta_X
+        self.instantaneous_perturbation_delta_Y=instantaneous_perturbation_delta_Y
+        self.instantaneous_perturbation_delta_Z=instantaneous_perturbation_delta_Z
+        self.instantaneous_perturbation_delta_VX=instantaneous_perturbation_delta_VX
+        self.instantaneous_perturbation_delta_VY=instantaneous_perturbation_delta_VY
+        self.instantaneous_perturbation_delta_VZ=instantaneous_perturbation_delta_VZ
 
         self.VRR_model = VRR_model
         self.VRR_include_mass_precession = VRR_include_mass_precession
@@ -846,11 +965,15 @@ class Particle(object):
                     self.include_pairwise_1PN_terms = include_pairwise_1PN_terms
                     self.include_pairwise_25PN_terms = include_pairwise_25PN_terms
 
+                    self.integration_method = integration_method
+                    self.KS_use_perturbing_potential = KS_use_perturbing_potential
+                    
     def __repr__(self):
         if self.index is None:
             if self.is_binary == False:
                 return "Particle(is_binary={0}, mass={1:g})".format(self.is_binary,self.mass)
             else:
+                print("OKOKOK",self.child1.index)
                 return "Particle(is_binary={0}, mass={1:g}, child1={2:d}, child2={3:d}, a={4:g}, e={5:g}, INCL={6:g}, AP={7:g}, LAN={8:g})".format(self.is_binary,self.mass,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
         else:
             if self.is_binary == False:

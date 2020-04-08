@@ -26,10 +26,12 @@
 #include "tools.h"
 #include "mass_changes.h"
 #include "binary_evolution.h"
+#include "nbody_evolution.h"
+
 
 extern "C"
 {
-int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code);
+int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag);
 int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *output_flag, int *error_code);
 
 static int check_flag(void *flagvalue, char *funcname, int opt);

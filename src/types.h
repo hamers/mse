@@ -7,12 +7,6 @@
 extern "C"
 {
 
-/* constants */
-/* units (cf. interface.py): 
- * unit_l = AU
- * unit_m = MSun
- * unit_t = yr
- */
  
 //#define VERBOSE
  
@@ -46,6 +40,8 @@ extern bool include_octupole_order_binary_pair_terms;
 extern bool include_octupole_order_binary_triplet_terms;
 extern bool include_hexadecupole_order_binary_pair_terms;
 extern bool include_dotriacontupole_order_binary_pair_terms;
+extern bool include_double_averaging_corrections;
+extern double epsilon;
 extern int random_seed;
 
 extern bool include_flybys;
@@ -66,47 +62,6 @@ extern double flybys_total_encounter_rate_at_R_enc;
 extern double flybys_stellar_density_at_R_enc;
 extern double flybys_internal_mass;
 extern double flybys_internal_semimajor_axis;
-
-#ifdef IGNORE
-// Default constants //
-double CONST_G = 4.0*M_PI*M_PI; 
-double CONST_G_P2 = CONST_G*CONST_G;
-double CONST_G_P3 = CONST_G_P2*CONST_G;
-double CONST_C_LIGHT = 63239.72638679138;
-double CONST_C_LIGHT_P2 = CONST_C_LIGHT*CONST_C_LIGHT;
-double CONST_C_LIGHT_P4 = CONST_C_LIGHT_P2*CONST_C_LIGHT_P2;
-double CONST_C_LIGHT_P5 = CONST_C_LIGHT_P4*CONST_C_LIGHT;
-double CONST_MSUN = 1.0;
-double CONST_R_SUN = 0.004649130343817401;
-double CONST_L_SUN = 0.0002710404109745588;
-double CONST_KM_PER_S = 0.210862;
-double CONST_PER_PC3 = 1.14059e-16;
-
-// Default parameters //
-double relative_tolerance = 1.0e-12;
-double absolute_tolerance_eccentricity_vectors = 1.0e-14;
-bool include_quadrupole_order_terms = true;
-bool include_octupole_order_binary_pair_terms = true;
-bool include_octupole_order_binary_triplet_terms = true;
-bool include_hexadecupole_order_binary_pair_terms = true;
-bool include_dotriacontupole_order_binary_pair_terms = true;
-int random_seed = 0;
-
-bool include_flybys = true;
-bool flybys_correct_for_gravitational_focussing = true;
-int flybys_velocity_distribution = 0;
-int flybys_mass_distribution = 0;
-double flybys_mass_distribution_lower_value = 0.1;
-double flybys_mass_distribution_upper_value = 100.0;
-double flybys_encounter_sphere_radius = 1.0e4;
-double flybys_stellar_density = 0.1*CONST_PER_PC3; /* density at infinity */
-double flybys_stellar_relative_velocity_dispersion = 30.0*CONST_KM_PER_S;
-double flybys_W_max = 0.0;
-double flybys_total_encounter_rate_at_R_enc = 0.0;
-double flybys_stellar_density_at_R_enc = 0.0; /* density at infinity */
-double flybys_internal_mass = 0.0;
-double flybys_internal_semimajor_axis = 0.0;
-#endif
 
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
@@ -147,8 +102,11 @@ double flybys_internal_semimajor_axis = 0.0;
 #define c_8div5             (double)    8.0/5.0
 #define c_8div7             (double)    8.0/7.0
 #define c_9div2             (double)    9.0/2.0
+#define c_9div8             (double)    9.0/8.0
 #define c_9div16            (double)    9.0/16.0
 #define c_9div32            (double)    9.0/32.0
+#define c_9div64            (double)    9.0/64.0
+#define c_10div3            (double)    10.0/3.0
 #define c_11div18           (double)    11.0/18.0
 #define c_15div2            (double)    15.0/2.0
 #define c_15div4            (double)    15.0/4.0
@@ -157,10 +115,14 @@ double flybys_internal_semimajor_axis = 0.0;
 #define c_16div5            (double)    16.0/5.0
 #define c_25div16           (double)    25.0/16.0
 #define c_25div64           (double)    25.0/64.0
+#define c_27div4            (double)    27.0/4.0
+#define c_27div64           (double)    27.0/64.0
 #define c_31div2            (double)    31.0/2.0
 #define c_32div5            (double)    32.0/5.0
+#define c_35div3            (double)    35.0/3.0
 #define c_37div96           (double)    37.0/96.0
 #define c_45div8            (double)    45.0/8.0
+#define c_64div3            (double)    64.0/3.0
 #define c_64div5            (double)    64.0/5.0
 #define c_73div24           (double)    73.0/24.0
 #define c_105div4096        (double)    105.0/4096.0
@@ -169,7 +131,6 @@ double flybys_internal_semimajor_axis = 0.0;
 #define c_255div8           (double)    255.0/8.0
 #define c_304div15          (double)    304.0/15.0
 #endif
-
 
 #ifndef __TABLES
 #define __TABLES
@@ -183,6 +144,36 @@ const double A_TABLE[TABLELENGTH_A][TABLEWIDTH_A] =
   0.375000000000000}, {4, 2, -3.75000000000000}, {4, 4, 
   4.37500000000000}, {5, 1, 1.87500000000000}, {5, 
   3, -8.75000000000000}, {5, 5, 7.87500000000000}};
+
+#define A_mn_table_max_order (int) 15
+const double A_mn_table[15][15+1] = {{-0.500000000000000, 0, 1.50000000000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+  0, 0, 0, 0}, {0, -1.50000000000000, 0, 2.50000000000000, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0}, {0.375000000000000, 0, -3.75000000000000, 
+  0, 4.37500000000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 
+  1.87500000000000, 0, -8.75000000000000, 0, 7.87500000000000, 0, 0, 
+  0, 0, 0, 0, 0, 0, 0, 0}, {-0.312500000000000, 0, 6.56250000000000, 
+  0, -19.6875000000000, 0, 14.4375000000000, 0, 0, 0, 0, 0, 0, 0, 0, 
+  0}, {0, -2.18750000000000, 0, 19.6875000000000, 
+  0, -43.3125000000000, 0, 26.8125000000000, 0, 0, 0, 0, 0, 0, 0, 
+  0}, {0.273437500000000, 0, -9.84375000000000, 0, 54.1406250000000, 
+  0, -93.8437500000000, 0, 50.2734375000000, 0, 0, 0, 0, 0, 0, 0}, {0,
+   2.46093750000000, 0, -36.0937500000000, 0, 140.765625000000, 
+  0, -201.093750000000, 0, 94.9609375000000, 0, 0, 0, 0, 0, 
+  0}, {-0.246093750000000, 0, 13.5351562500000, 0, -117.304687500000, 
+  0, 351.914062500000, 0, -427.324218750000, 0, 180.425781250000, 0, 
+  0, 0, 0, 0}, {0, -2.70703125000000, 0, 58.6523437500000, 
+  0, -351.914062500000, 0, 854.648437500000, 0, -902.128906250000, 0, 
+  344.449218750000, 0, 0, 0, 0}, {0.225585937500000, 
+  0, -17.5957031250000, 0, 219.946289062500, 0, -997.089843750000, 0, 
+  2029.79003906250, 0, -1894.47070312500, 0, 660.194335937500, 0, 0, 
+  0}, {0, 2.93261718750000, 0, -87.9785156250000, 0, 747.817382812500,
+   0, -2706.38671875000, 0, 4736.17675781250, 0, -3961.16601562500, 0,
+   1269.60449218750, 0, 0}, {-0.209472656250000, 0, 21.9946289062500, 
+  0, -373.908691406250, 0, 2368.08837890625, 0, -7104.26513671875, 0, 
+  10893.2065429688, 0, -8252.42919921875, 0, 2448.52294921875, 
+  0}, {0, -3.14208984375000, 0, 124.636230468750, 
+  0, -1420.85302734375, 0, 7104.26513671875, 0, -18155.3442382813, 0, 
+  24757.2875976563, 0, -17139.6606445313, 0, 4733.81103515625}};
   
 #define TABLEWIDTH_B (int) 8
 #define TABLELENGTH_B (int) 47
@@ -457,6 +448,102 @@ inline void scalar_times_matrix(int N_x, int N_y, double M[][3], double common_f
         }
     }
 }
+
+/* KS regularization */
+inline double dot4(double a[4], double b[4])
+{
+    double result = (a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]);
+    return result;
+}
+inline double norm4(double v[4])
+{
+    double result = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3]);
+    return result;
+}
+inline double norm4_squared(double v[4])
+{
+    double result = v[0]*v[0] + v[1]*v[1] + v[2]*v[2] + v[3]*v[3];
+    return result;
+}   
+
+inline void transform_r_to_u_d0(double r[3], double u_d0[4])
+{
+  if (r[0] >= 0.0)
+  {
+    u_d0[0] = sqrt(0.5*(r[0] + norm3(r)));
+    u_d0[1] = 0.5*r[1]/u_d0[0];
+    u_d0[2] = 0.5*r[2]/u_d0[0];
+    u_d0[3] = 0.0;
+  }
+  else if (r[0] < 0.0)
+  {
+    u_d0[1] = sqrt(0.5*(norm3(r) - r[0]));
+    u_d0[0] = 0.5*r[1]/u_d0[1];
+    u_d0[3] = 0.5*r[2]/u_d0[1];
+    u_d0[2] = 0.0;
+  }
+}
+
+inline void transform_v_to_u_d1(double u_d0[4], double v[3], double u_d1[4])
+{
+  u_d1[0] = 0.5*(u_d0[0]*v[0] + u_d0[1]*v[1] + u_d0[2]*v[2]);
+  u_d1[1] = 0.5*(-u_d0[1]*v[0] + u_d0[0]*v[1] + u_d0[3]*v[2]);
+  u_d1[2] = 0.5*(-u_d0[2]*v[0] - u_d0[3]*v[1] + u_d0[0]*v[2]);
+  u_d1[3] = 0.5*(u_d0[3]*v[0] - u_d0[2]*v[1] + u_d0[1]*v[2]);
+}
+
+inline void transform_u_d0_to_r(double u_d0[4], double r[3])
+{
+  r[0] = u_d0[0]*u_d0[0] - u_d0[1]*u_d0[1] - u_d0[2]*u_d0[2] + u_d0[3]*u_d0[3];
+  r[1] = 2.0*(u_d0[0]*u_d0[1] - u_d0[2]*u_d0[3]);
+  r[2] = 2.0*(u_d0[0]*u_d0[2] + u_d0[1]*u_d0[3]);
+}
+
+inline void transform_u_d1_to_v(double u_d0[4], double u_d1[4], double v[3])
+{
+	double r_norm = norm4_squared(u_d0);
+  v[0] = 2.0*(u_d0[0]*u_d1[0] - u_d0[1]*u_d1[1] - u_d0[2]*u_d1[2] + u_d0[3]*u_d1[3])/r_norm;
+  v[1] = 2.0*(u_d0[1]*u_d1[0] + u_d0[0]*u_d1[1] - u_d0[3]*u_d1[2] - u_d0[2]*u_d1[3])/r_norm;
+  v[2] = 2.0*(u_d0[2]*u_d1[0] + u_d0[3]*u_d1[1] + u_d0[0]*u_d1[2] + u_d0[1]*u_d1[3])/r_norm;
+}
+
+inline void transform_u_star_to_v(double u[4], double u_star[4], double omega, double v[3])
+{
+    double r_norm = norm4_squared(u);
+    double factor = 4.0*omega/r_norm;
+    
+    v[0] = factor*(u[0]*u_star[0] - u[1]*u_star[1] - u[2]*u_star[2] + u[3]*u_star[3]);
+    v[1] = factor*(u[1]*u_star[0] + u[0]*u_star[1] - u[3]*u_star[2] - u[2]*u_star[3]);
+    v[2] = factor*(u[2]*u_star[0] + u[3]*u_star[1] + u[0]*u_star[2] + u[1]*u_star[3]);
+}
+    
+inline void transform_v_to_u_star(double u[4], double v[3], double omega, double u_star[4])
+{
+    double factor = 0.25/omega;
+    u_star[0] = factor*(u[0]*v[0] + u[1]*v[1] + u[2]*v[2]);
+    u_star[1] = factor*(-u[1]*v[0] + u[0]*v[1] + u[3]*v[2]);
+    u_star[2] = factor*(-u[2]*v[0] - u[3]*v[1] + u[0]*v[2]);
+    u_star[3] = factor*(u[3]*v[0] - u[2]*v[1] + u[1]*v[2]);
+}
+
+inline void LT_u_on_vec3(double u_d0[4], double vec3[3], double result[4])
+{
+  result[0] = u_d0[0]*vec3[0] + u_d0[1]*vec3[1] + u_d0[2]*vec3[2];
+  result[1] = -u_d0[1]*vec3[0] + u_d0[0]*vec3[1] + u_d0[3]*vec3[2];
+  result[2] = -u_d0[2]*vec3[0] - u_d0[3]*vec3[1] + u_d0[0]*vec3[2];
+  result[3] = u_d0[3]*vec3[0] - u_d0[2]*vec3[1] + u_d0[1]*vec3[2];
+}
+
+inline void transform_alpha_beta_to_u_u_star(double alpha[4], double beta[4], double E, double u[4], double u_star[4])
+{
+    double cos_E_div2 = cos(c_1div2*E);
+    double sin_E_div2 = sin(c_1div2*E);
+    for (int i=0; i<4; i++)
+    {
+        u[i] = alpha[i]*cos_E_div2 + beta[i]*sin_E_div2;
+        u_star[i] = -c_1div2*alpha[i]*sin_E_div2 + c_1div2*beta[i]*cos_E_div2;
+    }
+}
 #endif
 
 
@@ -527,22 +614,25 @@ class Particle
     int level,highest_level;
     int is_binary;
     double mass,child1_mass,child2_mass,total_system_mass;
-
+    double mu; /* reduced mass */
+    int integration_method;
+    
     /*******************
     /* body properties *
      * ****************/
 
     /* general */
     double radius;
-    double spin_vec_x,spin_vec_y,spin_vec_z;
+    //double spin_vec_x,spin_vec_y,spin_vec_z;
     double spin_vec_x_dot,spin_vec_y_dot,spin_vec_z_dot;
     
-    double x,y,z;
-    double vx,vy,vz;
+    /* Absolute position/velocities (relative to an arbitrary inertial reference frame) */
+    double R_vec[3];
+    double V_vec[3];
 
     /* stellar evolution */
     int stellar_type;
-    int evolve_as_star;
+    bool evolve_as_star;
     double sse_initial_mass,sse_time_step;
     double mass_dot_wind,radius_dot,radius_ddot,ospin_dot;
     double epoch,age;
@@ -555,6 +645,7 @@ class Particle
     double apsidal_motion_constant, gyration_radius;
     
     /* RLOF */
+    bool include_mass_transfer_terms;
     int RLOF_flag; /* 0: not in RLOF; 1: in RLOF */
     double mass_dot_RLOF;
     int emt_ejection_radius_mode;
@@ -562,34 +653,60 @@ class Particle
     double emt_tau;
     int RLOF_at_pericentre_has_occurred_entering_RLOF;
     double fm;
+        
+    /* Relative position/velocities (applies to binaries only) */
+    double r,v;
+    double r_vec[3];
+    double v_vec[3];
+    double a_vec[3];
+    double r_p2,r_p3;
+    double r_pm1,r_pm2,r_pm3;
+
+    /* KS-related */
+    double KS_alpha_vec[4],KS_beta_vec[4];
+    double KS_u_vec[4],KS_u_star_vec[4];
+    double KS_omega,KS_E,KS_a_vec[3];
+    double KS_V;
+        
+    double KS_dalpha_vec_dt[4],KS_dbeta_vec_dt[4];
+    double KS_domega_dt,KS_dE_dt;
+    
+    bool KS_use_perturbing_potential;
+    
+    /* phases */
+    double true_anomaly;
+    double initial_mean_anomaly; /* used to track phases of averaged orbits */
     
     /* kicks */
     int kick_distribution;
     double kick_distribution_sigma;
 
-    /* used in ODE solver only */
+    
+
     double spin_vec[3],dspin_vec_dt[3]; 
     double spin_vec_norm;
     double dmass_dt,dradius_dt;    
     
-    void set_ODE_quantities(double delta_time);
-    void reset_ODE_quantities();
+    bool merged;
+    
+    //void set_ODE_quantities(double delta_time);
+    //void reset_ODE_quantities();
     
     /*********************
     /* binary properties *
      * ******************/
 
     /* general */
-    double e_vec_x,e_vec_y,e_vec_z;
-    double h_vec_x,h_vec_y,h_vec_z;
+    //double e_vec_x,e_vec_y,e_vec_z;
+    //double h_vec_x,h_vec_y,h_vec_z;
 
-    double e_vec_x_dot,e_vec_y_dot,e_vec_z_dot;
-    double h_vec_x_dot,h_vec_y_dot,h_vec_z_dot;
+    //double e_vec_x_dot,e_vec_y_dot,e_vec_z_dot;
+    //double h_vec_x_dot,h_vec_y_dot,h_vec_z_dot;
    
-    double true_anomaly;
+    //double true_anomaly;
     
     /* PN terms */
-    int include_pairwise_1PN_terms,include_pairwise_25PN_terms;
+    bool include_pairwise_1PN_terms,include_pairwise_25PN_terms;
         
     /* tidal friction */
     int include_tidal_friction_terms,tides_method,include_tidal_bulges_precession_terms,include_rotation_precession_terms;
@@ -599,15 +716,16 @@ class Particle
     int tides_viscous_time_scale_prescription;
 
     /* root finding */
-    int check_for_secular_breakdown,secular_breakdown_has_occurred;
-    int check_for_dynamical_instability,dynamical_instability_has_occurred,dynamical_instability_criterion;
+    bool check_for_secular_breakdown,secular_breakdown_has_occurred;
+    bool check_for_dynamical_instability,dynamical_instability_has_occurred;
+    int dynamical_instability_criterion;
     int dynamical_instability_central_particle;
     double dynamical_instability_K_parameter;
-    int check_for_physical_collision_or_orbit_crossing,physical_collision_or_orbit_crossing_has_occurred;
-    int check_for_minimum_periapse_distance,minimum_periapse_distance_has_occurred;
+    bool check_for_physical_collision_or_orbit_crossing,physical_collision_or_orbit_crossing_has_occurred;
+    bool check_for_minimum_periapse_distance,minimum_periapse_distance_has_occurred;
     double check_for_minimum_periapse_distance_value;
-    int check_for_RLOF_at_pericentre,check_for_RLOF_at_pericentre_use_sepinsky_fit,RLOF_at_pericentre_has_occurred;
-    int check_for_GW_condition,GW_condition_has_occurred;    
+    bool check_for_RLOF_at_pericentre,check_for_RLOF_at_pericentre_use_sepinsky_fit,RLOF_at_pericentre_has_occurred;
+    bool check_for_GW_condition,GW_condition_has_occurred;    
 
     /* used in ODE solver only */
     double e_vec[3],h_vec[3];
@@ -622,12 +740,12 @@ class Particle
 //    Particle(int index, int is_binary, int child1, int child2, double mass, double radius, double spin_vec_x, double spin_vec_y, double spin_vec_z, double e_vec_x, double e_vec_y, double e_vec_z, double h_vec_x, double h_vec_y, double h_vec_z, int include_pairwise_1PN_terms, int include_pairwise_25PN_terms, int include_tides_terms, double tides_Q_prime, double tides_gyration_radius, int check_for_secular_breakdown, int secular_breakdown_has_occurred, int check_for_dynamical_instability, int dynamical_instability_has_occurred, int dynamical_instability_criterion, int check_for_physical_collision, int physical_collision_has_occurred) : index(index), is_binary(is_binary), child1(child1), child2(child2), mass(mass), radius(radius), spin_vec_x(spin_vec_x), spin_vec_y(spin_vec_y), spin_vec_z(spin_vec_z), e_vec_x(e_vec_x), e_vec_y(e_vec_y), e_vec_z(e_vec_z), h_vec_x(h_vec_x), h_vec_y(h_vec_y), h_vec_z(h_vec_z), include_pairwise_1PN_terms(include_pairwise_1PN_terms), include_pairwise_25PN_terms(include_pairwise_25PN_terms), include_tides_terms(include_tides_terms), tides_Q_prime(tides_Q_prime), tides_gyration_radius(tides_gyration_radius), 
 
     /* user-specified instantaneous perturbations */
-    int sample_orbital_phase_randomly;
+    bool sample_orbital_phase_randomly;
     double instantaneous_perturbation_delta_mass;
-    double instantaneous_perturbation_delta_x,instantaneous_perturbation_delta_y,instantaneous_perturbation_delta_z;
-    double instantaneous_perturbation_delta_vx,instantaneous_perturbation_delta_vy,instantaneous_perturbation_delta_vz;
+    double instantaneous_perturbation_delta_X,instantaneous_perturbation_delta_Y,instantaneous_perturbation_delta_Z;
+    double instantaneous_perturbation_delta_VX,instantaneous_perturbation_delta_VY,instantaneous_perturbation_delta_VZ;
 
-    int is_external;
+    bool is_external;
     double external_t_ref,external_e,external_r_p;
 
     /* VRR */
@@ -651,29 +769,42 @@ class Particle
     double VRR_eta_20_init,VRR_eta_a_22_init,VRR_eta_b_22_init,VRR_eta_a_21_init,VRR_eta_b_21_init;
     double VRR_eta_20_final,VRR_eta_a_22_final,VRR_eta_b_22_final,VRR_eta_a_21_final,VRR_eta_b_21_final;
     
-
-
+    bool has_found_parent;
+    bool stable;
+    bool is_bound;
+    
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
+        stable = true;
+        is_bound = true;
+        has_found_parent = false;
+        
         /* default values */
-        check_for_secular_breakdown = 0;
-        check_for_dynamical_instability = 0;
-        check_for_physical_collision_or_orbit_crossing = 1;
-        check_for_minimum_periapse_distance = 0;
-        check_for_RLOF_at_pericentre = 0;
-        check_for_RLOF_at_pericentre_use_sepinsky_fit = 0; /* 0: use Eggleton formula for consistency with emt model */
+        check_for_secular_breakdown = false;
+        check_for_dynamical_instability = true;
+        check_for_physical_collision_or_orbit_crossing = true;
+        check_for_minimum_periapse_distance = false;
+        check_for_RLOF_at_pericentre = true;
+        check_for_RLOF_at_pericentre_use_sepinsky_fit = false; /* 0: use Eggleton formula for consistency with emt model */
 
-        secular_breakdown_has_occurred = 0;
-        dynamical_instability_has_occurred = 0;
-        physical_collision_or_orbit_crossing_has_occurred = 0;
-        minimum_periapse_distance_has_occurred = 0;
-        RLOF_at_pericentre_has_occurred = 0;
+        dynamical_instability_criterion = 0;
+
+        integration_method = 0;
+        KS_omega = KS_E = 0.0;
+        KS_use_perturbing_potential = true;
+        
+        secular_breakdown_has_occurred = false;
+        dynamical_instability_has_occurred = false;
+        physical_collision_or_orbit_crossing_has_occurred = false;
+        minimum_periapse_distance_has_occurred = false;
+        RLOF_at_pericentre_has_occurred = false;
+        GW_condition_has_occurred = false;
        
-        include_pairwise_1PN_terms = 1;
-        include_pairwise_25PN_terms = 1;
-        include_tidal_friction_terms = 1;
-        include_tidal_bulges_precession_terms = 1;
-        include_rotation_precession_terms = 1;
+        include_pairwise_1PN_terms = true;
+        include_pairwise_25PN_terms = true;
+        include_tidal_friction_terms = true;
+        include_tidal_bulges_precession_terms = true;
+        include_rotation_precession_terms = true;
 
         radius = 1.0e-10; /* this must be set (to nonzero), otherwise ODE solver will have invalid ewt values */
         tides_method = 1; /* `full' tides equations of motion including spin-orbit terms for all orientations */
@@ -683,7 +814,7 @@ class Particle
 
         /* stellar evolution */
         stellar_type = 1;
-        evolve_as_star = 1;
+        evolve_as_star = true;
         sse_initial_mass = 0.0;
         sse_time_step = 1.0;
         metallicity = 0.02;
@@ -697,8 +828,10 @@ class Particle
         apsidal_motion_constant = 0.19;
         gyration_radius = 0.08;
         mass_dot_wind = radius_dot = radius_ddot = ospin_dot = 0.0;
+        child1_mass_dot_wind = child2_mass_dot_wind = 0.0;
                 
         /* RLOF */
+        include_mass_transfer_terms = true;
         RLOF_flag = 0;
         mass_dot_RLOF = 0.0;
         emt_ejection_radius_mode = 0;
@@ -710,19 +843,19 @@ class Particle
         kick_distribution = 0;
         kick_distribution_sigma = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
          
-        sample_orbital_phase_randomly = 1;
+        sample_orbital_phase_randomly = true;
         instantaneous_perturbation_delta_mass = 0.0;
-        instantaneous_perturbation_delta_x = instantaneous_perturbation_delta_y = instantaneous_perturbation_delta_z = 0.0;
-        instantaneous_perturbation_delta_vx = instantaneous_perturbation_delta_vy = instantaneous_perturbation_delta_vz = 0.0;
+        instantaneous_perturbation_delta_X = instantaneous_perturbation_delta_Y = instantaneous_perturbation_delta_Z = 0.0;
+        instantaneous_perturbation_delta_VX = instantaneous_perturbation_delta_VY = instantaneous_perturbation_delta_VZ = 0.0;
         
-        spin_vec_x = 0.0;
-        spin_vec_y = 0.0;
-        spin_vec_z = 1.0e-10;
+        //spin_vec_x = 0.0;
+        //spin_vec_y = 0.0;
+        //spin_vec_z = 1.0e-10;
         
-        e_vec_x_dot = e_vec_y_dot = e_vec_z_dot = 0.0;
-        h_vec_x_dot = h_vec_y_dot = h_vec_z_dot = 0.0;
+        //e_vec_x_dot = e_vec_y_dot = e_vec_z_dot = 0.0;
+        //h_vec_x_dot = h_vec_y_dot = h_vec_z_dot = 0.0;
      
-        is_external = 0;
+        is_external = false;
         external_t_ref = 0.0;
         external_r_p = 1.0;
         external_e = 10.0;
@@ -759,16 +892,19 @@ class Particle
         VRR_eta_b_22_final = 0.0;
         VRR_eta_a_21_final = 0.0;
         VRR_eta_b_21_final = 0.0;
-
+        
+        merged = false;
     }
 };
+
+#endif
 
 typedef std::map<int, Particle *> ParticlesMap;
 typedef std::map<int, Particle *>::iterator ParticlesMapIterator;
 
-extern int highest_particle_index;
+
+//extern int highest_particle_index;
 extern ParticlesMap particlesMap;
-#endif
 
 /* CVODE UserData */
 #ifndef __UserData

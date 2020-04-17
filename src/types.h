@@ -63,6 +63,9 @@ extern double flybys_stellar_density_at_R_enc;
 extern double flybys_internal_mass;
 extern double flybys_internal_semimajor_axis;
 
+extern int binary_evolution_CE_energy_flag;
+extern int binary_evolution_CE_spin_flag;
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT
@@ -73,6 +76,7 @@ extern double flybys_internal_semimajor_axis;
 #define CONST_L_SUN         (double)    2.71040410975e+14
 #endif
 
+#define TWOPI               (double)    2.0 * M_PI
 #define yr_to_Myr           (double)    1.0e-6
 #define Myr_to_yr           (double)    1.0e6
 #define c_1div2             (double)    1.0/2.0
@@ -594,6 +598,31 @@ extern "C" void deltat_(int *kw, double *age, double *tm, double *tn, double *ts
 extern "C" void hrdiag_(double *mass, double *aj, double *mt, double *tm, double *tn, double * tscls, double *lums, double *GB, double *zpars,
     double *r, double *lum, int *kw, double *mc, double *rc, double *menv, double *renv, double *k2);
 extern "C" double vrotf_(double mt);    
+extern "C" double rzamsf_(double *m);
+extern "C" double celamf_(int *kw, double *m, double *lum, double *rad, double *rzams, double *menv, double *fac);
+//extern "C" int ktype_(int *kw1, int *kw2);
+extern "C" void dgcore_(int *kw1, int *kw2, int *kw3, double *m1, double *m2, double *m3, double *ebinde);
+extern "C" void gntage_(double *mc, double *mt, int *kw, double *zpars, double *m0, double *aj);
+
+const int MERGER_TABLE[15][15] =
+{
+   {1,1,2,3,4,5,6,4,6,6,3,6,6,13,14}, \
+   {1,1,2,3,4,5,6,4,6,6,3,6,6,13,14}, \
+   {2,2,3,3,4,4,5,4,4,4,3,5,5,13,14}, \
+   {3,3,3,3,4,4,5,4,4,4,3,5,5,13,14}, \
+   {4,4,4,4,4,4,4,4,4,4,4,4,4,13,14}, \
+   {5,5,4,4,4,4,4,4,4,4,4,4,4,13,14}, \
+   {6,6,5,5,4,4,6,4,6,6,5,6,6,13,14}, \
+   {4,4,4,4,4,4,4,7,8,9,7,9,9,13,14}, \
+   {6,6,4,4,4,4,6,8,8,9,7,9,9,13,14}, \
+   {6,6,4,4,4,4,6,9,9,9,7,9,9,13,14}, \
+   {3,3,3,3,4,4,5,7,7,7,15,9,9,13,14}, \
+   {6,6,5,5,4,4,6,9,9,9,9,11,12,13,14}, \
+   {6,6,5,5,4,4,6,9,9,9,9,12,12,13,14}, \
+   {13,13,13,13,13,13,13,13,13,13,13,13,13,13,14}, \
+   {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14}
+};
+
 #endif
 
 
@@ -654,6 +683,10 @@ class Particle
     int RLOF_at_pericentre_has_occurred_entering_RLOF;
     double fm;
         
+    /* Common-envelope evolution */
+    double common_envelope_alpha;
+    double common_envelope_lambda;
+        
     /* Relative position/velocities (applies to binaries only) */
     double r,v;
     double r_vec[3];
@@ -680,7 +713,7 @@ class Particle
     /* kicks */
     int kick_distribution;
     double kick_distribution_sigma;
-
+    bool apply_kick;
     
 
     double spin_vec[3],dspin_vec_dt[3]; 
@@ -838,10 +871,13 @@ class Particle
         emt_accretion_radius = 0.0;
         emt_tau = 0.0;
         
-        
+        /* CE */
+        common_envelope_alpha = 1.0;
+        common_envelope_lambda = 1.0;
         /* kicks */
         kick_distribution = 0;
         kick_distribution_sigma = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
+        apply_kick = true;
          
         sample_orbital_phase_randomly = true;
         instantaneous_perturbation_delta_mass = 0.0;

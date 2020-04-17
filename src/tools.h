@@ -26,5 +26,8 @@ void compute_semimajor_axis_and_eccentricity_from_orbital_vectors(double m1, dou
 void get_position_and_velocity_vectors_from_particle(Particle *p, double r[3], double v[3]);
 void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], double v[3]);
 
+double compute_h(double m1, double m2, double a, double e);
+void get_unit_vector(double vec[3], double vec_unit[3]);
+
 void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
 }

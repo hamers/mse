@@ -47,6 +47,9 @@ class MSE(object):
         self.__include_dotriacontupole_order_binary_pair_terms = True
         self.__include_double_averaging_corrections = False
 
+        self.__binary_evolution_CE_energy_flag = 0
+        self.__binary_evolution_CE_spin_flag = 0
+
         self.__particles_committed = False
         self.model_time = 0.0
         self.time_step = 0.0
@@ -193,7 +196,7 @@ class MSE(object):
         self.__set_constants_in_code()
 
         self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
-            ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
+            ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_int)
         self.lib.set_parameters.restype = ctypes.c_int
          
         self.__set_parameters_in_code() 
@@ -555,7 +558,8 @@ class MSE(object):
              self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
              self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
              self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
-             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion)
+             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
+             self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag)
 
     def reset(self):
         self.__init__()
@@ -628,8 +632,10 @@ class MSE(object):
         self.__CONST_PER_PC3 = value
         self.__set_constants_in_code()
 
-
+    ##################
     ### Parameters ###
+    ##################
+    
     @property
     def relative_tolerance(self):
         return self.__relative_tolerance
@@ -721,6 +727,8 @@ class MSE(object):
         self.__random_seed = value
         self.__set_random_seed()
         
+
+    ### Flybys ###
     @property
     def include_flybys(self):
         return self.__include_flybys
@@ -811,6 +819,26 @@ class MSE(object):
         self.__flybys_stellar_relative_velocity_dispersion = value
         self.__set_parameters_in_code()
 
+
+    ### Binary evolution ###
+    @property
+    def binary_evolution_CE_energy_flag(self):
+        return self.__binary_evolution_CE_energy_flag
+    
+    @binary_evolution_CE_energy_flag.setter
+    def binary_evolution_CE_energy_flag(self, value):
+        self.__binary_evolution_CE_energy_flag = value
+        self.__set_parameters_in_code()
+        
+    @property
+    def binary_evolution_CE_spin_flag(self):
+        return self.__binary_evolution_CE_spin_flag
+    
+    @binary_evolution_CE_spin_flag.setter
+    def binary_evolution_CE_spin_flag(self, value):
+        self.__binary_evolution_CE_spin_flag = value
+        self.__set_parameters_in_code()
+        
         
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \

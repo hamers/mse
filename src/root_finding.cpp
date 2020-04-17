@@ -377,11 +377,10 @@ int investigate_roots_in_system(ParticlesMap *particlesMap)
             if (p->physical_collision_or_orbit_crossing_has_occurred == true)
             {
                 p->physical_collision_or_orbit_crossing_has_occurred = false;
-                
                 Particle *child1 = (*particlesMap)[p->child1];
                 Particle *child2 = (*particlesMap)[p->child2];
 
-                if (child1->is_binary == false and child2->is_binary == false) // only consider collision/merger between two bodies
+                if (child1->is_binary == false and child2->is_binary == false) // only consider collision/merger between two bodies; TO DO: what to do in other cases (can they occur)?
                 {
                     p->merged = true;
                     return_flag = 4;

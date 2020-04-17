@@ -20,7 +20,6 @@ int initialize_stars(ParticlesMap *particlesMap)
     
     double mass,mt;
     double z;
-    double *zpars;
 
     int i;
     int kw;
@@ -36,7 +35,8 @@ int initialize_stars(ParticlesMap *particlesMap)
         if (p->is_binary == false and p->evolve_as_star == true)
         {
             z = p->metallicity;
-            
+
+            double *zpars;
             zpars = new double[20];
             zcnsts_(&z,zpars);
             p->zpars = zpars;
@@ -111,6 +111,7 @@ int initialize_spins(ParticlesMap *particlesMap)
 
 int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects)
 {
+    /* TO DO: apsidal_motion_constant? */
     //double mass = 5.0;
 
     value1_.neta = 0.5;
@@ -128,7 +129,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     //        value5_.epsnov = 0.0;
     //        value5_.eddfac = 0.0;
     //        value5_.gamma = 0.0;
-    flags_.ceflag = 0;
+    flags_.ceflag = binary_evolution_CE_energy_flag;
     flags_.tflag = 0;
     flags_.ifflag = 0;
     flags_.nsflag = 1;
@@ -147,6 +148,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     double dt,dt_min;
     double r,lum,mc,rc,menv,renv,tms;
     double r_old,mt_old;
+    double rzams,fac,menv_fraction;
     int kw,kw_old;
     double spin_vec[3];
     dt_min = 1.0e100;
@@ -186,7 +188,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             
             z = p->metallicity;
             zpars = p->zpars;
-
+            //printf("SE %g\n",zpars[0]);
             //spin_vec[0] = p->spin_vec_x;
             //spin_vec[1] = p->spin_vec_y;
             //spin_vec[2] = p->spin_vec_z;
@@ -292,6 +294,13 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 p->core_radius = rc*CONST_R_SUN;
                 p->convective_envelope_mass = menv;
                 p->convective_envelope_radius = renv*CONST_R_SUN;
+                
+                //rzams = rzamsf_(&sse_initial_mass);
+                //fac = value2_.lambda;
+                //menv_fraction = menv/(mt - mc);
+                //p->common_envelope_lambda = celamf_(&kw,&sse_initial_mass,&lum,&r,&rzams,&menv_fraction,&fac);
+                //printf("kw %d lambda %g menv_fraction %g\n",kw,p->common_envelope_lambda,menv_fraction);
+                
             }
             p->sse_time_step = sse_time_step*Myr_to_yr;
 

@@ -7,7 +7,7 @@
 extern "C"
 {
 
-int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int integration_flag)
+int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *integration_flag)
 {
     int flag;
     double VX,VY,VZ;
@@ -50,7 +50,15 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int i
     }
     
     *unbound_orbits = check_for_unbound_orbits(particlesMap);
-    
+
+    if (*unbound_orbits == true)
+    {
+        printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
+        *integration_flag = 3;
+                //*state = 3; /* TO DO: make general state macros */
+                //break;
+    }
+
     reset_instantaneous_perturbation_quantities(particlesMap);
             
     return 0;
@@ -70,7 +78,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 
     double vnorm;
     
-    if (p->kick_distribution == 0) // no kicks
+    if (p->kick_distribution == 0 or p->apply_kick == false) // no kicks
     {
         vnorm = 0.0;
     }

@@ -69,11 +69,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     flag = evolve_stars(particlesMap,t,0.0,&dt,true,&apply_SNe_effects);
     //printf("dt0 %g max_dt %g\n",dt,max_dt);
     dt = min(dt,min_dt);
-    dt_binary_evolution = min_dt;
+    //dt_binary_evolution = min_dt;
+    dt_binary_evolution = max_dt;
     
     //printf("initial dt %g\n",dt);
     /* Time loop */
-    printf("evolve.cpp -- start integration_flag %d\n",*integration_flag);
+    //printf("evolve.cpp -- start integration_flag %d\n",*integration_flag);
     //integration_flag = 0; // start secular
     int i=0;
     *state = 0;
@@ -85,25 +86,24 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         /* Stellar evolution */
 
-//        printf("i %d\n",i);
-        //printf("1 t %g t_old %g dt %g t-t_old %g\n",t,t_old,dt,t-t_old);
-        //flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
         //printf("pre ev\n");
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
         //printf("post ev\n");
-        //printf("dt_stev %g\n",dt_stev);
+
+        /* SNe */
         if (apply_SNe_effects == true)
         {
-            flag = handle_SNe_in_system(particlesMap,&unbound_orbits,*integration_flag);
-            if (unbound_orbits == true)
-            {
-                printf("Unbound orbits in system due to supernova!\n");
-                *integration_flag = 3;
-                //*state = 3; /* TO DO: make general state macros */
-                //break;
-            }
+            flag = handle_SNe_in_system(particlesMap,&unbound_orbits,integration_flag);
         }
         //printf("post SNe\n");
+        
+        /* Binary evolution */
+        flag = handle_binary_evolution(particlesMap,&dt_binary_evolution,integration_flag);
+        //printf("post bin\n");
+        //printf("evolve.cpp -- 3 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
+        
+        
+
         /* Dynamical evolution */
         if (*integration_flag == 0) // Secular
         {
@@ -164,7 +164,9 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         }
         //printf("evolve.cpp -- 1 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
-        dt = dt_stev;
+        
+        /* Time step (phase 1) */
+        dt = min(dt_stev,dt_binary_evolution);
         
         if (*integration_flag > 0)
         {
@@ -175,10 +177,10 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Includes possibility of CE evolution */
         //printf("pre bin\n");
         //printf("evolve.cpp -- 2 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
-        flag = handle_binary_evolution(particlesMap,&dt_binary_evolution);
+//        flag = handle_binary_evolution(particlesMap,&dt_binary_evolution);
         //printf("post bin\n");
         //printf("evolve.cpp -- 3 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
-        dt = min(dt,dt_binary_evolution);
+//        dt = min(dt,dt_binary_evolution);
         
         /* Flybys */
         //printf("test dt %g\n",dt);
@@ -213,6 +215,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         //dt = max(dt,1.0e0);
 
+        /* Time step (phase 2) */
+
         if (t + dt >= end_time)
         {
             dt = end_time - t;
@@ -220,9 +224,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             //printf("adjust dt to reach end time \n");
         }
 
-
         dt = min(dt,max_dt);
-        
         dt = max(dt,min_dt);
 
 

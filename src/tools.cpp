@@ -505,6 +505,25 @@ void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], do
     p->V_vec[2] = v[2];
 }
 
+double compute_h(double m1, double m2, double a, double e)
+{
+    return m1 * m2 * sqrt(CONST_G * a * (1.0 - e * e) / (m1 + m2));
+}
+
+void get_unit_vector(double vec[3], double vec_unit[3])
+{
+    double v = norm3(vec);
+    if (v == 0.0)
+    {
+        v = epsilon;
+    }
+    
+    for (int i=0; i<3; i++)
+    {
+        vec_unit[i] = vec[i]/v;
+    }
+}
+
 void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
 {
     (*target).clear();

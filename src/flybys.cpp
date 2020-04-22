@@ -9,9 +9,11 @@ extern "C"
 
 int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits, int integration_flag)
 {
+   
     //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
 
     //printf("handle_next_flyby %d\n",initialize);
+
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
     if (initialize == true)
@@ -248,7 +250,7 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == 0)
+        if (p->is_binary == false and p->is_bound == true)
         {
             /* Careful: is it OK to set these to zero here? */
             p->instantaneous_perturbation_delta_mass = 0.0;

@@ -20,7 +20,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
-        
+        printf("determine_binary_parents_and_levels reset parent %d\n",P_p->parent);
         P_p->parent = -1;
     }
 
@@ -99,7 +99,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             
         }
     }
-
+    printf("done 1\n");
     /* determine levels and set of parents for each particle */
     int highest_level = 0;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -147,7 +147,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         highest_level = max(P_p->level,highest_level);
         
     }
-
+    printf("done 2\n");
     /* write highest level to all particles -- needed for function set_binary_masses_from_body_masses */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -167,6 +167,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             }
         }
     }
+    printf("done 3\n");
 
     return 0;
 }
@@ -218,6 +219,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
+        //printf("determine total system mass -- level %d\n",P_p->level);
         if (P_p->level==0) /* lowest-level binary */
         {
             total_system_mass = P_p->child1_mass + P_p->child2_mass;
@@ -427,7 +429,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     set_binary_masses_from_body_masses(particlesMap);
-    
+    printf("determine_internal_mass_and_semimajor_axis 0\n");
     double h_tot_vec[3];
     double semimajor_axis,eccentricity,inclination,argument_of_pericenter,longitude_of_ascending_node;
     
@@ -445,7 +447,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
                 p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
                 &semimajor_axis, &eccentricity, &inclination, &argument_of_pericenter, &longitude_of_ascending_node); 
             flybys_internal_semimajor_axis = semimajor_axis;
-            //printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",flybys_internal_mass,flybys_internal_semimajor_axis);
+            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",flybys_internal_mass,flybys_internal_semimajor_axis);
         }
     }
 }

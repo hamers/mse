@@ -528,6 +528,7 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
 {
     (*target).clear();
     int index;
+    int j=0;
     bool is_binary;
     ParticlesMapIterator it_p;
     for (it_p = source->begin(); it_p != source->end(); it_p++)
@@ -535,9 +536,13 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
         Particle *p = (*it_p).second;
         //is_binary = p->is_binary;
         index = p->index;
-        
-        (*target)[index] = p;
+        printf("copy_particles index %d j %d\n",index,j);
+        (*target)[j] = p;
+        j++;
+        //p->parent = -1;
     }
+    
+    printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
 }

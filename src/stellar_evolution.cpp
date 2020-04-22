@@ -68,6 +68,7 @@ int initialize_stars(ParticlesMap *particlesMap)
             p->sse_initial_mass = mass;
             p->stellar_type = kw;
             p->age = age*Myr_to_yr;
+            p->sse_main_sequence_timescale = tms*Myr_to_yr;
 
             p->luminosity = lum*CONST_L_SUN;
             p->core_mass = mc;
@@ -287,7 +288,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 }
                 
                 p->age = age*Myr_to_yr;
-        
+                p->sse_main_sequence_timescale = tms*Myr_to_yr;
                 //p->radius = r*CONST_R_SUN;
                 p->luminosity = lum*CONST_L_SUN;
                 p->core_mass = mc;

@@ -54,4 +54,7 @@ double flybys_internal_semimajor_axis = 0.0;
 
 int binary_evolution_CE_energy_flag = 0;
 int binary_evolution_CE_spin_flag = 0;
+
+double chandrasekhar_mass = 1.44;
+
 }

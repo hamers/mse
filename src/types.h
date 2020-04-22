@@ -66,6 +66,8 @@ extern double flybys_internal_semimajor_axis;
 extern int binary_evolution_CE_energy_flag;
 extern int binary_evolution_CE_spin_flag;
 
+extern double chandrasekhar_mass;
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT
@@ -663,6 +665,7 @@ class Particle
     int stellar_type;
     bool evolve_as_star;
     double sse_initial_mass,sse_time_step;
+    double sse_main_sequence_timescale;
     double mass_dot_wind,radius_dot,radius_ddot,ospin_dot;
     double epoch,age;
     double metallicity;
@@ -862,6 +865,7 @@ class Particle
         gyration_radius = 0.08;
         mass_dot_wind = radius_dot = radius_ddot = ospin_dot = 0.0;
         child1_mass_dot_wind = child2_mass_dot_wind = 0.0;
+        sse_main_sequence_timescale = 0.0;
                 
         /* RLOF */
         include_mass_transfer_terms = true;

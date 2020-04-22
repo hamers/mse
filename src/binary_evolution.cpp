@@ -44,7 +44,7 @@ int compute_mass_transfer_properties(ParticlesMap *particlesMap, double *dt_bina
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *donor = (*it_p).second;
-        if (donor->is_binary == false)
+        if (donor->is_binary == false and donor->is_bound == true)
         {
 
             /* For testing CE */

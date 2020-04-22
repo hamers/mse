@@ -18,7 +18,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
     double dt = t - t_old;
 
-    printf("nbody_evolution.cpp -- integrate_nbody_system -- dt %g\n",dt);
+    printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
 
     printf("pre... dt %g\n",dt);
     print_state(R);
@@ -56,18 +56,21 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
    
     copy_particlesMap(&new_particlesMap,particlesMap); /* overwrite everything in the particlesMap that was passed onto void integrate_nbody_system */
 
+    update_stellar_evolution_quantities_during_nbody_integration(particlesMap,dt);
+
     if (stable_system == true)
     {
         *integration_flag = 0; // Switch back to secular
-
-        int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
-        determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-        set_binary_masses_from_body_masses(particlesMap);
     }
     else
     {
         *integration_flag = 1; // Continue running direct N-body
     }
+
+    int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
+    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+    set_binary_masses_from_body_masses(particlesMap);
+
 
     *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
         
@@ -77,7 +80,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     free_data(R);
     
-    update_stellar_evolution_quantities_during_nbody_integration(particlesMap,dt);
+    
         
     return; // &new_particlesMap;
 }

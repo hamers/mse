@@ -16,10 +16,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 //    zpars = new double[20];
 //    zcnsts_(&z,zpars);
 
-
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    
+    //if (*integration_flag == 0)
+    {
+        determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+        printf("pre evolve %d %d %d %d\n",N_bodies,N_binaries,N_root_finding,N_ODE_equations);
+    }
     /* WARNING: TEMPORARY CODE TO QUICKLY SET MASS TRANSFER RATES FOR TESTING PURPOSES */
     //Particle *s1 = (*particlesMap)[0];
     //Particle *s2 = (*particlesMap)[1];
@@ -153,8 +155,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             {
                 printf("Collision/merger\n");
                 *CVODE_flag = 0;
-                // handle_mergers (...);
-                break;
+                handle_collisions(particlesMap,integration_flag);
+                //break;
             }
             else
             {
@@ -187,11 +189,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         if (include_flybys == true)
         {
 
-            if (t + dt >= flybys_t_next_encounter and last_iteration == false)
+            if (t + dt >= flybys_t_next_encounter and last_iteration == false and *integration_flag==0)
             {
                 //printf("NE t+dt %g flybys_t_next_encounter %g \n",t+dt,flybys_t_next_encounter);
+                printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
                 dt = flybys_t_next_encounter - t;
-            
+                
                 handle_next_flyby(particlesMap, false, &unbound_orbits, *integration_flag);
 
                 if (unbound_orbits == true)
@@ -260,13 +263,15 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     //printf("done %d\n",i);
     
-    
-    int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
-    determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);
-    if (N_binaries != N_binaries_new and *integration_flag == 0)
+    //if (*integration_flag == 0)
     {
-        printf("Restructuring of system! %d %d\n",N_binaries,N_binaries_new);
-        *state = 1;
+        int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
+        determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);
+        if (N_binaries != N_binaries_new and *integration_flag == 0)
+        {
+            printf("Restructuring of system! %d %d\n",N_binaries,N_binaries_new);
+            *state = 1;
+        }
     }
     
     *output_time = t;

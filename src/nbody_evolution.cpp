@@ -10,8 +10,14 @@ extern "C"
 
 void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *dt_nbody)
 {
-    
-    /* Assumes that R_vec and V_vec are already correctly set when this function is called */
+    /* Integration flags:
+     * 0: secular
+     * 1: N-body (initiated after dynamical instability; could last for a while)
+     * 2: N-body (initiated after semisecular; will last indefinitely)
+     * 3: N-body after unbound orbit(s) due to SNe
+     * 4: N-body after unbound orbit(s) due to flyby */
+     
+    /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
     struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap);
 
@@ -27,7 +33,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     print_state(R);
 
    
-    /* TO DO: handle collisions */
+    /* TO DO: include & handle collisions in N-body */
     
     if (*integration_flag == 2) // Continue with direct N-body after semisecular regime; need to make sure particlesMap is updated with pos/vel of bodies
     {
@@ -56,7 +62,8 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
    
     copy_particlesMap(&new_particlesMap,particlesMap); /* overwrite everything in the particlesMap that was passed onto void integrate_nbody_system */
 
-    update_stellar_evolution_quantities_during_nbody_integration(particlesMap,dt);
+    /* When doing secular integration, some stellar evolution quantities are updated as parts of the ODE solution. In the N-body case, these quantities need to be updated manually */
+    update_stellar_evolution_quantities_directly(particlesMap,dt); /* the dt here should be consistent with the dt used to compute the time derivatives in stellar_evolution.cpp */
 
     if (stable_system == true)
     {
@@ -64,12 +71,13 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     }
     else
     {
-        *integration_flag = 1; // Continue running direct N-body
+        *integration_flag = 1; // Continue running direct N-body in "default" mode
     }
 
-    int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
-    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    set_binary_masses_from_body_masses(particlesMap);
+    //int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
+    //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+    //set_binary_masses_from_body_masses(particlesMap);
+    update_structure(particlesMap);
 
 
     *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
@@ -85,7 +93,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     return; // &new_particlesMap;
 }
 
-void update_stellar_evolution_quantities_during_nbody_integration(ParticlesMap *particlesMap, double dt)
+void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt)
 {
     int i;
     double spin_vec_norm;

@@ -7,7 +7,7 @@
 extern "C"
 {
 
-int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits, int integration_flag)
+int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits, int *integration_flag)
 {
    
     //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
@@ -35,7 +35,14 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound
         compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, unbound_orbits, integration_flag);
         //printf("flybys.cpp -- compute_effects_of_flyby_on_system\n");
     }
-    
+
+    if (*unbound_orbits == true)
+    {
+        printf("flybys.cpp -- handle_next_flyby -- unbound orbits in system due to flyby!\n");
+//        *state = 4; /* TO DO: make general state macros */
+        *integration_flag = 4;
+    }
+
     return 0;
 }
 
@@ -225,7 +232,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 }
 
 
-int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, int integration_flag)
+int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, int *integration_flag)
 {
     int flag;
     double vx,vy,vz;
@@ -258,7 +265,7 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
             p->instantaneous_perturbation_delta_Y = 0.0;
             p->instantaneous_perturbation_delta_Z = 0.0;
 
-            if (integration_flag == 0)
+            if (*integration_flag == 0)
             {
                 set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used in secular case */
             }
@@ -288,7 +295,7 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
         }
     }
     
-    if (integration_flag == 0)
+    if (*integration_flag == 0)
     {
         apply_user_specified_instantaneous_perturbation(particlesMap);
     }

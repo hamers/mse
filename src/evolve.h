@@ -28,6 +28,7 @@
 #include "binary_evolution.h"
 #include "nbody_evolution.h"
 #include "merger.h"
+#include "test.h"
 
 extern "C"
 {

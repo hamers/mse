@@ -43,6 +43,7 @@ int compute_mass_transfer_properties(ParticlesMap *particlesMap, double *dt_bina
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
+
         Particle *donor = (*it_p).second;
         if (donor->is_binary == false and donor->is_bound == true)
         {
@@ -109,6 +110,8 @@ int compute_mass_transfer_properties(ParticlesMap *particlesMap, double *dt_bina
         }
 
     }
+    
+    update_structure(particlesMap);
     
     return 0;
     
@@ -198,6 +201,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 */
 
     printf("CE\n");
+
+    set_up_derived_ODE_quantities(particlesMap); /* for setting a, e, etc. */
 
     Particle *binary = (*particlesMap)[binary_index];
     Particle *star1 = (*particlesMap)[index1];
@@ -403,6 +408,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
                 star1->apply_kick = true;
                 //star1->instantaneous_perturbation_delta_mass = M1 - MF;
             }
+            
             // TO DO: include kicks 
             //IF(KW1.GE.13)THEN
                //CALL kick(KW1,MF,M1,M2,ECC,SEPF,JORB,VS)
@@ -542,6 +548,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
                //CALL kick(KW2,MF,M2,M1,ECC,SEPF,JORB,VS)
                //IF(ECC.GT.1.D0) GOTO 30
             }
+            
         }
     } // back at main level
     
@@ -587,6 +594,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
                FAGE2 = (AJ2 - TSCLS2[1])/(TSCLS2[12] - TSCLS2[1]);
             }
         }
+        //printf("COEL True FAGE1 %g FAGE 2 %g\n",FAGE1,FAGE2);
     }
 
     /* Now calculate the final mass following coelescence.  This requires a Newton-Raphson iteration. 
@@ -687,7 +695,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
          KW1 = KW;
          ECC = 0.0;
     }
-    else /* No coalescence */
+    else if (COEL == false) /* No coalescence */
     {
         
         /* Check if any eccentricity remains in the orbit by first using 
@@ -727,19 +735,21 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     label30:
     {
     
-    bool unbound_orbits = false;
+    //bool unbound_orbits = false;
     double spin_vec_unit[3];
-    
+    printf("COEL %d\n",COEL);
     if (COEL == false)
     {
         
         /* Handle effect of fast mass loss on the rest of the system */
-        
+        printf("no coel M1 %g M2 %g kw1 %d kw2 %d\n",M1,M2,KW1,KW2);
         star1->instantaneous_perturbation_delta_mass = M1 - star1->mass; // final minus initial mass
         star2->instantaneous_perturbation_delta_mass = M2 - star2->mass; // final minus initial mass        
 
-        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
-        
+        //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+        printf("post SN\n");
+        print_system(particlesMap);
         /* Update the stars and orbit */
         star1->stellar_type = KW1;
         
@@ -794,9 +804,11 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         }
 
         /* Set new e & h vectors for the binary.
-         * Assume they only change in magnitude */
+         * Assume they only change in magnitude.
+         * Note: this overrides the changes made to the binary's orbit after calling handle_SNe_in_system above */
          
         double a = SEPF * CONST_R_SUN;
+        printf("a %g\n",a);
         double e = ECC;
         double h = compute_h(M1,M2,a,e);
 
@@ -818,21 +830,28 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
     
     }
-    else
+    else if (COEL == true)
     {
-        /* Handle effect of fast mass loss on the rest of the system */
         binary->is_binary = false; /* The binary becomes a body */
         particlesMap->erase(star1->index);
         particlesMap->erase(star2->index);
         
+        /* Handle effect of fast mass loss on the rest of the system */
+        //printf("post merge\n");
+        //print_system(particlesMap);
         /* Should coelesced objects get a kick? 
          * For now, assume no kick */
         binary->apply_kick = false;
         binary->mass = star1->mass + star2->mass; // the old mass
         binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
+        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
         
-        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+        //apply_user_specified_instantaneous_perturbation(particlesMap);
+        //reset_instantaneous_perturbation_quantities(particlesMap);
         
+        //printf("mold %g mnew %g\n",binary->mass,M1);
+        //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+        //printf("done SNe\n");
         /* Update the merged star */
         binary->stellar_type = KW1;
         

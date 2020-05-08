@@ -30,4 +30,11 @@ double compute_h(double m1, double m2, double a, double e);
 void get_unit_vector(double vec[3], double vec_unit[3]);
 
 void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
+
+void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
+void print_system(ParticlesMap *particlesMap);
+
+void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3]);
+double get_mutual_angle(double a_vec[3], double b_vec[3]);
+
 }

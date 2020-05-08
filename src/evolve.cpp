@@ -106,7 +106,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         
         
 
-        /* Dynamical evolution */
+        /* Dynamical evolution -- will update masses/radii */
         if (*integration_flag == 0) // Secular
         {
             flag = integrate_ODE_system(particlesMap,t_old,t,&t_out,hamiltonian,CVODE_flag,CVODE_error_code);
@@ -189,21 +189,21 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         if (include_flybys == true)
         {
 
-            if (t + dt >= flybys_t_next_encounter and last_iteration == false and *integration_flag==0)
+            if (t + dt >= flybys_t_next_encounter and last_iteration == false)// and *integration_flag==0)
             {
                 //printf("NE t+dt %g flybys_t_next_encounter %g \n",t+dt,flybys_t_next_encounter);
                 printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
                 dt = flybys_t_next_encounter - t;
                 
-                handle_next_flyby(particlesMap, false, &unbound_orbits, *integration_flag);
+                handle_next_flyby(particlesMap, false, &unbound_orbits, integration_flag);
 
-                if (unbound_orbits == true)
-                {
-                    printf("Unbound orbits in system due to flyby!\n");
-                    *state = 4; /* TO DO: make general state macros */
-                    *integration_flag = 4;
-                    break;
-                }
+//                if (unbound_orbits == true)
+//                {
+//                    printf("Unbound orbits in system due to flyby!\n");
+//                    *state = 4; /* TO DO: make general state macros */
+//                    *integration_flag = 4;
+//                    break;
+//                }
                 //N_enc,N_not_impulsive,time_next_encounter,M_per,b_vec,V_per_vec = sample_next_impulsive_encounter(cmd_options,simulation_parameters_particle,time_next_encounter,N_enc,N_not_impulsive,output_arrays,store_encounter_data,W_max,total_encounter_rate,initial_final_mass_data)
             
                 //stop = apply_impulsive_encounter(cmd_options,secular_code,channel_from_particles_to_secular_code,channel_from_secular_code_to_particles,simulation_parameters_particle.particles,M_per,b_vec,V_per_vec)
@@ -273,7 +273,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             *state = 1;
         }
     }
-    
+    printf("end of evolve\n");
     *output_time = t;
     *hamiltonian = 0.0;
     //*output_flag = 0;

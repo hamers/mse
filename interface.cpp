@@ -847,7 +847,7 @@ int initialize_code()
     if (include_flybys == true)
     {
         bool unbound_orbits;        
-        handle_next_flyby(&particlesMap,true,&unbound_orbits,integration_flag);
+        handle_next_flyby(&particlesMap,true,&unbound_orbits,&integration_flag);
     }
 
     initialize_stars(&particlesMap);
@@ -961,6 +961,20 @@ int set_random_seed(int value)
     return 0;
 }
 
+
+
+/***********
+ * Testing *
+ * ********/
+
+int unit_tests_interface()
+{
+    int flag=0;
+    flag += test_collisions();
+    
+    
+    return flag;
 }
 
 
+}

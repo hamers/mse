@@ -410,7 +410,7 @@ void set_up_derived_ODE_quantities(ParticlesMap *particlesMap)
             p->j_p5 = p->j*p->j_p4;
 
             p->a = p->h*p->h*p->child1_mass_plus_child2_mass/( CONST_G*p->child1_mass_times_child2_mass*p->child1_mass_times_child2_mass*p->j_p2 );
-           
+
             p->r = norm3(p->r_vec);
             p->r_p2 = p->r*p->r;
             p->r_p3 = p->r*p->r_p2;

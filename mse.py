@@ -229,6 +229,11 @@ class MSE(object):
         self.lib.initialize_code.argtypes = ()
         self.lib.initialize_code.restype = ctypes.c_int
         
+        ### tests ###
+        self.lib.unit_tests_interface.argtypes = ()
+        self.lib.unit_tests_interface.restype = ctypes.c_int
+
+
     ###############
     
 #    def add_particle(self,particle):
@@ -292,6 +297,11 @@ class MSE(object):
         
         flag = self.__update_particles_in_code()
 
+        ### get initial system structure ###
+        orbits = [p for p in self.particles if p.is_binary == True]
+        children1_old = [o.child1.index for o in orbits]
+        children2_old = [o.child2.index for o in orbits]
+
         ### integrate system of ODEs ###
         start_time = self.model_time
 #        time_step = end_time - start_time   
@@ -319,13 +329,22 @@ class MSE(object):
         self.state = state
         self.integration_flag = integration_flag
 
-        if self.state != 0:
-            self.__copy_particle_structure_from_code()
+        #if self.integration_flag == 0: 
+        self.__copy_particle_structure_from_code()
 
         self.__update_particles_from_code()
 
+        ### check if the system structure changed ###
+        orbits = [p for p in self.particles if p.is_binary == True]
+        children1 = [o.child1.index for o in orbits]
+        children2 = [o.child2.index for o in orbits]
+            
+        self.structure_change = False
+        if children1 != children1_old or children2 != children2_old:
+            self.structure_change = True
 
-        return self.state,self.CVODE_flag,self.CVODE_error_code
+
+        return self.state,self.structure_change,self.CVODE_flag,self.CVODE_error_code
 
     def apply_external_perturbation_assuming_integrated_orbits(self):
         self.__update_particles_in_code()
@@ -567,6 +586,11 @@ class MSE(object):
         
     def __set_random_seed(self):
         self.lib.set_random_seed(self.random_seed)
+
+
+    ### Tests ###
+    def unit_tests(self):
+        return self.lib.unit_tests_interface()
 
     ### Constants ###
     @property

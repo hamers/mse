@@ -6,7 +6,7 @@ extern "C"
 void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *dt_nbody);
 double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag, double P_orb_min, double P_orb_max);
 
-void update_stellar_evolution_quantities_during_nbody_integration(ParticlesMap *particlesMap, double dt);
+void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt);
 
 int handle_dynamical_instability(ParticlesMap *particlesMap);
 //void create_mstar_instance_of_system(ParticlesMap *particlesMap, struct RegularizedRegion *R);

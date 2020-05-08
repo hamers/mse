@@ -30,7 +30,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
             if (fabs(p->instantaneous_perturbation_delta_mass) > 0.0)
             {
                 flag = sample_kick_velocity(p,&VX,&VY,&VZ);
-                printf("SNe.cpp -- vk %g % g %g\n",VX,VY,VZ);
+                printf("SNe.cpp -- delta_m %g vk %g % g %g\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ);
                 p->instantaneous_perturbation_delta_VX = VX;
                 p->instantaneous_perturbation_delta_VY = VY;
                 p->instantaneous_perturbation_delta_VZ = VZ;
@@ -39,8 +39,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
             
         }
     }
-
-    if (integration_flag == 0) /* secular case */
+    if (*integration_flag == 0) /* secular case */
     {
         apply_user_specified_instantaneous_perturbation(particlesMap);
     }

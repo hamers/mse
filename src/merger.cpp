@@ -20,22 +20,46 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
             Particle *child1 = (*particlesMap)[p->child1];
             Particle *child2 = (*particlesMap)[p->child2];
 
-            int kw = p->stellar_type;
-            if (kw >= 2 and kw <= 9 and kw != 7)
+            int kw1 = child1->stellar_type;
+            int kw2 = child2->stellar_type;
+            if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
             {
                 common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, integration_flag);
             }
-            else
+            else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
+            {
+                common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, integration_flag);
+            }
+            else /* "true" collision in other cases */
             {
                 collision_product(particlesMap, p->index, child1->index, child2->index, integration_flag);
             }
         }
     }
+
+    update_structure(particlesMap);
 }
 
 
+void apply_instantaneous_mass_changes_and_kicks(ParticlesMap *particlesMap, int *integration_flag)
+{
+
+    apply_user_specified_instantaneous_perturbation(particlesMap);
+    reset_instantaneous_perturbation_quantities(particlesMap);
+    
+    bool unbound_orbits = check_for_unbound_orbits(particlesMap);
+    if (unbound_orbits == true)
+    {
+        *integration_flag = 5;
+        printf("merger.cpp -- apply_instantaneous_mass_changes_and_kicks -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+    }
+}
+
 void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, int *integration_flag)
 {
+    printf("CP\n");
+    set_up_derived_ODE_quantities(particlesMap); /* for setting a, e, etc. */
+
     Particle *b = (*particlesMap)[binary_index];
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
@@ -249,8 +273,11 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     b->apply_kick = apply_kick;
     b->kick_distribution = kick_distribution;
 
-    bool unbound_orbits;
-    handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+    //bool unbound_orbits;
+    //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+    apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+
+    printf("CP -- destroyed %d\n",destroyed);
     
     /* Update the merged object */
     if (destroyed == false)
@@ -337,6 +364,228 @@ int determine_merger_type(int kw1, int kw2)
     return MERGER_TABLE[kw1][kw2];
 }
 
+
+void determine_compact_object_merger_properties(double m1, double m2, double chi1, double chi2, double spin_vec_1_unit[3], double spin_vec_2_unit[3], double h_vec_unit[3], double e_vec_unit[3], double v_recoil_vec[3])
+{
+    /* Assumes m1 <= m2 */
+    
+    double alpha1_vec[3],alpha2_vec[3];
+    int i;
+    for (i=0; i<3; i++)
+    {
+        alpha1_vec[i] = chi1 * spin_vec_1_unit[i];
+        alpha2_vec[i] = chi2 * spin_vec_2_unit[i];
+    }
+
+    double alpha1_par,alpha2_par,alpha1_perp,alpha2_perp;
+    double alpha1_perp_vec[3],alpha2_perp_vec[3];
+    get_parallel_and_perpendicular_vectors_and_components(alpha1_vec, h_vec_unit, &alpha1_par, &alpha1_perp, alpha1_perp_vec);
+    get_parallel_and_perpendicular_vectors_and_components(alpha2_vec, h_vec_unit, &alpha2_par, &alpha2_perp, alpha2_perp_vec);
+    
+    double q = m1/m2; /* q <= 1 */
+    double q_p2 = q*q;
+    double one_plus_q = 1.0 + q;
+    double one_plus_q_p2 = one_plus_q * one_plus_q;
+    
+    double M = m1 + m2;
+    double eta = q/( one_plus_q_p2 );
+    double eta_p2 = eta*eta;
+    
+    double q_vec_unit[3];
+    cross3(h_vec_unit,e_vec_unit,q_vec_unit);
+    
+    double e1_vec_unit[3],e2_vec_unit[3];
+    double infall_direction_vec[3] = {1.0,0.0,0.0};    
+    double Delta_vec[3];
+    double S_vec[3];
+    for (i=0; i<3; i++)
+    {
+        e1_vec_unit[i] = e_vec_unit[i];
+        e2_vec_unit[i] = q_vec_unit[i];
+        Delta_vec[i] = M * ( alpha1_vec[i] * m1 + alpha2_vec[i] * m2 );
+        S_vec[i] = alpha1_vec[i] * m1*m1 + alpha2_vec[i] * m2*m2;
+    }
+    
+    
+    double Theta_Delta = get_mutual_angle(Delta_vec,infall_direction_vec);
+    double Theta_S = get_mutual_angle(S_vec,infall_direction_vec);
+    
+    double Theta_0 = 0.0;
+    double Theta_1 = ((double) rand() / (RAND_MAX)) * 2.0 * M_PI;
+    double zeta = 145.0 * M_PI/180.0;
+
+    /* Unit for constants below where applicable: km/s */
+    double A = 1.2e4;
+    double B = -0.93;
+    double H = 6.9e3;
+    double K = 6.2e4;
+    double K_S = -0.056;
+    double B_K = 0.0;
+    double B_H = 0.0;
+    double H_S = 0.0;
+
+    double v_m = A * eta_p2 * ((1.0 - q) / (1.0 + q)) * (1.0 + B * eta);
+    double v_perp = H * (eta_p2 / (1.0 + q) ) * ( (1.0 + B_H * eta) * (alpha2_par - q * alpha1_par) + H_S * ((1.0 - q)/( one_plus_q_p2)) * (alpha2_par + q_p2 * alpha1_par) );
+    double v_par = K * (eta_p2 / (1.0 + q) ) * ( (1.0 + B_K * eta) * fabs(alpha2_perp - q * alpha1_perp) * cos(Theta_Delta - Theta_0) \
+        + K_S * ( (1.0-q)/( one_plus_q_p2 ) ) * fabs(alpha2_perp + q_p2 * alpha1_perp) * cos(Theta_S - Theta_1) );
+    
+    for (i=0; i<3; i++)
+    {
+        v_recoil_vec[i] = v_m * e1_vec_unit[i] + v_perp * (cos(zeta) * e1_vec_unit[i] + sin(zeta) * e2_vec_unit[i]) + v_par * h_vec_unit[i];
+        v_recoil_vec[i] *= CONST_KM_PER_S; /* convert km/s to AU/yr */
+    }
+}
+
+
+
+#ifdef IGNORE
+
+def determine_recoil_velocity(CONST_G,CONST_C,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit):
+    ### assumes m1 <= m2 ###
+    alpha1_vec = chi1 * spin_vec_1_unit
+    alpha2_vec = chi2 * spin_vec_2_unit
+    alpha1_par, alpha1_perp = get_parallel_and_perpendicular_components(alpha1_vec,h_vec_unit)
+    alpha2_par, alpha2_perp = get_parallel_and_perpendicular_components(alpha2_vec,h_vec_unit)
+    
+    q = m1/m2
+    M = m1 + m2
+    eta = q/( (1.0+q)**2 )
+    
+    q_vec_unit = np.cross(h_vec_unit,e_vec_unit)
+    
+    e1_vec_unit = e_vec_unit
+    e2_vec_unit = q_vec_unit
+
+    infall_direction_vec = np.array( [1.0,0.0,0.0] )
+
+    Delta_vec = M * ( alpha1_vec * m1 + alpha2_vec * m2 )
+    Theta_Delta = get_mutual_angle(Delta_vec,infall_direction_vec)
+    
+    S_vec = alpha1_vec * m1**2 + alpha2_vec * m2**2
+    Theta_S = get_mutual_angle(S_vec,infall_direction_vec)
+    
+    Theta_0 = 0.0
+    #Theta_1 = 0.0 ### check
+    Theta_1 = np.random.random() * 2.0 * np.pi
+    zeta = 145.0 * np.pi/180.0
+
+    A = 1.2e4
+    B = -0.93
+    H = 6.9e3
+    K = 6.2e4
+    K_S = -0.056
+    B_K = 0.0
+    B_H = 0.0
+    H_S = 0.0
+
+    v_m = A * eta**2 * ((1.0 - q) / (1.0 + q)) * (1.0 + B * eta)
+    v_perp = H * (eta**2 / (1.0 + q) ) * ( (1.0 + B_H * eta) * (alpha2_par - q * alpha1_par) + H_S * ((1.0 - q)/( (1.0 + q)**2)) * (alpha2_par + q**2 * alpha1_par) )
+    v_par = K * (eta**2 / (1.0 + q) ) * ( (1.0 + B_K * eta) * np.fabs(alpha2_perp - q * alpha1_perp) * np.cos(Theta_Delta - Theta_0) \
+        + K_S * ( (1.0-q)/( (1.0 + q)**2 ) ) * np.fabs(alpha2_perp + q**2 * alpha1_perp) * np.cos(Theta_S - Theta_1) )
+    
+    v_recoil_vec = v_m * e1_vec_unit + v_perp * (np.cos(zeta) * e1_vec_unit + np.sin(zeta) * e2_vec_unit) + v_par * h_vec_unit
+
+    return v_recoil_vec
+
+def determine_fractional_remnant_mass(CONST_G,CONST_C,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit):
+    ### assumes m1 <= m2 ###
+    q = m1/m2
+    M = m1 + m2
+    eta = q/( (1.0+q)**2 )
+
+    alpha1_vec = chi1 * spin_vec_1_unit
+    alpha2_vec = chi2 * spin_vec_2_unit
+    alpha1_par, alpha1_perp = get_parallel_and_perpendicular_components(alpha1_vec,h_vec_unit)
+    alpha2_par, alpha2_perp = get_parallel_and_perpendicular_components(alpha2_vec,h_vec_unit)
+    
+    E_2 = 0.341 ### pm 0.014
+    E_3 = 0.522 ### pm 0.062
+    E_S = 0.673 ### pm 0.035
+    E_Delta = -0.3689 ### pm 0.37
+    E_A = -0.0136 ### pm 0.021
+    E_B = 0.045 ### pm 0.010
+    E_C = 0.0
+    E_D = 0.2611 ### pm 0.44
+    E_E = 0.09594 ### pm 0.00045
+    E_F = 0.0
+    
+    Theta_2 = 0.0
+    Theta_3 = np.random.random() * 2.0 * np.pi
+    
+    Delta_plus_vec = M * ( alpha2_vec * m2 + alpha1_vec * m1 )
+    Delta_minus_vec = M * ( alpha2_vec * m2 - alpha1_vec * m1 )
+    
+    infall_direction_vec = np.array( [1.0,0.0,0.0] )
+    Theta_plus = get_mutual_angle(Delta_plus_vec,infall_direction_vec)
+    Theta_minus = get_mutual_angle(Delta_minus_vec,infall_direction_vec)
+    
+    E_ISCO = (1.0 - np.sqrt(8.0)/3.0) + 0.103803 * eta \
+        + ( 1.0/(36.0*np.sqrt(3.0) * (1.0 + q)**2) ) * ( q * (1.0 + 2.0 * q) * alpha1_par + (2.0 + q) * alpha2_par ) \
+        - ( 5.0 / (324.0*np.sqrt(2.0) * (1.0 + q)**2) ) * ( np.dot(alpha2_vec,alpha2_vec) - 3.0 * alpha2_par**2 - 2.0 * q * ( np.dot(alpha1_vec,alpha2_vec) - 3.0 * alpha1_par * alpha2_par ) + q**2 * (np.dot(alpha1_vec,alpha1_vec) - 3.0 * alpha1_par**2 ) )
+
+    delta_M_div_M = eta * E_ISCO + E_2 * eta**2 + E_3 * eta**3 \
+        + (eta**2/( (1.0 + q)**2) ) * ( E_S * (alpha2_par + q**2 * alpha1_par) + E_Delta * (1.0 - q)* (alpha2_par - q * alpha1_par) + E_A * np.dot( alpha2_vec + q * alpha1_vec, alpha2_vec + q * alpha1_vec ) \
+            + E_B * (alpha2_perp + q * alpha1_perp)**2 * ( np.cos(Theta_plus - Theta_2)**2 + E_C) + E_D * np.dot(alpha2_vec - q * alpha1_vec, alpha2_vec - q * alpha1_vec) \
+            + E_E * (alpha2_perp - q * alpha1_perp)**2 * ( np.cos(Theta_minus - Theta_3)**2 + E_F ) )
+    
+    #print("delta_M_div_M",Theta_plus,Theta_minus)
+    #exit(0)
+    return delta_M_div_M
+
+def determine_remnant_mass_and_spin(CONST_G,CONST_C,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit):
+    ### assumes m1 <= m2 ###
+    delta_M_div_M = determine_fractional_remnant_mass(CONST_G,CONST_C,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit)
+
+    q = m1/m2
+    M = m1 + m2
+    eta = q/( (1.0+q)**2 )
+        
+    alpha1_vec = chi1 * spin_vec_1_unit
+    alpha2_vec = chi2 * spin_vec_2_unit
+    alpha1_par, alpha1_perp = get_parallel_and_perpendicular_components(alpha1_vec,h_vec_unit)
+    alpha2_par, alpha2_perp = get_parallel_and_perpendicular_components(alpha2_vec,h_vec_unit)
+    
+    alpha1_perp_vec = alpha1_vec - np.dot(alpha1_vec,h_vec_unit) * h_vec_unit
+    alpha2_perp_vec = alpha2_vec - np.dot(alpha2_vec,h_vec_unit) * h_vec_unit
+    
+    q_vec_unit = np.cross(h_vec_unit,e_vec_unit)
+    n_perp_vec_unit = q_vec_unit
+    
+    J_2 = -2.81 ### pm 0.11
+    J_3 = 1.69 ### pm 0.51
+    J_A = -2.9667 ### pm 0.26
+    J_B = -1.7296 ### pm 0.80
+    J_Delta = 0.0
+    J_M = 0.0
+    J_S = 0.0
+    J_MS = 0.0
+    J_MDelta = 0.0
+    Theta_0 = 0.0
+    Theta_2 = 0.0
+    Theta_4 = 0.0
+    Theta_5 = np.random.random() * 2.0 * np.pi
+
+    infall_direction_vec = np.array( [1.0,0.0,0.0] )
+
+    Delta_vec = M * ( alpha1_vec * m1 + alpha2_vec * m2 )
+    Theta_Delta = get_mutual_angle(Delta_vec,infall_direction_vec)
+
+    S_vec = alpha1_vec * m1**2 + alpha2_vec * m2**2
+    Theta_S = get_mutual_angle(S_vec,infall_direction_vec)
+    
+    J_ISCO_vec = ( 2.0*np.sqrt(3.0) - 1.5255862 * eta - (1.0/(9.0*np.sqrt(2.0)*(1.0+q)**2)) * ( q*(7.0 + 8.0*q) * alpha1_par + (8.0 + 7.0 * q) * alpha2_par ) \
+            + (2.0/(9.0*np.sqrt(3.0)*(1.0 + q)**2)) * ( np.dot(alpha2_vec,alpha2_vec) - 3.0*alpha2_par**2 - 2.0 * q * ( np.dot(alpha1_vec,alpha2_vec) - 3.0 * alpha1_par * alpha2_par) + q**2 * (np.dot(alpha1_vec,alpha1_vec) - 3.0 * alpha1_par**2) ) ) * h_vec_unit \
+        - (1.0/(9.0*np.sqrt(2.0)*(1.0+q)**2)) * ( q*(1.0+4.0*q) * alpha1_vec + (4.0 + q) * alpha2_vec ) + (1.0/eta) * (alpha2_vec + q**2 * alpha1_vec)/( (1.0+q)**2 )
+    alpha_vec_final = pow( 1.0 - delta_M_div_M,-2.0) * ( eta * J_ISCO_vec + (J_2 * eta**2 + J_3 * eta**3) * h_vec_unit \
+        + (eta**2/( (1.0+q)**2 )) * ( (J_A*(alpha2_par + q**2 * alpha1_par) + J_B*(1.0-q)*(alpha2_par - q*alpha1_par) )*h_vec_unit \
+        + (1.0-q)*np.linalg.norm(alpha2_perp_vec - q*alpha1_perp_vec) * np.sqrt( J_Delta * np.cos( 2.0*(Theta_Delta - Theta_4) ) + J_MDelta ) * n_perp_vec_unit \
+        + np.linalg.norm(alpha2_perp_vec + q**2 * alpha1_perp_vec) * np.sqrt( J_S * np.cos( 2.0*(Theta_S - Theta_5) ) + J_MS) * n_perp_vec_unit ) )
+    
+    M_final = M - delta_M_div_M * M
+    #print("M_init",M,"M_final",M_final,delta_M_div_M)
+    return M_final, alpha_vec_final
+
+#endif
 
 
 }

@@ -10,6 +10,7 @@ extern "C"
 
 int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodies, int *N_binaries, int *N_root_finding, int *N_ODE_equations)
 {
+    //printf("N %d\n",particlesMap->size());
     *N_bodies = 0;
     *N_binaries = 0;
     *N_root_finding = 0;
@@ -20,7 +21,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
-        printf("determine_binary_parents_and_levels reset parent %d\n",P_p->parent);
+        //printf("determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
         P_p->parent = -1;
     }
 
@@ -99,7 +100,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             
         }
     }
-    printf("done 1\n");
+    //printf("done 1 %d %d %d %d\n",*N_bodies, *N_binaries,*N_root_finding,*N_ODE_equations);
     /* determine levels and set of parents for each particle */
     int highest_level = 0;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -147,7 +148,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         highest_level = max(P_p->level,highest_level);
         
     }
-    printf("done 2\n");
+    //printf("done 2\n");
     /* write highest level to all particles -- needed for function set_binary_masses_from_body_masses */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -167,7 +168,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             }
         }
     }
-    printf("done 3\n");
+    //printf("done 3\n");
 
     return 0;
 }
@@ -177,7 +178,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
 
     /* set binary masses -- to ensure this happens correctly, do this from highest level to lowest level */
     ParticlesMapIterator it_p;
-    int highest_level = (*particlesMap)[0]->highest_level;
+    int highest_level = particlesMap->begin()->second->highest_level;
 
     int level=highest_level;
 
@@ -186,6 +187,8 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
         {
             Particle *P_p = (*it_p).second;
+            highest_level = P_p->highest_level;
+            
             if ((P_p->is_binary == true) && (P_p->level == level))
             {
                 Particle *P_p_child1 = (*particlesMap)[P_p->child1];
@@ -235,12 +238,21 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
     }
 }
 
+void update_structure(ParticlesMap *particlesMap)
+{
+    int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
+    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+    set_binary_masses_from_body_masses(particlesMap);
+    
+}
+
 void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to name of function: "_of_all_bodies" */
 {
     /* Compute and set the positions and velocities of all bodies */
     /* By default, sample orbital phases randomly 
      * if particle.sample_orbital_phases_randomly == False: look for particle.true_anomaly */
-
+    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
+    determine_binary_parents_and_levels(particlesMap, &N_bodies, &N_binaries, &N_root_finding, &N_ODE_equations);
     set_binary_masses_from_body_masses(particlesMap);
 
     double true_anomaly;
@@ -255,7 +267,8 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
     /*/ Go from the top of the system (level=0) downwards */
     
     ParticlesMapIterator it;
-    int highest_level = (*particlesMap)[0]->highest_level;
+    //int highest_level = (*particlesMap)[0]->highest_level;
+    int highest_level = particlesMap->begin()->second->highest_level;
     int level = 0;
     while (level < highest_level)
     {
@@ -333,7 +346,8 @@ void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *partic
     double r_child2[3],v_child2[3];
     
     ParticlesMapIterator it_p;
-    int highest_level = (*particlesMap)[0]->highest_level;
+    //int highest_level = (*particlesMap)[0]->highest_level;
+    int highest_level = particlesMap->begin()->second->highest_level;
     int level=highest_level;
     while (level > -1)
     {
@@ -387,7 +401,8 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
     /*/ Go from the top of the system (level=0) downwards */
     
     ParticlesMapIterator it;
-    int highest_level = (*particlesMap)[0]->highest_level;
+    //int highest_level = (*particlesMap)[0]->highest_level;
+    int highest_level = particlesMap->begin()->second->highest_level;
     int level = 0;
     while (level < highest_level)
     {

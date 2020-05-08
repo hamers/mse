@@ -11,4 +11,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap);
 double determine_longest_orbital_period_in_system(ParticlesMap *particlesMap);
 double determine_shortest_orbital_period_in_system(ParticlesMap *particlesMap);
 int determine_number_of_bodies_in_system(ParticlesMap *particlesMap);
+
+void update_structure(ParticlesMap *particlesMap);
+
 }

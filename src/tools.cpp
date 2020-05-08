@@ -545,4 +545,131 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
     printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
+void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
+{
+    //ParticlesMap particlesMap;
+    
+    int N_binaries = N_bodies-1;
+    //printf("ok1\n");
+    //double masses[2] = {50.0,1.0};
+    int i;
+    int index=0;
+    for (i=0; i<N_bodies; i++)
+    {
+        
+        Particle *p = new Particle(index, false);
+        particlesMap[index] = p;
+        p->mass = masses[i];
+        p->sse_initial_mass = masses[i];
+        p->evolve_as_star = true;
+        p->stellar_type = 1;
+        
+        index++;
+    }
+//printf("ok2 %d %d\n",index,particlesMap.size());
+    int previous_binary;
+    //index=N_bodies;
+    
+    for (i=0; i<N_binaries; i++)
+    {
+        Particle *p = new Particle(index, true);
+        (particlesMap)[index] = p;
+        
+        if (i==0)
+        {
+            p->child1 = particlesMap[0]->index;
+            p->child2 = particlesMap[1]->index;
+        }
+        else
+        {
+            p->child1 = particlesMap[previous_binary]->index;
+            p->child2 = particlesMap[i+1]->index;
+        }
+        //printf("%d %d %d %d %d\n",i,index,previous_binary,p->child1,p->child2);
+        previous_binary = index;
+        index++;
+    }
+    //printf("ok3\n");
+    /* determine masses in all binaries */
+    int N_root_finding,N_ODE_equations;
+    //printf("ok\n");
+    /* determine masses in all binaries */
+
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
+    //printf("ok4\n");
+    set_binary_masses_from_body_masses(&particlesMap);
+    //printf("??? %g\n",particlesMap[2]->child1_mass);
+    index=N_bodies;
+    for (i=0; i<N_binaries; i++)
+    {
+        Particle *p = particlesMap[index];
+
+        //printf("DD %g %g  %g %g %g %g %g %g\n",p->child1_mass, p->child2_mass, smas[i], es[i], \
+            INCLs[i], APs[i], LANs[i]);
+        compute_orbital_vectors_from_orbital_elements(p->child1_mass, p->child2_mass, smas[i], es[i], \
+            INCLs[i], APs[i], LANs[i], \
+            &(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) );
+        
+        
+        index++;
+    }
+    initialize_stars(&particlesMap);
+    
+}
+
+void print_system(ParticlesMap *particlesMap)
+{
+    printf("=============================\n");
+    printf("Printing system; N=%d\n",particlesMap->size());
+    
+    set_up_derived_ODE_quantities(particlesMap);
+    
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        
+        if (p->is_binary == false)
+        {
+            if (p->evolve_as_star == true)
+            {
+                printf("index %d -- body -- m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
+            }
+            else
+            {
+                printf("index %d -- body -- m %g r %g st %d \n",p->index,p->mass,p->radius,p->stellar_type);
+            }
+        }
+        else
+        {
+            printf("index %d -- binary -- child1 %d child2 %d m %g a %g e %g\n",p->index,p->child1,p->child2,p->mass,p->a,p->e);
+        }
+    }
+}
+
+void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3])
+{
+    *a_par = dot3(a_vec,h_vec);
+    for (int i=0; i<3; i++)
+    {
+        a_perp_vec[i] = a_vec[i] - (*a_par) * h_vec[i];
+    }
+    *a_perp = norm3(a_perp_vec);
+}
+
+double get_mutual_angle(double a_vec[3], double b_vec[3])
+{
+    double a_norm = norm3(a_vec);
+    double b_norm = norm3(b_vec);
+    
+    if (a_norm <= epsilon or b_norm <= epsilon)
+    {
+        return 0.0;
+    }
+    else
+    {
+        return acos( dot3(a_vec,b_vec) / ( a_norm * b_norm ) );
+    }
+}
+
 }

@@ -61,8 +61,9 @@ int initialize_stars(ParticlesMap *particlesMap)
             double tms;
             double tphys=0.0;
             double tphysf = 0.0;
-            evolv1_(&kw,&p->sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
 
+            evolv1_(&kw,&p->sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+            
             p->radius = r*CONST_R_SUN;
 
             p->sse_initial_mass = mass;

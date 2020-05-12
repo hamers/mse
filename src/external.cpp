@@ -11,6 +11,20 @@
 extern "C"
 {
 
+void apply_instantaneous_mass_changes_and_kicks(ParticlesMap *particlesMap, int *integration_flag)
+{
+
+    apply_user_specified_instantaneous_perturbation(particlesMap);
+    reset_instantaneous_perturbation_quantities(particlesMap);
+    
+    bool unbound_orbits = check_for_unbound_orbits(particlesMap);
+    if (unbound_orbits == true)
+    {
+        *integration_flag = 5;
+        printf("external.cpp -- apply_instantaneous_mass_changes_and_kicks -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+    }
+}
+
 void apply_user_specified_instantaneous_perturbation(ParticlesMap *particlesMap)
 {
     set_positions_and_velocities(particlesMap);

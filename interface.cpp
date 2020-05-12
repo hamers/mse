@@ -976,5 +976,34 @@ int unit_tests_interface()
     return flag;
 }
 
+int determine_compact_object_merger_properties_interface(double m1, double m2, double chi1, double chi2, \
+    double spin_vec_1_unit_x, double spin_vec_1_unit_y, double spin_vec_1_unit_z, \
+    double spin_vec_2_unit_x, double spin_vec_2_unit_y, double spin_vec_2_unit_z, \
+    double h_vec_unit_x, double h_vec_unit_y, double h_vec_unit_z, \
+    double e_vec_unit_x, double e_vec_unit_y, double e_vec_unit_z, \
+    double *v_recoil_vec_x, double *v_recoil_vec_y, double *v_recoil_vec_z, \
+    double *alpha_vec_final_x, double *alpha_vec_final_y, double *alpha_vec_final_z, \
+    double *M_final)
+{
+    
+    double spin_vec_1_unit[3] = {spin_vec_1_unit_x,spin_vec_1_unit_y,spin_vec_1_unit_z};
+    double spin_vec_2_unit[3] = {spin_vec_2_unit_x,spin_vec_2_unit_y,spin_vec_2_unit_z};
+    double h_vec_unit[3] = {h_vec_unit_x,h_vec_unit_y,h_vec_unit_z};
+    double e_vec_unit[3] = {e_vec_unit_x,e_vec_unit_y,e_vec_unit_z};
+    double v_recoil_vec[3],alpha_vec_final[3];
+ 
+//    printf("determine_compact_object_merger_properties_interface %g %g %g %g\n",m1,m2,chi1,chi2);
+//    printf("s1 %g %g %g s2 %g %g %g\n",spin_vec_1_unit_x, spin_vec_1_unit_y, spin_vec_1_unit_z,spin_vec_2_unit_x, spin_vec_2_unit_y, spin_vec_2_unit_z);
+    determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,M_final);
+
+    *v_recoil_vec_x = v_recoil_vec[0];
+    *v_recoil_vec_y = v_recoil_vec[1];
+    *v_recoil_vec_z = v_recoil_vec[2];
+    *alpha_vec_final_x = alpha_vec_final[0];
+    *alpha_vec_final_y = alpha_vec_final[1];
+    *alpha_vec_final_z = alpha_vec_final[2];
+    
+    return 0;
+}
 
 }

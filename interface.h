@@ -135,10 +135,10 @@ int initialize_code();
 int get_inclination_relative_to_parent(int index, double *inclination_relative_to_parent);
 int get_de_dt(int index, double *de_dt);
 
+
 /************************
 /* parameters *
  ************************/
-
 
 int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_);
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
@@ -151,5 +151,23 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
 
 int get_random_seed(int *value);
 int set_random_seed(int value);
+
+
+
+/***********
+ * Testing *
+ * ********/
+
+int unit_tests_interface();
+
+int determine_compact_object_merger_properties_interface(double m1, double m2, double chi1, double chi2, \
+    double spin_vec_1_unit_x, double spin_vec_1_unit_y, double spin_vec_1_unit_z, \
+    double spin_vec_2_unit_x, double spin_vec_2_unit_y, double spin_vec_2_unit_z, \
+    double h_vec_unit_x, double h_vec_unit_y, double h_vec_unit_z, \
+    double e_vec_unit_x, double e_vec_unit_y, double e_vec_unit_z, \
+    double *v_recoil_vec_x, double *v_recoil_vec_y, double *v_recoil_vec_z, \
+    double *alpha_vec_final_x, double *alpha_vec_final_y, double *alpha_vec_final_z, \
+    double *M_final);
+
 
 }

@@ -388,6 +388,17 @@ void set_up_derived_ODE_quantities(ParticlesMap *particlesMap)
         if (p->is_binary == false)
         {
             p->spin_vec_norm = norm3(p->spin_vec);
+            if (p->spin_vec_norm <= epsilon)
+            {
+                p->spin_vec_norm = epsilon;
+            }
+
+            for (i=0; i<3; i++)
+            {
+                p->spin_vec_unit[i] = p->spin_vec[i]/p->spin_vec_norm;
+            }
+
+            p->chi = compute_spin_parameter_from_spin_frequency(p->mass,p->spin_vec_norm);
         }
         else
         {

@@ -17,17 +17,44 @@ struct points__ points_;
 
 int initialize_stars(ParticlesMap *particlesMap)
 {
+
+    value1_.neta = 0.5;
+    value1_.bwind = 0.0;
+    value1_.hewind = 0.5;
+    value1_.mxns = 3.0;
+    value2_.alpha1 = 1.0;
+    value2_.lambda = 1.0;
+    value3_.idum = 0;
+    value4_.sigma = 190.0;
+    value4_.bhflag = 1;
+    //        value5_.beta = 0.0;
+    //        value5_.xi = 0.0;
+    //        value5_.acc2 = 0.0;
+    //        value5_.epsnov = 0.0;
+    //        value5_.eddfac = 0.0;
+    //        value5_.gamma = 0.0;
+    flags_.ceflag = binary_evolution_CE_energy_flag;
+    flags_.tflag = 0;
+    flags_.ifflag = 0;
+    flags_.nsflag = 1;
+    flags_.wdflag = 1;
+    points_.pts1 = 0.05;
+    points_.pts2 = 0.01;
+    points_.pts3 = 0.02;
     
-    double mass,mt;
+    double sse_initial_mass,mass,mt;
     double z;
 
+    set_up_derived_ODE_quantities(particlesMap); /* compute a & e for all orbits; used at the end below to adjust h vectors such that possible initial stellar evolution would not change the orbital elements  */
+
     int i;
-    int kw;
+    int kw,kw_desired;
     double tm,tn;
     double age;
     double *GB,*tscls,*lums;
     double r,lum,mc,rc,menv,renv,k2;
             
+           
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -41,10 +68,11 @@ int initialize_stars(ParticlesMap *particlesMap)
             zcnsts_(&z,zpars);
             p->zpars = zpars;
             
-            kw = p->stellar_type;
-            mass = p->sse_initial_mass;
+            kw_desired = p->stellar_type;
+            sse_initial_mass = p->sse_initial_mass;
             mt = p->mass;
-            age = p->age*yr_to_Myr;
+            //age = p->age*yr_to_Myr;
+            age = 0.0;
 
             GB = new double[10];
             tscls = new double[20];
@@ -59,17 +87,82 @@ int initialize_stars(ParticlesMap *particlesMap)
             double ospin=0.0;
             double epoch = 0.0;
             double tms;
-            double tphys=0.0;
-            double tphysf = 0.0;
+            double tphys = 0.0;
+            double tphysf = 0.0;;
+            double dt;
 
-            evolv1_(&kw,&p->sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+            if (kw_desired == 0 or kw_desired == 1) /* ZAMS star; no aging */
+            {
+                kw = kw_desired;
+                evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+            }
+            else /* age star until reaching desired stellar type */
+            {
+                //printf("STEV PRE kw_desired %d ev m %g\n",kw_desired,mass);
+                double dtm,dtr;
+                kw = 1;
+                int j=0;
+                while (kw < kw_desired)
+                {
+                    //r=lum=mc=rc=menv=renv=tms=0.0;
+                    //printf("input %d kw minit %g mt %g tphys %g tphysf %g\n",kw,p->sse_initial_mass,mt,tphys,tphysf);
+                    evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+                    age = tphysf - epoch;
+
+                    //star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
+                    //deltat_(&kw,&age,&tm,&tn,tscls,&dtm,&dtr);
+                    dt = get_new_dt(kw,sse_initial_mass,mt,age,dt,zpars);
+                    //dt = max(dtm,dtr);
+//                    dt = min(dtr, dtm);
+//                    dt = max(dt,1.0d-07*age);
+//                    dt = max(dt,1.0e-15);
+
+                    //dtm = min(dtr, dt);
+                    //dtm = max(dtm,1.0d-07*age);
+    
+                    //printf("&kw %d, &mass %g, &mt %g, &tm %g, &tn %g dtm %g dtr %g epoch %g\n",kw, mass, mt, tm, tn, dtm, dtr,epoch);
+                    tphys = tphysf;
+                    tphysf += dt;
+                    //printf("kw %d tphys %g tphysf %g dt %g\n",kw,tphys,tphysf,dt);
+                    j++;
+                    
+                    if (j>10000)
+                    {
+                        printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution\n",p->index,kw_desired,kw);
+                        break;
+                    }
+                }
+            }
+            //printf("pre S %d\n",kw);
+  //          star_(&kw, &sse_initial_mass, &mt, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
+    //printf("t2 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
+
+    //        hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
+                &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
+            #ifdef IGNORE
+            star_(&kw, &sse_initial_mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
+            printf("pre SS %d age %g sse_initial_mass %g mt %g\n",kw,age,sse_initial_mass,mt);
+            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
+                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
+                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
+                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
             
+            printf("arg hrd %g %g %g %g %g \n",sse_initial_mass,age,mt,tm,tn);
+            printf("post S %d\n",kw);
+            #endif
+            
+            //printf("stellar_evolution.cpp -- initialize_star -- done evolve; kw %d sse_initial_mass %g mt %g\n",kw,sse_initial_mass,mt);
+            p->stellar_type = kw;
+
+            p->sse_initial_mass = sse_initial_mass;
+            p->mass = mt;
             p->radius = r*CONST_R_SUN;
 
-            p->sse_initial_mass = mass;
-            p->stellar_type = kw;
             p->age = age*Myr_to_yr;
             p->sse_main_sequence_timescale = tms*Myr_to_yr;
+            p->epoch = epoch*Myr_to_yr;
 
             p->luminosity = lum*CONST_L_SUN;
             p->core_mass = mc;
@@ -93,6 +186,22 @@ int initialize_stars(ParticlesMap *particlesMap)
             //printf("initialize %g %d %g %g %g\n",ospin,p->index,p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             
             p->check_for_RLOF_at_pericentre = true;
+        }
+    }
+
+    update_structure(particlesMap); /* set new binary masses */
+
+    /* Adjust h vectors such that possible initial stellar evolution would not change the original orbital elements  */
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == true)
+        {
+            double h = (p->child1_mass*p->child2_mass*sqrt(CONST_G*p->a/(p->child1_mass + p->child2_mass)))*sqrt(1.0 - p->e * p->e); /* new h based on new masses, but old a & e */
+            for (i=0; i<3; i++)
+            {
+                p->h_vec[i] = p->h_vec_unit[i] * h;
+            }
         }
     }
 
@@ -376,6 +485,9 @@ double get_new_dt(int kw, double mass, double mt, double age, double dt, double 
     
     return dtm;
 }
+
+
+
 
 }
 /*

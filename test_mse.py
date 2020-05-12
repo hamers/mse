@@ -3029,6 +3029,98 @@ class test_mse():
         print("Test passed")
         
 
+    def test101(self,args):
+        print('Test compact object merger remnant properties')
+        
+        code = MSE()
+
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+        
+        N = 10000
+        
+        #np.random.seed(0)
+        m2 = 1.0
+        h_vec_unit = np.array( [0.0,0.0,1.0] )
+        e_vec_unit = np.array( [1.0,0.0,0.0] )
+        
+        seed = 0
+        #code.random_seed = seed
+        np.random.seed(seed)
+        
+        vs = []
+        alphas = []
+        delta_Ms = []
+        for index in range(N):
+            q = np.random.random()
+            #q=1.5/6.5
+            #q=1.0
+            m1 = q * m2
+            M = m1 + m2
+            chi1 = np.random.random()
+            chi2 = np.random.random()
+            #chi1=0.0
+            #chi2=0.0
+                    
+            spin_vec_1_unit = sample_random_vector_on_unit_sphere()
+            spin_vec_2_unit = sample_random_vector_on_unit_sphere()
+
+#            spin_vec_1_unit = np.array( [0.0,0.0,1.0] )
+#            spin_vec_2_unit = np.array( [0.0,0.0,1.0] )
+
+            #v_recoil_vec,alpha_vec,M_final = code.determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit)
+            v_recoil_vec,alpha_vec,M_final = code.determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit)
+            v_recoil = np.linalg.norm(v_recoil_vec)/code.CONST_KM_PER_S ### convert AU/yr to km/s
+            vs.append(v_recoil)
+            
+            alpha = np.linalg.norm(alpha_vec)
+
+            alphas.append(alpha)
+            delta_Ms.append( (M-M_final)/M )
+
+        assert(round(np.mean(np.array(vs)),0) == 306)
+        assert(round(np.mean(np.array(delta_Ms)),3) == 0.036)
+        assert(round(np.mean(np.array(alphas)),3) == 0.631)
+        
+        if args.verbose==True:
+            print("mean vs/(km/s)",np.mean(np.array(vs)),round(np.mean(np.array(vs)),0))
+            print("mean delta_Ms",np.mean(np.array(delta_Ms)))
+            print("mean alphas",np.mean(np.array(alphas)))
+        
+        if args.plot == True:
+            Nb=50
+            fontsize=20
+            from matplotlib import pyplot
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1)
+            plot.hist(vs,bins=np.linspace(0.0,1000.0,Nb),histtype='step')
+            plot.set_xlabel("$v_\mathrm{recoil}/\mathrm{km/s}$",fontsize=fontsize)
+            fig.savefig("v_recoil.pdf")
+            
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1)
+            plot.hist(alphas,bins=np.linspace(0.0,1.0,Nb),histtype='step')
+            plot.set_xlabel(r"$\chi_\mathrm{final}$",fontsize=fontsize)
+            fig.savefig("chi_final.pdf")
+
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1)
+            plot.hist(delta_Ms,bins=np.linspace(0.0,0.2,Nb),histtype='step')
+            plot.set_xlabel(r"$\Delta M/M$",fontsize=fontsize)
+            fig.savefig("Delta_M.pdf")
+
+            pyplot.show()
+        
+   
+def sample_random_vector_on_unit_sphere():
+    INCL = np.arccos( 2.0*np.random.random() - 1.0)
+    LAN = 2.0 * np.pi * np.random.random()
+    return compute_unit_AM_vector(INCL,LAN)
+
+def compute_unit_AM_vector(INCL,LAN):
+    return np.array( [np.sin(LAN)*np.sin(INCL), -np.cos(LAN)*np.sin(INCL), np.cos(INCL)] )
+
 def compute_e_and_j_hat_vectors(INCL,AP,LAN):
     sin_INCL = np.sin(INCL)
     cos_INCL = np.cos(INCL)

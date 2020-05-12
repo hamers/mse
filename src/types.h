@@ -24,8 +24,10 @@ extern double CONST_G_P2;
 extern double CONST_G_P3;
 extern double CONST_C_LIGHT;
 extern double CONST_C_LIGHT_P2;
+extern double CONST_C_LIGHT_P3;
 extern double CONST_C_LIGHT_P4;
 extern double CONST_C_LIGHT_P5;
+extern double CONST_C_LIGHT_P6;
 extern double CONST_MSUN;
 extern double CONST_R_SUN;
 extern double CONST_L_SUN;
@@ -720,8 +722,10 @@ class Particle
     
 
     double spin_vec[3],dspin_vec_dt[3]; 
+    double spin_vec_unit[3];
     double spin_vec_norm;
     double dmass_dt,dradius_dt;    
+    double chi; // GR spin parameter for Kerr BHs
     
     bool merged;
     

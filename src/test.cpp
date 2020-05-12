@@ -17,7 +17,16 @@ int test_collisions()
     //flag = test_collision_star_MS(10.0,1,5.0);
     //flag = test_collision_star_MS(40.0,2,5.0);
     
-    flag = test_collision_stars(5.01,1,5);
+    int i,j;
+    for (i=1; i<=14; i++)
+    {
+        for (j=1; j<=14; j++)
+        {
+            printf("i %d j %d\n",i,j);
+            flag = test_collision_stars(10.0,i,8,j);
+        }
+    }
+    //flag = test_collision_stars(10.0,3,8,6);
     //flag = test_collision_stars(5.01,4,2.0);
     //flag = test_collision_stars(5.01,6,3.0);
     //flag = test_collision_stars(10.0,4,15);
@@ -25,18 +34,25 @@ int test_collisions()
     //flag = test_collision_stars(22.0,14,8.0);
     //flag = test_collision_stars(50.0,14,22.0);
     
+//    double m=1.2;
+//    double Omega = 1.8;
+//    double chi = compute_spin_parameter_from_spin_frequency(m,Omega);
+//    double Omega2 = compute_spin_frequency_from_spin_parameter(m,chi);
+//    printf("test Omega %g %g\n",Omega,Omega2);
+    
     return flag;
 }
 
-int test_collision_stars(double m1, int kw1, double m2)
+int test_collision_stars(double m1, int kw1, double m2, int kw2)
 {
-    printf("*************************************\n");
-    printf("test_collision_star_MS m1 %g kw1 %d\n",m1,kw1);
-    printf("*************************************\n");
+    printf("************************************************\n");
+    printf("test_collision_star_MS m1 %g kw1 %d m2 %g kw2 %d\n",m1,kw1,m2,kw2);
+    printf("************************************************\n");
     
     ParticlesMap particlesMap;
     int N_bodies = 4;
-    double masses[4] = {m1,m2,1.0,1.0};
+    double masses[4] = {m1,m2,100.0,100.0};
+    int stellar_types[4] = {kw1,kw2,1,1};
     double smas[3] = {1.0,100.0,10000.0};
     double es[3] = {0.01,0.01,0.01};
     double TAs[3] = {0.01,0.01,0.01};
@@ -44,7 +60,7 @@ int test_collision_stars(double m1, int kw1, double m2)
     double APs[3] = {0.01,0.01,0.01};
     double LANs[3] = {0.01,0.01,0.01};
     
-    create_nested_system(particlesMap,N_bodies,masses,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
 
     printf("pre evolve\n");
@@ -61,7 +77,8 @@ int test_collision_stars(double m1, int kw1, double m2)
     int integration_flag = 0;
 
     int N_binaries,N_root_finding,N_ODE_equations;
-            
+
+    #ifdef IGNORE
     while (kw < kw1)
     {
         dt = t-t_old;
@@ -98,6 +115,7 @@ int test_collision_stars(double m1, int kw1, double m2)
        // printf("t %g kw %d\n",t,kw);
     }
     update_structure(&particlesMap);
+    #endif
         
     printf("post evolve\n");
     print_system(&particlesMap);
@@ -132,6 +150,7 @@ int test_collision_MS_MS()
     ParticlesMap particlesMap;
     int N_bodies = 4;
     double masses[4] = {10.0,5.0,1.0,1.0};
+    int stellar_types[4] = {1,1,1,1};
     double smas[3] = {1.0,100.0,10000.0};
     double es[3] = {0.01,0.01,0.01};
     double TAs[3] = {0.01,0.01,0.01};
@@ -139,7 +158,7 @@ int test_collision_MS_MS()
     double APs[3] = {0.01,0.01,0.01};
     double LANs[3] = {0.01,0.01,0.01};
     
-    create_nested_system(particlesMap,N_bodies,masses,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
 
     particlesMap[4]->merged = true;
@@ -171,4 +190,6 @@ int test_collision_MS_MS()
 }
 
 
+
+    
 }

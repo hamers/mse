@@ -19,7 +19,8 @@ CXXHEADERS = $(CXXSRC:.cpp=.h)
 CHEADERS = $(CSRC:.c=.h)
 FHEADERS = src/sse/const_bse.h src/sse/zdata.h 
 
-CPPFLAGS = -fPIC -shared -O2 -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings -g
+#CPPFLAGS = -fPIC -shared -O2 -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings
+CPPFLAGS = -fPIC -shared -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings -g 
 FFLAGS = -fPIC
 
 ifeq ($(DEBUG),1)

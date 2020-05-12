@@ -545,7 +545,7 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
     printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
-void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
+void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
 {
     //ParticlesMap particlesMap;
     
@@ -560,9 +560,9 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         Particle *p = new Particle(index, false);
         particlesMap[index] = p;
         p->mass = masses[i];
+        p->stellar_type = stellar_types[i];
         p->sse_initial_mass = masses[i];
         p->evolve_as_star = true;
-        p->stellar_type = 1;
         
         index++;
     }
@@ -614,7 +614,6 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         index++;
     }
     initialize_stars(&particlesMap);
-    
 }
 
 void print_system(ParticlesMap *particlesMap)

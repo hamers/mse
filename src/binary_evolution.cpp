@@ -243,7 +243,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     //printf("t1 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
     star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
     //printf("t2 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
-
+    //printf("arg hrd %g %g %g %g %g \n",M01,AJ1,M1,TM1,TN1);
     hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
         &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
 
@@ -406,6 +406,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
+                star1->kick_distribution = 1;
                 //star1->instantaneous_perturbation_delta_mass = M1 - MF;
             }
             
@@ -530,6 +531,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
+                star1->kick_distribution = 1;
                 // TO DO: handle kick
                //CALL kick(KW1,MF,M1,M2,ECC,SEPF,JORB,VS)
                //IF(ECC.GT.1.D0) GOTO 30
@@ -544,6 +546,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             if(KW2 >= 13 and KW < 13) /* secondary became an NS */
             {
                 star2->apply_kick = true;
+                star2->kick_distribution = 1;
                 // TO DO: handle kick
                //CALL kick(KW2,MF,M2,M1,ECC,SEPF,JORB,VS)
                //IF(ECC.GT.1.D0) GOTO 30
@@ -735,7 +738,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     label30:
     {
     
-    //bool unbound_orbits = false;
+    bool unbound_orbits = false;
     double spin_vec_unit[3];
     printf("COEL %d\n",COEL);
     if (COEL == false)
@@ -746,8 +749,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         star1->instantaneous_perturbation_delta_mass = M1 - star1->mass; // final minus initial mass
         star2->instantaneous_perturbation_delta_mass = M2 - star2->mass; // final minus initial mass        
 
-        //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
-        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this includes possible SNe kicks from individual stars */
+        
+        //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
         printf("post SN\n");
         print_system(particlesMap);
         /* Update the stars and orbit */
@@ -840,17 +844,19 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         //printf("post merge\n");
         //print_system(particlesMap);
         /* Should coelesced objects get a kick? 
-         * For now, assume no kick */
+         * For now, assume no kick
+         * Note: mergers between BHs/NSs should never occur here (CE evolution), rather as collisions */
+
         binary->apply_kick = false;
         binary->mass = star1->mass + star2->mass; // the old mass
         binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
-        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+        //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
         
         //apply_user_specified_instantaneous_perturbation(particlesMap);
         //reset_instantaneous_perturbation_quantities(particlesMap);
         
         //printf("mold %g mnew %g\n",binary->mass,M1);
-        //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* includes sampling kicks for compact objects */
         //printf("done SNe\n");
         /* Update the merged star */
         binary->stellar_type = KW1;

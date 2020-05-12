@@ -2,6 +2,8 @@
 
 extern "C"
 {
+void apply_instantaneous_mass_changes_and_kicks(ParticlesMap *particlesMap, int *integration_flag);
+    
 void apply_user_specified_instantaneous_perturbation(ParticlesMap *particlesMap);
 void apply_user_specified_instantaneous_perturbation_nbody(ParticlesMap *particlesMap);
 void reset_instantaneous_perturbation_quantities(ParticlesMap *particlesMap);

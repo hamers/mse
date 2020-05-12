@@ -71,4 +71,21 @@ double compute_EOM_pairwise_25PN(ParticlesMap *particlesMap, int binary_index, b
     
     return 0.0; // N/A
 }
+
+
+double compute_spin_parameter_from_spin_frequency(double m, double Omega)
+{
+    double A = 2.0 * CONST_G * m * Omega;
+    double chi = 2.0 * CONST_C_LIGHT_P3 * A / (CONST_C_LIGHT_P6 + A*A);
+    
+    return chi;
+}
+
+double compute_spin_frequency_from_spin_parameter(double m, double chi)
+{
+    double Omega = CONST_C_LIGHT_P3 * chi / ( 2.0 * CONST_G * m * (1.0 + sqrt(1.0 - chi*chi)) );
+    
+    return Omega;
+}
+
 }

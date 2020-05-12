@@ -233,6 +233,16 @@ class MSE(object):
         self.lib.unit_tests_interface.argtypes = ()
         self.lib.unit_tests_interface.restype = ctypes.c_int
 
+        self.lib.determine_compact_object_merger_properties_interface.argtypes = ( ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), \
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), \
+            ctypes.POINTER(ctypes.c_double) )
+        self.lib.determine_compact_object_merger_properties_interface.restype = ctypes.c_int
+
 
     ###############
     
@@ -592,6 +602,21 @@ class MSE(object):
     def unit_tests(self):
         return self.lib.unit_tests_interface()
 
+    def determine_compact_object_merger_properties(self,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit):
+        v_recoil_vec_x,v_recoil_vec_y,v_recoil_vec_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        alpha_vec_final_x,alpha_vec_final_y,alpha_vec_final_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        M_final = ctypes.c_double(0.0)
+        self.lib.determine_compact_object_merger_properties_interface( m1,m2,chi1,chi2,spin_vec_1_unit[0],spin_vec_1_unit[1],spin_vec_1_unit[2],spin_vec_2_unit[0],spin_vec_2_unit[1],spin_vec_2_unit[2], \
+            h_vec_unit[0],h_vec_unit[1],h_vec_unit[2],e_vec_unit[0], e_vec_unit[1], e_vec_unit[2], \
+            ctypes.byref(v_recoil_vec_x),ctypes.byref(v_recoil_vec_y),ctypes.byref(v_recoil_vec_z), \
+            ctypes.byref(alpha_vec_final_x),ctypes.byref(alpha_vec_final_y),ctypes.byref(alpha_vec_final_z), \
+            ctypes.byref(M_final) )
+        v_recoil_vec = np.array( [v_recoil_vec_x.value,v_recoil_vec_y.value,v_recoil_vec_z.value] )
+        alpha_vec_final = np.array( [alpha_vec_final_x.value,alpha_vec_final_y.value,alpha_vec_final_z.value] )
+        M_final = M_final.value
+
+        return v_recoil_vec,alpha_vec_final,M_final
+        
     ### Constants ###
     @property
     def CONST_G(self):

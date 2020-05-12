@@ -81,13 +81,16 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     {
         vnorm = 0.0;
     }
-    else if (p->kick_distribution == 1) // Maxwellian
+    else if (p->kick_distribution == 1) // Maxwellian for NS; 0 otherwise
     {
-        double sigma = p->kick_distribution_sigma;
-        double v[3];
-        sample_from_3d_maxwellian_distribution(sigma, v);
+        if (p->stellar_type == 13)
+        {
+            double sigma = p->kick_distribution_sigma;
+            double v[3];
+            sample_from_3d_maxwellian_distribution(sigma, v);
         //vnorm = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-        vnorm = norm3(v);
+            vnorm = norm3(v);
+        }
     }
     
   //    std::default_random_engine generator (seed);

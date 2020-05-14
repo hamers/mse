@@ -2,10 +2,39 @@
 /* Adrian Hamers November 2019 */
 
 #include "evolve.h"
-#include "merger.h"
+#include "test.h"
 
 extern "C"
 {
+
+int test_tools()
+{
+    int flag = 0;
+    flag += test_a_h_conversion();
+    
+    return flag;
+}
+
+int test_a_h_conversion()
+{
+    double a = 1.0;
+    double m1 = 2.0;
+    double m2 = 3.0;
+    double e = 0.5;
+    
+    double h = compute_h_from_a(m1,m2,a,e);
+    double an = compute_a_from_h(m1,m2,h,e);
+    
+    int flag = 0;
+    if ( (fabs(a-an)/a) > epsilon )
+    {
+        printf("test.cpp -- error in test_a_h_conversion!\n");
+        flag = 1;
+    }
+
+    return flag;
+}
+
 
 int test_collisions()
 {
@@ -23,7 +52,7 @@ int test_collisions()
         for (j=1; j<=14; j++)
         {
             printf("i %d j %d\n",i,j);
-            flag = test_collision_stars(10.0,i,8,j);
+            flag = test_collision_stars(10.0,i,13,j);
         }
     }
     //flag = test_collision_stars(10.0,3,8,6);

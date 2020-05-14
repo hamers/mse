@@ -2,6 +2,9 @@
 extern "C"
 {
 
+int test_a_h_conversion();
+int test_tools();
+
 int test_collisions();
 int test_collision_MS_MS();
 int test_collision_giant_MS();

@@ -124,7 +124,7 @@ int compute_orbital_vectors_from_orbital_elements(double child1_mass, double chi
     double cos_LAN = cos(longitude_of_ascending_node);
     double sin_LAN = sin(longitude_of_ascending_node);
            
-    double h = (child1_mass*child2_mass*sqrt(CONST_G*semimajor_axis/(child1_mass+child2_mass)))*sqrt(1.0 - eccentricity*eccentricity);
+    double h = compute_h_from_a(child1_mass, child2_mass, semimajor_axis, eccentricity);
 
     *e_vec_x = eccentricity*(cos_LAN*cos_AP - sin_LAN*sin_AP*cos_INCL);
     *e_vec_y = eccentricity*(sin_LAN*cos_AP + cos_LAN*sin_AP*cos_INCL);
@@ -171,9 +171,8 @@ int compute_orbital_elements_from_orbital_vectors(double child1_mass, double chi
     {
         *eccentricity = epsilon;
     }
-    double h_squared = norm3_squared(h_vec);
-    *semimajor_axis = h_squared*(child1_mass+child2_mass)/( CONST_G*child1_mass*child1_mass*child2_mass*child2_mass*(1.0 - eccentricity_squared) );
-    double h = sqrt(h_squared);
+    double h = norm3(h_vec);
+    *semimajor_axis = compute_a_from_h(child1_mass, child2_mass, h, *eccentricity);
 
 //    double x_vec[3] = {1.0,0.0,0.0};
 //    double y_vec[3] = {0.0,1.0,0.0};
@@ -505,11 +504,6 @@ void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], do
     p->V_vec[2] = v[2];
 }
 
-double compute_h(double m1, double m2, double a, double e)
-{
-    return m1 * m2 * sqrt(CONST_G * a * (1.0 - e * e) / (m1 + m2));
-}
-
 void get_unit_vector(double vec[3], double vec_unit[3])
 {
     double v = norm3(vec);
@@ -669,6 +663,16 @@ double get_mutual_angle(double a_vec[3], double b_vec[3])
     {
         return acos( dot3(a_vec,b_vec) / ( a_norm * b_norm ) );
     }
+}
+
+double compute_a_from_h(double m1, double m2, double h, double e)
+{
+    return h * h * (m1+m2) / ( CONST_G * m1 * m1 * m2 * m2 * (1.0 - e*e ) );
+}
+
+double compute_h_from_a(double m1, double m2, double a, double e)
+{
+    return m1 * m2 * sqrt(CONST_G * a * (1.0 - e*e) / (m1 + m2));
 }
 
 }

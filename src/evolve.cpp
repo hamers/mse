@@ -114,11 +114,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         else // Direct N-body
         {
             //printf("DN 0 %g\n",(*particlesMap)[0]->R_vec[0]);
-            integrate_nbody_system(particlesMap, integration_flag, t_old, t, &dt_nbody);
+            integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
             //printf("done nbody dt_nbody %g dt_stev %g \n",dt_nbody,dt_stev);
             //printf("DN 1 %g\n",(*particlesMap)[0]->R_vec[0]);
         }
         
+        t = t_out;
         
         #ifdef DEBUG
         printf("ODE dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
@@ -128,7 +129,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         if (*CVODE_flag==2)
         {
             printf("ROOT occurred; setting t = t_out; t %g t_out %g\n",t,t_out);
-            t = t_out;
             
             flag = investigate_roots_in_system(particlesMap);
             if (flag == 1) // RLOF

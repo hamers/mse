@@ -27,7 +27,7 @@
 #include "mass_changes.h"
 #include "binary_evolution.h"
 #include "nbody_evolution.h"
-#include "merger.h"
+#include "collision.h"
 #include "test.h"
 
 extern "C"

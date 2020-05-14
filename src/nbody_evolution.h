@@ -3,7 +3,10 @@
 extern "C"
 {
 
-void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *dt_nbody);
+void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *t_out, double *dt_nbody);
+
+void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, int *integration_flag);
+
 double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag, double P_orb_min, double P_orb_max);
 
 void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt);
@@ -23,6 +26,6 @@ void print_state(struct RegularizedRegion *R);
 /* Functions below are from MSTAR that need to be accessible from MSE */
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart);
 void initialize_mpi_or_serial(void);
-void run_integrator(struct RegularizedRegion *R, double time_interval);
+void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *collision_occurred);
 void free_data(struct RegularizedRegion *R);
 }

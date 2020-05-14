@@ -147,7 +147,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
      double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
      double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_);
+     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
+     double mstar_gbs_tolerance_, double mstar_collision_tolerance_);
 
 int get_random_seed(int *value);
 int set_random_seed(int value);

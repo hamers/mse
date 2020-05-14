@@ -59,4 +59,7 @@ int binary_evolution_CE_spin_flag = 0;
 
 double chandrasekhar_mass = 1.44;
 
+double mstar_gbs_tolerance = 1.0e-12;
+double mstar_collision_tolerance = 1.0e-12;
+
 }

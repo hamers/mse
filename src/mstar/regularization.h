@@ -135,6 +135,10 @@ struct RegularizedRegion {
 
 	double Hstep;
 
+    /* Collision detection */
+    double *Radius;
+    int *Collision_Partner; 
+    double collision_tolerance;
 };
 
 struct ComTask {
@@ -156,6 +160,8 @@ double E0;
 
 void compute_Post_Newtonian_Acc(struct RegularizedRegion *R, double *Vel);
 int check_relative_proximity( int v1, int v2, const int Nd, struct RegularizedRegion *R, int *d, int *path, int *sign);
+
+void collision_detection_function(struct RegularizedRegion *R, int *possible_collision, int *collision_occurred, double *Delta_t_min);
 
 // misc
 

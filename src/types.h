@@ -70,6 +70,9 @@ extern int binary_evolution_CE_spin_flag;
 
 extern double chandrasekhar_mass;
 
+extern double mstar_gbs_tolerance;
+extern double mstar_collision_tolerance;
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT
@@ -813,11 +816,14 @@ class Particle
     bool stable;
     bool is_bound;
     
+    int Collision_Partner;
+    
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
         stable = true;
         is_bound = true;
         has_found_parent = false;
+        Collision_Partner = -1;
         
         /* default values */
         check_for_secular_breakdown = false;

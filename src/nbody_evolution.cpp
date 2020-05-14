@@ -8,7 +8,7 @@
 extern "C"
 {
 
-void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *dt_nbody)
+void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *t_out, double *dt_nbody)
 {
     /* Integration flags:
      * 0: secular
@@ -23,18 +23,30 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
     double dt = t - t_old;
-
+    double dt_reached;
+    int collision_occurred;
+    
     printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
 
     printf("pre... dt %g\n",dt);
     print_state(R);
-    run_integrator(R, dt);
+    run_integrator(R, dt, &dt_reached, &collision_occurred);
     printf("post\n");
     print_state(R);
 
-   
-    /* TO DO: include & handle collisions in N-body */
-    
+    *t_out = t_old + dt_reached;
+
+    if (collision_occurred == 1)
+    {
+        printf("COL\n");
+        
+        handle_collisions_nbody(R, particlesMap, integration_flag);
+        *integration_flag = 1; // continue with direct N-body after the collision, at least initially
+
+        free_data(R);
+        return;
+    }
+
     if (*integration_flag == 2) // Continue with direct N-body after semisecular regime; need to make sure particlesMap is updated with pos/vel of bodies
     {
         extract_pos_vel_from_mstar_system(R,particlesMap);
@@ -44,23 +56,26 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         update_orbital_vectors_in_binaries_from_positions_and_velocities(particlesMap);        
         
         printf("nbody_evolution.cpp -- integrate_nbody_system -- new integration flag %d\n",*integration_flag);
+        free_data(R);
         return;
     }
 
+    /* The system is potentially stable.
+     * Analyse the system for stability. */
+
     bool stable_system;
     ParticlesMap new_particlesMap;
-    //printf("???? %d\n",new_particlesMap.size());
 
     double P_orb_min,P_orb_max;
-    analyze_mstar_system(R,&stable_system,&new_particlesMap,&P_orb_min,&P_orb_max,dt);
+    analyze_mstar_system(R,&stable_system,&new_particlesMap,&P_orb_min,&P_orb_max,dt); // Will create new particlesMap with new orbits 
 
     //printf("done an\n");
     //printf("test %g\n",(new_particlesMap)[0]->metallicity);
     //*particlesMap = *new_particlesMap;
-    copy_bodies_from_old_to_new_particlesMap(particlesMap,&new_particlesMap);
+    copy_bodies_from_old_to_new_particlesMap(particlesMap,&new_particlesMap); // Copy properties of all bodies from old to new particlesMap
     //printf("ok test 2 %d\n",new_particlesMap[0]->include_mass_transfer_terms);
    
-    copy_particlesMap(&new_particlesMap,particlesMap); /* overwrite everything in the particlesMap that was passed onto void integrate_nbody_system */
+    copy_particlesMap(&new_particlesMap,particlesMap); /* overwrite everything in the particlesMap that was passed onto integrate_nbody_system so the system is updated */
 
     /* When doing secular integration, some stellar evolution quantities are updated as parts of the ODE solution. In the N-body case, these quantities need to be updated manually */
     update_stellar_evolution_quantities_directly(particlesMap,dt); /* the dt here should be consistent with the dt used to compute the time derivatives in stellar_evolution.cpp */
@@ -91,6 +106,61 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     
         
     return; // &new_particlesMap;
+}
+
+void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, int *integration_flag)
+{
+
+    int i,j,k;
+    bool is_binary;
+    int index;
+    int col_part_i = -1;
+    int col_part_j = -1;
+    for (i=0; i<R->NumVertex; i++)
+    {
+        //printf("i %d mass %g \n",i,R->Mass[i]);
+        //printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
+        //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        //printf("R->Collision_Partner[i]; %d\n",R->Collision_Partner[i]);
+        
+        col_part_i = R->Collision_Partner[i];
+        if (col_part_i != -1)
+        {
+            for (j=0; j<R->NumVertex; j++)
+            {
+                col_part_j = R->Collision_Partner[j];
+                {
+                    if (col_part_j != -1 and col_part_j != col_part_i)
+                    {
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+    }
+    if (col_part_i == -1 or col_part_j == -1)
+    {
+        printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");
+        exit(-1);
+    }
+
+    (*particlesMap)[col_part_i]->Collision_Partner = col_part_i;
+    (*particlesMap)[col_part_j]->Collision_Partner = col_part_j;
+
+    /* Positions & velocities are needed for collision handling */
+    for (k=0; k<3; k++)
+    {
+        (*particlesMap)[col_part_i]->R_vec[k] = R->Pos[3 * col_part_i + k];
+        (*particlesMap)[col_part_j]->R_vec[k] = R->Pos[3 * col_part_j + k];
+
+        (*particlesMap)[col_part_i]->V_vec[k] = R->Vel[3 * col_part_i + k];
+        (*particlesMap)[col_part_j]->V_vec[k] = R->Vel[3 * col_part_j + k];
+        
+    }
+    //collision_product(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
+    handle_collisions(particlesMap,integration_flag);
+    
 }
 
 void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt)
@@ -221,10 +291,13 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     double dt_an = *P_orb_max * 0.01;
     double maximum_analysis_time = 1.0e5; // TO DO: make user-adjustable
     
+    double dt_reached;
+    int collision_occurred;
+    
     dt_an = min(dt_an, maximum_analysis_time);
     //double dt_an = 0.001 * dt;
     printf("analyze_mstar_system dt %g\n",dt_an);
-    run_integrator(R, dt_an);
+    run_integrator(R, dt_an, &dt_reached, &collision_occurred);
     printf("done int\n");
     //new_particlesMap.clear();
     //semimajor_axes.clear();
@@ -268,6 +341,12 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
             }
         }
     }
+    
+    if (collision_occurred == 1)
+    {
+        *stable_system = false;
+    }
+    
     printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
     //printf("test %g\n",(new_particlesMap)[0]->metallicity);
     
@@ -712,7 +791,9 @@ void analyze_mstar_system2(struct RegularizedRegion *R)
             //P_orb_max = determine_longest_orbital_period_in_system(&new_particlesMap);
             printf("P_orb_max %g\n",P_orb_max);
             
-            run_integrator(R, 0.5*P_orb_max);
+            double dt_reached;
+            int collision_occurred;
+            run_integrator(R, 0.5*P_orb_max, &dt_reached, &collision_occurred);
             printf("done int\n");
             
             for (i=0; i<R->NumVertex; i++)
@@ -780,12 +861,10 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     
     //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     
-    int MAXPART = N_bodies; // (Maximum) number of bodies; should be consistent with number of bodies in input file
+//    int MAXPART = N_bodies; // (Maximum) number of bodies; should be consistent with number of bodies in input file
     //my_barrier();
 
-    //struct RegularizedRegion *R; // The structure which contains all system data
-    
-    allocate_armst_structs(&R, MAXPART); // Initialize the data structure
+    allocate_armst_structs(&R, N_bodies); // Initialize the data structure
     
     double *R_vec, *V_vec;
     ParticlesMapIterator it_p;
@@ -800,6 +879,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
 
             R->Vertex[i].type = 0;
             R->Mass[i] = p->mass;
+            R->Radius[i] = p->radius;
             for (j=0; j<3; j++)
             {
                 R->Pos[3 * i + j] = R_vec[j];
@@ -810,23 +890,17 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
         }    
     }   
     
-    //printf("?1 %d%\n",R->NumVertex);
-    R->gbs_tolerance = 1.0e-12; // TO DO: make user-adjustable
-    
+    R->gbs_tolerance = mstar_gbs_tolerance;
+    R->collision_tolerance = mstar_collision_tolerance;
     return R;
     
-    //read_ic_from_file(R, argv[1]); // Read ICs from file; can, of course, also be done by directly writing to R (the way it would be done when used inside another code)
-    
-    //R->gbs_tolerance = atof(argv[3]); // Tolerance parameter; something like 1e-10 seems reasonable (at least, for a simple binary)
-    //double tend = atof(argv[4]); // Total integration time
-    //int N = R->NumVertex; // Number of bodies (=MAXPART)
 }
 
 void print_state(struct RegularizedRegion *R)
 {
     for (int i=0; i<R->NumVertex; i++)
     {
-        printf("i %d mass %g \n",i,R->Mass[i]);
+        printf("i %d mass %g radius %g collision partner %d\n",i,R->Mass[i],R->Radius[i],R->Collision_Partner[i]);
         printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
     }

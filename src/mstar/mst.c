@@ -11,8 +11,6 @@
 #endif
 #include "regularization.h"
 
-
-    
 int **indexlist;
 
 double GBSTOL;
@@ -2081,12 +2079,12 @@ int extrapolate_all_variables(int korder) {
 }
 
 // Integrate the subsystems using AR-MST for the desired time interval
-void run_integrator(struct RegularizedRegion *R, double time_interval) {
+void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *collision_occurred) {
 
     // Needed variables
     double dt = 1e-7;
     double Hstep;
-
+    double time;
     // Initialize the system to integrate
 
     into_CoM_frame(R);
@@ -2109,6 +2107,8 @@ void run_integrator(struct RegularizedRegion *R, double time_interval) {
     int redo = 1;
     int status;
 
+    int i_col;
+
     do {
 
         do {
@@ -2116,15 +2116,16 @@ void run_integrator(struct RegularizedRegion *R, double time_interval) {
             redo = 0;
 
             // Divide the systems and substep divisions for tasks
+
             divide_computational_load(R);
-            //printf("ComputationToDoList.NumberOfComputationalTasks %d\n",ComputationToDoList.NumberOfComputationalTasks);
+
             // Perform the leapfrog tasks
             for (int ctask = 0;
                  ctask < ComputationToDoList.NumberOfComputationalTasks;
                  ctask++) {
                 if (ThisGbsGroup == ComputationToDoList.ComputationalTask[ctask]
                                         .GroupToPerformTask) {
-                    //printf("LF ctask %d time %g\n",ctask,R[0].State[R[0].TimeIndex]);
+
                     // copy the system in order not to overwrite the original
                     // one
                     struct RegularizedRegion *ThisR =
@@ -2139,11 +2140,17 @@ void run_integrator(struct RegularizedRegion *R, double time_interval) {
                                  Hstep,
                                  ComputationToDoList.ComputationalTask[ctask]
                                      .NumberOfSubsteps);
+
+                    for (int i=0; i<ThisR->NumVertex; i++)
+                    {
+                        ThisR->Acc[i] = ComputationToDoList.CopyOfSingleRegion[ctask].Acc[i];
+                    }
+
                 }
             }
 
         } while (redo);
-        //printf("done leapfrog; Hstep %g\n",Hstep);
+
         my_barrier();
         clock_t aika0 = clock(), aika1;
 
@@ -2179,33 +2186,64 @@ void run_integrator(struct RegularizedRegion *R, double time_interval) {
         status = extrapolate_all_variables(KMAX);
         aika1 = clock();
         time_gbs += (double)(aika1 - aika0) / CLOCKS_PER_SEC;
-        //printf("post extrapolate; status %d\n",status);
+
         if (status == 1) {
 
             // Check whether we are ready
-            double time = R[0].State[R[0].TimeIndex];
-            if (time < 0.0) { exit(-1); }
-            //printf("time %g time_interval %g output_time_tolerance %g \n",time,time_interval,R->output_time_tolerance);
+            time = R[0].State[R[0].TimeIndex];
+            //if (time < 0.0)
+            {
+                printf("t %g\n",time);
+            }
             R[0].time = time;
             if (fabs(time - time_interval) / time_interval <
                 R->output_time_tolerance) {
                 not_finished = 0;
-                //printf("done\n");
             } else {
 
                 compute_total_energy(R);
                 if (time > time_interval) {
                     R->Hstep = -R->U * (time - time_interval);
-                    //printf("overshoot; time %g time_interval %g Hstep %g \n",time,time_interval,R->Hstep);
                 } else if (R->Hstep / R->U + time > time_interval) {
                     R->Hstep = R->U * (time_interval - time);
-                    //printf("decreasing dt to reach end time; time %g time_interval %g Hstep %g \n",time,time_interval,R->Hstep);
+                }
+
+                /* Collision detection */
+                int possible_collision;
+                double Delta_t_collision;
+                collision_detection_function(R, &possible_collision, collision_occurred, &Delta_t_collision);
+                if (*collision_occurred == 1)
+                {
+                    not_finished = 0;
+                    printf("COLLISION at t=%g c1 %d c2 %d\n",time,R->Collision_Partner[0],R->Collision_Partner[1]);
+                }
+                if (possible_collision == 1)
+                {
+                    i_col++;
+                    
+                    double col_Hstep = R->U * Delta_t_collision;
+                    if ( fabs(col_Hstep) <= fabs(R->Hstep) ) // Make sure collision detection does not interfere with the timestep determined above
+                    {
+                        R->Hstep = col_Hstep;
+                    }
+                    
+                    if (i_col > 100) /* The collision was probably not real; give up */
+                    {
+                        possible_collision = 0;
+                        R->Hstep = R->U * dt;
+                        i_col = 0;
+                    }
+                    //printf("possible collision; i_col %d; new Hstep %g\n",i_col,R->Hstep);
                 }
                 else
                 {
-                    //printf("normal iteration\n");
+                    if (i_col>0) /* Reset the timestep if collision iterations occurred; is necessary since otherwise the code could stall indefinitely because of persistently negative timesteps */
+                    {
+                        R->Hstep = R->U * dt;
+                        i_col = 0;
+                    }
                 }
-                //printf("New R->Hstep %g; would reach new time %g\n",R->Hstep,time + R->Hstep/R->U);
+                
                 int old_epoch = epoch;
                 epoch = (int)floor(time / percent);
                 if (epoch != old_epoch) {
@@ -2219,14 +2257,16 @@ void run_integrator(struct RegularizedRegion *R, double time_interval) {
         }
 
     } while (not_finished);
+    
+    *end_time = time;
 }
 
 void allocate_regularized_region(struct RegularizedRegion *S, int N) {
 
     S->gbs_tolerance = GBSTOL;
 
-    //S->output_time_tolerance = 1e-6;
     S->output_time_tolerance = 1e-4;
+    S->collision_tolerance = 1e-6;
     S->NumVertex = N;
 
     S->NumEdge = (N * (N - 1)) / 2;
@@ -2254,6 +2294,10 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->LocalEdge = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->LocalEdgeSubset = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->EdgeInMST = calloc(N - 1, sizeof(struct GraphEdge));
+    
+    S->Radius = calloc(N, sizeof(double));
+    S->Collision_Partner = calloc(N, sizeof(int));
+        
 }
 
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
@@ -2304,6 +2348,8 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
         allocate_regularized_region(&ComputationToDoList.CopyOfSingleRegion[i],
                                     MaxNumPart);
     }
+    
+   
 }
 
 // free
@@ -2442,3 +2488,225 @@ int main(int argc, char *argv[]) {
 }
 #endif
 
+void collision_detection_function(struct RegularizedRegion *R, int *possible_collision, int *collision_occurred, double *Delta_t_min)
+{
+
+    int istart, istop = R->NumVertex, jstop = R->NumVertex;
+//#ifdef PARALLEL
+//    int ThisBlock, CumNumEdge, jstart;
+//    loop_scheduling_N2(R->NumVertex, NumTaskPerGbsGroup, &istart, &jstart,
+//                       &ThisBlock, &CumNumEdge, ThisTask_in_GbsGroup);
+//    int loop = 1;
+//    int c = 0;
+//#else
+    istart = 0;
+//#endif
+    const int Nd = GLOBAL_ND;
+    int d;
+    int path[Nd];
+    int sign[Nd];
+
+    double dr[3], r, r2;
+    double dv[3], da[3];
+    double r_col,r_col_p2;
+    double rdotv,vdotv;
+    double determinant;
+    double Delta_t;
+    *Delta_t_min = 1e100;
+    *possible_collision = 0;
+    *collision_occurred = 0;
+    
+    double *Pos = R->Pos;
+    double *Vel = R->Vel;
+    double *Acc = R->Acc;
+    double *Mass = R->Mass;
+    double *Radius = R->Radius;
+
+    struct GraphVertex *Vertex = R->Vertex;
+
+    for (int i = istart; i < istop; i++) 
+    {
+        R->Collision_Partner[i] = -1; /* default: no collision partner */
+    }
+
+    for (int i = istart; i < istop; i++) 
+    {
+        const double mi = Mass[i];
+        const double radiusi = Radius[i];
+        const int Li = Vertex[i].level;
+//#ifdef PARALLEL
+//        if (i > istart)
+//        {
+//            jstart = i + 1;
+//        }
+//        for (int j = jstart; j < jstop; j++)
+//        {
+//#else
+        for (int j = i + 1; j < jstop; j++)
+        {
+//#endif
+            r2 = 0;
+            const double mj = Mass[j];
+            const double radiusj = Radius[j];
+            const int Lj = Vertex[j].level;
+
+            int proximity = 0;
+            if (abs(Li - Lj) <= Nd) {
+                proximity =
+                    check_relative_proximity_ND_2(j, i, R, &d, path, sign);
+            }
+
+            if (proximity) {
+                for (int k = 0; k < 3; k++) {
+                    dr[k] = 0;
+                    for (int l = 0; l < d; l++) {
+                        dr[k] += sign[l] * R->State[3 * path[l] + k];
+                    }
+                    r2 += dr[k] * dr[k];
+                }
+            } else {
+                for (int k = 0; k < 3; k++) {
+                    dr[k] = Pos[3 * j + k] - Pos[3 * i + k];
+                    r2 += dr[k] * dr[k];
+                }
+            }
+            
+            for (int k=0; k<3; k++)
+            {
+                dv[k] = Vel[3 * j + k] - Vel[3 * i + k];
+                da[k] = Acc[3 * j + k] - Acc[3 * i + k];
+            }
+            
+            r_col = radiusi + radiusj;
+            r_col_p2 = r_col * r_col;
+            rdotv = 0.0;
+            vdotv = 0.0;
+            for (int k=0; k<3; k++)
+            {
+                rdotv += dr[k] * dv[k];
+                vdotv += dv[k] * dv[k];
+            }
+            r = sqrt(r2);
+            
+            /* Determine if a collision actually occurred within the tolerance */
+            if ( fabs(r - r_col)/r < R->collision_tolerance )
+            {
+                *collision_occurred = 1;
+                R->Collision_Partner[i] = j;
+                R->Collision_Partner[j] = i;
+            }
+
+            /* Estimate if a collision could have occurred in the past or future,
+             * and determine the timestep needed to bring the integrator there. */
+            int interpolation_method = 1;
+            if (interpolation_method == 0) // straight line trajectories
+            {
+                determinant = rdotv * rdotv - (r2 - r_col_p2) * vdotv;
+                if (determinant >= 0.0)
+                {
+                    *possible_collision = 1;
+                    Delta_t = ( - rdotv - sqrt(determinant) ) / vdotv;
+                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple collisions (unlikely)
+                    {
+                         *Delta_t_min = Delta_t;
+                    }
+                }
+            }
+            else if (interpolation_method == 1) // parabolic trajectories
+            {
+                double rdota = 0.0;
+                double vdota = 0.0;
+                double adota = 0.0;
+                for (int k=0; k<3; k++)
+                {
+                    rdota += dr[k] * da[k];
+                    vdota += dv[k] * da[k];
+                    adota += da[k] * da[k];
+                }
+                double a = 0.25 * adota;
+                double b = vdota;
+                double c = vdotv + rdota;
+                double d = 2.0 * rdotv;
+                double e = r2 - r_col_p2;
+                
+                double p = (8.0*a*c - 3.0*b*b)/(8.0*a*a);
+                double q = (b*b*b - 4.0*a*b*c + 8.0*a*a*d)/(8.0*a*a*a);
+                
+                double Delta_0 = c*c - 3.0*b*d + 12.0*a*e;
+                double Delta_1 = 2.0*c*c*c - 9.0*b*c*d + 27.0*b*b*e + 27.0*a*d*d - 72.0*a*c*e;
+                double Delta = -(1.0/27.0)*( Delta_1*Delta_1 - 4.0*Delta_0*Delta_0*Delta_0 );
+                double Q = pow( 0.5*( Delta_1 + sqrt(Delta_1*Delta_1 - 4.0*Delta_0*Delta_0*Delta_0) ), 1.0/3.0);
+                double S = 0.5 * sqrt( (-2.0/3.0)*p + (1.0/(3.0*a))*(Q + Delta_0/Q) );
+//                printf("a %g b %g c %g d %g e %g\n",a,b,c,d,e);
+//                printf("p %g q %g Delta_0 %g Delta_1 %g Q %g S %g Delta %g\n",p,q,Delta_0,Delta_1,Q,S,Delta);
+
+                /* Solutions to quartic equation for Delta t */
+                double x1 = -b/(4.0*a) - S - 0.5*sqrt(-4.0*S*S - 2.0*p + q/S);
+                double x2 = -b/(4.0*a) - S + 0.5*sqrt(-4.0*S*S - 2.0*p + q/S);
+                double x3 = -b/(4.0*a) + S - 0.5*sqrt(-4.0*S*S - 2.0*p - q/S);
+                double x4 = -b/(4.0*a) + S + 0.5*sqrt(-4.0*S*S - 2.0*p - q/S);
+
+                 /* 0-4 solutions can be real; check for realness and adopt the smallest real value if exists */
+                double xmin = 1e100;
+                if (x1<xmin)
+                {
+                    xmin = x1;
+                }
+                if (x2<xmin)
+                {
+                    xmin = x2;
+                }
+                if (x3<xmin)
+                {
+                    xmin = x3;
+                }
+                if (x4<xmin)
+                {
+                    xmin = x4;
+                }
+                //printf("x1 %g x2 %g x3 %g x4 %g xmin %g\n",x1,x2,x3,x4,xmin);
+
+                if (xmin != 1e100)
+                {
+                    *possible_collision = 1;
+                    Delta_t = xmin;
+                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple collisions (unlikely)
+                    {
+                         *Delta_t_min = Delta_t;
+                    }
+                }
+
+
+            }
+            //printf("col test r %g r_col %g rdotv %g vdotv %g collision_occurred %d possible_collision %d Delta_t %g Delta_t_min %g collision_tolerance %g (r-r_col)/r %g \n",r,r_col,rdotv,vdotv,*collision_occurred,*possible_collision,Delta_t,*Delta_t_min,R->collision_tolerance,fabs(r - r_col)/r);
+        }
+    }
+        
+//#ifdef PARALLEL
+//            c++;
+//            if (c == ThisBlock) {
+//                loop = 0;
+//                break;
+//            }
+//#endif
+//        }
+//#ifdef PARALLEL
+        //if (loop == 0) break;
+//#endif
+//    }
+
+    //clock_t ctime0 = clock();
+//#ifdef PARALLEL
+//    if (NumTaskPerGbsGroup > 1) {
+//        MPI_Allreduce(MPI_IN_PLACE, R->Acc, 3 * R->NumVertex, MPI_DOUBLE,
+//                      MPI_SUM, MPI_COMM_GBS_GROUP);
+//        MPI_Allreduce(MPI_IN_PLACE, &R->U, 1, MPI_DOUBLE, MPI_SUM,
+//                      MPI_COMM_GBS_GROUP);
+//    }
+//#endif
+
+    
+    //clock_t ctime1 = clock();
+    //time_comm += (double)(ctime1 - ctime0) / CLOCKS_PER_SEC;
+
+}

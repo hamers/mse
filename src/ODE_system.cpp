@@ -1,3 +1,5 @@
+/* MSE */
+
 #include "types.h"
 #include "evolve.h"
 #include "ODE_system.h"
@@ -26,6 +28,7 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
 
     double hamiltonian = 0.0;
     double KS_V = 0.0;
+    bool compute_hamiltonian_only = false;
     ParticlesMapIterator it_p,it_f;
     std::vector<int>::iterator it_parent_p,it_parent_q;
     
@@ -36,10 +39,10 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
         {
 
             /* Newtonian gravitational point mass dynamics (internal system) */
-            compute_EOM_Newtonian_for_particle(particlesMap,p,&hamiltonian,&KS_V,false);
+            compute_EOM_Newtonian_for_particle(particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only);
             
             /* Perturbations by flybys (external perturbations) */
-            compute_EOM_Newtonian_external_perturbations(time,particlesMap,p,&hamiltonian,&KS_V,false); 
+            compute_EOM_Newtonian_external_perturbations(time,particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only); 
 
             /* VRR-related perturbations */
 
@@ -49,51 +52,13 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
             }
 
 
-            /* Pairwise PN corrections */
-            if (p->include_pairwise_1PN_terms == true)
-            {
-                hamiltonian += compute_EOM_pairwise_1PN(particlesMap,p->index,false);
-            }
-            if (p->include_pairwise_25PN_terms == true)
-            {
-                hamiltonian += compute_EOM_pairwise_25PN(particlesMap,p->index,false);
-            }
-            
-            /* Tidal friction (ad hoc) */
-            
-            Particle *child1 = (*particlesMap)[p->child1];
-            Particle *child2 = (*particlesMap)[p->child2];
+            /* PN corrections */
+            compute_EOM_Post_Newtonian_for_particle(particlesMap, p, &hamiltonian, compute_hamiltonian_only);
 
-            
-            if (child1->include_tidal_friction_terms == true || child1->include_tidal_bulges_precession_terms == true || child1->include_rotation_precession_terms == true)
-            {
-                if (child1->tides_method == 0 || child1->tides_method == 1)
-                {
-                    compute_EOM_equilibrium_tide_BO_full(particlesMap,p->index,child1->index,child2->index,child1->include_tidal_friction_terms,child1->include_tidal_bulges_precession_terms,child1->include_rotation_precession_terms,child1->minimum_eccentricity_for_tidal_precession,child1->tides_method);
-                }
-                else if (child1->tides_method == 2)
-                {
-                    compute_EOM_equilibrium_tide(particlesMap,p->index,child1->index,child2->index,child1->include_tidal_friction_terms,child1->include_tidal_bulges_precession_terms,child1->include_rotation_precession_terms,child1->minimum_eccentricity_for_tidal_precession);
-                }
-            }
-            if (child2->include_tidal_friction_terms == true || child2->include_tidal_bulges_precession_terms == true || child2->include_rotation_precession_terms == true)
-            {
-                if (child2->tides_method == 0 || child2->tides_method == 1)
-                {
-                    compute_EOM_equilibrium_tide_BO_full(particlesMap,p->index,child2->index,child1->index,child2->include_tidal_friction_terms,child2->include_tidal_bulges_precession_terms,child2->include_rotation_precession_terms,child2->minimum_eccentricity_for_tidal_precession,child2->tides_method);
-                }
-                else if (child2->tides_method == 2)
-                {
-                    compute_EOM_equilibrium_tide(particlesMap,p->index,child2->index,child1->index,child2->include_tidal_friction_terms,child2->include_tidal_bulges_precession_terms,child2->include_rotation_precession_terms,child2->minimum_eccentricity_for_tidal_precession);
-                }
-
-            }
-            #ifdef IGNORE
-            #endif
-            
+            /* Tidal friction */
+            handle_secular_tidal_evolution(particlesMap,p);
 
             /* Orbital changes due to mass changes */
-            
             //ODE_handle_stellar_winds(p);
             //ODE_handle_RLOF(p,child1,child2);
             
@@ -115,7 +80,7 @@ void initialize_direct_integration_quantities(ParticlesMap *particlesMap)
     bool KS_setup_required = false;
     
     ParticlesMapIterator it;
-    int highest_level = (*particlesMap)[0]->highest_level;
+    int highest_level = particlesMap->begin()->second->highest_level;
     int level = 0;
     while (level < highest_level)
     {

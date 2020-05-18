@@ -1,5 +1,4 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "nbody_evolution.h"
 #include "evolve.h"
@@ -27,6 +26,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     int collision_occurred;
     
     printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
+    print_system(particlesMap);
 
     printf("pre... dt %g\n",dt);
     print_state(R);
@@ -101,6 +101,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     printf("nbody_evolution.cpp -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
 
+    print_system(particlesMap);
     free_data(R);
     
     
@@ -366,7 +367,8 @@ void extract_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap
         //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
 
         is_binary = false;
-        index = particlesMap->size();
+        //index = particlesMap->size();
+        index = R->Index[i];
         Particle *p = new Particle(index, is_binary);
         (*particlesMap)[index] = p;
         
@@ -428,6 +430,8 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     //int N_root_finding;
     //int N_ODE_equations;
     
+    int particles_to_be_added_lower_index = 1 + (*particlesMap->end()).first;
+    
     bool binary_already_found;
     double P_orb;
     double delta_a;
@@ -435,6 +439,21 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     *P_orb_max = 0.0;    
     //bool stable_system = false;    
     //int highest_new_particle_index = particlesMap->size();
+    
+    int new_index=-1;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+        //for (it_p1 = it_p1_begin; it_p1 != it_p1_end; it_p1++)
+    {
+        Particle *p = (*it).second;
+        if (p->index > new_index)
+        {
+            new_index = p->index;
+        }
+    }
+    new_index += 1;
+    //int new_index = (*particlesMap->end()).first;
+    printf("new_index %d\n",new_index);
+    
     bool found_new_orbit = true;
     while (found_new_orbit == true)
     {
@@ -475,7 +494,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                 {
                     continue;
                 }
-
+                printf("is %d %d\n",p1->index,p2->index);
                 m2 = p2->mass;
                 M = m1 + m2;
                 R2_vec = p2->R_vec;
@@ -508,7 +527,9 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                     p2->has_found_parent = true;
                     
                     is_binary = true;
-                    index = particles_to_be_added.size();
+                    //index = particles_to_be_added.size();
+                    //index = particles_to_be_added_lower_index + particles_to_be_added.size();
+                    index = new_index;
                     Particle *b = new Particle(index, is_binary);
                     //new_particlesMap[highest_new_particle_index] = b;
                     //++;
@@ -542,6 +563,8 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                     {
                         *P_orb_min = P_orb;
                     }
+                    
+                    new_index++;
                 }
             }
         }
@@ -556,7 +579,9 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
             for (it = particles_to_be_added.begin(); it != particles_to_be_added.end(); it++)
             {
                 Particle *p = (*it).second;
-                p->index = particlesMap->size();
+                //p->index = particlesMap->size();
+                //p->index = (*particlesMap->end()).first + 1;
+                printf("p->index %d\n",p->index);
                 
                 (*particlesMap)[p->index] = p;
                 //highest_new_particle_index++;
@@ -570,7 +595,8 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
 
 //    printf("%d\n",R->NumVertex);
     //printf("find binaries done!\n");
-
+    printf("done an\n");
+    print_system(particlesMap);
 }
 
 
@@ -878,6 +904,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
             V_vec = p->V_vec;
 
             R->Vertex[i].type = 0;
+            R->Index[i] = p->index;
             R->Mass[i] = p->mass;
             R->Radius[i] = p->radius;
             for (j=0; j<3; j++)
@@ -900,7 +927,7 @@ void print_state(struct RegularizedRegion *R)
 {
     for (int i=0; i<R->NumVertex; i++)
     {
-        printf("i %d mass %g radius %g collision partner %d\n",i,R->Mass[i],R->Radius[i],R->Collision_Partner[i]);
+        printf("i %d index %d mass %g radius %g collision partner %d\n",i,R->Index[i],R->Mass[i],R->Radius[i],R->Collision_Partner[i]);
         printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
     }

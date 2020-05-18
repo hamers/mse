@@ -1454,7 +1454,7 @@ class test_mse():
 
         assert(flag == 0)
         
-        print("Test passed")
+        print("Tests passed")
         
 
     def test101(self,args):

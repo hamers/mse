@@ -2,8 +2,11 @@
 extern "C"
 {
 
-int test_a_h_conversion();
 int test_tools();
+int test_a_h_conversion();
+int test_orbital_element_conversion();
+int test_kepler_equation_solver();
+int test_orbital_vectors_cartesian_conversion();
 
 int test_collisions();
 int test_collision_MS_MS();

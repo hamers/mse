@@ -230,8 +230,8 @@ class MSE(object):
         self.lib.set_random_seed.argtypes = (ctypes.c_int,)
         self.lib.set_random_seed.restype = ctypes.c_int
 
-        self.lib.initialize_code.argtypes = ()
-        self.lib.initialize_code.restype = ctypes.c_int
+        self.lib.initialize_code_interface.argtypes = ()
+        self.lib.initialize_code_interface.restype = ctypes.c_int
         
         ### tests ###
         self.lib.unit_tests_interface.argtypes = ()
@@ -290,7 +290,7 @@ class MSE(object):
         
         flag = self.__update_particles_in_code()
         
-        self.lib.initialize_code()
+        self.lib.initialize_code_interface()
         
         self.__update_particles_from_code()
         

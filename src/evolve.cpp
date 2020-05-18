@@ -1,10 +1,28 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "evolve.h"
 
 extern "C"
 {
+
+int initialize_code(ParticlesMap *particlesMap)
+{
+    #ifdef DEBUG
+    printf("evolve.cpp -- initialize_code; set_up_flybys and initialize stars\n");
+    #endif
+
+    update_structure(particlesMap);
+
+    int integration_flag = 0;
+
+    if (include_flybys == true)
+    {
+        bool unbound_orbits;        
+        handle_next_flyby(particlesMap,true,&unbound_orbits,&integration_flag);
+    }
+
+    initialize_stars(particlesMap);
+}
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
@@ -21,6 +39,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     {
         determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
         printf("pre evolve %d %d %d %d\n",N_bodies,N_binaries,N_root_finding,N_ODE_equations);
+        print_system(particlesMap);
     }
     /* WARNING: TEMPORARY CODE TO QUICKLY SET MASS TRANSFER RATES FOR TESTING PURPOSES */
     //Particle *s1 = (*particlesMap)[0];
@@ -68,10 +87,13 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     /* Get initial timestep -- set by stellar evolution or user output time */
     double min_dt = 1.0e0;
     double max_dt = end_time - start_time;
-    flag = evolve_stars(particlesMap,t,0.0,&dt,true,&apply_SNe_effects);
+
+//    flag = evolve_stars(particlesMap,t,0.0,&dt,true,&apply_SNe_effects);
+
     //printf("dt0 %g max_dt %g\n",dt,max_dt);
-    dt = min(dt,min_dt);
+   // dt = min(dt,min_dt);
     //dt_binary_evolution = min_dt;
+    dt = min(min_dt,max_dt);
     dt_binary_evolution = max_dt;
     
     //printf("initial dt %g\n",dt);
@@ -88,7 +110,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         /* Stellar evolution */
 
-        //printf("pre ev\n");
+        printf("pre ev\n");
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
         //printf("post ev\n");
 
@@ -100,7 +122,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         //printf("post SNe\n");
         
         /* Binary evolution */
-        flag = handle_binary_evolution(particlesMap,&dt_binary_evolution,integration_flag);
+        flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
         //printf("post bin\n");
         //printf("evolve.cpp -- 3 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
         

@@ -1,5 +1,4 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "evolve.h"
 #include "stellar_evolution.h"
@@ -128,7 +127,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                     
                     if (j>10000)
                     {
-                        printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution\n",p->index,kw_desired,kw);
+                        printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution lum %g\n",p->index,kw_desired,kw,lum);
                         break;
                     }
                 }
@@ -315,9 +314,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             double desired_tphysf = tphysf;
             
             dtp = 0.0;
-            #ifdef DEBUG
-            printf("sse1 kw %d mt %g R %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
-            #endif
+            //#ifdef DEBUG
+            printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
+            //#endif
             //printf("Sx %g Sy %g Sz %g\n",p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             if (get_timestep_only == true)
             {
@@ -328,18 +327,19 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             }
             else
             {
+                printf("INPUT %d %g %g %g %g %g %g \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp);
                 evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
             
                 if (tphysf != desired_tphysf)
                 {
                     printf("ERROR tphysf != desired_tphysf ");
                 }
-                
+
                 age = tphysf - epoch;
                 sse_time_step = get_new_dt(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
-                #ifdef DEBUG
-                printf("sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
-                #endif
+                //#ifdef DEBUG
+                printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                //#endif
 
                 /* Write new stellar evolution parameters */
                 if (kw_old==kw or kw < 13)

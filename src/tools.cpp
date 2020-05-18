@@ -1,5 +1,4 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "evolve.h"
 #include "tools.h"
@@ -607,7 +606,7 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         
         index++;
     }
-    initialize_stars(&particlesMap);
+    //initialize_stars(&particlesMap);
 }
 
 void print_system(ParticlesMap *particlesMap)
@@ -615,7 +614,9 @@ void print_system(ParticlesMap *particlesMap)
     printf("=============================\n");
     printf("Printing system; N=%d\n",particlesMap->size());
     
-    set_up_derived_ODE_quantities(particlesMap);
+    //update_structure(particlesMap);
+    //set_up_derived_ODE_quantities(particlesMap);
+    
     
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -626,16 +627,16 @@ void print_system(ParticlesMap *particlesMap)
         {
             if (p->evolve_as_star == true)
             {
-                printf("index %d -- body -- m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
+                printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
             }
             else
             {
-                printf("index %d -- body -- m %g r %g st %d \n",p->index,p->mass,p->radius,p->stellar_type);
+                printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
             }
         }
         else
         {
-            printf("index %d -- binary -- child1 %d child2 %d m %g a %g e %g\n",p->index,p->child1,p->child2,p->mass,p->a,p->e);
+            printf("index %d -- binary -- parent %d child1 %d child2 %d m %g a %g e %g\n",p->index,p->parent,p->child1,p->child2,p->mass,p->a,p->e);
         }
     }
 }
@@ -673,6 +674,16 @@ double compute_a_from_h(double m1, double m2, double h, double e)
 double compute_h_from_a(double m1, double m2, double a, double e)
 {
     return m1 * m2 * sqrt(CONST_G * a * (1.0 - e*e) / (m1 + m2));
+}
+
+bool equal_number(double x1, double x2, double tol)
+{
+    bool equal = false;
+    if ( (fabs(x1-x2)/x1) < tol)
+    {
+        equal = true;
+    }
+    return equal;
 }
 
 }

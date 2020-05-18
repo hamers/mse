@@ -1,5 +1,4 @@
-/*
-*/
+/* MSE */
 
 #include "types.h"
 #include "tides.h"
@@ -13,6 +12,40 @@ int const MAIN_SEQUENCE = 1;
 int const CHeB = 4;
 int const HeMS = 7;
 int const HeWD = 10;
+
+
+void handle_secular_tidal_evolution(ParticlesMap *particlesMap, Particle *p)
+{
+
+    Particle *child1 = (*particlesMap)[p->child1];
+    Particle *child2 = (*particlesMap)[p->child2];
+
+    
+    if (child1->include_tidal_friction_terms == true || child1->include_tidal_bulges_precession_terms == true || child1->include_rotation_precession_terms == true)
+    {
+        if (child1->tides_method == 0 || child1->tides_method == 1)
+        {
+            compute_EOM_equilibrium_tide_BO_full(particlesMap,p->index,child1->index,child2->index,child1->include_tidal_friction_terms,child1->include_tidal_bulges_precession_terms,child1->include_rotation_precession_terms,child1->minimum_eccentricity_for_tidal_precession,child1->tides_method);
+        }
+        else if (child1->tides_method == 2)
+        {
+            compute_EOM_equilibrium_tide(particlesMap,p->index,child1->index,child2->index,child1->include_tidal_friction_terms,child1->include_tidal_bulges_precession_terms,child1->include_rotation_precession_terms,child1->minimum_eccentricity_for_tidal_precession);
+        }
+    }
+    if (child2->include_tidal_friction_terms == true || child2->include_tidal_bulges_precession_terms == true || child2->include_rotation_precession_terms == true)
+    {
+        if (child2->tides_method == 0 || child2->tides_method == 1)
+        {
+            compute_EOM_equilibrium_tide_BO_full(particlesMap,p->index,child2->index,child1->index,child2->include_tidal_friction_terms,child2->include_tidal_bulges_precession_terms,child2->include_rotation_precession_terms,child2->minimum_eccentricity_for_tidal_precession,child2->tides_method);
+        }
+        else if (child2->tides_method == 2)
+        {
+            compute_EOM_equilibrium_tide(particlesMap,p->index,child2->index,child1->index,child2->include_tidal_friction_terms,child2->include_tidal_bulges_precession_terms,child2->include_rotation_precession_terms,child2->minimum_eccentricity_for_tidal_precession);
+        }
+
+    }
+}
+
 
 /* start addition 13-09-2016 */
 int const PreMS = 17;
@@ -104,6 +137,7 @@ double compute_t_V_hurley
     double apsidal_motion_constant
 )
 {
+    printf("compute_t_V_hurley kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
     bool USE_RADIATIVE_DAMPING = check_for_radiative_damping(stellar_type,mass,convective_envelope_mass,convective_envelope_radius);
     bool USE_CONVECTIVE_DAMPING = check_for_convective_damping(stellar_type);
     double k_AM_div_T,t_V;
@@ -283,9 +317,9 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
 
-    #ifdef DEBUG
+    //#ifdef DEBUG
     printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
-    #endif
+    //#endif
 
     //t_V *= 1.0e-10;
     if (t_V!=t_V)

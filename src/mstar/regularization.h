@@ -139,6 +139,10 @@ struct RegularizedRegion {
     double *Radius;
     int *Collision_Partner; 
     double collision_tolerance;
+    
+    /* Identification (for interface with MSE) */
+    int *Index;
+    
 };
 
 struct ComTask {

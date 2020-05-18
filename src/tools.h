@@ -38,4 +38,7 @@ double get_mutual_angle(double a_vec[3], double b_vec[3]);
 
 double compute_a_from_h(double m1, double m2, double h, double e);
 double compute_h_from_a(double m1, double m2, double a, double e);
+
+bool equal_number(double x1, double x2, double tol);
+
 }

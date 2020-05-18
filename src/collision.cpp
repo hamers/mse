@@ -1,5 +1,4 @@
 /* MSE */
-/* Adrian Hamers November 2019 */
 
 #include "evolve.h"
 #include "collision.h"
@@ -44,7 +43,8 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
     }
     else /* N-body mode */
     {
-        int col_part_i,col_part_j;
+        int col_part_i = -1;
+        int col_part_j = -1;
         ParticlesMapIterator it_i,it_j;
         Particle *pi, *pj;
         for (it_i = particlesMap->begin(); it_i != particlesMap->end(); it_i++)
@@ -70,7 +70,7 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
 
         if (col_part_i == -1 or col_part_j == -1)
         {
-            printf("merger.cpp -- error in handle_collisions: unable to find pair of colliding bodies\n");
+            printf("merger.cpp -- error in handle_collisions: unable to find pair of colliding bodies; col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
             exit(-1);
         }
         /* Reset Collision_Partner */

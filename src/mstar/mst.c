@@ -2193,7 +2193,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
             time = R[0].State[R[0].TimeIndex];
             //if (time < 0.0)
             {
-                printf("t %g\n",time);
+                //printf("t %g\n",time);
             }
             R[0].time = time;
             if (fabs(time - time_interval) / time_interval <
@@ -2297,6 +2297,8 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     
     S->Radius = calloc(N, sizeof(double));
     S->Collision_Partner = calloc(N, sizeof(int));
+    
+    S->Index = calloc(N, sizeof(int));
         
 }
 

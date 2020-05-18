@@ -2,6 +2,8 @@
 
 extern "C"
 {
+void handle_secular_tidal_evolution(ParticlesMap *particlesMap, Particle *p);
+
 bool check_for_radiative_damping(int stellar_type, double mass, double convective_envelope_mass, double convective_envelope_radius);
 bool check_for_convective_damping(int stellar_type);
 

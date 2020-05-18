@@ -1,5 +1,4 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "evolve.h"
 #include "SNe.h"

@@ -1,5 +1,4 @@
-/*
-*/
+/* MSE */
 
 #include "types.h"
 #include "evolve.h"
@@ -342,12 +341,11 @@ int investigate_roots_in_system(ParticlesMap *particlesMap)
                 p->RLOF_at_pericentre_has_occurred = false; /* Reset ODE root found flag */
                 
                 //#endif
-                if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == 1)
+                if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == true) /* Going into RLOF */
                 {
-                    
                     p->RLOF_flag = 1;
                 }
-                else if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == 0)
+                else if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == false) /* Going out of RLOF */
                 {
                     //p->check_for_RLOF_at_pericentre = 1;
                     p->RLOF_flag = 0;
@@ -575,11 +573,19 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
         }
         else /* P_p not a binary */
         {
-            if (P_p->check_for_RLOF_at_pericentre == true)
+            if (P_p->check_for_RLOF_at_pericentre == 1)
             {
                 if FOUND_ROOT
                 {
-                    P_p->RLOF_at_pericentre_has_occurred = true;
+                    P_p->RLOF_at_pericentre_has_occurred = 1;
+                }
+                if (roots_found[i_root] == 1) /* Going out of RLOF */
+                {
+                    P_p->RLOF_at_pericentre_has_occurred_entering_RLOF = false;
+                }
+                else if (roots_found[i_root] == -1) /* Going into RLOF */
+                {
+                    P_p->RLOF_at_pericentre_has_occurred_entering_RLOF = true;
                 }
                 i_root++;
             }

@@ -1,5 +1,4 @@
-/*
-*/
+/* MSE */
 
 #include "structure.h"
 #include "evolve.h"
@@ -114,7 +113,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         int child = P_p->index;
         int parent = P_p->parent;
 
-        if (parent != -1) /* if parent == -1, P_p is the `top' binary, for which level=0 */
+        if (parent != -1) /* if parent == -1, P_p is the `top' binary, for which level=0; note: this loop will never be entered if there are no binaries in the system */
         {
             while (parent != -1) /* search parents until reaching the top binary */
             {
@@ -156,7 +155,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         
         p->highest_level = highest_level;
         
-        if (p->is_binary == false)
+        //if (p->is_binary == false)
         {
             if (p->parent == -1)
             {
@@ -178,6 +177,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
 
     /* set binary masses -- to ensure this happens correctly, do this from highest level to lowest level */
     ParticlesMapIterator it_p;
+
     int highest_level = particlesMap->begin()->second->highest_level;
 
     int level=highest_level;
@@ -208,6 +208,10 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 P_p->child1_mass_times_child2_mass = P_p->child1_mass*P_p->child2_mass;
                 
                 P_p->mu = P_p->child1_mass * P_p->child2_mass / P_p->mass;
+                
+                P_p->delta_child1_mass_adiabatic_mass_loss = P_p_child1->delta_m_adiabatic_mass_loss;
+                P_p->delta_child2_mass_adiabatic_mass_loss = P_p_child2->delta_m_adiabatic_mass_loss;
+                P_p->delta_m_adiabatic_mass_loss = P_p->delta_child1_mass_adiabatic_mass_loss + P_p->delta_child2_mass_adiabatic_mass_loss;
                 
                 #ifdef DEBUG
                 printf("structure.cpp -- set_binary_masses_from_body_masses -- level %d m %g highest_level %d\n",level,P_p->mass,highest_level);
@@ -242,7 +246,11 @@ void update_structure(ParticlesMap *particlesMap)
 {
     int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    set_binary_masses_from_body_masses(particlesMap);
+    
+    if (N_binaries>0)
+    {
+        set_binary_masses_from_body_masses(particlesMap);
+    }
     
 }
 
@@ -442,9 +450,11 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
 void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
 {
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    set_binary_masses_from_body_masses(particlesMap);
     printf("determine_internal_mass_and_semimajor_axis 0\n");
+    determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+    printf("determine_internal_mass_and_semimajor_axis 1\n");
+    set_binary_masses_from_body_masses(particlesMap);
+    printf("determine_internal_mass_and_semimajor_axis 2\n");
     double h_tot_vec[3];
     double semimajor_axis,eccentricity,inclination,argument_of_pericenter,longitude_of_ascending_node;
     

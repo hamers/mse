@@ -1,11 +1,23 @@
-/*
-*/
+/* MSE */
 
 #include "types.h"
 #include "postnewtonian.h"
 #include <stdio.h>
 extern "C"
 {
+    
+void compute_EOM_Post_Newtonian_for_particle(ParticlesMap *particlesMap, Particle *p, double *hamiltonian, bool compute_hamiltonian_only)
+{
+    if (p->include_pairwise_1PN_terms == true)
+    {
+        *hamiltonian += compute_EOM_pairwise_1PN(particlesMap,p->index,compute_hamiltonian_only);
+    }
+    if (p->include_pairwise_25PN_terms == true)
+    {
+        *hamiltonian += compute_EOM_pairwise_25PN(particlesMap,p->index,compute_hamiltonian_only);
+    }
+}
+
 double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
 //    printf("compute_EOM_pairwise_1PN\n");

@@ -688,12 +688,13 @@ class Particle
     int emt_ejection_radius_mode;
     double emt_accretion_radius;
     double emt_tau;
-    int RLOF_at_pericentre_has_occurred_entering_RLOF;
+    bool RLOF_at_pericentre_has_occurred_entering_RLOF;
     double fm;
         
     /* Common-envelope evolution */
     double common_envelope_alpha;
     double common_envelope_lambda;
+    double common_envelope_timescale;
         
     /* Relative position/velocities (applies to binaries only) */
     double r,v;
@@ -818,6 +819,13 @@ class Particle
     
     int Collision_Partner;
     
+    /* Used for adiabatic mass loss calculations (CE) */
+    double h_vec_old_adiabatic_mass_loss[3],e_vec_old_adiabatic_mass_loss[3];
+    double delta_m_adiabatic_mass_loss;
+    double child1_mass_adiabatic_mass_loss,child2_mass_adiabatic_mass_loss;
+    double delta_child1_mass_adiabatic_mass_loss,delta_child2_mass_adiabatic_mass_loss;
+    double P_orb_adiabatic_mass_loss;
+    
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
         stable = true;
@@ -888,6 +896,8 @@ class Particle
         /* CE */
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
+        common_envelope_timescale = 1.0e2;
+        
         /* kicks */
         kick_distribution = 0;
         kick_distribution_sigma = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */

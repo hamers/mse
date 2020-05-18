@@ -1,5 +1,4 @@
-/* SecularMultiple */
-/* Adrian Hamers November 2019 */
+/* MSE */
 
 #include "evolve.h"
 #include "binary_evolution.h"
@@ -9,14 +8,14 @@ extern "C"
 
 //struct ktype__ ktype_;
 
-int handle_binary_evolution(ParticlesMap *particlesMap, double *dt_binary_evolution, int *integration_flag)
+int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
-    if (*integration_flag != 0) /* Only do binary evolution if we can be sure the system is dynamically stable */
+    if (*integration_flag != 0) /* Only do binary evolution if we can be sure the system is dynamically stable and we have well-defined orbits. */
     {
         return 0;
     }
-    
-    compute_mass_transfer_properties(particlesMap,dt_binary_evolution,integration_flag);
+    update_structure(particlesMap);
+    handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
     
     //*dt_binary_evolution = 1.0e4;
     
@@ -25,10 +24,11 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double *dt_binary_evolut
 
 
 
-int compute_mass_transfer_properties(ParticlesMap *particlesMap, double *dt_binary_evolution, int *integration_flag)
+int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
     *dt_binary_evolution = 1.0e100;
     double min_dt = 1.0e0;
+    double dt = t - t_old; /* Imposed timestep which will be used for secular ODE integration. */
 
     double epsilon_MT = 0.01;
     double dt_temp;
@@ -45,72 +45,45 @@ int compute_mass_transfer_properties(ParticlesMap *particlesMap, double *dt_bina
     {
 
         Particle *donor = (*it_p).second;
+        printf("i %d %d %d\n",donor->index,donor->is_binary,donor->is_bound);
         if (donor->is_binary == false and donor->is_bound == true)
         {
-
-            /* For testing CE */
-                Particle *parent = (*particlesMap)[donor->parent];
-                Particle *accretor = (*particlesMap)[donor->sibling];
-                if (accretor->is_binary == false)
-                {
-                    //common_envelope_evolution(particlesMap,parent->index,donor->index,accretor->index, integration_flag);
-                }
             
             if (donor->RLOF_flag == 1)
             {
-                
-                Particle *parent = (*particlesMap)[donor->parent];
-                Particle *accretor = (*particlesMap)[donor->sibling];
-                double P_orb = compute_orbital_period(parent);
-                double M_donor = donor->mass;
-                double M_accretor = accretor->mass;
-                
-                double fm = donor->fm;
-    /* child1 -> child2 */
-    //q = child1->mass/child2->mass;
-    //R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
-    //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
-    //x = R_Lc/child1->radius;
-    //determine_E_0(e, x, &E_0, &in_RLOF);
-    
-                double m_dot = -(M_donor/P_orb)*fm;
-                double t_MT = M_donor/fabs(m_dot);
-                double R_donor = donor->radius;
-                double t_dyn = sqrt( (R_donor * R_donor * R_donor)/(CONST_G * M_donor) );
+                int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution);
 
-                double q = M_donor / M_accretor;
-                double q_crit = compute_q_crit_for_common_envelope_evolution(donor->stellar_type, M_donor, donor->core_mass);
-
-                int kw = donor->stellar_type;
-                if ( (kw >= 2 and kw <= 9 and kw != 7) and ((t_MT <= t_dyn and q > q_crit) or t_MT < P_orb) )
+                #ifdef IGNORE
+                if (flag == 1)
                 {
+                    dt_temp = compute_orbital_period(parent);
                     common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
-                    donor->mass_dot_RLOF = 0.0;
-                    accretor->mass_dot_RLOF = 0.0;
                 }
-                else
+                else /* TO DO: include low-mass dynamical mass transfer case (evolv2.f: lines 1150 - 1233 */
                 {
-                    donor->mass_dot_RLOF = m_dot;
-                    accretor->mass_dot_RLOF = -m_dot;
+                   dt_temp = compute_orbital_period(parent); /* TO DO: change this to something more appropriate */
+                    compute_stable_mass_transfer_properties(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
                 }
                 
-                dt_temp = epsilon_MT*fabs(donor->mass/donor->mass_dot_RLOF);
+                //dt_temp = epsilon_MT*fabs(donor->mass/donor->mass_dot_RLOF);
                 //printf("0 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
                 *dt_binary_evolution = min(*dt_binary_evolution, dt_temp);
                 //printf("1 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
                 *dt_binary_evolution = max(*dt_binary_evolution, min_dt);
                 //printf("2 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
-                printf("fm %g M_dot %g dt_MT %g \n",fm,donor->mass_dot_RLOF,*dt_binary_evolution);
+                //printf("fm %g M_dot %g dt_MT %g \n",fm,donor->mass_dot_RLOF,*dt_binary_evolution);
                 #ifdef VERBOSE
                 printf("fm %g M_dot %g dt_MT %g \n",fm,donor->mass_dot_RLOF,*dt_binary_evolution);
                 #endif
     //printf("e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
                 
+                #endif
+                
             }
         }
 
     }
-    
+
     update_structure(particlesMap);
     
     return 0;
@@ -142,43 +115,191 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 }
 
 
-int determine_mass_transfer_stability(ParticlesMap *particlesMap)
+int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)
 {
-    
-    return 0;
-}
-
-
-int common_envelope_evolution2(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index)
-{
-    Particle *binary = (*particlesMap)[binary_index];
+    Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
     
+    int flag = -1;
+    
+    double P_orb = compute_orbital_period(parent);
     double M_donor = donor->mass;
-    double M_core_donor = donor->core_mass;
-    double M_envelope_donor = M_donor - M_core_donor; // do not take convective envelope mass
     double M_accretor = accretor->mass;
-    
-    double alpha = binary->common_envelope_alpha;
-    double lambda = donor->common_envelope_lambda;
-    
-    double a_i = binary->a;
-    double e = binary->e;
-    double rp_i = a_i * (1.0 - e);
-    
-    double q = M_donor / M_accretor;
-    double r_L_d = roche_radius_pericenter_eggleton(rp_i,q) / a_i; // take R_L at periapsis
-    
-    double a_f = a_i * (M_core_donor / M_donor) * M_accretor / ( M_accretor + 2.0 * M_envelope_donor / (alpha * lambda * r_L_d) );
 
-    binary->a = a_f;
-    binary->e = epsilon; // assume circularisation after CE
-    donor->mass = M_core_donor; // what about stellar type?
+    /* MT & dynamical timescales */
+    double fm = donor->fm;
+    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
+    double t_MT = M_donor/fabs(m_dot);
+    double R_donor = donor->radius;
+    double t_dyn = compute_stellar_dynamical_timescale(M_donor, R_donor);
+
+    /* Critical mass ratios. */
+    double q = M_donor / M_accretor;
+    double q_crit = compute_q_crit_for_common_envelope_evolution(donor->stellar_type, M_donor, donor->core_mass);
+    double q_crit_low_mass_donor = 0.695;
+    double q_crit_WD_donor = 0.628;
     
-    /* calc new e & h vectors; update R&V */
-    return 0; 
+    int kw = donor->stellar_type;
+
+    /* Different cases */
+    if (kw == 0 and q > q_crit_low_mass_donor)
+    {
+        /* `CE'-like evolution from a low-mass MS star to any secondary. */
+        flag = 1;
+        dynamical_mass_transfer_low_mass_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+    }
+    else if ( (kw >= 2 and kw <= 9 and kw != 7) and ((t_MT <= t_dyn or q > q_crit) or t_MT < P_orb) ) /* add donor convective envelope mass? */
+    {
+        /* `Standard CE evolution. */
+        flag = 2;
+        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
+    }
+    else if (kw >= 10 and kw <= 12 and q > q_crit_WD_donor)
+    {
+        /* Dynamical transfer from WD */
+        flag = 3;
+        dynamical_mass_transfer_WD_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+    }   
+    else if (kw == 13)
+    {
+        flag = 4;
+        mass_transfer_NS_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+    }
+    else if (kw == 14)
+    {
+        flag = 5;
+        mass_transfer_BH_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+    }
+    else
+    {
+        /* Other cases: stable mass transfer. */
+        flag = 6;
+        stable_mass_transfer_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+    }
+    /* TO DO: contact cases! */
+    
+    if (flag == -1)
+    {
+        printf("binary_evolution.cpp -- fatal error in handle_mass_transfer_cases, parent %d donor %d accretor %d\n",parent->index,donor->index,accretor->index);
+        exit(-1);
+    }
+    
+    return flag;
 }
+
+double compute_orbit_averaged_mass_transfer_rate_emt_model(double M_donor, double fm, double P_orb)
+{
+    return -(M_donor/P_orb) * fm;
+}
+
+double compute_stellar_dynamical_timescale(double M, double R)
+{
+    return sqrt( ( R*R*R )/(CONST_G * M) );
+}
+
+
+int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+{
+    /* Low-mass dynamical mass transfer case (BSE evolv2.f: lines 1150 - 1233) */
+   return 0;
+}
+
+int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+{
+    /* Dynamical mass transfer case WD donor (BSE evolv2.f: lines 1290 - 1342) */
+    
+    Particle *parent = (*particlesMap)[parent_index];
+    Particle *donor = (*particlesMap)[donor_index];
+    Particle *accretor = (*particlesMap)[accretor_index];
+    
+    int flag = -1;
+    
+    double P_orb = compute_orbital_period(parent);
+    double M_donor = donor->mass;
+    double M_accretor = accretor->mass;
+
+    double fm = donor->fm;
+    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
+    
+    double dm1; /* Mass lost from companion due to RLOF */
+    double dm2; /* Mass accreted by companion. 
+    * The `emt' model does not support non-conservative transfer.
+    * Instead, any mass not accreted will be assumed to be lost in an isotropic wind. 
+    * The latter is computed by adjusting the wind mass loss of the donor (effectively, it loses more mass in the wind). */
+    
+    double dt = t - t_old;
+    dm1 = m_dot * dt;
+    
+    //double dme = 2.08d-03*eddfac*(1.d0/(1.d0 + zpars(11)))*rad(j2)*tb // TO DO: include case for eddfac<10
+    
+    dm2 = dm1;
+
+    bool destroyed = false;
+    int kw1 = donor->stellar_type;
+    int kw2 = accretor->stellar_type;
+    if (kw1 == 10 and kw2 == 10)
+    {
+        /* Assume the energy released by ignition of the triple-alpha reaction is enough to destroy both stars. */
+        destroyed = true;
+    }
+    else if (kw1 == 10 or kw2 == 10)
+    {
+        /* Should be helium overflowing onto a CO or ONe core in which case the 
+        *  helium swells up to form a giant envelope so a HeGB star is formed. 
+        *  Allowance for the rare case of CO or ONe flowing onto He is made. */
+
+        int kst = 9;
+        double accretor_core_mass = accretor->core_mass; 
+        if(kw2 == 10)
+        {
+            accretor_core_mass = dm2;
+        }
+        double accretor_age = accretor->age*yr_to_Myr;
+        gntage_(&accretor_core_mass,&M_accretor,&kst,accretor->zpars,&accretor->sse_initial_mass,&accretor_age);
+        accretor->stellar_type = kst;
+        accretor->epoch = t - accretor_age * Myr_to_yr;
+    }
+    else if (kw2 <= 12)
+    {
+        accretor->sse_initial_mass = M_accretor;
+        if (kw1 == 12 and kw2 == 11) /* Mixture of ONe and CO will result in an ONe product. */
+        {
+            accretor->stellar_type = 12;
+        }
+    }
+
+    /* TO DO: handle the destruction... */
+#ifdef IGNORE
+         kstar(j1) = 15
+         mass(j1) = 0.d0
+*
+* Might be a supernova that destroys the system.
+*
+         if(kstar(j2).le.11.and.mass(j2).gt.mch)then
+            kstar(j2) = 15
+            mass(j2) = 0.d0
+         endif
+         coel = .true.
+         goto 135
+#endif
+    
+    
+   return 0;
+}
+
+int mass_transfer_NS_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+{
+    /* Mass transfer case NS donor (BSE evolv2.f: lines 1343 - 1354) */
+   return 0;
+}
+
+int mass_transfer_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+{
+    /* Mass transfer case BH donor (BSE evolv2.f: lines 1355 - 1365) */
+   return 0;
+}
+
 
 int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, int *integration_flag)
 {
@@ -207,7 +328,11 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     Particle *star2 = (*particlesMap)[index2];
     double M1 = star1->mass;
     double M2 = star2->mass;
-    
+
+    /* CE evolution is not handled by the ODE integrator; correspondingly, mass_dot_RLOF should be set to zero. */
+    star1->mass_dot_RLOF = 0.0;
+    star2->mass_dot_RLOF = 0.0;
+
     /* Orbital properties */
     double SEP;
     double SEPF; // final separation
@@ -773,15 +898,39 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     if (COEL == false)
     {
         
-        /* Handle effect of fast mass loss on the rest of the system */
+        /* Handle effect of mass loss on the rest of the system */
         printf("no coel M1 %g M2 %g kw1 %d kw2 %d\n",M1,M2,KW1,KW2);
-        star1->instantaneous_perturbation_delta_mass = M1 - star1->mass; // final minus initial mass
-        star2->instantaneous_perturbation_delta_mass = M2 - star2->mass; // final minus initial mass        
 
-        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this includes possible SNe kicks from individual stars */
+        /* First, handle effects of possible SNe kicks. Mass loss is not yet taken into account */
+        star1->instantaneous_perturbation_delta_mass = 0.0;
+        star2->instantaneous_perturbation_delta_mass = 0.0;
+        
+        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+
+        set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
+        
+        /* Next, assume instantaneous mass loss for ALL orbits. 
+         * Note: `binary' will be overwritten at the very end below. 
+         * Other orbits, for which mass loss is expected to be adiabatic,
+         * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
+        star1->apply_kick = false; /* The kicks were already taken into account above */
+        star2->apply_kick = false; /* The kicks were already taken into account above */
+
+        double Delta_M1 = M1 - star1->mass;
+        double Delta_M2 = M2 - star2->mass;
+        star1->instantaneous_perturbation_delta_mass = Delta_M1; // final minus initial mass
+        star2->instantaneous_perturbation_delta_mass = Delta_M2; // final minus initial mass        
+        
+        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this will update the masses of stars 1 and 2 */
+        
+        /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
+         * i.e., time of CE >> t_orb */
+        star1->delta_m_adiabatic_mass_loss = Delta_M1;
+        star2->delta_m_adiabatic_mass_loss = Delta_M2;
+        compute_new_orbits_assuming_adiabatic_mass_loss(particlesMap, binary->common_envelope_timescale);
         
         //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
-        printf("post SN\n");
+        printf("Ce -- post mass changes\n");
         print_system(particlesMap);
         /* Update the stars and orbit */
         star1->stellar_type = KW1;
@@ -871,8 +1020,36 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             binary->is_binary = false; /* The binary becomes a body */
             particlesMap->erase(star1->index);
             particlesMap->erase(star2->index);
+
+
+            /* Handle effect of mass loss on the rest of the system */
+
+            set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
             
-            /* Handle effect of fast mass loss on the rest of the system */
+            /* Next, assume instantaneous mass loss for ALL orbits. 
+             * Orbits, for which mass loss is expected to be adiabatic,
+             * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
+            binary->apply_kick = false;
+
+            binary->mass = star1->mass + star2->mass; // the old mass
+            double Delta_M = M1 - binary->mass;
+            binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
+
+            handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* mass of `binary' will be updated */
+
+            //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+            
+            //apply_user_specified_instantaneous_perturbation(particlesMap);
+            //reset_instantaneous_perturbation_quantities(particlesMap);
+            
+            //printf("mold %g mnew %g\n",binary->mass,M1);
+            
+            /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
+             * i.e., time of CE >> t_orb */
+            binary->delta_m_adiabatic_mass_loss = Delta_M;
+            compute_new_orbits_assuming_adiabatic_mass_loss(particlesMap, binary->common_envelope_timescale);
+
+
             //printf("post merge\n");
             //print_system(particlesMap);
             /* Should coelesced objects get a kick? 
@@ -880,16 +1057,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
              * Note: mergers between BHs/NSs should never occur here (CE evolution), rather as collisions */
 
             binary->apply_kick = false;
-            binary->mass = star1->mass + star2->mass; // the old mass
-            binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
-            //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
-            
-            //apply_user_specified_instantaneous_perturbation(particlesMap);
-            //reset_instantaneous_perturbation_quantities(particlesMap);
-            
-            //printf("mold %g mnew %g\n",binary->mass,M1);
-            handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* includes sampling kicks for compact objects */
             //printf("done SNe\n");
+            
             /* Update the merged star */
             binary->stellar_type = KW1;
             
@@ -966,286 +1135,103 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     return 1;
 }
 
-
+void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap)
+{
+    int i;
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *b = (*it).second;
+        b->delta_m_adiabatic_mass_loss = 0.0;
+        if (b->is_binary == true)
+        {
+            b->P_orb_adiabatic_mass_loss = compute_orbital_period(b);
+            b->child1_mass_adiabatic_mass_loss = b->child1_mass;
+            b->child2_mass_adiabatic_mass_loss = b->child2_mass;
+            for (i=0; i<3; i++)
+            {
+                b->h_vec_old_adiabatic_mass_loss[i] = b->h_vec[i];
+                b->e_vec_old_adiabatic_mass_loss[i] = b->e_vec[i];
+            }
+        }
+    }
 }
 
+void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap, double mass_loss_timescale)
+{
+    set_binary_masses_from_body_masses(particlesMap); // to set the correct delta_m_adiabatic for each orbit
 
-#ifdef IGNORE
- 8    dme = 2.08d-03*eddfac*(1.d0/(1.d0 + zpars(11)))*rad(j2)*tb
-      supedd = .false.
-      novae = .false.
-      disk = .false.
-*
-* Determine whether the transferred material forms an accretion 
-* disk around the secondary or hits the secondary in a direct 
-* stream, by using eq.(1) of Ulrich & Burger (1976, ApJ, 206, 509) 
-* fitted to the calculations of Lubow & Shu (1974, ApJ, 198, 383). 
-*
-*     if(kstar(j2).ge.10) disk = .true.
-      rmin = 0.0425d0*sep*(q(j2)*(1.d0+q(j2)))**(1.d0/4.d0)
-      if(rmin.gt.rad(j2)) disk = .true.
-*
-* Kelvin-Helmholtz time from the modified classical expression.
-*
-      do 13 , k = 1,2
-         tkh(k) = 1.0d+07*mass(k)/(rad(k)*lumin(k))
-         if(kstar(k).le.1.or.kstar(k).eq.7.or.kstar(k).ge.10)then
-            tkh(k) = tkh(k)*mass(k)
-         else
-            tkh(k) = tkh(k)*(mass(k) - massc(k))
-         endif
- 13   continue
-*
-* Dynamical timescale for the primary.
-*
-      tdyn = 5.05d-05*SQRT(rad(j1)**3/mass(j1))
-*
-* Identify special cases.
-*
-      if(kstar(j1).eq.2)then
-         qc = 4.d0
-      elseif(kstar(j1).eq.3.or.kstar(j1).eq.5.or.kstar(j1).eq.6)then
-*        qc = (1.67d0-zpars(7)+2.d0*(massc(j1)/mass(j1))**5)/2.13d0
-* Alternatively use condition of Hjellming & Webbink, 1987, ApJ, 318, 794. 
-         qc = 0.362 + 1.0/(3.0*(1.0 - massc(j1)/mass(j1)))
-* Or allow all cases to avoid common-envelope.  
-*        qc = 100.d0
-      elseif(kstar(j1).eq.8.or.kstar(j1).eq.9)then
-         qc = 0.784d0
-      else
-         qc = 3.d0
-      endif
-*
-      if(kstar(j1).eq.0.and.q(j1).gt.0.695d0)then
-*
-* This will be dynamical mass transfer of a similar nature to
-* common-envelope evolution.  The result is always a single
-* star placed in *2.
-*
-         taum = SQRT(tkh(j1)*tdyn)
-         dm1 = mass(j1)
-         if(kstar(j2).le.1)then
-*
-* Restrict accretion to thermal timescale of secondary.
-*
-            dm2 = taum/tkh(j2)*dm1
-            mass(j2) = mass(j2) + dm2
-*
-* Rejuvenate if the star is still on the main sequence.
-*
-            mass0(j2) = mass(j2)
-            CALL star(kstar(j2),mass0(j2),mass(j2),tmsnew,tn,
-     &                tscls,lums,GB,zpars)
-* If the star has no convective core then the effective age decreases,
-* otherwise it will become younger still.
-            if(mass(j2).lt.0.35d0.or.mass(j2).gt.1.25d0)then
-               aj(j2) = tmsnew/tms(j2)*aj(j2)*(mass(j2) - dm2)/mass(j2)
-            else
-               aj(j2) = tmsnew/tms(j2)*aj(j2)
-            endif
-            epoch(j2) = tphys - aj(j2)
-         elseif(kstar(j2).le.6)then
-*
-* Add all the material to the giant's envelope.
-*
-            dm2 = dm1
-            mass(j2) = mass(j2) + dm2
-            if(kstar(j2).eq.2)then
-               mass0(j2) = mass(j2)
-               CALL star(kstar(j2),mass0(j2),mass(j2),tmsnew,tn,tscls,
-     &                   lums,GB,zpars)
-               aj(j2) = tmsnew + tscls(1)*(aj(j2)-tms(j2))/tbgb(j2)
-               epoch(j2) = tphys - aj(j2)
-            endif
-         elseif(kstar(j2).le.12)then
-*
-* Form a new giant envelope.
-*
-            dm2 = dm1
-            kst = ktype(kstar(j1),kstar(j2))
-            if(kst.gt.100) kst = kst - 100
-            if(kst.eq.4)then
-               aj(j2) = aj(j2)/tms(j2)
-               massc(j2) = mass(j2)
-            endif
-*
-* Check for planets or low-mass WDs.
-*
-            if((kstar(j2).eq.10.and.mass(j2).lt.0.05d0).or.
-     &         (kstar(j2).ge.11.and.mass(j2).lt.0.5d0))then
-               kst = kstar(j1)
-               mass(j1) = mass(j2) + dm2
-               mass(j2) = 0.d0
-            else
-               mass(j2) = mass(j2) + dm2
-               CALL gntage(massc(j2),mass(j2),kst,zpars,
-     &                     mass0(j2),aj(j2))
-               epoch(j2) = tphys - aj(j2)
-            endif
-            kstar(j2) = kst
-         else
-*
-* The neutron star or black hole simply accretes at the Eddington rate.
-*
-            dm2 = MIN(dme*taum/tb,dm1)
-            if(dm2.lt.dm1) supedd = .true. 
-            mass(j2) = mass(j2) + dm2
-         endif
-         coel = .true.
-         if(mass(j2).gt.0.d0)then
-            mass(j1) = 0.d0
-            kstar(j1) = 15
-         else
-            kstar(j1) = kstar(j2)
-            kstar(j2) = 15
-         endif
-         goto 135
-      elseif(((ABS(ABS(2*kstar(j1)-11)-3).eq.2.or.kstar(j1).eq.9).
-     &        and.(q(j1).gt.qc.or.radx(j1).le.radc(j1))).or.
-     &        (kstar(j1).eq.2.and.q(j1).gt.qc).or.
-     &        (kstar(j1).eq.4.and.q(j1).gt.qc))then
-*
-* Common-envelope evolution.
-*
-         m1ce = mass(j1)
-         m2ce = mass(j2)
-         CALL comenv(mass0(j1),mass(j1),massc(j1),aj(j1),jspin(j1),
-     &               kstar(j1),mass0(j2),mass(j2),massc(j2),aj(j2),
-     &               jspin(j2),kstar(j2),zpars,ecc,sep,jorb,coel)
-*
-         jp = MIN(80,jp + 1)
-         bpp(jp,1) = tphys
-         bpp(jp,2) = mass(1)
-         if(kstar(1).eq.15) bpp(jp,2) = mass0(1)
-         bpp(jp,3) = mass(2)
-         if(kstar(2).eq.15) bpp(jp,3) = mass0(2)
-         bpp(jp,4) = float(kstar(1))
-         bpp(jp,5) = float(kstar(2))
-         bpp(jp,6) = sep
-         bpp(jp,7) = ecc
-         bpp(jp,8) = rad(1)/rol(1)
-         bpp(jp,9) = rad(2)/rol(2)
-         bpp(jp,10) = 7.0
-*
-         epoch(j1) = tphys - aj(j1)
-         if(coel)then
-            com = .true.
-            goto 135
-         endif
-         epoch(j2) = tphys - aj(j2)
-         if(ecc.gt.1.d0)then
-            if(kstar(1).ge.13)then
-               rc = corerd(kstar(1),mass(1),mass(1),zpars(2))
-               ospin(1) = jspin(1)/(k3*rc*rc*mass(1))
-            endif
-            if(kstar(2).ge.13)then
-               rc = corerd(kstar(2),mass(2),mass(2),zpars(2))
-               ospin(2) = jspin(2)/(k3*rc*rc*mass(2))
-            endif
-            goto 135
-         endif
-*
-* Next step should be made without changing the time.
-*
-         dm1 = m1ce - mass(j1)
-         dm2 = mass(j2) - m2ce
-         dm22 = dm2
-         dtm = 0.d0
-*
-* Reset orbital parameters as separation may have changed.
-*
-         tb = (sep/aursun)*SQRT(sep/(aursun*(mass(1)+mass(2))))
-         oorb = twopi/tb
-      elseif(kstar(j1).ge.10.and.kstar(j1).le.12.and.
-     &       q(j1).gt.0.628d0)then
-*
-* Dynamic transfer from a white dwarf.  Secondary will have KW > 9.
-*
-         taum = SQRT(tkh(j1)*tdyn)
-         dm1 = mass(j1)
-         if(eddfac.lt.10.d0)then
-            dm2 = MIN(dme*taum/tb,dm1)
-            if(dm2.lt.dm1) supedd = .true. 
-         else
-            dm2 = dm1
-         endif
-         mass(j2) = mass(j2) + dm2
-*
-         if(kstar(j1).eq.10.and.kstar(j2).eq.10)then
-*
-* Assume the energy released by ignition of the triple-alpha reaction 
-* is enough to destroy the star. 
-*
-            kstar(j2) = 15
-            mass(j2) = 0.d0
-         elseif(kstar(j1).eq.10.or.kstar(j2).eq.10)then
-*
-* Should be helium overflowing onto a CO or ONe core in which case the 
-* helium swells up to form a giant envelope so a HeGB star is formed. 
-* Allowance for the rare case of CO or ONe flowing onto He is made. 
-*
-            kst = 9
-            if(kstar(j2).eq.10) massc(j2) = dm2
-            CALL gntage(massc(j2),mass(j2),kst,zpars,mass0(j2),aj(j2))
-            kstar(j2) = kst
-            epoch(j2) = tphys - aj(j2)
-         elseif(kstar(j2).le.12)then
-            mass0(j2) = mass(j2)
-            if(kstar(j1).eq.12.and.kstar(j2).eq.11)then
-*
-* Mixture of ONe and CO will result in an ONe product. 
-*
-               kstar(j2) = 12
-            endif
-         endif
-         kstar(j1) = 15
-         mass(j1) = 0.d0
-*
-* Might be a supernova that destroys the system.
-*
-         if(kstar(j2).le.11.and.mass(j2).gt.mch)then
-            kstar(j2) = 15
-            mass(j2) = 0.d0
-         endif
-         coel = .true.
-         goto 135
-      elseif(kstar(j1).eq.13)then
-*
-* Gamma ray burster?
-*
-         dm1 = mass(j1)
-         mass(j1) = 0.d0
-         kstar(j1) = 15
-         dm2 = dm1
-         mass(j2) = mass(j2) + dm2
-         kstar(j2) = 14
-         coel = .true.
-         goto 135
-      elseif(kstar(j1).eq.14)then
-*
-* Both stars are black holes.  Let them merge quietly.
-*
-         dm1 = mass(j1)
-         mass(j1) = 0.d0
-         kstar(j1) = 15
-         dm2 = dm1
-         mass(j2) = mass(j2) + dm2
-         coel = .true.
-         goto 135
-      else
-*
-* Mass transfer in one Kepler orbit.
-*
-         dm1 = 3.0d-06*tb*(LOG(rad(j1)/rol(j1))**3)*
-     &         MIN(mass(j1),5.d0)**2
-         if(kstar(j1).eq.2)then
-            mew = (mass(j1) - massc(j1))/mass(j1)
-            dm1 = MAX(mew,0.01d0)*dm1
-         elseif(kstar(j1).ge.10)then
-*           dm1 = dm1*1.0d+03/MAX(rad(j1),1.0d-04)
-            dm1 = dm1*1.0d+03*mass(j1)/MAX(rad(j1),1.0d-04)
-         endif
-         kst = kstar(j2)
-*
-#endif
+    int i;    
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *b = (*it).second;
+        if (b->is_binary == true)
+        {
+            if (b->P_orb_adiabatic_mass_loss < mass_loss_timescale) // criterion for adiabatic mass loss
+            {
+                double m1_old = b->child1_mass_adiabatic_mass_loss;
+                double m2_old = b->child2_mass_adiabatic_mass_loss;
+                double delta_m1 = b->delta_child1_mass_adiabatic_mass_loss;
+                double delta_m2 = b->delta_child2_mass_adiabatic_mass_loss;
+                //double a_old = compute_a_from_h(m1_old,m2_old, norm3(b->h_vec_old_adiabatic_mass_loss), norm3(b->e_vec_old_adiabatic_mass_loss));
+                //double delta_a = - (b->delta_m_adiabatic_mass_loss/(m1_old + m2_old)) * a_old;
+                //double a = a_old + delta_a;
+                //double h_old = compute_h_from_a(m1_old,m2_old,a,e);
+                double h_old = norm3(b->h_vec_old_adiabatic_mass_loss);
+                double h_new = h_old * ( (delta_m1/m1_old) + (delta_m2/m2_old) - (delta_m1 + delta_m2)/(m1_old + m2_old) );
+                for (i=0; i<3; i++)
+                {
+                    /* Directions of h and e and magnitude of e do not change for adiabatic mass loss. */
+                    b->h_vec[i] = (b->h_vec_old_adiabatic_mass_loss[i] / h_old) * h_new;
+                    b->e_vec[i] = b->e_vec_old_adiabatic_mass_loss[i];
+                }
+            }
+        }
+    }
+}
 
+int common_envelope_evolution2(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index)
+{
+    /* Old function; can be ignored */
+    Particle *binary = (*particlesMap)[binary_index];
+    Particle *donor = (*particlesMap)[donor_index];
+    Particle *accretor = (*particlesMap)[accretor_index];
+    
+    double M_donor = donor->mass;
+    double M_core_donor = donor->core_mass;
+    double M_envelope_donor = M_donor - M_core_donor; // do not take convective envelope mass
+    double M_accretor = accretor->mass;
+    
+    double alpha = binary->common_envelope_alpha;
+    double lambda = donor->common_envelope_lambda;
+    
+    double a_i = binary->a;
+    double e = binary->e;
+    double rp_i = a_i * (1.0 - e);
+    
+    double q = M_donor / M_accretor;
+    double r_L_d = roche_radius_pericenter_eggleton(rp_i,q) / a_i; // take R_L at periapsis
+    
+    double a_f = a_i * (M_core_donor / M_donor) * M_accretor / ( M_accretor + 2.0 * M_envelope_donor / (alpha * lambda * r_L_d) );
+
+    binary->a = a_f;
+    binary->e = epsilon; // assume circularisation after CE
+    donor->mass = M_core_donor; // what about stellar type?
+    
+    /* calc new e & h vectors; update R&V */
+    return 0; 
+}
+
+int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+{
+    /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1585) */
+    
+
+   //                 donor->mass_dot_RLOF = m_dot;
+//                    accretor->mass_dot_RLOF = -m_dot;
+
+    return 0;
+}
+
+}

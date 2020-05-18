@@ -127,7 +127,7 @@ int apply_external_perturbation_assuming_integrated_orbits_interface();
 int apply_user_specified_instantaneous_perturbation_interface();
 int set_positions_and_velocities_interface();
 int clear_internal_particles();
-int initialize_code();
+int initialize_code_interface();
 
 /**********************************************
 /* orbital element/vector conversion routines *

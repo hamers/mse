@@ -788,6 +788,13 @@ int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool
 /* evolve interface *
  ********************/
 
+int initialize_code_interface()
+{
+    initialize_code(&particlesMap);
+
+    return 0;
+}
+
 int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
     //printf("interface %g %g\n",start_time,time_step);
@@ -833,25 +840,6 @@ int clear_internal_particles()
     //printf("clear_internal_particles\n");
     particlesMap.clear();
 	//highest_particle_index = 0;
-    return 0;
-}
-
-int initialize_code()
-{
-    #ifdef DEBUG
-    printf("interface.cpp -- initialize_code; set_up_flybys and initialize stars\n");
-    #endif
-
-    int integration_flag = 0;
-
-    if (include_flybys == true)
-    {
-        bool unbound_orbits;        
-        handle_next_flyby(&particlesMap,true,&unbound_orbits,&integration_flag);
-    }
-
-    initialize_stars(&particlesMap);
-
     return 0;
 }
 
@@ -975,8 +963,8 @@ int set_random_seed(int value)
 int unit_tests_interface()
 {
     int flag=0;
-    flag += test_collisions();
     flag += test_tools();
+    flag += test_collisions();
     
     return flag;
 }

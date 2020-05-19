@@ -60,6 +60,8 @@ int binary_evolution_CE_energy_flag = 0;
 int binary_evolution_CE_spin_flag = 0;
 
 double chandrasekhar_mass = 1.44;
+double eddington_accretion_factor = 10.0;
+double nova_accretion_factor = 1.0e-3;
 
 double mstar_gbs_tolerance = 1.0e-12;
 double mstar_collision_tolerance = 1.0e-12;

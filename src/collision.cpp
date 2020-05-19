@@ -180,13 +180,11 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     int kick_distribution = child1->kick_distribution; /* by default, adopt kick distribution of child1 */
 
 
-    double v_kick_vec[3],spin_vec[3];
+    double v_kick_vec[3] = {0.0,0.0,0.0};
+    double spin_vec[3];
     double M_final; /* used for compact objects */
     double alpha_vec_final[3];
-    for (i=0; i<3; i++)
-    {
-        v_kick_vec[i] = 0.0;
-    }
+
 
     /* Two H/He MS stars forming new MS star */
     if ((kw1 >= 0 and kw1 <= 1 or kw1 == 7) and (kw2 >= 0 and kw2 <= 1 or kw2 == 7)) 
@@ -467,35 +465,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             //particlesMap->erase(child1->index);
             //particlesMap->erase(child2->index);
             
-            if (b->parent == -1) /* b was a lone binary; the new system is empty */
-            {
-                particlesMap->erase(b->index);
-            }
-            else /* the system survives in some form */
-            {
-                Particle *p = (*particlesMap)[b->parent];
-                Particle *s = (*particlesMap)[b->sibling];
-                p->is_binary = false;
-                
-                if (p->parent == -1) /* the sibling s becomes the top-level binary; p can be safely removed */
-                {
-                    particlesMap->erase(p->index);
-                }
-                else /* particle p has become obsolete and needs to be replaced by s */
-                {
-                    Particle *pp = (*particlesMap)[p->parent];
-                    if (p->index == pp->child1)
-                    {
-                        pp->child1 = s->index;
-                    }
-                    else if (p->index == pp->child2)
-                    {
-                        pp->child2 = s->index;
-                    }
-                    particlesMap->erase(p->index);
-                }
-            }
-
+            handle_destruction_of_binary_in_system(particlesMap,b);
         }
     }
     else /* direct N-body mode */
@@ -549,6 +519,39 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     }
     
 }
+
+void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle *b)
+{
+    if (b->parent == -1) /* b was a lone binary; the new system is empty */
+    {
+        particlesMap->erase(b->index);
+    }
+    else /* the system survives in some form */
+    {
+        Particle *p = (*particlesMap)[b->parent];
+        Particle *s = (*particlesMap)[b->sibling];
+        p->is_binary = false;
+        
+        if (p->parent == -1) /* the sibling s becomes the top-level binary; p can be safely removed */
+        {
+            particlesMap->erase(p->index);
+        }
+        else /* particle p has become obsolete and needs to be replaced by s */
+        {
+            Particle *pp = (*particlesMap)[p->parent];
+            if (p->index == pp->child1)
+            {
+                pp->child1 = s->index;
+            }
+            else if (p->index == pp->child2)
+            {
+                pp->child2 = s->index;
+            }
+            particlesMap->erase(p->index);
+        }
+    }
+}
+
 
 int determine_merger_type(int kw1, int kw2)
 {

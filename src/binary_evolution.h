@@ -13,11 +13,15 @@ double compute_stellar_dynamical_timescale(double M, double R);
 
 
 int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
+double compute_Kelvin_Helmholtz_timescale(int kw, double mass, double core_mass, double radius, double luminosity);
+double compute_Eddington_accretion_rate(double radius, double hydrogen_mass_fraction);
+
 int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
-int mass_transfer_NS_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
-int mass_transfer_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
+int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 
 int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index, int *integration_flag);
+
+void handle_instantaneous_and_adiabatic_mass_changes_in_orbit(ParticlesMap *particlesMap, Particle *star1, Particle *star2, double Delta_m1, double Delta_m2, double mass_loss_timescale, int *integration_flag);
 void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap);
 void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap, double mass_loss_timescale);
 

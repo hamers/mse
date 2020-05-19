@@ -69,6 +69,8 @@ extern int binary_evolution_CE_energy_flag;
 extern int binary_evolution_CE_spin_flag;
 
 extern double chandrasekhar_mass;
+extern double eddington_accretion_factor;
+extern double nova_accretion_factor;
 
 extern double mstar_gbs_tolerance;
 extern double mstar_collision_tolerance;

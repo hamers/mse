@@ -343,8 +343,13 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     double Delta_m2 = dm2;
     handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->common_envelope_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
 
+    /* The binary becomes a body with the accretor's properties. */
+    update_stellar_evolution_properties(accretor);
+    parent->is_binary = false; 
+    copy_all_body_properties(accretor, parent);
+
     particlesMap->erase(donor_index);
-    parent->is_binary = false; /* The binary becomes a body (or destroyed) */
+    particlesMap->erase(accretor_index);
 
     #ifdef IGNORE
    /* Handle effect of mass loss and kicks on orbits in the rest of the system */
@@ -419,7 +424,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     
     dm2 = -dm1;
 
-    double m_new; /* New mass of remnant (if there is one). */
+    //double m_new; /* New mass of remnant (if there is one). */
     bool destroyed;;
     double v_kick_vec[3] = {0.0,0.0,0.0};
     
@@ -430,13 +435,13 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     {
         /* Assume the energy released by ignition of the triple-alpha reaction is enough to destroy both stars. */
         destroyed = true;
-        m_new = 0.0;
+        //m_new = 0.0;
     }
     else if (kw2 >= 10 and kw2 <= 11 and m_accretor > chandrasekhar_mass)
     {
         /* Potentially SNe Ia that destroys the system. */
         destroyed = true;
-        m_new = 0.0;
+        //m_new = 0.0;
     }
     else if (kw1 == 10 or kw2 == 10)
     {
@@ -456,7 +461,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         accretor->epoch = t - accretor_age * Myr_to_yr;
         
         destroyed = false;
-        m_new = m_accretor;
+        //m_new = m_accretor;
     }
     else if (kw2 <= 12)
     {
@@ -466,7 +471,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
             accretor->stellar_type = 12;
         }
         destroyed = false;
-        m_new = m_accretor;        
+        //m_new = m_accretor;        
     }
     else
     {
@@ -477,9 +482,6 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     double Delta_m1 = dm1;
     double Delta_m2 = dm2;
     handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->common_envelope_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
-
-    particlesMap->erase(donor_index);
-    parent->is_binary = false; /* The binary becomes a body (or destroyed) */
 
     #ifdef IGNORE
    /* Handle effect of mass loss and kicks on orbits in the rest of the system */
@@ -494,9 +496,20 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     printf("binary_evolution -- dynamical_mass_transfer_WD_donor -- delta m %g v_kick_vec %g %g %g\n",parent->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
     apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
     #endif
-    
 
-    if (destroyed == true)
+    particlesMap->erase(donor_index);
+    
+    if (destroyed == false)
+    {
+        /* The binary becomes a body with the accretor's properties. */
+        update_stellar_evolution_properties(accretor);
+        parent->is_binary = false; 
+        copy_all_body_properties(accretor, parent);
+
+        particlesMap->erase(donor_index);
+        particlesMap->erase(accretor_index);
+    }
+    else
     {
         handle_destruction_of_binary_in_system(particlesMap,parent);
     }
@@ -1540,16 +1553,14 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
 
-
-//    donor->mass_dot_RLOF = 0.0;
-//    accretor->mass_dot_RLOF = 0.0;
+    /* Reset mass_dot_RLOF; they will be calculated in this function. */
+    donor->mass_dot_RLOF = 0.0;
+    accretor->mass_dot_RLOF = 0.0;
    
     double P_orb = compute_orbital_period(parent);
     double m_donor = donor->mass;
     double m_accretor = accretor->mass;
 
-    double m_donor_new,m_accretor_new;
-    
     double R_donor = donor->radius;
     double R_accretor = accretor->radius;
 
@@ -1560,7 +1571,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 
     double dt = t - t_old;
     double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
-    double dm2; /* amount of mass gained by accretor during dt */
+    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
     
     double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
     double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
@@ -1572,6 +1583,21 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     double t_KH_accretor = compute_Kelvin_Helmholtz_timescale(kw2,m_accretor,accretor->core_mass,R_accretor,accretor->luminosity);
 
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
+
+    double tms,tn;
+    double *GB,*tscls,*lums;
+    GB = new double[10];
+    tscls = new double[20];
+    lums = new double[10];  
+
+    /* These quantities are used below to determine aging */
+    star_(&kw1,&donor->sse_initial_mass,&m_donor,&tms,&tn,tscls,lums,GB,donor->zpars);
+    double tms_donor_old = tms;
+    double tbgb_donor_old = tscls[0];
+    
+    star_(&kw2,&accretor->sse_initial_mass,&m_accretor,&tms,&tn,tscls,lums,GB,accretor->zpars);
+    double tms_accretor_old = tms;
+    double tbgb_accretor_old = tscls[0];
 
     bool nova = false;
 
@@ -1589,7 +1615,13 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     }
 
     /* Determine dm2. */
+    /* Eddington accretion rate for compact accretors. */
+    double hydrogen_mass_fraction = donor->zpars[10];
+    double m_dot_Eddington = compute_Eddington_accretion_rate(R_accretor, hydrogen_mass_fraction);
+    double dme = m_dot_Eddington * dt;
+
     double taum = (m_accretor/dm1) * dt;
+    
     if (kw2 <= 2 or kw2 == 4)
     {
         /* Limit according to the thermal timescale of the secondary. */
@@ -1643,12 +1675,6 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
                 /* Accrete until a nova explosion blows away most of the accreted material. */
                 nova = true;
 
-                double hydrogen_mass_fraction = donor->zpars[10];
-                double m_dot_Eddington = compute_Eddington_accretion_rate(R_accretor, hydrogen_mass_fraction);
-                double dme = m_dot_Eddington * dt;
-
-                dm2 = min(dm1,dme);
-       
                 dm2 = nova_accretion_factor * min(dm1, dme);
             }
             else
@@ -1683,345 +1709,163 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     }
     else if (kw2 >= 10)
     {
+        dm2 = min(dm1, dme);
+    }
+    else
+    {
+        /* We have a giant whose envelope can absorb any transferred material. */
+        dm2 = dm1;
+    }
+    
+    if (kw2 >= 10 and kw2 <= 12)
+    {
+        double mt2 = m_accretor + (dm2 - dms_accretor);
+        if (kw1 <= 10 and kw2 == 10 and mt2 >= 0.7)
+        {
+            /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
+            double Delta_m1 = dm1 + dms_donor;
+            double Delta_m2 = m_accretor;
+            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->common_envelope_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+
+            /* The binary becomes a body with the donor's properties. */
+            update_stellar_evolution_properties(donor);
+            parent->is_binary = false; 
+            copy_all_body_properties(donor, parent);
+
+            particlesMap->erase(donor_index);
+            particlesMap->erase(accretor_index);
+        }
+        else if (kw1 <= 10 and kw2 >= 11)
+        {
+            /* CO and ONeWDs accrete helium-rich material until the accumulated 
+            * material exceeds a mass of 0.15 when it ignites. For a COWD with 
+            * mass less than 0.95 the system will be destroyed as an ELD in a 
+            * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
+            * will survive with all the material converted to ONe (JH 30/09/99). */
+    
+            if (mt2 - accretor->sse_initial_mass >= 0.15)
+            {
+                if (kw2 == 11)
+                {
+                    double Delta_m1 = dm1 + dms_donor;
+                    double Delta_m2 = m_accretor;
+                    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->common_envelope_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+
+                    /* The binary becomes a body with the donor's properties. */
+                    update_stellar_evolution_properties(donor);
+                    parent->is_binary = false; 
+                    copy_all_body_properties(donor, parent);
+
+                    particlesMap->erase(donor_index);
+                    particlesMap->erase(accretor_index);
+                }
+                else
+                {
+                    accretor->sse_initial_mass = mt2;
+                }
+            }
+            else
+            {
+                accretor->sse_initial_mass = mt2;
+            }
+        }
+        if (kw2 == 10 or kw2 == 11)
+        {
+            if (mt2 >= chandrasekhar_mass)
+            {
+                /* If the Chandrasekhar limit is exceeded for a white dwarf then destroy
+                * the white dwarf in a supernova. If the WD is ONe then a neutron star
+                * will survive the supernova and we let HRDIAG take care of this when
+                * the stars are next updated. */
+                
+                dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
+                double Delta_m1 = dm1 + dms_donor;
+                double Delta_m2 = m_accretor;
+                handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->common_envelope_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+
+                /* The binary becomes a body with the donor's properties. */
+                update_stellar_evolution_properties(donor);
+                parent->is_binary = false; 
+                copy_all_body_properties(donor, parent);
+
+                particlesMap->erase(donor_index);
+                particlesMap->erase(accretor_index);
+            }
+        }
     }
 
-#ifdef IGNORE
-         elseif(kstar(j2).ge.10)then
-*
-* Impose the Eddington limit.
-*
-            dm2 = MIN(dm1,dme)
-            if(dm2.lt.dm1) supedd = .true. 
-*
-         else
-*
-* We have a giant whose envelope can absorb any transferred material.
-*
-            dm2 = dm1
-         endif
-         if(.not.novae) dm22 = dm2
-*
-         if(kst.ge.10.and.kst.le.12)then
-            mt2 = mass(j2) + km*(dm22 - dms(j2))
-            if(kstar(j1).le.10.and.kst.eq.10.and.mt2.ge.0.7d0)then
-*
-* HeWD can only accrete helium-rich material up to a mass of 0.7 when
-* it is destroyed in a possible Type 1a SN.
-*
-               mass(j1) = mass(j1) - km*(dm1 + dms(j1))
-               mass(j2) = 0.d0
-               kstar(j2) = 15
-               goto 135
-            elseif(kstar(j1).le.10.and.kst.ge.11)then
-*
-* CO and ONeWDs accrete helium-rich material until the accumulated 
-* material exceeds a mass of 0.15 when it ignites. For a COWD with 
-* mass less than 0.95 the system will be destroyed as an ELD in a 
-* possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-* will survive with all the material converted to ONe (JH 30/09/99). 
-*
-** Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  
-*
-               if((mt2-mass0(j2)).ge.0.15d0)then
-                  if(kst.eq.11)then
-                     mass(j1) = mass(j1) - km*(dm1 + dms(j1))
-                     mass(j2) = 0.d0
-                     kstar(j2) = 15
-                     goto 135
-                  endif
-                  mass0(j2) = mt2
-               endif
-            else
-               mass0(j2) = mt2
-            endif
-*
-* If the Chandrasekhar limit is exceeded for a white dwarf then destroy
-* the white dwarf in a supernova. If the WD is ONe then a neutron star
-* will survive the supernova and we let HRDIAG take care of this when
-* the stars are next updated.
-*
-            if(kst.eq.10.or.kst.eq.11)then
-               if(mt2.ge.mch)then
-                  dm1 = mch - mass(j2) + km*dms(j2)
-                  mass(j1) = mass(j1) - dm1 - km*dms(j1)
-                  mass(j2) = 0.d0
-                  kstar(j2) = 15
-                  goto 135
-               endif
-            endif
-         endif
-*
-*       Modify mass loss terms by speed-up factor.
-*
-         dm1 = km*dm1
-         dm2 = km*dm2
-         dm22 = km*dm22
-         dme = km*dme
-*
-* Calculate orbital angular momentum change due to system mass loss.
-*
-         djorb = ((dmr(1)+q(1)*dmt(1))*mass(2)*mass(2) +
-     &            (dmr(2)+q(2)*dmt(2))*mass(1)*mass(1))/
-     &           (mass(1)+mass(2))**2
-         djorb = djorb*dt
-*
-* For super-Eddington mass transfer rates, for gamma = -2.0, 
-* and for novae systems, assume that material is lost from  
-* the system as if a wind from the secondary. 
-* If gamma = -1.0 then assume the lost material carries with it 
-* the specific angular momentum of the primary and for all 
-* gamma > 0.0 assume that it takes away a fraction gamma of 
-* the orbital angular momentum. 
-*
-         if(supedd.or.novae.or.gamma.lt.-1.5d0)then
-            djorb = djorb + (dm1 - dm22)*mass(j1)*mass(j1)/
-     &              (mass(1)+mass(2))**2
-         elseif(gamma.ge.0.d0)then
-            djorb = djorb + gamma*(dm1 - dm2)
-         else
-            djorb = djorb + (dm1 - dm2)*mass(j2)*mass(j2)/
-     &              (mass(1)+mass(2))**2
-         endif
-*
-         ecc2 = ecc*ecc
-         omecc2 = 1.d0 - ecc2
-         sqome2 = SQRT(omecc2)
-*
-         djorb = djorb*sep*sep*sqome2*oorb
-         delet = 0.d0
-*
-* For very close systems include angular momentum loss mechanisms.
-*
-         if(sep.le.10.d0)then
-            djgr = 8.315d-10*mass(1)*mass(2)*(mass(1)+mass(2))/
-     &             (sep*sep*sep*sep)
-            f1 = (19.d0/6.d0) + (121.d0/96.d0)*ecc2
-            sqome5 = sqome2**5
-            delet1 = djgr*ecc*f1/sqome5
-            djgr = djgr*jorb*(1.d0+0.875d0*ecc2)/sqome5
-            djorb = djorb + djgr*dt
-            delet = delet + delet1*dt
-         endif
-*
-         do 602 , k = 1,2
-*
-            dms(k) = km*dms(k)
-            if(kstar(k).lt.10) dms(k) = MIN(dms(k),mass(k) - massc(k))
-*
-* Calculate change in the intrinsic spin of the star.
-*
-            djspint(k) = (2.d0/3.d0)*(dmr(k)*radx(k)*radx(k)*ospin(k) -
-     &                   xi*dmt(k)*radx(3-k)*radx(3-k)*ospin(3-k))
-            djspint(k) = djspint(k)*dt
-*
-            if(mass(k).gt.0.35d0.and.kstar(k).lt.10)then
-               djmb = 5.83d-16*menv(k)*(rad(k)*ospin(k))**3/mass(k)
-               djspint(k) = djspint(k) + djmb*dt
-            endif
-*
- 602     continue
-*
-* Adjust the spin angular momentum of each star owing to mass transfer 
-* and conserve total angular momentum. 
-*
-         djt = dm1*radx(j1)*radx(j1)*ospin(j1)
-         djspint(j1) = djspint(j1) + djt
-         djorb = djorb - djt
-         if(disk)then
-*
-* Alter spin of the degenerate secondary by assuming that material
-* falls onto the star from the inner edge of a Keplerian accretion
-* disk and that the system is in a steady state.
-*
-            djt = dm2*twopi*aursun*SQRT(aursun*mass(j2)*radx(j2)) 
-            djspint(j2) = djspint(j2) - djt 
-            djorb = djorb + djt
-*
-         else
-*
-* No accretion disk. 
-* Calculate the angular momentum of the transferred material by 
-* using the radius of the disk (see Ulrich & Burger) that would 
-* have formed if allowed. 
-*
-            rdisk = 1.7d0*rmin
-            djt = dm2*twopi*aursun*SQRT(aursun*mass(j2)*rdisk) 
-            djspint(j2) = djspint(j2) - djt
-            djorb = djorb + djt
-*
-         endif
-         djtx(2) = djt
-*
-* Adjust the secondary spin if a nova eruption has occurred. 
-*
-         if(novae)then
-            djt = (dm2 - dm22)*radx(j2)*radx(j2)*ospin(j2) 
-            djspint(j2) = djspint(j2) + djt 
-            djtx(2) = djtx(2) - djt
-         endif
-*
-* Calculate circularization, orbital shrinkage and spin up.
-*
-         do 603 , k = 1,2
-*
-            dspint(k) = 0.d0
-            if(((kstar(k).le.9.and.rad(k).ge.0.01d0*rol(k)).or.
-     &         (kstar(k).ge.10.and.k.eq.j1)).and.tflag.gt.0)then
-*
-               raa2 = (radx(k)/sep)**2
-               raa6 = raa2**3
-*
-               f5 = 1.d0+ecc2*(3.d0+ecc2*0.375d0)
-               f4 = 1.d0+ecc2*(1.5d0+ecc2*0.125d0)
-               f3 = 1.d0+ecc2*(3.75d0+ecc2*(1.875d0+ecc2*7.8125d-02))
-               f2 = 1.d0+ecc2*(7.5d0+ecc2*(5.625d0+ecc2*0.3125d0))
-               f1 = 1.d0+ecc2*(15.5d0+ecc2*(31.875d0+ecc2*(11.5625d0
-     &                  +ecc2*0.390625d0)))
-*
-               if((kstar(k).eq.1.and.mass(k).ge.1.25d0).or.
-     &            kstar(k).eq.4.or.kstar(k).eq.7)then
-                  tc = 1.592d-09*(mass(k)**2.84d0)
-                  f = 1.9782d+04*SQRT((mass(k)*radx(k)*radx(k))/sep**5)*
-     &                tc*(1.d0+q(3-k))**(5.d0/6.d0)
-                  tcqr = f*q(3-k)*raa6
-                  rg2 = k2str(k)
-               elseif(kstar(k).le.9)then
-                  renv(k) = MIN(renv(k),radx(k)-radc(k))
-                  renv(k) = MAX(renv(k),1.0d-10)
-                  tc = mr23yr*(menv(k)*renv(k)*(radx(k)-0.5d0*renv(k))/
-     &                 (3.d0*lumin(k)))**(1.d0/3.d0)
-                  ttid = twopi/(1.0d-10 + ABS(oorb - ospin(k)))
-                  f = MIN(1.d0,(ttid/(2.d0*tc)**2))
-                  tcqr = 2.d0*f*q(3-k)*raa6*menv(k)/(21.d0*tc*mass(k))
-                  rg2 = (k2str(k)*(mass(k)-massc(k)))/mass(k)
-               else
-                  f = 7.33d-09*(lumin(k)/mass(k))**(5.d0/7.d0)
-                  tcqr = f*q(3-k)*q(3-k)*raa2*raa2/(1.d0+q(3-k))
-                  rg2 = k3
-               endif
-               sqome3 = sqome2**3
-               delet1 = 27.d0*tcqr*(1.d0+q(3-k))*raa2*(ecc/sqome2**13)*
-     &                  (f3 - (11.d0/18.d0)*sqome3*f4*ospin(k)/oorb)
-               tcirc = ecc/(ABS(delet1) + 1.0d-20)
-               delet = delet + delet1*dt
-               dspint(k) = (3.d0*q(3-k)*tcqr/(rg2*omecc2**6))*
-     &                     (f2*oorb - sqome3*f5*ospin(k))
-               eqspin = oorb*f2/(sqome3*f5)
-               if(dt.gt.0.d0)then
-                  if(dspint(k).ge.0.d0)then
-                     dspint(k) = MIN(dt*dspint(k),eqspin-ospin(k))/dt
-                  else
-                     dspint(k) = MAX(dt*dspint(k),eqspin-ospin(k))/dt
-                  endif
-               endif
-               djt = (k2str(k)*(mass(k)-massc(k))*radx(k)*radx(k) +
-     &                k3*massc(k)*radc(k)*radc(k))*dspint(k)
-               djorb = djorb + djt*dt
-               djspint(k) = djspint(k) - djt*dt
-*
-            endif
-*
-            jspin(k) = MAX(1.0d-10,jspin(k) - djspint(k))
-*
-* Ensure that the star does not spin up beyond break-up, and transfer
-* the excess angular momentum back to the orbit.
-*
-            ospbru = twopi*SQRT(mass(k)*aursun**3/radx(k)**3)
-            jspbru = (k2str(k)*(mass(k)-massc(k))*radx(k)*radx(k) +
-     &                k3*massc(k)*radc(k)*radc(k))*ospbru
-            if(jspin(k).gt.jspbru)then
-               mew = 1.d0
-               if(djtx(2).gt.0.d0)then
-                  mew = MIN(mew,(jspin(k) - jspbru)/djtx(2))
-               endif
-               djorb = djorb - (jspin(k) - jspbru)
-               jspin(k) = jspbru
-* If excess material should not be accreted, activate next line.
-*              dm22 = (1.d0 - mew)*dm22
-            endif
-*
- 603     continue
-*
-* Update the masses.
-*
-         kstar(j2) = kst
-         mass(j1) = mass(j1) - dm1 - dms(j1)
-         if(kstar(j1).le.1.or.kstar(j1).eq.7) mass0(j1) = mass(j1)
-         mass(j2) = mass(j2) + dm22 - dms(j2)
-         if(kstar(j2).le.1.or.kstar(j2).eq.7) mass0(j2) = mass(j2)
-*
-* For a HG star check if the initial mass can be reduced. 
-*
-         if(kstar(j1).eq.2.and.mass0(j1).le.zpars(3))then
-            m0 = mass0(j1)
-            mass0(j1) = mass(j1)
-            CALL star(kstar(j1),mass0(j1),mass(j1),tmsnew,tn,tscls,
-     &                lums,GB,zpars)
-            if(GB(9).lt.massc(j1))then
-               mass0(j1) = m0
-            endif
-         endif
-         if(kstar(j2).eq.2.and.mass0(j2).le.zpars(3))then
-            m0 = mass0(j2)
-            mass0(j2) = mass(j2)
-            CALL star(kstar(j2),mass0(j2),mass(j2),tmsnew,tn,tscls,
-     &                lums,GB,zpars)
-            if(GB(9).lt.massc(j2))then
-               mass0(j2) = m0
-            endif
-         endif
-*
-         ecc = ecc - delet
-         ecc = MAX(ecc,0.d0)
-         if(ecc.lt.1.0d-10) ecc = 0.d0
-*
-         if(ecc.ge.1.d0) goto 135
-*
-* Ensure that Jorb does not become negative which could happen if the 
-* primary overfills its Roche lobe initially. In this case we simply 
-* allow contact to occur.
-*
-         jorb = MAX(1.d0,jorb - djorb)
-         sep = (mass(1) + mass(2))*jorb*jorb/
-     &         ((mass(1)*mass(2)*twopi)**2*aursun**3*(1.d0-ecc*ecc))
-         tb = (sep/aursun)*SQRT(sep/(aursun*(mass(1)+mass(2))))
-         oorb = twopi/tb
-*
-      endif
-*
-* Always rejuvenate the secondary and age the primary if they are on
-* the main sequence.
-*
-      if(kstar(j1).le.2.or.kstar(j1).eq.7)then
-         CALL star(kstar(j1),mass0(j1),mass(j1),tmsnew,tn,tscls,
-     &             lums,GB,zpars)
-         if(kstar(j1).eq.2)then
-            aj(j1) = tmsnew + (tscls(1) - tmsnew)*(aj(j1)-tms(j1))/
-     &                        (tbgb(j1) - tms(j1))
-         else
-            aj(j1) = tmsnew/tms(j1)*aj(j1)
-         endif
-         epoch(j1) = tphys - aj(j1)
-      endif
-*
-      if(kstar(j2).le.2.or.kstar(j2).eq.7)then
-         CALL star(kstar(j2),mass0(j2),mass(j2),tmsnew,tn,tscls,
-     &             lums,GB,zpars)
-         if(kstar(j2).eq.2)then
-            aj(j2) = tmsnew + (tscls(1) - tmsnew)*(aj(j2)-tms(j2))/
-     &                        (tbgb(j2) - tms(j2))
-         elseif((mass(j2).lt.0.35d0.or.mass(j2).gt.1.25d0).
-     &           and.kstar(j2).ne.7)then
-            aj(j2) = tmsnew/tms(j2)*aj(j2)*(mass(j2) - dm22)/mass(j2)
-         else
-            aj(j2) = tmsnew/tms(j2)*aj(j2)
-         endif
-         epoch(j2) = tphys - aj(j2)
-      endif
-*
+    /* TO DO: handle changes in spins */
 
-#endif
 
+    /* "New" masses used for aging. Note: the actual masses (and radii) will be updated during the ODE integration.
+     * Also, dm1 > 0, dm2 > 0 */
+    double m_donor_new = m_donor - dm1 + donor->mass_dot_wind * dt;
+    double m_accretor_new = m_accretor + dm2 + accretor->mass_dot_wind * dt;
+   
+    /* For a HG star check if the initial mass can be reduced. */    
+    if (kw1 == 2 and donor->sse_initial_mass <= donor->zpars[2])
+    {
+        double m0 = m_donor_new;
+        donor->sse_initial_mass = m_donor;
+
+        star_(&kw1,&donor->sse_initial_mass,&donor->mass,&tms,&tn,tscls,lums,GB,donor->zpars);
+        if (GB[8] < donor->core_mass)
+        {
+            donor->sse_initial_mass = m0;
+        }
+    }
+    if (kw2 == 2 and accretor->sse_initial_mass <= accretor->zpars[2]) /* the same but with donor and accretor swapped */
+    {
+        double m0 = accretor->sse_initial_mass;
+        accretor->sse_initial_mass = m_accretor;
+
+        star_(&kw2,&accretor->sse_initial_mass,&accretor->mass,&tms,&tn,tscls,lums,GB,accretor->zpars);
+        if (GB[8] < accretor->core_mass)
+        {
+            accretor->sse_initial_mass = m0;
+        }
+    }
+
+    /* Always rejuvenate the secondary and age the primary if they are on the main sequence. */
+    if (kw1 <= 2 or kw1 == 7)
+    {
+        star_(&kw1,&donor->sse_initial_mass,&m_donor_new,&tms,&tn,tscls,lums,GB,donor->zpars);
+        if (kw1 == 2)
+        {
+            double age = tms + (donor->age*yr_to_Myr - tms_donor_old) * (tscls[0] - tms)/(tbgb_donor_old - tms_donor_old);
+            donor->age *= Myr_to_yr;
+        }
+        else
+        {
+            donor->age *= (tms/tms_donor_old);
+        }
+        donor->epoch = t - donor->age;
+    }
+    if (kw2 <= 2 or kw2 == 7)
+    {
+        star_(&kw2,&accretor->sse_initial_mass,&m_accretor_new,&tms,&tn,tscls,lums,GB,accretor->zpars);
+        if (kw2 == 2)
+        {
+            double age = tms + (accretor->age*yr_to_Myr - tms_accretor_old) * (tscls[0] - tms)/(tbgb_accretor_old - tms_accretor_old);
+            accretor->age *= Myr_to_yr;
+        }
+        else if ((m_accretor_new < 0.35 or m_accretor_new > 1.25) and (kw2 != 7))
+        {
+            accretor->age *= (tms/tms_accretor_old) * ((m_accretor_new - dm2)/m_accretor_new);
+        }
+        else
+        {
+            accretor->age *= (tms/tms_donor_old);
+        }
+        accretor->epoch = t - accretor->age;
+    }
+    
+    donor->mass_dot_RLOF = -dm1/dt;
+    accretor->mass_dot_RLOF = dm2/dt;
+
+    /* Assume that any mass not accreted is ejected from the accretor in an isotropic wind. 
+     * This somewhat mimics non-conservative mass transfer. */
+    accretor->mass_dot_wind += - (dm1 - dm2);
 
     return 0;
 }

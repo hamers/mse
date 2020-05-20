@@ -487,46 +487,33 @@ double get_new_dt(int kw, double mass, double mt, double age, double dt, double 
 }
 
 
+void update_stellar_evolution_properties(Particle *p)
+{
+    /* hrdiag: 
+     * Computes the new mass, luminosity, radius & stellar type.
+    *  Input (MASS, AJ, TM, TN, LUMS & TSCLS) supplied by routine STAR. */
+    
+    double tm,tn;
 
+    double *GB,*tscls,*lums;
+    GB = new double[10];
+    tscls = new double[20];
+    lums = new double[10];  
+    
+    double age = p->age*yr_to_Myr;
+    double r,rc,lum,menv,renv,k2;
+    star_(&p->stellar_type, &p->sse_initial_mass, &p->mass, &tm, &tn, tscls, lums, GB, p->zpars);
+    hrdiag_(&p->sse_initial_mass,&age,&p->mass,&tm,&tn,tscls,lums,GB,p->zpars, \
+            &r,&lum,&p->stellar_type,&p->core_mass,&rc,&menv,&renv,&k2);
+
+    p->radius = r*CONST_R_SUN;
+
+    p->age = age*Myr_to_yr;
+
+    p->luminosity = lum*CONST_L_SUN;
+    p->core_radius = rc*CONST_R_SUN;
+    p->convective_envelope_mass = menv;
+    p->convective_envelope_radius = renv*CONST_R_SUN;
+}
 
 }
-/*
-
-      READ(22,*)mass,z,tphysf
-      READ(22,*)neta,bwind,hewind,sigma
-      READ(22,*)ifflag,wdflag,bhflag,nsflag,mxns
-      READ(22,*)pts1,pts2,pts3
-
-
-10.0 0.02 12000.
-0.5 0.0 0.5 190.0
-0 1 0 1 3.0 999
-0.05 0.01 0.02
-
-      integer kw,it,ip,jp,j,kwold,rflag
-      integer nv
-      parameter(nv=50000)
-
-      real*8 mass,z,aj
-      real*8 epoch,tphys,tphys2,tmold,tbgold
-      real*8 mt,tm,tn,tphysf,dtp,tsave
-      real*8 tscls(20),lums(10),GB(10),zpars(20)
-      real*8 r,lum,mc,teff,rc,menv,renv,vs(3)
-      real*8 ospin,jspin,djt,djmb,k2,k3
-      parameter(k3=0.21d0)
-      real*8 m0,r1,lum1,mc1,rc1,menv1,renv1,k21
-      real*8 dt,dtm,dtr,dr,dtdr,dms,dml,mt2,rl
-      real*8 tol,tiny
-      parameter(tol=1.0d-10,tiny=1.0d-14)
-      real*8 ajhold,rm0,eps,alpha2
-      parameter(eps=1.0d-06,alpha2=0.09d0)
-      real*8 mlwind,vrotf
-      external mlwind,vrotf
-      logical iplot,isave
-      REAL*8 neta,bwind,hewind,mxns
-      COMMON /VALUE1/ neta,bwind,hewind,mxns
-      REAL*8 pts1,pts2,pts3
-      COMMON /POINTS/ pts1,pts2,pts3
-      REAL scm(50000,14),spp(20,3)
-      COMMON /SINGLE/ scm,spp
-*/

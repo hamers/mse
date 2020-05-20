@@ -538,6 +538,39 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
     printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
+void copy_all_body_properties(Particle *source, Particle *target)
+{
+    target->mass = source->mass;
+    target->sse_initial_mass = source->sse_initial_mass;
+    target->stellar_type = source->stellar_type;
+    
+    target->epoch = source->epoch;
+    target->age = source->age;
+    target->sse_main_sequence_timescale = source->sse_main_sequence_timescale;
+
+    target->radius = source->radius;
+    target->luminosity = source->luminosity;
+    
+    target->core_mass = source->core_mass;
+    target->core_radius = source->core_radius;
+    target->convective_envelope_mass = source->convective_envelope_mass;
+    target->convective_envelope_radius = source->convective_envelope_radius;
+
+    double z = source->metallicity;
+
+    double *zpars;
+    zpars = new double[20];
+    zcnsts_(&z,zpars);
+    target->zpars = zpars;
+
+    for (int i=0; i<3; i++)
+    {
+        target->spin_vec[i] = source->spin_vec[i];
+    }
+    
+    target->check_for_RLOF_at_pericentre = source->check_for_RLOF_at_pericentre;
+}
+
 void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
 {
     //ParticlesMap particlesMap;

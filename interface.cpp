@@ -964,6 +964,7 @@ int unit_tests_interface()
 {
     int flag=0;
     flag += test_tools();
+    flag += test_binary_evolution();
     flag += test_collisions();
     
     return flag;

@@ -44,7 +44,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     double sse_initial_mass,mass,mt;
     double z;
 
-    set_up_derived_ODE_quantities(particlesMap); /* compute a & e for all orbits; used at the end below to adjust h vectors such that possible initial stellar evolution would not change the orbital elements  */
+    set_up_derived_quantities(particlesMap); /* compute a & e for all orbits; used at the end below to adjust h vectors such that possible initial stellar evolution would not change the orbital elements  */
 
     int i;
     int kw,kw_desired;
@@ -329,7 +329,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             {
                 printf("INPUT %d %g %g %g %g %g %g \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp);
                 evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
-            
+                printf("AE\n");
                 if (tphysf != desired_tphysf)
                 {
                     printf("ERROR tphysf != desired_tphysf ");

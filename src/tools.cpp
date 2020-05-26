@@ -648,7 +648,7 @@ void print_system(ParticlesMap *particlesMap)
     printf("Printing system; N=%d\n",particlesMap->size());
     
     //update_structure(particlesMap);
-    //set_up_derived_ODE_quantities(particlesMap);
+    set_up_derived_quantities(particlesMap);
     
     
     ParticlesMapIterator it_p;

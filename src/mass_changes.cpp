@@ -32,7 +32,14 @@ int ODE_handle_stellar_winds(Particle *p)
         
         //if (p->is_binary == 1)
         //{
-    factor_h_vec = p->child1_mass_dot_wind/p->child1_mass + p->child2_mass_dot_wind/p->child2_mass - (p->child1_mass_dot_wind + p->child2_mass_dot_wind)/p->child1_mass_plus_child2_mass; /* assuming constant SPECIFIC orbital angular momentum with mass loss, i.e. a(m1+m2)=const. */
+    double m1 = p->child1_mass;
+    double m2 = p->child2_mass;
+
+    double m1dot = p->child1_mass_dot_wind + p->child1_mass_dot_wind_accretion;
+    double m2dot = p->child2_mass_dot_wind + p->child2_mass_dot_wind_accretion;
+
+    factor_h_vec = m1dot/m1 + m2dot/m2 - (m1dot + m2dot)/(m1+m2);
+    //factor_h_vec = p->child1_mass_dot_wind/p->child1_mass + p->child2_mass_dot_wind/p->child2_mass - (p->child1_mass_dot_wind + p->child2_mass_dot_wind)/p->child1_mass_plus_child2_mass; /* assuming constant SPECIFIC orbital angular momentum with mass loss, i.e. a(m1+m2)=const. */
             //printf("factor_h_vec %g\n",factor_h_vec);
 //        }
         //else
@@ -268,10 +275,10 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
     //return 0.49*q_pow_two_third/(0.6*q_pow_two_third + log(1.0 + q_pow_one_third));
 //}
 
-int ODE_handle_RLOF(Particle *p, Particle *child1, Particle *child2)
+int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
 {
-    //Particle *child1 = (*particlesMap)[p->child1];
-    //Particle *child2 = (*particlesMap)[p->child2];
+    Particle *child1 = (*particlesMap)[p->child1];
+    Particle *child2 = (*particlesMap)[p->child2];
     
     if (child1->is_binary == false and child2->is_binary == false)
     /* For now, only allow mass transfer between two single stars in a binary (e.g., no transfer from tertiary to inner binary */

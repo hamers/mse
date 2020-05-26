@@ -141,6 +141,135 @@ int test_kepler_equation_solver()
     return flag;
 }
 
+int test_binary_evolution()
+{
+    printf("test.cpp -- test_binary_evolution\n");
+    
+    int flag=0;
+    flag += test_compute_Kelvin_Helmholtz_timescale();
+    flag += test_compute_Eddington_accretion_rate();
+    flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
+    
+    return flag;
+}
+
+int test_compute_Kelvin_Helmholtz_timescale()
+{
+    printf("test.cpp -- test_compute_Kelvin_Helmholtz_timescale\n");
+    
+    int kw = 1;
+    double mass = 1.0;
+    double core_mass = 0.0;
+    double radius = 10.0 * CONST_R_SUN;
+    double luminosity = 1.0 * CONST_L_SUN;
+    double t_KH = compute_Kelvin_Helmholtz_timescale(kw,mass,core_mass,radius,luminosity);
+
+    double num = 1.57e6;
+    double tol = 1.0e-2;
+    int flag = 0;
+    if ( !equal_number(t_KH,num,tol) )
+    {
+        printf("test.cpp -- error in test_compute_Kelvin_Helmholtz_timescale!\n");
+        flag = 1;
+    }
+
+    kw = 2;
+    mass = 1.0;
+    core_mass = 0.2;
+    radius = 10.0 * CONST_R_SUN;
+    luminosity = 1.0 * CONST_L_SUN;
+    t_KH = compute_Kelvin_Helmholtz_timescale(kw,mass,core_mass,radius,luminosity);
+
+    num = 1.25e6;
+    tol = 1.0e-2;
+    if ( !equal_number(t_KH,num,tol) )
+    {
+        printf("test.cpp -- error in test_compute_Kelvin_Helmholtz_timescale!\n");
+        flag += 1;
+    }
+
+    return flag;
+}
+
+int test_compute_Eddington_accretion_rate()
+{
+    printf("test.cpp -- test_compute_Eddington_accretion_rate\n");
+    
+    double radius = 1.0 * CONST_R_SUN;
+    double hydrogen_mass_fraction = 0.7;
+    double m_dot = compute_Eddington_accretion_rate(radius,hydrogen_mass_fraction);
+    
+    int flag = 0;
+    double num = 1.22e-2;
+    double tol = 1e-2;
+    if ( !equal_number(m_dot,num,tol) )
+    {
+        printf("test.cpp -- error in test_compute_Eddington_accretion_rate! %g %g\n",m_dot,num);
+        flag = 1;
+    }
+    return flag;
+}
+
+int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
+{
+    printf("test.cpp -- test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit\n");
+    
+    ParticlesMap particlesMap;
+    int N_bodies = 4;
+    double m1 = 20.0;
+    double m2 = 15.0;
+    double m3 = 25.0;
+    double m4 = 14.0;
+    double a1 = 1.0;
+    double a2 = 40.0;
+    double a3 = 2000.0;
+    double masses[4] = {m1,m2,m3,m4};
+    int stellar_types[4] = {1,1,1,1};
+    double smas[3] = {a1,a2,a3};
+    double es[3] = {0.01,0.01,0.01};
+    double TAs[3] = {0.01,0.01,0.01};
+    double INCLs[3] = {0.01,0.01,0.01};
+    double APs[3] = {0.01,0.01,0.01};
+    double LANs[3] = {0.01,0.01,0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+//    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
+    initialize_code(&particlesMap);
+    
+    Particle *star1 = particlesMap[0];
+    Particle *star2 = particlesMap[1];
+    double Delta_m1 = -5.0;
+    double Delta_m2 = -2.0;
+    double mass_loss_timescale = 1.0e2;
+    int integration_flag = 0;
+    
+    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(&particlesMap,star1,star2,Delta_m1,Delta_m2,mass_loss_timescale,&integration_flag);
+    
+    set_up_derived_quantities(&particlesMap);
+    double m1_new = m1 + Delta_m1;
+    double m2_new = m2 + Delta_m2;
+    double a1_new = a1 * (m1 + m2)/(m1_new + m2_new);
+    double a2_new = a2 * (m1 + m2 + m3)/(m1_new + m2_new + m3);
+    //printf("Test a1n %g a2n %g %g %g\n",particlesMap[4]->a,particlesMap[5]->a,a1_new,a2_new);
+
+    int flag=0;
+    double tol = 1e-12;
+    if ( !equal_number(particlesMap[4]->a,a1_new,tol) )
+    {
+        printf("test.cpp -- error in test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit! %g %g\n",particlesMap[4]->a,a1_new);
+        flag = 1;
+    }
+    if ( !equal_number(particlesMap[5]->a,a2_new,tol) )
+    {
+        printf("test.cpp -- error in test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit! %g %g\n",particlesMap[5]->a,a2_new);
+        flag = 1;
+    }
+    
+    //print_system(&particlesMap);
+    
+    return flag;
+}
+
 int test_collisions()
 {
     
@@ -157,6 +286,10 @@ int test_collisions()
         for (j=1; j<=14; j++)
         {
             printf("i %d j %d\n",i,j);
+            if (j<3)
+            {
+                continue;
+            }
             flag = test_collision_stars(10.0,i,13,j);
         }
     }
@@ -203,7 +336,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
     print_system(&particlesMap);
 
     double start_time = 0.0;
-    double end_time = 1.0;
+    double end_time = 1.0e2;
     double output_time,hamiltonian;
     int state,CVODE_flag,CVODE_error_code;
     //int integration_flag = 0;
@@ -221,9 +354,9 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
 
     int N_binaries,N_root_finding,N_ODE_equations;
 
-    printf("post merge\n");
-    set_up_derived_ODE_quantities(&particlesMap);
-    print_system(&particlesMap);
+    //printf("post merge\n");
+    //set_up_derived_quantities(&particlesMap);
+    //print_system(&particlesMap);
     particlesMap[4]->merged = true;
 
 
@@ -239,7 +372,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
 
 
     printf("post merge integration_flag %d\n",integration_flag);
-    set_up_derived_ODE_quantities(&particlesMap);
+    set_up_derived_quantities(&particlesMap);
     print_system(&particlesMap);
 
     //#ifdef IGNORE

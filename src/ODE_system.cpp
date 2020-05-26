@@ -51,7 +51,6 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
                 hamiltonian += compute_VRR_perturbations(particlesMap,p->index,time);
             }
 
-
             /* PN corrections */
             compute_EOM_Post_Newtonian_for_particle(particlesMap, p, &hamiltonian, compute_hamiltonian_only);
 
@@ -59,8 +58,8 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
             handle_secular_tidal_evolution(particlesMap,p);
 
             /* Orbital changes due to mass changes */
-            //ODE_handle_stellar_winds(p);
-            //ODE_handle_RLOF(p,child1,child2);
+            ODE_handle_stellar_winds(p);
+            ODE_handle_RLOF(particlesMap,p);
             
         }
             
@@ -115,7 +114,7 @@ void initialize_direct_integration_quantities(ParticlesMap *particlesMap)
         }
         level++;
     }
-    set_up_derived_ODE_quantities(particlesMap);
+    set_up_derived_quantities(particlesMap);
 
     if (KS_setup_required==true)
     {
@@ -339,65 +338,9 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
     
     /* update children masses etc. based on new body masses */
     set_binary_masses_from_body_masses(particlesMap);
-    set_up_derived_ODE_quantities(particlesMap);
+    set_up_derived_quantities(particlesMap);
 }
     
-void set_up_derived_ODE_quantities(ParticlesMap *particlesMap)
-{
-    /* These are derived quantities that are often used in the EOM, so they are calculated here once for speed up */
-    int i;
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == false)
-        {
-            p->spin_vec_norm = norm3(p->spin_vec);
-            if (p->spin_vec_norm <= epsilon)
-            {
-                p->spin_vec_norm = epsilon;
-            }
-
-            for (i=0; i<3; i++)
-            {
-                p->spin_vec_unit[i] = p->spin_vec[i]/p->spin_vec_norm;
-            }
-
-            p->chi = compute_spin_parameter_from_spin_frequency(p->mass,p->spin_vec_norm);
-        }
-        else
-        {
-            p->e = norm3(p->e_vec);
-            p->h = norm3(p->h_vec);
-
-            for (i=0; i<3; i++)
-            {        
-                p->e_vec_unit[i] = p->e_vec[i]/p->e;
-                p->h_vec_unit[i] = p->h_vec[i]/p->h;
-            }
-            
-            cross3(p->h_vec_unit,p->e_vec_unit,p->q_vec_unit);
-            
-            p->e_p2 = p->e*p->e;
-            p->j_p2 = 1.0 - p->e_p2;
-            p->j = sqrt(p->j_p2);
-            p->j_p3 = p->j*p->j_p2;
-            p->j_p4 = p->j*p->j_p3;
-            p->j_p5 = p->j*p->j_p4;
-
-            p->a = p->h*p->h*p->child1_mass_plus_child2_mass/( CONST_G*p->child1_mass_times_child2_mass*p->child1_mass_times_child2_mass*p->j_p2 );
-
-            p->r = norm3(p->r_vec);
-            p->r_p2 = p->r*p->r;
-            p->r_p3 = p->r*p->r_p2;
-            p->r_pm1 = 1.0/p->r;
-            p->r_pm2 = p->r_pm1*p->r_pm1;
-            p->r_pm3 = p->r_pm1*p->r_pm2;
-            
-        }
-    }
-}
-
 
 void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
 {

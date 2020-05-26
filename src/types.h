@@ -71,6 +71,8 @@ extern int binary_evolution_CE_spin_flag;
 extern double chandrasekhar_mass;
 extern double eddington_accretion_factor;
 extern double nova_accretion_factor;
+extern double alpha_wind_accretion;
+extern double beta_wind_accretion;
 
 extern double mstar_gbs_tolerance;
 extern double mstar_collision_tolerance;
@@ -683,6 +685,8 @@ class Particle
     double child1_mass_old,child2_mass_old;
     double apsidal_motion_constant, gyration_radius;
     
+    double mass_dot_wind_accretion;
+    
     /* RLOF */
     bool include_mass_transfer_terms;
     int RLOF_flag; /* 0: not in RLOF; 1: in RLOF */
@@ -692,12 +696,15 @@ class Particle
     double emt_tau;
     bool RLOF_at_pericentre_has_occurred_entering_RLOF;
     double fm;
+    double dynamical_mass_transfer_low_mass_donor_timescale;
+    double dynamical_mass_transfer_WD_donor_timescale;
+    double compact_object_disruption_mass_loss_timescale;
         
     /* Common-envelope evolution */
     double common_envelope_alpha;
     double common_envelope_lambda;
     double common_envelope_timescale;
-        
+
     /* Relative position/velocities (applies to binaries only) */
     double r,v;
     double r_vec[3];
@@ -778,7 +785,7 @@ class Particle
     double e_vec_unit[3],h_vec_unit[3],q_vec_unit[3];
     double de_vec_dt[3],dh_vec_dt[3];
     double child1_mass_plus_child2_mass,child1_mass_minus_child2_mass,child1_mass_times_child2_mass;
-    double child1_mass_dot_wind,child2_mass_dot_wind;
+    double child1_mass_dot_wind,child2_mass_dot_wind,child1_mass_dot_wind_accretion,child2_mass_dot_wind_accretion;
     double e,e_p2;
     double j,j_p2,j_p3,j_p4,j_p5; // j=sqrt(1-e^2)
     double h,a;
@@ -885,6 +892,7 @@ class Particle
         gyration_radius = 0.08;
         mass_dot_wind = radius_dot = radius_ddot = ospin_dot = 0.0;
         child1_mass_dot_wind = child2_mass_dot_wind = 0.0;
+        mass_dot_wind_accretion = child1_mass_dot_wind_accretion = child2_mass_dot_wind_accretion = 0.0;
         sse_main_sequence_timescale = 0.0;
                 
         /* RLOF */
@@ -894,6 +902,10 @@ class Particle
         emt_ejection_radius_mode = 0;
         emt_accretion_radius = 0.0;
         emt_tau = 0.0;
+        
+        dynamical_mass_transfer_low_mass_donor_timescale = 1.0e2;
+        dynamical_mass_transfer_WD_donor_timescale = 1.0e2;
+        compact_object_disruption_mass_loss_timescale = 1.0e2;
         
         /* CE */
         common_envelope_alpha = 1.0;

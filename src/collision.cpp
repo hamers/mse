@@ -119,7 +119,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     double h_vec_unit[3],e_vec_unit[3];
     if (*integration_flag == 0)
     {
-        set_up_derived_ODE_quantities(particlesMap); /* for setting a, e, etc. */
+        set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
         b = (*particlesMap)[binary_index];
 
         n_old = 2.0*M_PI/compute_orbital_period(b); /* mean motion just prior to collision */
@@ -389,6 +389,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
 
     double r,lum,rc,menv,renv,k2;
+    double z_new;
+    double *zpars_new;
+    zpars_new = new double[20];
+
     if (destroyed == false)
     {
 
@@ -396,6 +400,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         star_(&kw, &m0, &m, &tm, &tn, tscls, lums, GB, zpars);
         hrdiag_(&m0,&age,&m,&tm,&tn,tscls,lums,GB,zpars, \
             &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+
+        z_new = child1->metallicity;
+
+        zcnsts_(&z_new,zpars_new);
     }
 
 
@@ -438,6 +446,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             b->convective_envelope_mass = menv;
             b->convective_envelope_radius = renv*CONST_R_SUN;
 
+            b->metallicity = z_new;
+            b->zpars = zpars_new;
+
             /* Unless calculated above, set the spin equal to the orbital frequency just before collision
              * Assume the direction is equal to the previous orbital orientation. */
             if (reset_spin_vec == true)
@@ -455,6 +466,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 }
             }
             b->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            b->merged = false;
         }
         else
         {
@@ -472,6 +484,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     {
         if (destroyed == false)
         {
+            /* child1 will become the merged object */
             particlesMap->erase(child2->index);
             child1->stellar_type = kw;
             child1->mass = m;
@@ -487,6 +500,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             child1->core_radius = rc*CONST_R_SUN;
             child1->convective_envelope_mass = menv;
             child1->convective_envelope_radius = renv*CONST_R_SUN;
+
+            child1->metallicity = z_new;
+            child1->zpars = zpars_new;
 
             for (i=0; i<3; i++)
             {

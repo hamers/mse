@@ -25,6 +25,8 @@ void handle_instantaneous_and_adiabatic_mass_changes_in_orbit(ParticlesMap *part
 void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap);
 void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap, double mass_loss_timescale);
 
+int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag);
+
 int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 
 }

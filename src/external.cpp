@@ -379,7 +379,7 @@ int apply_external_perturbation_assuming_integrated_orbits(ParticlesMap *particl
     
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     set_binary_masses_from_body_masses(particlesMap);
-    set_up_derived_ODE_quantities(particlesMap);
+    set_up_derived_quantities(particlesMap);
     
     /* compute and apply perturbations */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)

@@ -14,4 +14,6 @@ int determine_number_of_bodies_in_system(ParticlesMap *particlesMap);
 
 void update_structure(ParticlesMap *particlesMap);
 
+void set_up_derived_quantities(ParticlesMap *particlesMap);
+
 }

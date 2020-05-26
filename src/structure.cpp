@@ -203,6 +203,10 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 P_p->child2_mass_dot_wind = P_p_child2->mass_dot_wind;
                 P_p->mass_dot_wind = P_p->child1_mass_dot_wind + P_p->child2_mass_dot_wind;
 
+                P_p->child1_mass_dot_wind_accretion = P_p_child1->mass_dot_wind_accretion;
+                P_p->child2_mass_dot_wind_accretion = P_p_child2->mass_dot_wind_accretion;
+                P_p->mass_dot_wind_accretion = P_p->child1_mass_dot_wind_accretion + P_p->child2_mass_dot_wind_accretion;
+
                 P_p->child1_mass_plus_child2_mass = P_p->child1_mass + P_p->child2_mass;
                 P_p->child1_mass_minus_child2_mass = P_p->child1_mass - P_p->child2_mass;
                 P_p->child1_mass_times_child2_mass = P_p->child1_mass*P_p->child2_mass;
@@ -531,6 +535,63 @@ int determine_number_of_bodies_in_system(ParticlesMap *particlesMap)
     
     return N_bodies;
 }
+
+void set_up_derived_quantities(ParticlesMap *particlesMap)
+{
+    /* These are derived quantities that are often used in the EOM, so they are calculated here once for speed up */
+    int i;
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false)
+        {
+            p->spin_vec_norm = norm3(p->spin_vec);
+            if (p->spin_vec_norm <= epsilon)
+            {
+                p->spin_vec_norm = epsilon;
+            }
+
+            for (i=0; i<3; i++)
+            {
+                p->spin_vec_unit[i] = p->spin_vec[i]/p->spin_vec_norm;
+            }
+
+            p->chi = compute_spin_parameter_from_spin_frequency(p->mass,p->spin_vec_norm);
+        }
+        else
+        {
+            p->e = norm3(p->e_vec);
+            p->h = norm3(p->h_vec);
+
+            for (i=0; i<3; i++)
+            {        
+                p->e_vec_unit[i] = p->e_vec[i]/p->e;
+                p->h_vec_unit[i] = p->h_vec[i]/p->h;
+            }
+            
+            cross3(p->h_vec_unit,p->e_vec_unit,p->q_vec_unit);
+            
+            p->e_p2 = p->e*p->e;
+            p->j_p2 = 1.0 - p->e_p2;
+            p->j = sqrt(p->j_p2);
+            p->j_p3 = p->j*p->j_p2;
+            p->j_p4 = p->j*p->j_p3;
+            p->j_p5 = p->j*p->j_p4;
+
+            p->a = p->h*p->h*p->child1_mass_plus_child2_mass/( CONST_G*p->child1_mass_times_child2_mass*p->child1_mass_times_child2_mass*p->j_p2 );
+
+            p->r = norm3(p->r_vec);
+            p->r_p2 = p->r*p->r;
+            p->r_p3 = p->r*p->r_p2;
+            p->r_pm1 = 1.0/p->r;
+            p->r_pm2 = p->r_pm1*p->r_pm1;
+            p->r_pm3 = p->r_pm1*p->r_pm2;
+            
+        }
+    }
+}
+
 
 
 

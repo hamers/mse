@@ -166,8 +166,8 @@ class MSE(object):
             ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_orbital_elements.restype = ctypes.c_int
 
-        self.lib.get_inclination_relative_to_parent.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
-        self.lib.get_inclination_relative_to_parent.restype = ctypes.c_int
+        self.lib.get_inclination_relative_to_parent_interface.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
+        self.lib.get_inclination_relative_to_parent_interface.restype = ctypes.c_int
 
         self.lib.get_relative_position_and_velocity.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_relative_position_and_velocity.restype = ctypes.c_int
@@ -224,8 +224,8 @@ class MSE(object):
         self.lib.set_VRR_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_VRR_properties.restype = ctypes.c_int
 
-        self.lib.clear_internal_particles.argtypes = ()
-        self.lib.clear_internal_particles.restype = ctypes.c_int
+        self.lib.reset_interface.argtypes = ()
+        self.lib.reset_interface.restype = ctypes.c_int
         
         self.lib.set_random_seed.argtypes = (ctypes.c_int,)
         self.lib.set_random_seed.restype = ctypes.c_int
@@ -475,7 +475,7 @@ class MSE(object):
             particle.LAN = LAN.value
             
             INCL_parent = ctypes.c_double(0.0)
-            flag += self.lib.get_inclination_relative_to_parent(particle.index,ctypes.byref(INCL_parent))
+            flag += self.lib.get_inclination_relative_to_parent_interface(particle.index,ctypes.byref(INCL_parent))
             particle.INCL_parent = INCL_parent.value
             
             x,y,z,vx,vy,vz = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
@@ -597,7 +597,7 @@ class MSE(object):
 
     def reset(self):
         self.__init__()
-        self.lib.clear_internal_particles()
+        self.lib.reset_interface()
         
     def __set_random_seed(self):
         self.lib.set_random_seed(self.random_seed)

@@ -835,6 +835,10 @@ class Particle
     double delta_child1_mass_adiabatic_mass_loss,delta_child2_mass_adiabatic_mass_loss;
     double P_orb_adiabatic_mass_loss;
     
+    /* flybys */
+    double flybys_internal_mass;
+    double flybys_internal_semimajor_axis;
+    
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
         stable = true;

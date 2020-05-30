@@ -242,15 +242,15 @@ int compute_orbital_elements_from_orbital_vectors(double child1_mass, double chi
 
 }
 
-int get_inclination_relative_to_parent(int index, double *inclination_relative_to_parent)
+int get_inclination_relative_to_parent(ParticlesMap *particlesMap, int index, double *inclination_relative_to_parent)
 {
 
-    if (index > particlesMap.size())
+    if (index > particlesMap->size())
     {
         return -1;
     }
   
-    Particle * p = particlesMap[index];
+    Particle *p = (*particlesMap)[index];
     if (p->is_binary == false)
     {
         *inclination_relative_to_parent = 0.0;
@@ -262,7 +262,7 @@ int get_inclination_relative_to_parent(int index, double *inclination_relative_t
         return 0;
     }
 
-    Particle *parent = particlesMap[p->parent];
+    Particle *parent = (*particlesMap)[p->parent];
     
 
     double *h1_vec = p->h_vec;
@@ -271,7 +271,17 @@ int get_inclination_relative_to_parent(int index, double *inclination_relative_t
     double h1 = norm3(h1_vec);
     double h2 = norm3(h2_vec);
     
-    *inclination_relative_to_parent = acos( dot3(h1_vec,h2_vec)/(h1*h2) );
+    double arg = dot3(h1_vec,h2_vec)/(h1*h2);
+    if (arg <= -1.0)
+    {
+        arg = -1.0;
+    }
+    if (arg >= 1.0)
+    {
+        arg = 1.0;
+    }
+    
+    *inclination_relative_to_parent = acos( arg );
     
     return 0;
 }
@@ -530,10 +540,14 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
         //is_binary = p->is_binary;
         index = p->index;
         printf("copy_particles index %d j %d\n",index,j);
-        (*target)[j] = p;
+        (*target)[index] = p;
         j++;
         //p->parent = -1;
     }
+    printf("old\n");
+    print_system(source);
+    printf("new\n");
+    print_system(target);
     
     printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
@@ -649,8 +663,7 @@ void print_system(ParticlesMap *particlesMap)
     
     //update_structure(particlesMap);
     set_up_derived_quantities(particlesMap);
-    
-    
+
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -718,5 +731,14 @@ bool equal_number(double x1, double x2, double tol)
     }
     return equal;
 }
+
+int clear_particles(ParticlesMap *particlesMap)
+{
+    //printf("clear_internal_particles\n");
+    (*particlesMap).clear();
+	//highest_particle_index = 0;
+    return 0;
+}
+
 
 }

@@ -2208,6 +2208,13 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     R->Hstep = R->U * (time_interval - time);
                 }
 
+
+                if (time < 0.0)
+                {
+                    printf("MSTAR -- WARNING time = %g < 0!\n",time);
+                }
+                //printf("t %g\n",time);
+
                 /* Collision detection */
                 int possible_collision;
                 double Delta_t_collision;

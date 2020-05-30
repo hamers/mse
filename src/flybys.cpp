@@ -13,6 +13,18 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound
 
     //printf("handle_next_flyby %d\n",initialize);
 
+    int N_bound_subsystems = 0;
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == true and p->parent == -1)
+        {
+            N_bound_subsystems++;
+        }
+    }
+        
+
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
     if (initialize == true)
@@ -28,6 +40,13 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound
     
     sample_next_flyby(particlesMap, &apply_flyby, &flybys_t_next_encounter, &flybys_N_enc, &flybys_N_not_impulsive, &M_per, b_vec, V_vec);
     //printf("flybys.cpp -- sample_next_flyby -- apply_flyby %d N_enc %d N_non_im %d flybys_t_next_encounter %g\n",apply_flyby,flybys_N_enc,flybys_N_not_impulsive,flybys_t_next_encounter);
+
+    if (N_bound_subsystems > 1)
+    {
+        printf("flybys.cpp -- handle_next_flyby -- more than one subsystem; not applying flyby\n");
+        apply_flyby = false;
+    }
+
     
     if (initialize == false and apply_flyby == true)
     {

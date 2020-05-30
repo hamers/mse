@@ -286,7 +286,8 @@ int test_collisions()
         for (j=1; j<=14; j++)
         {
             printf("i %d j %d\n",i,j);
-            if (j<3)
+            //if (i!=1 or j!=4)
+            if (i>5 and i<12 or j>5 and j<12)
             {
                 continue;
             }
@@ -326,17 +327,18 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
     double INCLs[3] = {0.01,0.01,0.01};
     double APs[3] = {0.01,0.01,0.01};
     double LANs[3] = {0.01,0.01,0.01};
+    random_seed=6;
     
     create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
     initialize_code(&particlesMap);
     
     int integration_flag = 0;
-    printf("pre merge\n");
+    printf("test_collision_stars -- pre merge\n");
     print_system(&particlesMap);
 
     double start_time = 0.0;
-    double end_time = 1.0e2;
+    double end_time = 1.0e1;
     double output_time,hamiltonian;
     int state,CVODE_flag,CVODE_error_code;
     //int integration_flag = 0;
@@ -376,14 +378,15 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
     print_system(&particlesMap);
 
     //#ifdef IGNORE
-    printf("pre evolve\n");
+    printf("test_collision_stars -- pre evolve\n");
     evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
     //initialize_code(&particlesMap);
-    printf("done init\n");
-    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
-    printf("post evolve\n");
+    printf("test_collision_stars -- done evolve output_time %g\n",output_time);
+    //evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+    //printf("post evolve\n");
     //#endif
     
+    clear_particles(&particlesMap);
    
     int flag;
     

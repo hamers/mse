@@ -137,7 +137,7 @@ double compute_t_V_hurley
     double apsidal_motion_constant
 )
 {
-    printf("compute_t_V_hurley kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
+    //printf("compute_t_V_hurley kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
     bool USE_RADIATIVE_DAMPING = check_for_radiative_damping(stellar_type,mass,convective_envelope_mass,convective_envelope_radius);
     bool USE_CONVECTIVE_DAMPING = check_for_convective_damping(stellar_type);
     double k_AM_div_T,t_V;
@@ -276,9 +276,14 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     Particle *star = (*particlesMap)[star_index];
     Particle *companion = (*particlesMap)[companion_index];
     
-    if (star->is_binary == 1)
+    if (star->is_binary == true)
     {
         //printf("tides.cpp -- star is actually a binary -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        return 0;
+    }
+    if (star->is_bound == false)
+    {
+        //printf("tides.cpp -- star is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
         return 0;
     }
 
@@ -318,7 +323,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     star->tides_viscous_time_scale = t_V;
 
     //#ifdef DEBUG
-    printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
+    //printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
     //#endif
 
     //t_V *= 1.0e-10;

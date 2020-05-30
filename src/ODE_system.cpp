@@ -32,6 +32,9 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
     ParticlesMapIterator it_p,it_f;
     std::vector<int>::iterator it_parent_p,it_parent_q;
     
+    //printf("compute_y_dot t=%g\n",time);
+    //print_system(particlesMap);
+    
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;

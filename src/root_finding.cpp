@@ -82,8 +82,11 @@ int root_finding_functions(realtype time, N_Vector y, realtype *root_functions, 
                         /* Mardling & Aarseth 2001 */
                         double q_out = P_sibling->mass/M_p;
                         double rel_INCL = 0.0;
-                        get_inclination_relative_to_parent(P_p->index,&rel_INCL);
-                        root_functions[i_root] = rp_out - a_in*2.8*pow( (1.0+q_out)*(1.0+e_out)/sqrt(1.0-e_out),2.0/5.0)*(1.0 - 0.3*rel_INCL/M_PI);
+                        get_inclination_relative_to_parent(particlesMap,P_p->index,&rel_INCL);
+                        double rp_out_crit = compute_rp_out_crit_MA01(a_in,q_out,e_out,rel_INCL);
+                        
+                        //root_functions[i_root] = rp_out - a_in*2.8*pow( (1.0+q_out)*(1.0+e_out)/sqrt(1.0-e_out),2.0/5.0)*(1.0 - 0.3*rel_INCL/M_PI);
+                        root_functions[i_root] = rp_out - rp_out_crit;
                         //printf("di MA %g\n",root_functions[i_root]);
                         //printf("di MA %g %g\n",P_sibling->mass,M_p);
                     }

@@ -179,7 +179,6 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
     ParticlesMapIterator it_p;
 
     int highest_level = particlesMap->begin()->second->highest_level;
-
     int level=highest_level;
 
     while (level > -1)
@@ -193,6 +192,9 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
             {
                 Particle *P_p_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_p_child2 = (*particlesMap)[P_p->child2];
+                
+//                printf("parent %d\n",P_p->index);
+                //printf("parent %d C1 %d C2 %d m1 %g m2 %g\n",P_p->index,P_p->child1,P_p->child2,P_p_child1->mass,P_p_child2->mass);
                 
                 /* these quantities are used in ODE_system.cpp */
                 P_p->child1_mass = P_p_child1->mass;
@@ -260,6 +262,7 @@ void update_structure(ParticlesMap *particlesMap)
 
 void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to name of function: "_of_all_bodies" */
 {
+    printf("set_positions_and_velocities\n");
     /* Compute and set the positions and velocities of all bodies */
     /* By default, sample orbital phases randomly 
      * if particle.sample_orbital_phases_randomly == False: look for particle.true_anomaly */
@@ -296,13 +299,18 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 child2_mass = child2->mass;
                 parent_mass = parent->mass;
                 
+                e = norm3(parent->e_vec);
+                if (e < 0 or e>= 1.0)
+                {
+                    continue;
+                }
+                
                 if (parent->sample_orbital_phase_randomly == false)
                 {
                     true_anomaly = parent->true_anomaly;
                 }
                 else
                 {
-                    e = norm3(parent->e_vec);
                     true_anomaly = sample_random_true_anomaly(e);
                     //printf("parent->sample_orbital_phases_randomly  %d %g \n",parent->sample_orbital_phases_randomly,true_anomaly);
                 }
@@ -466,7 +474,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == true and p->level == 0)
+        if (p->is_binary == true and p->parent == -1)
         {
             flybys_internal_mass = p->mass;
             
@@ -476,7 +484,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
                 p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
                 &semimajor_axis, &eccentricity, &inclination, &argument_of_pericenter, &longitude_of_ascending_node); 
             flybys_internal_semimajor_axis = semimajor_axis;
-            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",flybys_internal_mass,flybys_internal_semimajor_axis);
+            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",p->flybys_internal_mass,p->flybys_internal_semimajor_axis);
         }
     }
 }
@@ -538,6 +546,8 @@ int determine_number_of_bodies_in_system(ParticlesMap *particlesMap)
 
 void set_up_derived_quantities(ParticlesMap *particlesMap)
 {
+    update_structure(particlesMap);
+    
     /* These are derived quantities that are often used in the EOM, so they are calculated here once for speed up */
     int i;
     ParticlesMapIterator it_p;
@@ -592,7 +602,62 @@ void set_up_derived_quantities(ParticlesMap *particlesMap)
     }
 }
 
+double compute_rp_out_crit_MA01(double a_in, double q_out, double e_out, double rel_INCL)
+{
+    return a_in*2.8*pow( (1.0+q_out)*(1.0+e_out)/sqrt(1.0-e_out), 2.0/5.0) * (1.0 - 0.3*rel_INCL/M_PI);
+}
 
 
+bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integration_flag)
+{
+    if (*integration_flag > 0)
+    {
+        return false;
+    }
+
+    set_up_derived_quantities(particlesMap); /* for a, e, etc */
+    bool stable = true;
+   
+    double a_out,e_out,a_in,e_in,M_p,rp_out,rp_out_crit,q_out,rel_INCL;
+   
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == true and p->parent != -1)
+        {
+            Particle *parent = (*particlesMap)[p->parent];
+            Particle *sibling = (*particlesMap)[p->sibling];
+                            
+            a_out = parent->a;
+            e_out = parent->e;
+            a_in = p->a;
+            e_in = p->e;
+            M_p = p->mass;
+            rp_out = a_out*(1.0-e_out);
+                    
+            if (p->dynamical_instability_criterion == 0) /* for mass ratios on the order of unity */
+            {
+                /* Mardling & Aarseth 2001 */
+                q_out = sibling->mass/M_p;
+                get_inclination_relative_to_parent(particlesMap,p->index,&rel_INCL);
+                rp_out_crit = compute_rp_out_crit_MA01(a_in,q_out,e_out,rel_INCL);
+                if (rp_out < rp_out_crit)
+                {
+                    stable = false;
+                }
+                //printf("test %g %g %g %g %g q_out %g rel_INCL %g\n",rp_out,rp_out_crit,a_in,e_in,M_p,q_out,rel_INCL);
+            }
+            else
+            {
+                printf("structure.cpp -- check_system_for_dynamical_stability -- p %d dynamical_instability_criterion %d not supported!\n",p->index,p->dynamical_instability_criterion);
+                exit(-1);
+            }
+        }
+    }
+    
+   
+    return stable;
+}
 
 }

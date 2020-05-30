@@ -11,6 +11,8 @@ int initialize_code(ParticlesMap *particlesMap)
     printf("evolve.cpp -- initialize_code; set_up_flybys and initialize stars\n");
     #endif
 
+    srand(random_seed);
+
     update_structure(particlesMap);
 
     int integration_flag = 0;

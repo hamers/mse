@@ -92,6 +92,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     //int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
     //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     //set_binary_masses_from_body_masses(particlesMap);
+
     update_structure(particlesMap);
 
 
@@ -99,7 +100,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         
     printf("nbody_evolution.cpp -- integrate_nbody_system -- stable_system %d new integration flag %d dt_nbody %g\n",stable_system,*integration_flag,*dt_nbody);
 
-    printf("nbody_evolution.cpp -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
+    //printf("nbody_evolution.cpp -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
 
     print_system(particlesMap);
     free_data(R);
@@ -175,7 +176,7 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->evolve_as_star == true)
         {
-            p->mass += p->mass_dot_wind * dt;
+            p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
             p->radius += p->radius_dot * dt;
             //printf("dm %.15f %.15f %.15f\n",p->mass_dot_wind,dt,p->mass_dot_wind * dt);
             spin_vec_norm = norm3(p->spin_vec);
@@ -268,7 +269,7 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
 }
 
 
-void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max,double dt)
+void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max, double dt)
 {
     //printf("ok..... %d\n",particlesMap->size());
 //    int highest_new_particle_index = 0;
@@ -289,7 +290,9 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
      * to check if the system is "dynamically stable". */
      
     //double dt_an = *P_orb_min*M_PI*10.0;
-    double dt_an = *P_orb_max * 0.01;
+    //double dt_an = *P_orb_max * 0.01;
+    double dt_an = dt * 0.1;
+    
     double maximum_analysis_time = 1.0e5; // TO DO: make user-adjustable
     
     double dt_reached;
@@ -449,10 +452,11 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
         {
             new_index = p->index;
         }
+        p->has_found_parent = false;
     }
     new_index += 1;
     //int new_index = (*particlesMap->end()).first;
-    printf("new_index %d\n",new_index);
+    //printf("new_index %d\n",new_index);
     
     bool found_new_orbit = true;
     while (found_new_orbit == true)
@@ -511,7 +515,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                 //printf("i1 %d i2 %d r %g %g %g a %g e %g\n",p1->index,p2->index,r_vec[0],r_vec[1],r_vec[2],a,e);
                 
                 
-                if ( a>= 0.0 and e >= 0.0 and e < 1.0)
+                if ( a>= 0.0 and e >= 0.0 and e < 1.0 and p1->has_found_parent == false and p2->has_found_parent == false)
                 {
                     //if ( (binary_child1_indices.count(p1->index) > 0) and (binary_child2_indices.count(p2->index) > 0) )
                     //if already in new particles

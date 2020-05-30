@@ -40,6 +40,13 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
             }
         }
         update_structure(particlesMap);
+        
+        bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
+        if (stable == false)
+        {
+            *integration_flag = 1;
+        }
+
     }
     else /* N-body mode */
     {

@@ -16,4 +16,6 @@ void update_structure(ParticlesMap *particlesMap);
 
 void set_up_derived_quantities(ParticlesMap *particlesMap);
 
+double compute_rp_out_crit_MA01(double a_in, double q_out, double e_out, double rel_INCL);
+bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integration_flag);
 }

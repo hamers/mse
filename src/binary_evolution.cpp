@@ -20,6 +20,12 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
         
     //*dt_binary_evolution = 1.0e4;
     
+    bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
+    if (stable == false)
+    {
+        *integration_flag = 1;
+    }
+
     return 0;
 }
 
@@ -46,7 +52,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     {
 
         Particle *donor = (*it_p).second;
-        printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
+        //printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
         if (donor->is_binary == false and donor->is_bound == true)
         {
             
@@ -1106,7 +1112,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
          }
          else
          {
-            ECC = 0.0;
+            ECC = epsilon;
          }
 
          /* Set both cores in co-rotation with the orbit on exit of CE */
@@ -1146,7 +1152,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         star1->instantaneous_perturbation_delta_mass = 0.0;
         star2->instantaneous_perturbation_delta_mass = 0.0;
         
-        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+        int integration_flag_dummy;
+        handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy);
 
         printf("CE -- post handle_SNe_in_system\n");
         print_system(particlesMap);
@@ -1157,7 +1164,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             
         double Delta_M1 = M1 - star1->mass;
         double Delta_M2 = M2 - star2->mass;
-        handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, integration_flag);
+        handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
 
         #ifdef IGNORE
         set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
@@ -1263,8 +1270,16 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             binary->e = ECC;
         
             /* Assume the binary true anomaly is not affected */
+            
             set_binary_masses_from_body_masses(particlesMap);
             set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
+        }        
+        /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
+        bool unbound_orbits = check_for_unbound_orbits(particlesMap);
+        if (unbound_orbits == true)
+        {
+            *integration_flag = 5;
+            printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
         }
     
     }
@@ -1285,7 +1300,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             double Delta_M = M1 - binary->mass;
             binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
 
-            handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* mass of `binary' will be updated */
+            int integration_flag_dummy;
+            handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy); /* mass of `binary' will be updated */
 
             //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
             
@@ -1303,7 +1319,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
             /* Should coelesced objects get a kick? 
              * For now, assume no kick
-             * Note: mergers between BHs/NSs should never occur here (CE evolution), rather as collisions */
+             * Note: mergers between BHs/NSs (implying possible recoil) should never occur here (CE evolution), rather as collisions */
             star1->apply_kick = false;
             star2->apply_kick = false;
             
@@ -1312,7 +1328,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             
             double Delta_M1 = M1 - binary->mass;
             double Delta_M2 = 0.0;
-            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, integration_flag);
+            int integration_flag_dummy;
+            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
 
             binary->is_binary = false; /* The binary becomes a body */
             particlesMap->erase(star1->index);
@@ -1354,6 +1371,14 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             }
             
             binary->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            
+            /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
+            bool unbound_orbits = check_for_unbound_orbits(particlesMap);
+            if (unbound_orbits == true)
+            {
+                *integration_flag = 5;
+                printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+            }
         }
         else
         {

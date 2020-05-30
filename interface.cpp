@@ -297,6 +297,13 @@ int get_orbital_elements(int index, double *semimajor_axis, double *eccentricity
     return 0;
 }
 
+int get_inclination_relative_to_parent_interface(int index, double *inclination_relative_to_parent)
+{
+    get_inclination_relative_to_parent(&particlesMap,index,inclination_relative_to_parent);
+    
+    return 0;
+}
+
 int get_level(int index, int *value)
 {
     if (index > particlesMap.size())
@@ -835,11 +842,10 @@ int apply_user_specified_instantaneous_perturbation_interface()
 }
 
 
-int clear_internal_particles()
+int reset_interface()
 {
-    //printf("clear_internal_particles\n");
-    particlesMap.clear();
-	//highest_particle_index = 0;
+    clear_particles(&particlesMap);
+    
     return 0;
 }
 

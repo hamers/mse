@@ -36,10 +36,13 @@ void print_system(ParticlesMap *particlesMap);
 
 void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3]);
 double get_mutual_angle(double a_vec[3], double b_vec[3]);
+int get_inclination_relative_to_parent(ParticlesMap *particlesMap, int index, double *inclination_relative_to_parent);
 
 double compute_a_from_h(double m1, double m2, double h, double e);
 double compute_h_from_a(double m1, double m2, double a, double e);
 
 bool equal_number(double x1, double x2, double tol);
+
+int clear_particles(ParticlesMap *particlesMap);
 
 }

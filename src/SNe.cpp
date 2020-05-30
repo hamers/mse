@@ -120,12 +120,12 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
         {
             //get_e_and_h_vectors_from_particle(p,e_vec,h_vec);
             e = norm3(p->e_vec);
-            
-            if (e<0 or e > 1.0)
+
+            if (e<0 or e >= 1.0)
             {
                 unbound_orbits = true;
             }
-            //printf("test e %g\n",e);
+            printf("test e %.15f unbound_orbits %d\n",e,unbound_orbits);
         }
     }
     

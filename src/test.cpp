@@ -287,11 +287,14 @@ int test_collisions()
         {
             printf("i %d j %d\n",i,j);
             //if (i!=1 or j!=4)
-            if (i>5 and i<12 or j>5 and j<12)
+            //if (i>5 and i<12 or j>5 and j<12)
+            if (i!= 1 or j!= 4)
             {
                 continue;
             }
-            flag = test_collision_stars(10.0,i,13,j);
+            flag = test_collision_stars(10.0,i,13,j,0);
+            flag = test_collision_stars(10.0,i,13,j,1);
+            
         }
     }
     //flag = test_collision_stars(10.0,3,8,6);
@@ -311,11 +314,11 @@ int test_collisions()
     return flag;
 }
 
-int test_collision_stars(double m1, int kw1, double m2, int kw2)
+int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration_flag)
 {
-    printf("************************************************\n");
-    printf("test_collision_star_MS m1 %g kw1 %d m2 %g kw2 %d\n",m1,kw1,m2,kw2);
-    printf("************************************************\n");
+    printf("*******************************************************************\n");
+    printf("test_collision_star_MS m1 %g kw1 %d m2 %g kw2 %d integration_flag %d \n",m1,kw1,m2,kw2,integration_flag);
+    printf("*******************************************************************\n");
     
     ParticlesMap particlesMap;
     int N_bodies = 4;
@@ -333,17 +336,15 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
     initialize_code(&particlesMap);
     
-    int integration_flag = 0;
+    //int integration_flag_init = 0;
     printf("test_collision_stars -- pre merge\n");
-    print_system(&particlesMap);
+    print_system(&particlesMap,integration_flag);
 
     double start_time = 0.0;
     double end_time = 1.0e1;
     double output_time,hamiltonian;
     int state,CVODE_flag,CVODE_error_code;
     //int integration_flag = 0;
-
-
 
     int kw = particlesMap[0]->stellar_type;
     double t_old=0.0;
@@ -359,9 +360,15 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
     //printf("post merge\n");
     //set_up_derived_quantities(&particlesMap);
     //print_system(&particlesMap);
-    particlesMap[4]->merged = true;
-
-
+    if (integration_flag==0)
+    {
+        particlesMap[4]->merged = true;
+    }
+    else
+    {
+        particlesMap[0]->Collision_Partner = 1;
+        particlesMap[1]->Collision_Partner = 0;
+    }
     
     handle_collisions(&particlesMap,&integration_flag);
     //printf("pre s %d\n",particlesMap.size());
@@ -374,9 +381,9 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
 
 
     printf("post merge integration_flag %d\n",integration_flag);
-    set_up_derived_quantities(&particlesMap);
-    print_system(&particlesMap);
-
+    
+    print_system(&particlesMap,integration_flag);
+    
     //#ifdef IGNORE
     printf("test_collision_stars -- pre evolve\n");
     evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
@@ -385,6 +392,9 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
     //evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
     //printf("post evolve\n");
     //#endif
+    
+    
+    print_system(&particlesMap,integration_flag);
     
     clear_particles(&particlesMap);
    
@@ -395,7 +405,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2)
 }
 
 
-
+#ifdef IGNORE
 int test_collision_MS_MS()
 {
     ParticlesMap particlesMap;
@@ -439,7 +449,7 @@ int test_collision_MS_MS()
     
     return 0;
 }
-
+#endif
 
 
     

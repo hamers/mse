@@ -13,6 +13,7 @@ int set_children(int index, int child1, int child2);
 int get_children(int index, int *child1, int *child2);
 
 int get_number_of_particles(int *N_particles);
+int get_internal_index_in_particlesMap(int absolute_index, int *index);
 int get_is_binary(int index, bool *is_binary);
 int get_is_bound(int index, bool *is_bound);
 

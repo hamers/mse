@@ -32,7 +32,8 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
 void copy_all_body_properties(Particle *source, Particle *target);
 
 void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
-void print_system(ParticlesMap *particlesMap);
+void print_system(ParticlesMap *particlesMap, int integration_flag);
+//void print_bodies(ParticlesMap *particlesMap);
 
 void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3]);
 double get_mutual_angle(double a_vec[3], double b_vec[3]);

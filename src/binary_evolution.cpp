@@ -26,6 +26,7 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
         *integration_flag = 1;
     }
 
+    printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
     return 0;
 }
 
@@ -55,6 +56,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         //printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
         if (donor->is_binary == false and donor->is_bound == true)
         {
+            donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
             
             if (donor->RLOF_flag == 1)
             {
@@ -181,9 +183,11 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     }
     /* TO DO: contact cases! */
     
+    printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
+    
     if (flag == -1)
     {
-        printf("binary_evolution.cpp -- fatal error in handle_mass_transfer_cases, parent %d donor %d accretor %d\n",parent->index,donor->index,accretor->index);
+        printf("binary_evolution.cpp -- fatal error in handle_mass_transfer_cases, parent %d donor %d accretor %d \n",parent->index,donor->index,accretor->index);
         exit(-1);
     }
     
@@ -203,6 +207,8 @@ double compute_stellar_dynamical_timescale(double M, double R)
 
 int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
+    printf("binary_evolution.cpp -- dynamical_mass_transfer_low_mass_donor\n");
+    
     /* Low-mass dynamical mass transfer case similar to CE (BSE evolv2.f: lines 1150 - 1233).
      * Always leads to the destruction of the low-mass MS donor; the accretor always survives. 
      * This may not be conservative; any mass not accreted will be assumed to be lost in an isotropic wind. 
@@ -213,8 +219,8 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     Particle *accretor = (*particlesMap)[accretor_index];
 
     /* This type of (fast) evolution is not handled by the ODE integrator; consequently, mass_dot_RLOF should be set to zero. */
-    donor->mass_dot_RLOF = 0.0;
-    accretor->mass_dot_RLOF = 0.0;
+//    donor->mass_dot_RLOF = 0.0;
+//    accretor->mass_dot_RLOF = 0.0;
     
     double P_orb = compute_orbital_period(parent);
     double m_donor = donor->mass;
@@ -399,6 +405,8 @@ double compute_Eddington_accretion_rate(double radius, double hydrogen_mass_frac
 
 int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
+    printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor\n");
+    
     /* Dynamical mass transfer case WD donor (BSE evolv2.f: lines 1290 - 1342).
      * Always leads to the destruction of the donor; the accretor might survive. 
      * Take into account mass loss from the system, and assume there is no kick imparted on the accretor if it survives. */
@@ -408,8 +416,8 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     Particle *accretor = (*particlesMap)[accretor_index];
 
     /* This type of (fast) evolution is not handled by the ODE integrator; correspondingly, mass_dot_RLOF should be set to zero. */
-    donor->mass_dot_RLOF = 0.0;
-    accretor->mass_dot_RLOF = 0.0;
+//    donor->mass_dot_RLOF = 0.0;
+//    accretor->mass_dot_RLOF = 0.0;
 
     double P_orb = compute_orbital_period(parent);
     double m_donor = donor->mass;
@@ -527,6 +535,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
 
 int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
+    printf("binary_evolution.cpp -- mass_transfer_NS_BH_donor\n");
     /* "Mass transfer" case NS/BH donor (BSE evolv2.f: lines 1343 - 1365 ) */
 
     Particle *parent = (*particlesMap)[parent_index];
@@ -534,8 +543,8 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
     Particle *accretor = (*particlesMap)[accretor_index];
 
     /* This type of (fast) evolution is not handled by the ODE integrator; correspondingly, mass_dot_RLOF should be set to zero. */
-    donor->mass_dot_RLOF = 0.0;
-    accretor->mass_dot_RLOF = 0.0;
+    //donor->mass_dot_RLOF = 0.0;
+    //accretor->mass_dot_RLOF = 0.0;
 
     collision_product(particlesMap, parent_index, donor_index, accretor_index, integration_flag);
 
@@ -568,12 +577,14 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
     Particle *star1 = (*particlesMap)[index1];
     Particle *star2 = (*particlesMap)[index2];
-    double M1 = star1->mass;
-    double M2 = star2->mass;
+    double M1_old,M1;
+    M1_old = M1 = star1->mass;
+    double M2_old,M2;
+    M2_old = M2 = star2->mass;
 
     /* CE evolution is not handled by the ODE integrator; correspondingly, mass_dot_RLOF should be set to zero. */
-    star1->mass_dot_RLOF = 0.0;
-    star2->mass_dot_RLOF = 0.0;
+//    star1->mass_dot_RLOF = 0.0;
+//    star2->mass_dot_RLOF = 0.0;
 
     /* Orbital properties */
     double SEP;
@@ -583,7 +594,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
     Particle *binary;
     double h_vec_unit[3],e_vec_unit[3];
-    double initial_momentum[3];    
+    double initial_momentum[3],initial_R_CM[3];
     if (*integration_flag == 0) /* secular mode */
     {
         set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
@@ -603,17 +614,18 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             r[i] = star1->R_vec[i] - star2->R_vec[i];
             v[i] = star1->V_vec[i] - star2->V_vec[i];
             initial_momentum[i] = M1 * star1->V_vec[i] + M2 * star2->V_vec[i];
+            initial_R_CM[i] = (M1 * star1->R_vec[i] + M2 * star2->R_vec[i]) / (M1 + M2);
         }
         from_cartesian_to_orbital_vectors(M1,M2,r,v,e_vec,h_vec,&true_anomaly);
         ECC = norm3(e_vec);
-        SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC);
+        SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
         get_unit_vector(h_vec,h_vec_unit);
         get_unit_vector(e_vec,e_vec_unit);
         printf("CE Integration_flag>0 a %g e %g\n",SEP,ECC);
     }
 
     int CEFLAG = binary_evolution_CE_energy_flag;
-    double ALPHA1 = binary->common_envelope_alpha;
+    double ALPHA1 = star1->common_envelope_alpha;
     
     double fac = 1.0;
         
@@ -1146,7 +1158,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     {
         
         /* Handle effect of mass loss on the rest of the system */
-        printf("no coel M1 %g M2 %g kw1 %d kw2 %d\n",M1,M2,KW1,KW2);
+        printf("no coel M1 %g M2 %g kw1 %d kw2 %d SEPF %g ECC %g\n",M1,M2,KW1,KW2,SEPF,ECC);
 
         /* First, handle effects of possible SNe kicks (apply_kick = true for star1 and/or star2). Mass loss is not yet taken into account */
         star1->instantaneous_perturbation_delta_mass = 0.0;
@@ -1156,44 +1168,31 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy);
 
         printf("CE -- post handle_SNe_in_system\n");
-        print_system(particlesMap);
+        print_system(particlesMap, *integration_flag);
 
         /* Next, handle effects of mass loss */
-        binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set?
-        binary->apply_kick = false;
+        double Delta_M1 = M1 - star1->mass;
+        double Delta_M2 = M2 - star2->mass;
+
+        if (*integration_flag == 0) /* Take into account either instantaneous or adiabatic mass loss, depending on the time-scale */
+        {
+
+            binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set?
+            binary->apply_kick = false;
+                
+            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
+        }
+        else /* Always assume instantaneous mass loss in the N-body case */
+        {
+            star1->instantaneous_perturbation_delta_mass = Delta_M1;
+            star2->instantaneous_perturbation_delta_mass = Delta_M2;;
             
-        double Delta_M1 = M1 - star1->mass;
-        double Delta_M2 = M2 - star2->mass;
-        handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
-
-        #ifdef IGNORE
-        set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
-        
-        /* Next, assume instantaneous mass loss for ALL orbits. 
-         * Note: `binary' will be overwritten at the very end below. 
-         * Other orbits, for which mass loss is expected to be adiabatic,
-         * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
-        star1->apply_kick = false; /* The kicks were already taken into account above */
-        star2->apply_kick = false; /* The kicks were already taken into account above */
-
-        double Delta_M1 = M1 - star1->mass;
-        double Delta_M2 = M2 - star2->mass;
-        star1->instantaneous_perturbation_delta_mass = Delta_M1; // final minus initial mass
-        star2->instantaneous_perturbation_delta_mass = Delta_M2; // final minus initial mass        
-        
-        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this will update the masses of stars 1 and 2 */
-        
-        /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
-         * i.e., time of CE >> t_orb */
-        star1->delta_m_adiabatic_mass_loss = Delta_M1;
-        star2->delta_m_adiabatic_mass_loss = Delta_M2;
-        compute_new_orbits_assuming_adiabatic_mass_loss(particlesMap, binary->common_envelope_timescale);
-        #endif
-        
+            handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy);
+        }
         
         //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
         printf("CE -- post mass changes\n");
-        print_system(particlesMap);
+        print_system(particlesMap,*integration_flag);
         /* Update the stars and orbit */
         star1->stellar_type = KW1;
         
@@ -1256,7 +1255,8 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         double h = compute_h_from_a(M1,M2,a,e);
 
         printf("a %g e %g h %g\n",a,e,h);
-
+        print_system(particlesMap,*integration_flag);
+        
         if (*integration_flag == 0) /* secular */
         {
             for (int i=0; i<3; i++)
@@ -1274,13 +1274,29 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             set_binary_masses_from_body_masses(particlesMap);
             set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
         }        
+        else /* N-body; need to adjust positions and velocities of the two stars corresponding to the new a and e */
+        {
+            double R1_vec_new[3],R2_vec_new[3],V1_vec_new[3],V2_vec_new[3];
+            compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(M1_old,star1->R_vec,star1->V_vec,M2_old,star2->R_vec,star2->V_vec,M1,R1_vec_new,V1_vec_new,M2,R2_vec_new,V2_vec_new,a,e);
+            for (int i=0; i<3; i++)
+            {
+                star1->R_vec[i] = R1_vec_new[i];
+                star1->V_vec[i] = V1_vec_new[i];
+                star2->R_vec[i] = R2_vec_new[i];
+                star2->V_vec[i] = V2_vec_new[i];
+            }
+        }
+        
         /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
+        /* Is this necessary? Done at the end of binary_evolution() */
         bool unbound_orbits = check_for_unbound_orbits(particlesMap);
         if (unbound_orbits == true)
         {
             *integration_flag = 5;
             printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
         }
+        printf("end\n");
+        print_system(particlesMap,*integration_flag);
     
     }
     else if (COEL == true)
@@ -1388,6 +1404,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
             for (i=0; i<3; i++)
             {
+                star1->R_vec[i] = initial_R_CM[i];
                 star1->V_vec[i] = initial_momentum[i]/M1; /* set new velocity according to linear momentum conservation */
             }
 
@@ -1414,6 +1431,12 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             }
             
             star1->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            star1->RLOF_flag = 0;
+            //double t = 0.0;
+            //double t_old = 0.0;
+            //double t_out,dt_nbody;
+            //integrate_nbody_system(particlesMap,integration_flag, 0.0, 0.0, &t_out, &dt_nbody);
+            
         }
     }
     
@@ -1522,6 +1545,50 @@ void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap,
     }
 }
 
+void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(double M1_old, double R1_vec_old[3], double V1_vec_old[3], double M2_old, double R2_vec_old[3], double V2_vec_old[3], double M1, double R1_vec[3], double V1_vec[3], double M2, double R2_vec[3], double V2_vec[3], double a, double e)
+{
+    int i;
+    double M_old = M1_old + M2_old;
+    double M = M1 + M2;
+    double R_CM_vec[3],V_CM_vec[3];
+    double r_vec_old[3],v_vec_old[3];
+    
+    for (i=0; i<3; i++)
+    {
+        R_CM_vec[i] = (R1_vec_old[i]*M1_old + R2_vec_old[i]*M2_old) / M_old;
+        r_vec_old[i] = R1_vec_old[i] - R2_vec_old[i];
+        v_vec_old[i] = V1_vec_old[i] - V2_vec_old[i];
+    }
+    
+    /* Compute the old e & h vectors (they determine the direction of the new orbit) */
+    double e_vec_old[3],h_vec_old[3];
+    double true_anomaly_old;
+    from_cartesian_to_orbital_vectors(M1_old, M2_old, r_vec_old, v_vec_old, e_vec_old, h_vec_old, &true_anomaly_old);
+    double e_old = norm3(e_vec_old);
+    double h_old = norm3(h_vec_old);
+    
+    /* Compute the new e & h vectors */
+    double e_vec[3],h_vec[3];
+    double h = compute_h_from_a(M1,M2,a,e);
+    for (i=0; i<3; i++)
+    {
+        e_vec[i] = (e_vec_old[i]/e_old) * e;
+        h_vec[i] = (h_vec_old[i]/h_old) * h;
+    }
+    
+    /* Compute new absolute positions and velocities */
+    double r_vec[3],v_vec[3];
+    from_orbital_vectors_to_cartesian(M1, M2, e_vec, h_vec, true_anomaly_old, r_vec, v_vec);
+    for (i=0; i<3; i++)
+    {
+        R1_vec[i] = R_CM_vec[i] + (M2/M) * r_vec[i];
+        V1_vec[i] = V_CM_vec[i] + (M2/M) * v_vec[i];
+
+        R2_vec[i] = R_CM_vec[i] - (M1/M) * r_vec[i];
+        V2_vec[i] = V_CM_vec[i] - (M1/M) * v_vec[i];
+    }
+}
+
 
 
 int common_envelope_evolution2(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index)
@@ -1558,6 +1625,8 @@ int common_envelope_evolution2(ParticlesMap *particlesMap, int binary_index, int
 
 int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
+    printf("binary_evolution.cpp -- handle_wind_accretion\n");
+    
     /* TO DO: since wind accretion depends on the orbit, move to ODE integration? */
     
     set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
@@ -1582,12 +1651,17 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             companion->mass_dot_wind_accretion = min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
         }
     }
+    
+    return 0;
 }
 
 int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
     
+    printf("binary_evolution.cpp -- stable_mass_transfer_evolution\n");
+    print_system(particlesMap,*integration_flag);
+
 
    //                 donor->mass_dot_RLOF = m_dot;
 //                    accretor->mass_dot_RLOF = -m_dot;
@@ -1597,8 +1671,8 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     Particle *accretor = (*particlesMap)[accretor_index];
 
     /* Reset mass_dot_RLOF; they will be calculated in this function. */
-    donor->mass_dot_RLOF = 0.0;
-    accretor->mass_dot_RLOF = 0.0;
+//    donor->mass_dot_RLOF = 0.0;
+//    accretor->mass_dot_RLOF = 0.0;
    
     double P_orb = compute_orbital_period(parent);
     double m_donor = donor->mass;
@@ -1876,7 +1950,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         if (kw1 == 2)
         {
             double age = tms + (donor->age*yr_to_Myr - tms_donor_old) * (tscls[0] - tms)/(tbgb_donor_old - tms_donor_old);
-            donor->age *= Myr_to_yr;
+            donor->age = age*Myr_to_yr;
         }
         else
         {
@@ -1890,7 +1964,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         if (kw2 == 2)
         {
             double age = tms + (accretor->age*yr_to_Myr - tms_accretor_old) * (tscls[0] - tms)/(tbgb_accretor_old - tms_accretor_old);
-            accretor->age *= Myr_to_yr;
+            accretor->age = age*Myr_to_yr;
         }
         else if ((m_accretor_new < 0.35 or m_accretor_new > 1.25) and (kw2 != 7))
         {
@@ -1910,6 +1984,9 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
      * This somewhat mimics non-conservative mass transfer. */
     accretor->mass_dot_wind += - (dm1 - dm2);
 
+    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_wind %g\n",donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_wind);
+    print_system(particlesMap,*integration_flag);
+    
     return 0;
 }
 

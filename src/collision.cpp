@@ -84,20 +84,22 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
         pi->Collision_Partner = -1;
         pj->Collision_Partner = -1;
         
+        //printf("col_part_i %d col_part_j %d pi %d pj %d\n",col_part_i,col_part_j,pi->index,pj->index);
+        
         int binary_index = -1; // binary index from particlesMap does not apply in this case        
         int kw1 = pi->stellar_type;
         int kw2 = pj->stellar_type;
         if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
         {
-            common_envelope_evolution(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
+            common_envelope_evolution(particlesMap, binary_index, pi->index, pj->index, integration_flag);
         }
         else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
         {
-            common_envelope_evolution(particlesMap, binary_index, col_part_j, col_part_i, integration_flag);
+            common_envelope_evolution(particlesMap, binary_index, pj->index, pi->index, integration_flag);
         }
         else /* "pure" collision in other cases */
         {
-            collision_product(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
+            collision_product(particlesMap, binary_index, pi->index, pj->index, integration_flag);
         }
     }
         
@@ -109,6 +111,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     /* TO DO: allow for calling this function without specifying the binary_index, i.e., collision during N-body integration (integration_flag>0) */
     
     printf("CP\n");
+    print_system(particlesMap,*integration_flag);
 
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
@@ -121,7 +124,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
     Particle *b;
     double n_old;
-    double initial_momentum[3];
+    double initial_momentum[3],initial_R_CM[3];
     
     double h_vec_unit[3],e_vec_unit[3];
     if (*integration_flag == 0)
@@ -142,6 +145,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         {
             r[i] = child1->R_vec[i] - child2->R_vec[i];
             v[i] = child1->V_vec[i] - child2->V_vec[i];
+            initial_R_CM[i] = (m1 * child1->R_vec[i] + m2 * child2->R_vec[i]) / (m1 + m2);
             initial_momentum[i] = m1 * child1->V_vec[i] + m2 * child2->V_vec[i];
         }
         from_cartesian_to_orbital_vectors(m1,m2,r,v,e_vec,h_vec,&true_anomaly);
@@ -513,6 +517,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
             for (i=0; i<3; i++)
             {
+                child1->R_vec[i] = initial_R_CM[i];
                 child1->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
             }
 
@@ -533,6 +538,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 }
             }
             child1->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            child1->RLOF_flag = 0;
+            
+            printf("CP N-body not destroyed post\n");
+            print_system(particlesMap,*integration_flag);
         }
         else
         {

@@ -24,6 +24,8 @@ int initialize_code(ParticlesMap *particlesMap)
     }
 
     initialize_stars(particlesMap);
+    set_positions_and_velocities(particlesMap);
+    
 }
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
@@ -37,17 +39,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 //    zcnsts_(&z,zpars);
 
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    //if (*integration_flag == 0)
+    if (*integration_flag == 0)
     {
         determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
         printf("pre evolve %d %d %d %d\n",N_bodies,N_binaries,N_root_finding,N_ODE_equations);
-        print_system(particlesMap);
+        print_system(particlesMap,*integration_flag);
     }
-    /* WARNING: TEMPORARY CODE TO QUICKLY SET MASS TRANSFER RATES FOR TESTING PURPOSES */
-    //Particle *s1 = (*particlesMap)[0];
-    //Particle *s2 = (*particlesMap)[1];
-    //s1->mass_dot_RLOF = -1.0e-5;
-    //s2->mass_dot_RLOF = +1.0e-5;
 
     if (start_time == end_time)
     {
@@ -153,6 +150,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         if (*CVODE_flag==2)
         {
             printf("ROOT occurred; setting t = t_out; t %g t_out %g\n",t,t_out);
+            print_system(particlesMap,*integration_flag);
             
             flag = investigate_roots_in_system(particlesMap);
             if (flag == 1) // RLOF
@@ -287,7 +285,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     //printf("done %d\n",i);
     
-    //if (*integration_flag == 0)
+  //if (*integration_flag == 0)
     {
         int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
         determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);

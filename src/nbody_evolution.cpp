@@ -26,7 +26,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     int collision_occurred;
     
     printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
-    print_system(particlesMap);
+    print_system(particlesMap,*integration_flag);
 
     printf("pre... dt %g\n",dt);
     print_state(R);
@@ -102,7 +102,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     //printf("nbody_evolution.cpp -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
 
-    print_system(particlesMap);
+    print_system(particlesMap,*integration_flag);
     free_data(R);
     
     
@@ -176,6 +176,8 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->evolve_as_star == true)
         {
+            p->RLOF_flag = 0;
+            
             p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
             p->radius += p->radius_dot * dt;
             //printf("dm %.15f %.15f %.15f\n",p->mass_dot_wind,dt,p->mass_dot_wind * dt);
@@ -600,7 +602,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
 //    printf("%d\n",R->NumVertex);
     //printf("find binaries done!\n");
     printf("done an\n");
-    print_system(particlesMap);
+    print_system(particlesMap,1);
 }
 
 

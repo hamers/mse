@@ -112,6 +112,9 @@ class MSE(object):
         self.lib.get_number_of_particles.argtypes = (ctypes.POINTER(ctypes.c_int),)
         self.lib.get_number_of_particles.restype = ctypes.c_int
 
+        self.lib.get_internal_index_in_particlesMap.argtypes = (ctypes.c_int, ctypes.POINTER(ctypes.c_int),)
+        self.lib.get_internal_index_in_particlesMap.restype = ctypes.c_int
+
         self.lib.get_is_binary.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
         self.lib.get_is_binary.restype = ctypes.c_int
 
@@ -371,7 +374,9 @@ class MSE(object):
         self.__update_particles_from_code()
 
     def __update_particle_in_code(self,particle,set_instantaneous_perturbation_properties=False):
-        flag = self.lib.set_mass(particle.index,particle.mass)
+        flag = 0
+        if particle.is_binary == False:
+            flag = self.lib.set_mass(particle.index,particle.mass)
 
 #        if self.enable_tides == True:
 #            particle.include_tidal_friction_terms = True
@@ -557,29 +562,47 @@ class MSE(object):
         flag = self.lib.get_number_of_particles(ctypes.byref(N_particles))
         N_particles = N_particles.value
         
-        for index in range(N_particles):
+        for i in range(N_particles):
+            
+            internal_index = ctypes.c_int(0)
+            self.lib.get_internal_index_in_particlesMap(i,ctypes.byref(internal_index))
+            internal_index = internal_index.value
             
             is_binary = ctypes.c_bool(False)
-            flag = self.lib.get_is_binary(index,ctypes.byref(is_binary))
+            flag = self.lib.get_is_binary(internal_index,ctypes.byref(is_binary))
             is_binary = is_binary.value
 
             mass = ctypes.c_double(0.0)
-            flag = self.lib.get_mass(index,ctypes.byref(mass))
+            flag = self.lib.get_mass(internal_index,ctypes.byref(mass))
             mass = mass.value
 
-            child1,child2 = None,None
+            child1_index,child2_index = -1,-1
             if is_binary==True:
                 child1,child2 = ctypes.c_int(0),ctypes.c_int(0)
-                self.lib.get_children(index,ctypes.byref(child1),ctypes.byref(child2))
-                child1 = self.particles[child1.value]
-                child2 = self.particles[child2.value]
+                self.lib.get_children(internal_index,ctypes.byref(child1),ctypes.byref(child2))
+                #child1 = self.particles[child1.value]
+                #child2 = self.particles[child2.value]
+                child1_index = child1.value
+                child2_index = child2.value
 
-            print("isb",N_particles,index,mass,is_binary,child1,child2)
-            p = Particle(is_binary=is_binary,mass=mass,child1=child1,child2=child2,a=0.0,e=0.0,INCL=0.0,AP=0.0,LAN=0.0) ### orbital elements should be updated later
-            p.index = index
+            print("isb",N_particles,"i",i,"internal_index",internal_index,"mass",mass,"is_binary",is_binary,"child1_index",child1_index,"child2_index",child2_index)#,child1,child2)
+            p = Particle(is_binary=is_binary,mass=mass,child1=None,child2=None,a=0.0,e=0.0,INCL=0.0,AP=0.0,LAN=0.0) ### orbital elements should be updated later
+            p.index = internal_index
                 #a==None or e==None or INCL==None or LAN==None:
+            #if is_binary==True:
+            p.child1_index = child1_index
+            p.child2_index = child2_index
             self.particles.append(p)
-        
+        print("D1",[p.child1_index for p in self.particles])
+        print("D2",[p.child2_index for p in self.particles])
+        binaries = [x for x in self.particles if x.is_binary == True]
+        for i,p in enumerate(self.particles):
+            if p.is_binary == True:
+                i1 = [j for j in range(N_particles) if self.particles[j].index == p.child1_index][0]
+                i2 = [j for j in range(N_particles) if self.particles[j].index == p.child2_index][0]
+                print("i1",i1,"i2",i2,"i",i,"p.child1_index",p.child1_index,"p.child2_index",p.child2_index)
+                p.child1 = self.particles[i1]
+                p.child2 = self.particles[i2]
 
     def __set_constants_in_code(self):
         self.lib.set_constants(self.__CONST_G,self.__CONST_C,self.__CONST_M_SUN,self.__CONST_R_SUN,self.__CONST_L_SUN,self.__CONST_KM_PER_S,self.__CONST_PER_PC3)
@@ -1047,14 +1070,14 @@ class Particle(object):
         
         else:
             if is_external==False:
-                if child1==None or child2==None:
-                    raise RuntimeError('Error when adding particle: a binary should have two children!')
-                elif a==None or e==None or INCL==None or LAN==None:
+                #if child1==None or child2==None:
+                #    raise RuntimeError('Error when adding particle: a binary should have two children!')
+                if a==None or e==None or INCL==None or LAN==None:
                     raise RuntimeError('Error when adding particle: a binary should have its orbital elements specified!')
                 else:
                     self.child1 = child1
                     self.child2 = child2
-                    self.mass = child1.mass + child2.mass
+                    #self.mass = child1.mass + child2.mass
 
                     self.a = a
                     self.e = e
@@ -1074,7 +1097,6 @@ class Particle(object):
             if self.is_binary == False:
                 return "Particle(is_binary={0}, mass={1:g})".format(self.is_binary,self.mass)
             else:
-                print("OKOKOK",self.child1.index)
                 return "Particle(is_binary={0}, mass={1:g}, child1={2:d}, child2={3:d}, a={4:g}, e={5:g}, INCL={6:g}, AP={7:g}, LAN={8:g})".format(self.is_binary,self.mass,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
         else:
             if self.is_binary == False:

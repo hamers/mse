@@ -544,12 +544,12 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
         j++;
         //p->parent = -1;
     }
-    printf("old\n");
-    print_system(source);
-    printf("new\n");
-    print_system(target);
+    //printf("old\n");
+    //print_system(source);
+    //printf("new\n");
+    //print_system(target);
     
-    printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
+    //printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
 void copy_all_body_properties(Particle *source, Particle *target)
@@ -656,13 +656,67 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
     //initialize_stars(&particlesMap);
 }
 
-void print_system(ParticlesMap *particlesMap)
+void print_system(ParticlesMap *particlesMap, int integration_flag)
 {
     printf("=============================\n");
-    printf("Printing system; N=%d\n",particlesMap->size());
+    printf("Printing system; N=%d; integration_flag=%d\n",particlesMap->size(),integration_flag);
+
+    ParticlesMapIterator it_p;    
+    if (integration_flag==0)
+    {
+        update_structure(particlesMap);
+        set_up_derived_quantities(particlesMap);
+    
+        for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+        {
+            Particle *p = (*it_p).second;
+            
+            if (p->is_binary == false)
+            {
+                if (p->evolve_as_star == true)
+                {
+                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
+                }
+                else
+                {
+                    printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
+                }
+            }
+            else
+            {
+                printf("index %d -- binary -- parent %d child1 %d child2 %d m %g a %g e %g\n",p->index,p->parent,p->child1,p->child2,p->mass,p->a,p->e);
+            }
+        }
+    }
+    else
+    {
+        for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+        {
+            Particle *p = (*it_p).second;
+            
+            if (p->is_binary == false)
+            {
+                if (p->evolve_as_star == true)
+                {
+                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                }
+                else
+                {
+                    printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
+                }
+            }
+        }
+    }
+}
+
+#ifdef IGNORE
+void print_bodies(ParticlesMap *particlesMap)
+{
+    printf("=============================\n");
+    printf("Printing bodies; N=%d\n",particlesMap->size());
     
     //update_structure(particlesMap);
-    set_up_derived_quantities(particlesMap);
+    //set_up_derived_quantities(particlesMap);
 
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -673,19 +727,16 @@ void print_system(ParticlesMap *particlesMap)
         {
             if (p->evolve_as_star == true)
             {
-                printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
+                printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
             }
             else
             {
                 printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
             }
         }
-        else
-        {
-            printf("index %d -- binary -- parent %d child1 %d child2 %d m %g a %g e %g\n",p->index,p->parent,p->child1,p->child2,p->mass,p->a,p->e);
-        }
     }
 }
+#endif
 
 void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3])
 {

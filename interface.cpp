@@ -87,6 +87,27 @@ int get_is_binary(int index, bool *is_binary)
     return 0;
 }
 
+int get_internal_index_in_particlesMap(int absolute_index, int *index)
+{
+    *index = -1;
+    
+    int i=0;
+    ParticlesMapIterator it_p;
+    
+    for (it_p = particlesMap.begin(); it_p != particlesMap.end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+
+        if (i == absolute_index)
+        {
+            *index = p->index;
+        }
+        i++;
+    }
+    
+    return 0;
+}
+
 int get_is_bound(int index, bool *is_bound)
 {
     if (index > particlesMap.size())

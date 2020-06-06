@@ -83,8 +83,13 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
     double a = p->a;
     double e = p->e;
+    
+    if (e < epsilon)
+    {
+        e = epsilon;
+    }
 
-    double epsilon = 1.0e-12;
+    //double epsilon = 1.0e-12;
     if (M_d <= epsilon or M_a <= epsilon)
     {
         return 0;
@@ -226,6 +231,7 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
     double e = p->e;
     double q,R_Lc,x,E_0;
     bool in_RLOF;
+    int flag;
     
     /* child1 -> child2 */
     if (child1->include_mass_transfer_terms==true)
@@ -234,9 +240,9 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
         //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
         x = R_Lc/child1->radius;
-        determine_E_0(e, x, &E_0, &in_RLOF);
+        flag = determine_E_0(e, x, &E_0, &in_RLOF);
         //printf("1 x %g q %g E_0 %g\n",x,q,E_0);
-        if (in_RLOF == true)
+        if (in_RLOF == true and flag == 0)
         {
             compute_RLOF_emt_model(p,child1,child2,x,E_0);
             //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
@@ -252,9 +258,9 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         q = child2->mass/child1->mass;
         R_Lc = roche_radius_pericenter_eggleton(a,q);
         x = R_Lc/child2->radius;
-        determine_E_0(e, x, &E_0, &in_RLOF);
+        flag = determine_E_0(e, x, &E_0, &in_RLOF);
         //printf("2 x %g q %g E_0 %g\n",x,q,E_0);
-        if (in_RLOF == true and child2->include_mass_transfer_terms==true)
+        if (in_RLOF == true and flag == 0)
         {
             compute_RLOF_emt_model(p,child2,child1,x,E_0);
             #ifdef DEBUG
@@ -323,6 +329,7 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
     if (*E_0 != *E_0)
     {
         printf("mass_changes.cpp -- ERROR in determine_E_0; E_0 = %g x  = %g e = %g \n",*E_0,x,e);
+        return -1;
     }
     //printf("x %g e %g E_0... %g\n",x,e,*E_0);
     return 0;

@@ -433,7 +433,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         }
         if (include_rotation_precession_terms == 1 || include_tidal_bulges_precession_terms == 1)
         {
-            if (e >= minimum_eccentricity_for_tidal_precession)
+            if (e >= minimum_eccentricity_for_tidal_precession and binary->parent != -1) /* Do not include orbital precession if e is very small, or the binary is isolated */
             {
                 binary->de_vec_dt[i] += e*(Z*q_vec_unit[i] - Y*h_vec_unit[i]);
                 

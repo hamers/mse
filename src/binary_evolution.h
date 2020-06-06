@@ -19,7 +19,7 @@ double compute_Eddington_accretion_rate(double radius, double hydrogen_mass_frac
 int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 
-int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index, int *integration_flag);
+int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag);
 
 void handle_instantaneous_and_adiabatic_mass_changes_in_orbit(ParticlesMap *particlesMap, Particle *star1, Particle *star2, double Delta_m1, double Delta_m2, double mass_loss_timescale, int *integration_flag);
 void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap);

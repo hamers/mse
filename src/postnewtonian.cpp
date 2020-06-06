@@ -43,6 +43,12 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
     
     double GMdiva = CONST_G*mt/a;
     double Z_1PN = 3.0*sqrt(GMdiva)*GMdiva/(a*CONST_C_LIGHT_P2*j_p2);
+    
+    if (binary->parent == -1)
+    {
+        Z_1PN = 0.0;
+    }
+    
     for (int i=0; i<3; i++)
     {
         binary->de_vec_dt[i] += e*Z_1PN*binary->q_vec_unit[i];

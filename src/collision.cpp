@@ -6,7 +6,7 @@
 extern "C"
 {
 
-void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
+void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_flag)
 {
     /* invoke CE if one star has k in 2,3,4,5,6,8,9 */
 
@@ -27,15 +27,15 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
                 int kw2 = child2->stellar_type;
                 if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, integration_flag);
+                    common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
                 }
                 else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, integration_flag);
+                    common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, t, integration_flag);
                 }
                 else /* "pure" collision in other cases */
                 {
-                    collision_product(particlesMap, p->index, child1->index, child2->index, integration_flag);
+                    collision_product(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
                 }
             }
         }
@@ -91,22 +91,22 @@ void handle_collisions(ParticlesMap *particlesMap, int *integration_flag)
         int kw2 = pj->stellar_type;
         if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
         {
-            common_envelope_evolution(particlesMap, binary_index, pi->index, pj->index, integration_flag);
+            common_envelope_evolution(particlesMap, binary_index, pi->index, pj->index, t, integration_flag);
         }
         else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
         {
-            common_envelope_evolution(particlesMap, binary_index, pj->index, pi->index, integration_flag);
+            common_envelope_evolution(particlesMap, binary_index, pj->index, pi->index, t, integration_flag);
         }
         else /* "pure" collision in other cases */
         {
-            collision_product(particlesMap, binary_index, pi->index, pj->index, integration_flag);
+            collision_product(particlesMap, binary_index, pi->index, pj->index, t, integration_flag);
         }
     }
         
 }
 
 
-void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, int *integration_flag)
+void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag)
 {
     /* TO DO: allow for calling this function without specifying the binary_index, i.e., collision during N-body integration (integration_flag>0) */
     
@@ -173,7 +173,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     double m0,mc,age,t_MS;
     age = -1;
     m0 = -1;
-    double epoch = 0.0; /* Is this OK? */
     
     double tm,tn;
 
@@ -371,7 +370,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             kw = 14;
         }
     }
-    
     else
     {
         printf("merger.cpp -- collision_product -- unknown outcome! Will ignore the collision. kw1 %d kw2 %d kw %d\n",kw1,kw2,kw);
@@ -383,6 +381,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         printf("merger.cpp -- collision_product -- was not able to determine all properties of merged object! Will ignore the collision. \n");
         return;
     }
+
     
     /* m, m0, age */
     
@@ -446,8 +445,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             b->mass = m;
             b->sse_initial_mass = m0;
             
-            b->epoch = epoch*Myr_to_yr;
             b->age = age*Myr_to_yr;
+            b->epoch = t - b->age;
             b->sse_main_sequence_timescale = tm*Myr_to_yr;
 
             b->radius = r*CONST_R_SUN;
@@ -501,8 +500,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             child1->mass = m;
             child1->sse_initial_mass = m0;
             
-            child1->epoch = epoch*Myr_to_yr;
+//            child1->epoch = epoch*Myr_to_yr;
             child1->age = age*Myr_to_yr;
+            child1->epoch = t - child1->age;
             child1->sse_main_sequence_timescale = tm*Myr_to_yr;
 
             child1->radius = r*CONST_R_SUN;

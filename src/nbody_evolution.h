@@ -5,7 +5,7 @@ extern "C"
 
 void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *t_out, double *dt_nbody);
 
-void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, int *integration_flag);
+void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, double t, int *integration_flag);
 
 double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag, double P_orb_min, double P_orb_max);
 

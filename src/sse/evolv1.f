@@ -159,6 +159,7 @@ c-------------------------------------------------------------c
 * Find the landmark luminosities and timescales as well as setting
 * the GB parameters.
 *
+*         WRITE(*,*) 'epoch',epoch,'tphys',tphys,'aj',aj,'r',r,'lum',lum
          aj = tphys - epoch
          CALL star(kw,mass,mt,tm,tn,tscls,lums,GB,zpars)
 *
@@ -253,7 +254,7 @@ c-------------------------------------------------------------c
          endif
 *
 * Record values for plotting and reset epoch.
-*
+* 
          epoch = tphys - aj
          if((isave.and.tphys.ge.tsave).or.iplot)then
             ip = ip + 1
@@ -363,7 +364,7 @@ c-------------------------------------------------------------c
 *
  90   continue
 *
-
+*      WRITE(*,*)' ip ',ip,' nv ',nv, mass,aj,mt,tm,tn,r,lum
       tphysf = tphys
       scm(ip+1,1) = -1.0
       spp(jp+1,1) = -1.0

@@ -262,7 +262,7 @@ void update_structure(ParticlesMap *particlesMap)
 
 void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to name of function: "_of_all_bodies" */
 {
-    printf("set_positions_and_velocities\n");
+    //printf("set_positions_and_velocities\n");
     /* Compute and set the positions and velocities of all bodies */
     /* By default, sample orbital phases randomly 
      * if particle.sample_orbital_phases_randomly == False: look for particle.true_anomaly */
@@ -462,11 +462,11 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
 void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
 {
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    printf("determine_internal_mass_and_semimajor_axis 0\n");
+    //printf("determine_internal_mass_and_semimajor_axis 0\n");
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    printf("determine_internal_mass_and_semimajor_axis 1\n");
+    //printf("determine_internal_mass_and_semimajor_axis 1\n");
     set_binary_masses_from_body_masses(particlesMap);
-    printf("determine_internal_mass_and_semimajor_axis 2\n");
+    //printf("determine_internal_mass_and_semimajor_axis 2\n");
     double h_tot_vec[3];
     double semimajor_axis,eccentricity,inclination,argument_of_pericenter,longitude_of_ascending_node;
     
@@ -484,7 +484,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
                 p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
                 &semimajor_axis, &eccentricity, &inclination, &argument_of_pericenter, &longitude_of_ascending_node); 
             flybys_internal_semimajor_axis = semimajor_axis;
-            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",p->flybys_internal_mass,p->flybys_internal_semimajor_axis);
+            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- M_int %g a_int %g\n",flybys_internal_mass,flybys_internal_semimajor_axis);
         }
     }
 }

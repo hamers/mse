@@ -162,7 +162,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     {
         /* `Standard CE evolution. */
         flag = 2;
-        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
+        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
     }
     else if (kw >= 10 and kw <= 12 and q > q_crit_WD_donor)
     {
@@ -546,13 +546,13 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
     //donor->mass_dot_RLOF = 0.0;
     //accretor->mass_dot_RLOF = 0.0;
 
-    collision_product(particlesMap, parent_index, donor_index, accretor_index, integration_flag);
+    collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
 
     return 0;
 }
 
 
-int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, int *integration_flag)
+int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)
 {
     /*
      * **
@@ -1201,9 +1201,10 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         star1->sse_initial_mass = M01;
         star1->convective_envelope_mass = MENV1;
         
-        star1->epoch = 0.0; /* is this correct? */
         star1->age = AJ1 * Myr_to_yr;
-
+        //star1->epoch = 0.0; /* is this correct? */
+        star1->epoch = t - star1->age;
+        
         star1->radius = R1 * CONST_R_SUN;
         star1->core_radius = RC1 * CONST_R_SUN;
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
@@ -1228,8 +1229,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         star2->sse_initial_mass = M02;
         star2->convective_envelope_mass = MENV2;
         
-        star2->epoch = 0.0; /* is this correct? */
+        //star2->epoch = 0.0; /* is this correct? */
         star2->age = AJ2 * Myr_to_yr;
+        star2->epoch = t - star2->age;
 
         star2->radius = R2 * CONST_R_SUN;
         star2->core_radius = RC2 * CONST_R_SUN;
@@ -1366,8 +1368,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             binary->sse_initial_mass = M01;
             binary->convective_envelope_mass = MENV1;
             
-            binary->epoch = 0.0; /* is this correct? */
+            //binary->epoch = 0.0; /* is this correct? */
             binary->age = AJ1 * Myr_to_yr;
+            binary->epoch = t - binary->age;
 
             binary->radius = R1 * CONST_R_SUN;
             binary->core_radius = RC1 * CONST_R_SUN;
@@ -1387,6 +1390,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             }
             
             binary->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            binary->RLOF_flag = 0;
             
             /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
             bool unbound_orbits = check_for_unbound_orbits(particlesMap);
@@ -1982,9 +1986,9 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 
     /* Assume that any mass not accreted is ejected from the accretor in an isotropic wind. -- TO DO: could the effect be instantaneous?
      * This somewhat mimics non-conservative mass transfer. */
-    accretor->mass_dot_wind += - (dm1 - dm2);
+    accretor->mass_dot_wind += - (dm1 - dm2)/dt;
 
-    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_wind %g\n",donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_wind);
+    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_wind %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_wind);
     print_system(particlesMap,*integration_flag);
     
     return 0;

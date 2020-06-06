@@ -32,7 +32,7 @@ int delete_particle(int index)
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     particlesMap.erase(index);
@@ -44,7 +44,7 @@ int set_children(int index, int child1, int child2)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -57,7 +57,7 @@ int get_children(int index, int *child1, int *child2)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -78,12 +78,13 @@ int get_is_binary(int index, bool *is_binary)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
     *is_binary = p->is_binary;
     
+    //printf("get_is_binary i %d\n",index,
     return 0;
 }
 
@@ -98,12 +99,16 @@ int get_internal_index_in_particlesMap(int absolute_index, int *index)
     {
         Particle *p = (*it_p).second;
 
+//        printf("get_internal_index_in_particlesMap absolute_index %d i %d p->index %d\n",absolute_index,i,p->index);
         if (i == absolute_index)
         {
             *index = p->index;
         }
         i++;
     }
+    
+    
+//    printf("get_internal_index_in_particlesMap absolute_index %d index %d\n",absolute_index,*index);
     
     return 0;
 }
@@ -112,7 +117,7 @@ int get_is_bound(int index, bool *is_bound)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle *p = particlesMap[index];
@@ -126,7 +131,7 @@ int set_mass(int index, double mass)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -139,7 +144,7 @@ int get_mass(int index, double *mass)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
     Particle *p = particlesMap[index];
     *mass = p->mass;
@@ -149,7 +154,7 @@ int set_mass_transfer_terms(int index, bool include_mass_transfer_terms)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -161,7 +166,7 @@ int get_mass_dot(int index, double *mass_dot)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -174,7 +179,7 @@ int set_radius(int index, double radius, double radius_dot)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle * p = particlesMap[index];
@@ -187,7 +192,7 @@ int get_radius(int index, double *radius, double *radius_dot)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -200,7 +205,7 @@ int set_integration_method(int index, int integration_method, bool KS_use_pertur
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle * p = particlesMap[index];
@@ -220,7 +225,7 @@ int set_orbital_vectors(int index, double e_vec_x, double e_vec_y, double e_vec_
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle *p = particlesMap[index];
@@ -239,7 +244,7 @@ int get_orbital_vectors(int index, double *e_vec_x, double *e_vec_y, double *e_v
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle *p = particlesMap[index];
@@ -259,7 +264,7 @@ int set_orbital_elements(int index, double semimajor_axis, double eccentricity, 
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle * p = particlesMap[index];    
@@ -292,7 +297,7 @@ int get_orbital_elements(int index, double *semimajor_axis, double *eccentricity
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle * p = particlesMap[index];    
@@ -329,7 +334,7 @@ int get_level(int index, int *value)
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -345,7 +350,7 @@ int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as
     //printf("set_stellar_evolution_properties %g\n",metallicity);
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle * p = particlesMap[index];
@@ -374,7 +379,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -430,10 +435,10 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
 
 int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma)
 {
-    //printf("set_stellar_evolution_properties %g\n",metallicity);
+    printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
 
     Particle * p = particlesMap[index];
@@ -447,7 +452,7 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -466,7 +471,7 @@ int set_instantaneous_perturbation_properties(int index, double delta_mass, doub
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
     
     Particle *p = particlesMap[index];
@@ -491,7 +496,7 @@ int set_external_particle_properties(int index, double external_t_ref, double e,
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle *p = particlesMap[index];    
@@ -522,7 +527,7 @@ int set_spin_vector(int index, double spin_vec_x, double spin_vec_y, double spin
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -536,7 +541,7 @@ int get_spin_vector(int index, double *spin_vec_x, double *spin_vec_y, double *s
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -551,7 +556,7 @@ int set_spin_vector_dot(int index, double spin_vec_x_dot, double spin_vec_y_dot,
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -565,7 +570,7 @@ int get_spin_vector_dot(int index, double *spin_vec_x_dot, double *spin_vec_y_do
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -581,7 +586,7 @@ int get_relative_position_and_velocity(int index, double *x, double *y, double *
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -598,7 +603,7 @@ int get_absolute_position_and_velocity(int index, double *X, double *Y, double *
 {
     if (index > particlesMap.size())
     {
-      return -1;
+//      return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -621,7 +626,7 @@ int set_PN_terms(int index, int include_pairwise_1PN_terms, int include_pairwise
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle * p = particlesMap[index];
@@ -634,7 +639,7 @@ int get_PN_terms(int index, int *include_pairwise_1PN_terms, int *include_pairwi
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -654,7 +659,7 @@ int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_meth
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -672,7 +677,7 @@ int get_tides_terms(int index, bool *include_tidal_friction_terms, bool *tides_m
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle *p = particlesMap[index];
@@ -699,7 +704,7 @@ int set_VRR_properties(int index, int VRR_model, int VRR_include_mass_precession
 	
 	if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -734,7 +739,7 @@ int set_root_finding_terms(int index, bool check_for_secular_breakdown, bool che
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
 
     Particle *p = particlesMap[index];
@@ -756,7 +761,7 @@ int get_root_finding_terms(int index, bool *check_for_secular_breakdown, bool *c
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle *p = particlesMap[index];
@@ -779,7 +784,7 @@ int set_root_finding_state(int index, bool secular_breakdown_has_occurred, bool 
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -797,7 +802,7 @@ int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool
 {
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle * p = particlesMap[index];
@@ -885,7 +890,7 @@ int get_de_dt(int index, double *de_dt)
 
     if (index > particlesMap.size())
     {
-        return -1;
+//        return -1;
     }
   
     Particle * p = particlesMap[index];

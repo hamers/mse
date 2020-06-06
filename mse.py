@@ -585,7 +585,7 @@ class MSE(object):
                 child1_index = child1.value
                 child2_index = child2.value
 
-            print("isb",N_particles,"i",i,"internal_index",internal_index,"mass",mass,"is_binary",is_binary,"child1_index",child1_index,"child2_index",child2_index)#,child1,child2)
+            #print("isb",N_particles,"i",i,"internal_index",internal_index,"mass",mass,"is_binary",is_binary,"child1_index",child1_index,"child2_index",child2_index)#,child1,child2)
             p = Particle(is_binary=is_binary,mass=mass,child1=None,child2=None,a=0.0,e=0.0,INCL=0.0,AP=0.0,LAN=0.0) ### orbital elements should be updated later
             p.index = internal_index
                 #a==None or e==None or INCL==None or LAN==None:
@@ -593,14 +593,16 @@ class MSE(object):
             p.child1_index = child1_index
             p.child2_index = child2_index
             self.particles.append(p)
-        print("D1",[p.child1_index for p in self.particles])
-        print("D2",[p.child2_index for p in self.particles])
+        #print("D1",[p.child1_index for p in self.particles])
+        #print("D2",[p.child2_index for p in self.particles])
         binaries = [x for x in self.particles if x.is_binary == True]
+        #if len(binaries)==0:
+        #    exit(0)
         for i,p in enumerate(self.particles):
             if p.is_binary == True:
                 i1 = [j for j in range(N_particles) if self.particles[j].index == p.child1_index][0]
                 i2 = [j for j in range(N_particles) if self.particles[j].index == p.child2_index][0]
-                print("i1",i1,"i2",i2,"i",i,"p.child1_index",p.child1_index,"p.child2_index",p.child2_index)
+                #print("i1",i1,"i2",i2,"i",i,"p.child1_index",p.child1_index,"p.child2_index",p.child2_index)
                 p.child1 = self.particles[i1]
                 p.child2 = self.particles[i2]
 
@@ -941,7 +943,7 @@ class Particle(object):
             integration_method = 0, KS_use_perturbing_potential = True, \
             stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
-            kick_distribution = 1, kick_distribution_sigma = 265.0, \
+            kick_distribution = 1, kick_distribution_sigma = 0.0, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \

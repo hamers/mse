@@ -97,7 +97,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 //  std::normal_distribution<double> distribution (0.0,1.0);
 
 //    vnorm = 0.0;
-    printf("SNe.cpp -- distr %d sigma %g vnorm %g\n",p->kick_distribution,p->kick_distribution_sigma,vnorm);
+    printf("SNe.cpp -- i %d apply_kick %d distr %d sigma %g vnorm %g\n",p->index,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma,vnorm);
     *vx *= vnorm;
     *vy *= vnorm;
     *vz *= vnorm;

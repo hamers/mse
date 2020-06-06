@@ -290,10 +290,10 @@ int test_collisions()
             //if (i>5 and i<12 or j>5 and j<12)
             if (i!= 1 or j!= 4)
             {
-                continue;
+            //    continue;
             }
             flag = test_collision_stars(10.0,i,13,j,0);
-            flag = test_collision_stars(10.0,i,13,j,1);
+            //flag = test_collision_stars(10.0,i,13,j,1);
             
         }
     }
@@ -369,8 +369,8 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
         particlesMap[0]->Collision_Partner = 1;
         particlesMap[1]->Collision_Partner = 0;
     }
-    
-    handle_collisions(&particlesMap,&integration_flag);
+
+    handle_collisions(&particlesMap,t,&integration_flag);
     //printf("pre s %d\n",particlesMap.size());
     //collision_product(&particlesMap, 4, 0, 1, &integration_flag);
     //printf("post s %d b %d %g r %g\n",particlesMap.size(),particlesMap[2]->is_binary,particlesMap[2]->mass,particlesMap[2]->radius);

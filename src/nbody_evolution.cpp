@@ -40,7 +40,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     {
         printf("COL\n");
         
-        handle_collisions_nbody(R, particlesMap, integration_flag);
+        handle_collisions_nbody(R, particlesMap, t, integration_flag);
         *integration_flag = 1; // continue with direct N-body after the collision, at least initially
 
         free_data(R);
@@ -110,7 +110,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     return; // &new_particlesMap;
 }
 
-void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, int *integration_flag)
+void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, double t, int *integration_flag)
 {
 
     int i,j,k;
@@ -161,7 +161,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         
     }
     //collision_product(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
-    handle_collisions(particlesMap,integration_flag);
+    handle_collisions(particlesMap,t,integration_flag);
     
 }
 

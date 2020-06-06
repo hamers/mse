@@ -43,7 +43,10 @@ class test_mse():
         
         N_bodies=3
         
-        particles = Tools.create_nested_multiple(N_bodies, [31.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        particles = Tools.create_nested_multiple(N_bodies, [40.0,14.8,8.5],[30.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        
+        
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,3.5,2.0],[35.0,400.0,5000.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
@@ -62,10 +65,6 @@ class test_mse():
 
        #     orbit.include_tidal_friction_terms = False
 
-        for b in bodies:
-            b.kick_distribution_sigma = 0.0
-       #     b.metallicity = 0.02
-       #     b.include_tidal_friction_terms = True
 
                 
         code = MSE()
@@ -78,6 +77,13 @@ class test_mse():
         #print 'a',orbits[0].a
         code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
         code.flybys_encounter_sphere_radius = 1.0e5
+
+
+        for b in bodies:
+            b.kick_distribution_sigma = 0*265.0*code.CONST_KM_PER_S
+       #     b.metallicity = 0.02
+       #     b.include_tidal_friction_terms = True
+
 
 
         t_print = [[]]
@@ -102,7 +108,7 @@ class test_mse():
         tend = 1e10
 
         N =10000
-        tend = 1e9
+        tend = 1e8
         #tend = 1.4e10
 
         i_status = 0

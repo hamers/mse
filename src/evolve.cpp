@@ -177,7 +177,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             {
                 printf("Collision/merger\n");
                 *CVODE_flag = 0;
-                handle_collisions(particlesMap,integration_flag);
+                handle_collisions(particlesMap, t, integration_flag);
                 //break;
             }
             else
@@ -296,6 +296,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
     }
     printf("end of evolve\n");
+    print_system(particlesMap,*integration_flag);
+    
     *output_time = t;
     *hamiltonian = 0.0;
     //*output_flag = 0;

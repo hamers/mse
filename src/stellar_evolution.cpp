@@ -314,9 +314,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             double desired_tphysf = tphysf;
             
             dtp = 0.0;
-            //#ifdef DEBUG
+            #ifdef DEBUG
             printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
-            //#endif
+            #endif
             //printf("Sx %g Sy %g Sz %g\n",p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             if (get_timestep_only == true)
             {
@@ -327,7 +327,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             }
             else
             {
-                printf("INPUT %d %g %g %g %g %g %g \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp);
+                #ifdef DEBUG
+                printf("stellar_evolution.cpp -- INPUT evolv1_ kw %d m0 %.15f mt %.15f epoch %.15f tphys %.15f tphysf %.15f dtp %.15f z %.15f zpars[0] %.15f \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp,z,zpars[0]);
+                #endif
                 evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
 
                 if (tphysf != desired_tphysf)
@@ -337,9 +339,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                 age = tphysf - epoch;
                 sse_time_step = get_new_dt(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
-                //#ifdef DEBUG
+                #ifdef DEBUG
                 printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
-                //#endif
+                #endif
 
                 /* Write new stellar evolution parameters */
                 if (kw_old==kw or kw < 13)

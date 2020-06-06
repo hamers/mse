@@ -2109,6 +2109,10 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
     int i_col;
 
+    int i_print;
+    double N_print=100.0;
+    double f_time;
+    
     do {
 
         do {
@@ -2208,11 +2212,18 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     R->Hstep = R->U * (time_interval - time);
                 }
 
-
+                //printf("MSTAR -- time %g \n",time);
                 if (time < 0.0)
                 {
                     printf("MSTAR -- WARNING time = %g < 0!\n",time);
                 }
+                f_time = time/time_interval;
+                if ( ((int) (f_time*N_print) ) == i_print)
+                {
+                    printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0);
+                    i_print+=1;
+                }
+                
                 //printf("t %g\n",time);
 
                 /* Collision detection */
@@ -2236,6 +2247,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     
                     if (i_col > 100) /* The collision was probably not real; give up */
                     {
+                        printf("MSTAR -- giving up possible collision; i_col %d; new Hstep %g\n",i_col,R->Hstep);
                         possible_collision = 0;
                         R->Hstep = R->U * dt;
                         i_col = 0;

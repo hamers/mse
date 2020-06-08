@@ -168,5 +168,6 @@ int determine_compact_object_merger_properties_interface(double m1, double m2, d
     double *alpha_vec_final_x, double *alpha_vec_final_y, double *alpha_vec_final_z, \
     double *M_final);
 
+int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, double *vy, double *vz);
 
 }

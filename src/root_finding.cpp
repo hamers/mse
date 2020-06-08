@@ -46,7 +46,7 @@ int root_finding_functions(realtype time, N_Vector y, realtype *root_functions, 
                 compute_EOM_Newtonian_for_particle(particlesMap,P_p,&hamiltonian,&KS_V,false);
                 
                 double AM_time_scale = compute_AM_time_scale(P_p);
-                double orbital_period = compute_orbital_period(P_p);
+                double orbital_period = compute_orbital_period_from_semimajor_axis(P_p->mass,P_p->a);
                 root_functions[i_root] = 1.0 - AM_time_scale/orbital_period;
 
                 i_root++;

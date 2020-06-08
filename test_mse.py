@@ -1540,6 +1540,49 @@ class test_mse():
 
             pyplot.show()
         
+    def test102(self,args):
+        print('Test sample Maxwellian distribution')
+        
+        code = MSE()
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+        
+        N = 20000
+        
+
+        seed = 0
+        #code.random_seed = seed
+        np.random.seed(seed)
+        
+        vs = []
+        sigma=265.0*code.CONST_KM_PER_S
+        for index in range(N):
+            vx,vy,vz = code.test_sample_from_3d_maxwellian_distribution(sigma)
+            v = np.array([vx,vy,vz])
+            vs.append(np.linalg.norm(v))
+                    
+        assert(round(np.mean(np.array(vs)),1) == round(2.0*sigma*np.sqrt(2.0/np.pi),1))
+        
+        if args.verbose==True:
+            print("mean vs/(km/s)",np.mean(np.array(vs)),2.0*sigma*np.sqrt(2.0/np.pi))
+        
+        if args.plot == True:
+            Nb=100
+            fontsize=20
+            from matplotlib import pyplot
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1)
+            plot.hist(vs,bins=np.linspace(0.0,500.0,Nb),histtype='step',density=True)
+            plot.set_xlabel("$v/\mathrm{km/s}$",fontsize=fontsize)
+            
+            points=np.linspace(0.0,500.0,1000)
+            PDF_an = np.sqrt(2.0/np.pi) * (points**2/(sigma**3)) * np.exp( -points**2/(2.0*sigma**2) )
+            plot.plot(points,PDF_an, color='tab:green')
+
+            pyplot.show()
+        
+        
    
 def sample_random_vector_on_unit_sphere():
     INCL = np.arccos( 2.0*np.random.random() - 1.0)

@@ -43,8 +43,11 @@ class test_mse():
         
         N_bodies=3
         
+        #particles = Tools.create_nested_multiple(N_bodies, [40.0,14.8,8.5],[30.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        particles = Tools.create_nested_multiple(N_bodies, [40.0,14.8,8.5],[30.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        
+        particles = Tools.create_nested_multiple(N_bodies, [40.0,14.5,7.5],[20.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
@@ -201,18 +204,20 @@ class test_mse():
             plot3=fig.add_subplot(Np,1,3,yscale="linear")
             
             colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
+            linewidth=1.0
             for i_status in range(N_status):
-                color = colors[i_status]
+                #color = colors[i_status]
                 N_bodies = N_bodies_status[i_status]
                 N_orbits = N_orbits_status[i_status]
 
                 
                 
-                linewidth=1.0
                 
-                plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color=color,linestyle='dotted',linewidth=linewidth)
+                
+                plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
                 
                 for index in range(N_bodies):
+                    color = colors[index]
                     plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
                     plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
                     plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
@@ -221,16 +226,20 @@ class test_mse():
                     #if index in [0,1]:
                         #plot2.plot(1.0e-6*t_print,R_L_print[index],color='g',linestyle='dotted',linewidth=linewidth)
                     #plot3.plot(1.0e-6*t_print,t_V_print[index],color='k',linestyle='solid',linewidth=linewidth)
-                    linewidth+=0.8
+                    #linewidth+=0.8
                     
                 linewidth=1.0
                 for index in range(N_orbits):
+                    color = colors[index]
                     smas = np.array(a_print[i_status][index])
                     es = np.array(e_print[i_status][index])
                     plot2.plot(1.0e-6*t_print[i_status],smas,color=color,linestyle='dotted',linewidth=linewidth)
                     plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
                     #plot3.plot(1.0e-6*t_print,(180.0/np.pi)*rel_INCL_print[index],color='k',linestyle='solid',linewidth=linewidth)
-                    linewidth+=0.8
+                
+                linewidth+=0.8
+
+
 
             fontsize=18
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
@@ -238,7 +247,7 @@ class test_mse():
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
             plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)
-            fig.savefig("test2.pdf")
+            fig.savefig("test1.pdf")
             pyplot.show()
 
 

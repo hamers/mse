@@ -41,7 +41,12 @@
  *     #define SUNDIALS_DOUBLE_PRECISION 1
  *     #define SUNDIALS_EXTENDED_PRECISION 1
  */
-#define SUNDIALS_DOUBLE_PRECISION 1
+ 
+//#ifdef CVODE_EXTENDED_PRECISION
+    #define SUNDIALS_EXTENDED_PRECISION 1
+//#else
+//    #define SUNDIALS_DOUBLE_PRECISION 1
+//#endif
 
 /* Use generic math functions 
  * If it was decided that generic math functions can be used, then

@@ -132,7 +132,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
         b = (*particlesMap)[binary_index];
 
-        n_old = 2.0*M_PI/compute_orbital_period(b); /* mean motion just prior to collision */
+        n_old = 2.0*M_PI/compute_orbital_period_from_semimajor_axis(m,b->a); /* mean motion just prior to collision */
         get_unit_vector(b->h_vec,h_vec_unit);
         get_unit_vector(b->e_vec,e_vec_unit);
     }
@@ -151,6 +151,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         from_cartesian_to_orbital_vectors(m1,m2,r,v,e_vec,h_vec,&true_anomaly);
         get_unit_vector(h_vec,h_vec_unit);
         get_unit_vector(e_vec,e_vec_unit);
+        double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+        double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
+        n_old = 2.0*M_PI/P_old;
     }
     
     int kw = determine_merger_type(child1->stellar_type,child2->stellar_type);
@@ -164,12 +167,20 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     double tm1 = child1->sse_main_sequence_timescale*yr_to_Myr;
     double tm2 = child2->sse_main_sequence_timescale*yr_to_Myr;
 
-    double chi1 = child1->chi;
-    double chi2 = child2->chi;
-    
-    double *spin_vec_1_unit = child1->spin_vec_unit;
-    double *spin_vec_2_unit = child2->spin_vec_unit;
+    double *spin_vec_1 = child1->spin_vec;
+    double *spin_vec_2 = child2->spin_vec;
 
+    double spin_vec_1_norm = norm3(spin_vec_1);
+    double spin_vec_2_norm = norm3(spin_vec_2);
+
+    /* Spin parameters for NS/BHs */
+    double chi1 = compute_spin_parameter_from_spin_frequency(m1, spin_vec_1_norm);
+    double chi2 = compute_spin_parameter_from_spin_frequency(m2, spin_vec_2_norm);
+    double spin_vec_1_unit[3],spin_vec_2_unit[3];
+    get_unit_vector(spin_vec_1, spin_vec_1_unit);
+    get_unit_vector(spin_vec_2, spin_vec_2_unit);
+
+    /* Properties of merged object */
     double m0,mc,age,t_MS;
     age = -1;
     m0 = -1;
@@ -320,7 +331,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     else if (kw1 >= 13 and kw1 <= 14 and kw2 >= 10 and kw2 <= 14)
     {
         double v_recoil_vec[3];
-        determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,b->h_vec_unit,b->e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
+        determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
         m = M_final;
         //apply_kick = true;
                 
@@ -340,6 +351,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         {
             kw = 14;
         }
+        
+        printf("kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14 m %g chi %g Omega %g v_k %g %g %g spin %g %g %g\n",m,chi,Omega,v_recoil_vec[0],v_recoil_vec[1],v_recoil_vec[2],spin_vec[0],spin_vec[1],spin_vec[2]);
         //if (kw1 == 13 and kw2 == 13)
         //{
             //apply_kick = true;
@@ -349,7 +362,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14)
     {
         double v_recoil_vec[3];
-        determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,b->h_vec_unit,b->e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
+        determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
         m = M_final;
         //apply_kick = true;
                 
@@ -519,7 +532,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             {
                 child1->R_vec[i] = initial_R_CM[i];
                 child1->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
+                
+                child1->V_vec[i] += v_kick_vec[i]; /* apply possible kick */
             }
+
 
             /* Unless calculated above, set the spin equal to the orbital frequency just before collision
              * Assume the direction is equal to the previous orbital orientation. */

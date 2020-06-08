@@ -498,7 +498,7 @@ double determine_longest_orbital_period_in_system(ParticlesMap *particlesMap)
         Particle *p = (*it_p).second;
         if (p->level==0) /* lowest-level binary */
         {
-            P_orb = compute_orbital_period(p);
+            P_orb = compute_orbital_period_from_semimajor_axis(p->mass,p->a);
             break;
         }
     }
@@ -516,7 +516,7 @@ double determine_shortest_orbital_period_in_system(ParticlesMap *particlesMap)
         Particle *p = (*it_p).second;
         if (p->is_binary == true)
         {
-            P_orb = compute_orbital_period(p);
+            P_orb = compute_orbital_period_from_semimajor_axis(p->mass,p->a);
             if (P_orb < P_orb_min)
             {
                 P_orb_min = P_orb;

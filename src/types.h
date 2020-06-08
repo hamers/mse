@@ -6,7 +6,7 @@
 
 extern "C"
 {
-
+#define CVODE_EXTENDED_PRECISION
  
 //#define VERBOSE
  

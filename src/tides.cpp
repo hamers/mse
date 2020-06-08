@@ -308,7 +308,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double j_p4_inv = 1.0/j_p4; 
     double j_p10_inv = 1.0/j_p10; 
     double j_p13_inv = 1.0/j_p13;
-    double P_orb = compute_orbital_period(binary);
+    double P_orb = compute_orbital_period_from_semimajor_axis(binary->mass,binary->a);
     double n = 2.0*M_PI/P_orb; /* mean motion */
 
     /* stellar properties */
@@ -511,7 +511,7 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
     double j_p4_inv = 1.0/j_p4;
     double j_p10_inv = 1.0/j_p10; 
     double j_p13_inv = 1.0/j_p13;
-    double P_orb = compute_orbital_period(binary);
+    double P_orb = compute_orbital_period_from_semimajor_axis(binary->mass,binary->a);
     double n = 2.0*M_PI/P_orb; /* mean motion */
     
     /* stellar properties */

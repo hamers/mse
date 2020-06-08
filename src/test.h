@@ -3,6 +3,7 @@ extern "C"
 {
 
 int test_tools();
+int test_a_P_orb_conversion();
 int test_a_h_conversion();
 int test_orbital_element_conversion();
 int test_kepler_equation_solver();

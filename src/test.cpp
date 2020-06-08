@@ -9,11 +9,32 @@ extern "C"
 int test_tools()
 {
     int flag = 0;
+    flag += test_a_P_orb_conversion();
     flag += test_a_h_conversion();
     flag += test_orbital_element_conversion();
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
     
+    return flag;
+}
+
+int test_a_P_orb_conversion()
+{
+    printf("test.cpp -- test_a_P_orb_conversion\n");
+    
+    double a = 1.0;
+    double m = 2.0;
+    
+    double P = compute_orbital_period_from_semimajor_axis(m,a);
+    double an = compute_semimajor_axis_from_orbital_period(m,P);
+
+    double tol = 1.0e-15;
+    int flag = 0;
+    if ( !equal_number(a,an,tol) )
+    {
+        printf("test.cpp -- error in test_a_P_orb_conversion!\n");
+        flag = 1;
+    }
     return flag;
 }
 
@@ -288,9 +309,9 @@ int test_collisions()
             printf("i %d j %d\n",i,j);
             //if (i!=1 or j!=4)
             //if (i>5 and i<12 or j>5 and j<12)
-            if (i!= 1 or j!= 4)
+            if (i!= 6 or j!= 7)
             {
-            //    continue;
+                continue;
             }
             flag = test_collision_stars(10.0,i,13,j,0);
             //flag = test_collision_stars(10.0,i,13,j,1);

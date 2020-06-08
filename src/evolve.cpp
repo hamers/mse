@@ -39,11 +39,11 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 //    zcnsts_(&z,zpars);
 
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    if (*integration_flag == 0)
+    //if (*integration_flag == 0)
     {
-        determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-        printf("pre evolve %d %d %d %d\n",N_bodies,N_binaries,N_root_finding,N_ODE_equations);
-        print_system(particlesMap,*integration_flag);
+        //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
+        printf("beginning of evolve start_time %g  end_time  %g %d %d %d %d\n",start_time,end_time,N_bodies,N_binaries,N_root_finding,N_ODE_equations);
+        //print_system(particlesMap,*integration_flag);
     }
 
     if (start_time == end_time)
@@ -287,16 +287,16 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     
   //if (*integration_flag == 0)
     {
-        int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
-        determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);
-        if (N_binaries != N_binaries_new and *integration_flag == 0)
+        //int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
+        //determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);
+        //if (N_binaries != N_binaries_new and *integration_flag == 0)
         {
-            printf("Restructuring of system! %d %d\n",N_binaries,N_binaries_new);
-            *state = 1;
+        //    printf("Restructuring of system! %d %d\n",N_binaries,N_binaries_new);
+            //*state = 1;
         }
     }
     printf("end of evolve\n");
-    print_system(particlesMap,*integration_flag);
+    //print_system(particlesMap,*integration_flag);
     
     *output_time = t;
     *hamiltonian = 0.0;
@@ -442,7 +442,7 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     
 	//double user_end_time = start_time + time_step;
     double user_end_time = end_time;
-	double integrator_end_time;
+	realtype integrator_end_time;
 
 	flag = CVode(cvode_mem, user_end_time, y_out, &integrator_end_time, CV_NORMAL);	
 
@@ -641,7 +641,7 @@ int integrate_ODE_system_old(ParticlesMap *particlesMap, double start_time, doub
      **************************/ 
     
 	//double user_end_time = end_time;
-	double CVODE_reached_end_time;
+	realtype CVODE_reached_end_time;
 
 	flag = CVode(cvode_mem, CVODE_end_time, y_out, &CVODE_reached_end_time, CV_NORMAL);	
     double reached_end_time = CVODE_reached_end_time + CVODE_time_offset;

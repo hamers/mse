@@ -41,12 +41,8 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     double epsilon_MT = 0.01;
     double dt_temp;
 
-    //int kw1=8;
-    //int kw2=11;
-    //int knew = ktype_(&kw1,&kw2) - 100;
-    //int knew = ktype_(&kw1,&kw2) - 100;
-    //int knew = determine_merger_type(kw1,kw2);
-    //printf("knew %d\n",);
+    //printf("handle_mass_transfer -- start\n");
+    //print_system(particlesMap,*integration_flag);
 
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -61,40 +57,13 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
             if (donor->RLOF_flag == 1)
             {
                 int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution);
-
-                #ifdef IGNORE
-                if (flag == 1)
-                {
-                    dt_temp = compute_orbital_period(parent);
-                    common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
-                }
-                else /* TO DO: include low-mass dynamical mass transfer case (evolv2.f: lines 1150 - 1233 */
-                {
-                   dt_temp = compute_orbital_period(parent); /* TO DO: change this to something more appropriate */
-                    compute_stable_mass_transfer_properties(particlesMap, parent->index, donor->index, accretor->index, integration_flag);
-                }
-                
-                //dt_temp = epsilon_MT*fabs(donor->mass/donor->mass_dot_RLOF);
-                //printf("0 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
-                *dt_binary_evolution = min(*dt_binary_evolution, dt_temp);
-                //printf("1 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
-                *dt_binary_evolution = max(*dt_binary_evolution, min_dt);
-                //printf("2 dt_temp %g *dt_binary_evolution %g\n",dt_temp,*dt_binary_evolution);
-                //printf("fm %g M_dot %g dt_MT %g \n",fm,donor->mass_dot_RLOF,*dt_binary_evolution);
-                #ifdef VERBOSE
-                printf("fm %g M_dot %g dt_MT %g \n",fm,donor->mass_dot_RLOF,*dt_binary_evolution);
-                #endif
-    //printf("e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
-                
-                #endif
-                
             }
         }
 
     }
-
+    //printf("1\n");
     update_structure(particlesMap);
-    
+    //printf("2\n");
     return 0;
     
 }
@@ -126,13 +95,15 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 
 int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)
 {
+    printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
+    
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
     
     int flag = -1;
     
-    double P_orb = compute_orbital_period(parent);
+    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double M_donor = donor->mass;
     double M_accretor = accretor->mass;
 
@@ -222,7 +193,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
 //    donor->mass_dot_RLOF = 0.0;
 //    accretor->mass_dot_RLOF = 0.0;
     
-    double P_orb = compute_orbital_period(parent);
+    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double m_donor = donor->mass;
     double m_accretor = accretor->mass;
     double m_accretor_new;
@@ -419,7 +390,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
 //    donor->mass_dot_RLOF = 0.0;
 //    accretor->mass_dot_RLOF = 0.0;
 
-    double P_orb = compute_orbital_period(parent);
+    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double m_donor = donor->mass;
     double m_accretor = accretor->mass;
 
@@ -572,7 +543,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 * Note units in SSE/BSE: length in RSUN, time in Myr, luminosity in LSun
 */
 
-    printf("CE binary_index %d index1 %d index2 %d\n",binary_index,index1,index2);
+    printf("binary_evolution.cpp -- common_envelope_evolution -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
     int i;
 
     Particle *star1 = (*particlesMap)[index1];
@@ -1382,13 +1353,13 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             binary->zpars = zpars_new;
 
             /* Set the spin equal to the orbital frequency just before coalescence (previously calculated as OORB).
-             * Assume the direction is equal to the previous orbital orientation. */
+             * Assume the direction is equal to the orbital direction before coalescence. */
 
             for (int i=0; i<3; i++)
             {
-                binary->spin_vec[i] = OORB * spin_vec_unit[i];
+                binary->spin_vec[i] = OORB * h_vec_unit[i];
             }
-            
+            printf("OORB %g S %g %g %g\n",OORB,binary->spin_vec[0],binary->spin_vec[1],binary->spin_vec[2]);
             binary->apply_kick = true; /* Default value for (stellar evolution) bodies */
             binary->RLOF_flag = 0;
             
@@ -1397,7 +1368,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             if (unbound_orbits == true)
             {
                 *integration_flag = 5;
-                printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+                printf("binary_evolution.cpp -- common_envelope_evolution -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
             }
         }
         else
@@ -1431,9 +1402,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
             for (int i=0; i<3; i++)
             {
-                star1->spin_vec[i] = OORB * spin_vec_unit[i];
+                star1->spin_vec[i] = OORB * h_vec_unit[i];
             }
-            
+
             star1->apply_kick = true; /* Default value for (stellar evolution) bodies */
             star1->RLOF_flag = 0;
             //double t = 0.0;
@@ -1452,6 +1423,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     }
 
     } // end of label30
+
+    printf("binary_evolution.cpp -- common_envelope_evolution -- end\n");
+    print_system(particlesMap,*integration_flag);
 
     return 1;
 }
@@ -1493,7 +1467,7 @@ void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap)
         b->delta_m_adiabatic_mass_loss = 0.0;
         if (b->is_binary == true)
         {
-            b->P_orb_adiabatic_mass_loss = compute_orbital_period(b);
+            b->P_orb_adiabatic_mass_loss = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
             b->child1_mass_adiabatic_mass_loss = b->child1_mass;
             b->child2_mass_adiabatic_mass_loss = b->child2_mass;
             for (i=0; i<3; i++)
@@ -1678,7 +1652,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 //    donor->mass_dot_RLOF = 0.0;
 //    accretor->mass_dot_RLOF = 0.0;
    
-    double P_orb = compute_orbital_period(parent);
+    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double m_donor = donor->mass;
     double m_accretor = accretor->mass;
 

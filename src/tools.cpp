@@ -6,11 +6,15 @@
 extern "C"
 {
 
-double compute_orbital_period(Particle *particle)
+double compute_orbital_period_from_semimajor_axis(double M, double a)
 {
-	double a = particle->a;
-	double total_mass = particle->child1_mass_plus_child2_mass;
-	return 2.0*M_PI*sqrt(a*a*a/(CONST_G*total_mass));
+	return 2.0*M_PI*sqrt(a*a*a/(CONST_G*M));
+}
+
+double compute_semimajor_axis_from_orbital_period(double M, double P)
+{
+    double temp = P/(2.0*M_PI);
+    return pow( temp*temp* CONST_G*M, 1.0/3.0);
 }
 
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3])
@@ -675,7 +679,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             {
                 if (p->evolve_as_star == true)
                 {
-                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity);
+                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g Spin_freq %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,norm3(p->spin_vec));
                 }
                 else
                 {
@@ -698,7 +702,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             {
                 if (p->evolve_as_star == true)
                 {
-                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g Spin_freq %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2],norm3(p->spin_vec));
                 }
                 else
                 {

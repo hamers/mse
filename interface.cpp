@@ -435,7 +435,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
 
 int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma)
 {
-    printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
+    //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
     {
 //      return -1;
@@ -1028,6 +1028,17 @@ int determine_compact_object_merger_properties_interface(double m1, double m2, d
     *alpha_vec_final_x = alpha_vec_final[0];
     *alpha_vec_final_y = alpha_vec_final[1];
     *alpha_vec_final_z = alpha_vec_final[2];
+    
+    return 0;
+}
+
+int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, double *vy, double *vz)
+{
+    double v[3];
+    sample_from_3d_maxwellian_distribution(sigma,v);
+    *vx = v[0];
+    *vy = v[1];
+    *vz = v[2];
     
     return 0;
 }

@@ -560,7 +560,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                     printf("New binary %d C1 %d C2 %d a %g e %g TA %g M %g\n",b->index,p1->index,p2->index,a,e,true_anomaly,M);
                     
                     b->child1_mass_plus_child2_mass = M;
-                    P_orb = compute_orbital_period(b);
+                    P_orb = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
                     if (P_orb > *P_orb_max)
                     {
                         *P_orb_max = P_orb;
@@ -792,7 +792,7 @@ void analyze_mstar_system2(struct RegularizedRegion *R)
                         printf("New binary %d C1 %d C2 %d a %g e %g\n",b->index,p1->index,p2->index,a,e);
                         
                         b->child1_mass_plus_child2_mass = M;
-                        P_orb = compute_orbital_period(b);
+                        P_orb = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
                         if (P_orb > P_orb_max)
                         {
                             P_orb_max = P_orb;

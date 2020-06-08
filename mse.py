@@ -250,6 +250,8 @@ class MSE(object):
             ctypes.POINTER(ctypes.c_double) )
         self.lib.determine_compact_object_merger_properties_interface.restype = ctypes.c_int
 
+        self.lib.sample_from_3d_maxwellian_distribution_interface.argtypes = (ctypes.c_double, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double) )
+        self.lib.sample_from_3d_maxwellian_distribution_interface.restype = ctypes.c_int
 
     ###############
     
@@ -647,6 +649,12 @@ class MSE(object):
 
         return v_recoil_vec,alpha_vec_final,M_final
         
+    def test_sample_from_3d_maxwellian_distribution(self,sigma):
+        vx,vy,vz = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        self.lib.sample_from_3d_maxwellian_distribution_interface(sigma,ctypes.byref(vx),ctypes.byref(vy),ctypes.byref(vz))
+        vx,vy,vz = vx.value, vy.value, vz.value
+        return vx,vy,vz
+
     ### Constants ###
     @property
     def CONST_G(self):

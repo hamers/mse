@@ -209,6 +209,10 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 P_p->child2_mass_dot_wind_accretion = P_p_child2->mass_dot_wind_accretion;
                 P_p->mass_dot_wind_accretion = P_p->child1_mass_dot_wind_accretion + P_p->child2_mass_dot_wind_accretion;
 
+                P_p->child1_mass_dot_adiabatic_ejection = P_p_child1->mass_dot_adiabatic_ejection;
+                P_p->child2_mass_dot_adiabatic_ejection = P_p_child2->mass_dot_adiabatic_ejection;
+                P_p->mass_dot_adiabatic_ejection = P_p->child1_mass_dot_adiabatic_ejection + P_p->child2_mass_dot_adiabatic_ejection;
+
                 P_p->child1_mass_plus_child2_mass = P_p->child1_mass + P_p->child2_mass;
                 P_p->child1_mass_minus_child2_mass = P_p->child1_mass - P_p->child2_mass;
                 P_p->child1_mass_times_child2_mass = P_p->child1_mass*P_p->child2_mass;
@@ -218,6 +222,8 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 P_p->delta_child1_mass_adiabatic_mass_loss = P_p_child1->delta_m_adiabatic_mass_loss;
                 P_p->delta_child2_mass_adiabatic_mass_loss = P_p_child2->delta_m_adiabatic_mass_loss;
                 P_p->delta_m_adiabatic_mass_loss = P_p->delta_child1_mass_adiabatic_mass_loss + P_p->delta_child2_mass_adiabatic_mass_loss;
+
+
                 
                 #ifdef DEBUG
                 printf("structure.cpp -- set_binary_masses_from_body_masses -- level %d m %g highest_level %d\n",level,P_p->mass,highest_level);

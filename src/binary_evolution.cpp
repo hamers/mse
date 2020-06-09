@@ -44,26 +44,37 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     //printf("handle_mass_transfer -- start\n");
     //print_system(particlesMap,*integration_flag);
 
+    std::vector<int> parent_indices,donor_indices,accretor_indices;
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
-
         Particle *donor = (*it_p).second;
-        //printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
+
+//        printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
         if (donor->is_binary == false and donor->is_bound == true)
         {
             donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
             
             if (donor->RLOF_flag == 1)
             {
-                int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution);
+                parent_indices.push_back(donor->parent);
+                donor_indices.push_back(donor->index);
+                accretor_indices.push_back(donor->sibling);
+                //int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution);
             }
         }
 
     }
-    //printf("1\n");
+    
+    //std::vector<int>::iterator it;
+    //for (it = parent_indices.begin(); it != parent_indices.end(); it++)
+    for (int i=0; i<parent_indices.size(); i++)
+    {
+        printf("HMT %d %d %d\n",parent_indices[i], donor_indices[i], accretor_indices[i]);
+        int flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
+    }
+    
     update_structure(particlesMap);
-    //printf("2\n");
     return 0;
     
 }
@@ -1656,21 +1667,13 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     double m_donor = donor->mass;
     double m_accretor = accretor->mass;
 
+    double q = m_donor/m_accretor;
+
     double R_donor = donor->radius;
     double R_accretor = accretor->radius;
 
     double m_old = m_donor + m_accretor;
 
-    double fm = donor->fm;
-    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb); /* NOTE: ignoring mass transfer rates as calculated in BSE */
-
-    double dt = t - t_old;
-    double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
-    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
-    
-    double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
-    double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
-     
     int kw1 = donor->stellar_type;
     int kw2 = accretor->stellar_type;
 
@@ -1678,7 +1681,108 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     double t_KH_accretor = compute_Kelvin_Helmholtz_timescale(kw2,m_accretor,accretor->core_mass,R_accretor,accretor->luminosity);
 
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
+    double a = parent->a;
+    double e = parent->e;
+    double rp = a*(1.0-e);
+    
+//    double fm = donor->fm;
+//    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb); /* NOTE: ignoring mass transfer rates as calculated in BSE */
+    
+    double dt = t - t_old;
+    //double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
+    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
 
+
+    /* Default value of dm1 -- transferred mass during this time-step */
+    double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
+    double m_fac = min(m_donor, 5.0);
+    m_fac *= m_fac;
+
+    double log_fac = log(R_donor/R_RL_av_donor);
+    double dm1 = fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
+    
+    if (kw1 == 2)
+    {
+        double mew = (m_donor - donor->core_mass)/m_donor;
+        dm1 = max(mew,0.01) * dm1;
+    }
+    else if (kw1 == 10)
+    {
+        //dm1 = 1.0e3*dm1 / max(R_donor/CONST_R_SUN, 1.0e-4);
+        dm1 = 1.0e3*dm1 * m_donor/max(R_donor/CONST_R_SUN,1.0e-4);
+    }
+    
+    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */
+    {
+        dm1 = min(dm1, m_donor * dt/t_KH_donor);
+    }
+    else /* Limit to dynamical rate for other cases. NOTE ASH: ignore for now the case "rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc" */
+    {
+        dm1 = min(dm1, m_donor * dt/t_dyn_donor);
+    }
+
+    printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
+    //exit(0);
+#ifdef IGNORE
+*
+* Mass transfer in one Kepler orbit.
+*
+         dm1 = 3.0d-06*tb*(LOG(rad(j1)/rol(j1))**3)*
+     &         MIN(mass(j1),5.d0)**2
+         if(kstar(j1).eq.2)then
+            mew = (mass(j1) - massc(j1))/mass(j1)
+            dm1 = MAX(mew,0.01d0)*dm1
+         elseif(kstar(j1).ge.10)then
+*           dm1 = dm1*1.0d+03/MAX(rad(j1),1.0d-04)
+            dm1 = dm1*1.0d+03*mass(j1)/MAX(rad(j1),1.0d-04)
+         endif
+         kst = kstar(j2)
+*
+* Possibly mass transfer needs to be reduced if primary is rotating 
+* faster than the orbit (not currently implemented). 
+*
+*        spnfac = MIN(3.d0,MAX(ospin(j1)/oorb,1.d0))
+*        dm1 = dm1/spnfac**2
+*
+* Limit mass transfer to the thermal rate for remaining giant-like stars
+* and to the dynamical rate for all others.
+*
+         if(kstar(j1).ge.2.and.kstar(j1).le.9.and.kstar(j1).ne.7)then
+***
+* JH_temp ... this may be good for HG RLOF??
+*           if(kstar(j1).eq.2)then
+*              mew = rad(j1)/rol(j1) - 1.d0
+*              mew = 2.d0*mew
+*              dm1 = dm1*10.d0**mew
+*           endif
+***
+            dm1 = MIN(dm1,mass(j1)*tb/tkh(j1))
+         elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.
+     &          kstar(j2).le.1.and.q(j1).gt.qc))then
+*
+* Allow the stars to merge with the product in *1.
+*
+            m1ce = mass(j1)
+            m2ce = mass(j2)
+            CALL mix(mass0,mass,aj,kstar,zpars)
+            dm1 = m1ce - mass(j1)
+            dm2 = mass(j2) - m2ce
+*
+* Next step should be made without changing the time.
+*
+            dtm = 0.d0
+            epoch(1) = tphys - aj(1)
+            coel = .true.
+            goto 135
+         else
+            dm1 = MIN(dm1,mass(j1)*tb/tdyn)
+         endif
+#endif
+
+    
+    double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
+    double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
+     
     double tms,tn;
     double *GB,*tscls,*lums;
     GB = new double[10];
@@ -1960,7 +2064,8 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 
     /* Assume that any mass not accreted is ejected from the accretor in an isotropic wind. -- TO DO: could the effect be instantaneous?
      * This somewhat mimics non-conservative mass transfer. */
-    accretor->mass_dot_wind += - (dm1 - dm2)/dt;
+    donor->mass_dot_adiabatic_ejection = 0.0;
+    accretor->mass_dot_adiabatic_ejection = - (dm1 - dm2)/dt;
 
     printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_wind %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_wind);
     print_system(particlesMap,*integration_flag);

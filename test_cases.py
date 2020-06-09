@@ -47,7 +47,7 @@ class test_mse():
         
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
-        particles = Tools.create_nested_multiple(N_bodies, [40.0,14.5,7.5],[20.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        particles = Tools.create_nested_multiple(N_bodies, [20.0,6.0,7.5],[10.0,600.0],[0.2,0.6],[0.0001,55.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
@@ -154,7 +154,7 @@ class test_mse():
                 i_status += 1
                 
             print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'as',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
-            print("bound",[x.is_bound for x in bodies])
+           # print("bound",[x.is_bound for x in bodies])
             
             for index in range(N_orbits):
                 rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)

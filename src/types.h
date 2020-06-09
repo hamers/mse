@@ -785,7 +785,7 @@ class Particle
     double e_vec_unit[3],h_vec_unit[3],q_vec_unit[3];
     double de_vec_dt[3],dh_vec_dt[3];
     double child1_mass_plus_child2_mass,child1_mass_minus_child2_mass,child1_mass_times_child2_mass;
-    double child1_mass_dot_wind,child2_mass_dot_wind,child1_mass_dot_wind_accretion,child2_mass_dot_wind_accretion;
+    double child1_mass_dot_wind,child2_mass_dot_wind,child1_mass_dot_wind_accretion,child2_mass_dot_wind_accretion,mass_dot_adiabatic_ejection,child1_mass_dot_adiabatic_ejection,child2_mass_dot_adiabatic_ejection;
     double e,e_p2;
     double j,j_p2,j_p3,j_p4,j_p5; // j=sqrt(1-e^2)
     double h,a;
@@ -897,6 +897,7 @@ class Particle
         mass_dot_wind = radius_dot = radius_ddot = ospin_dot = 0.0;
         child1_mass_dot_wind = child2_mass_dot_wind = 0.0;
         mass_dot_wind_accretion = child1_mass_dot_wind_accretion = child2_mass_dot_wind_accretion = 0.0;
+        mass_dot_adiabatic_ejection = child1_mass_dot_adiabatic_ejection = child2_mass_dot_adiabatic_ejection = 0.0;
         sse_main_sequence_timescale = 0.0;
                 
         /* RLOF */
@@ -914,7 +915,7 @@ class Particle
         /* CE */
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
-        common_envelope_timescale = 1.0e2;
+        common_envelope_timescale = 1.0e4;
         
         /* kicks */
         kick_distribution = 0;

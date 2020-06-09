@@ -35,8 +35,8 @@ int ODE_handle_stellar_winds(Particle *p)
     double m1 = p->child1_mass;
     double m2 = p->child2_mass;
 
-    double m1dot = p->child1_mass_dot_wind + p->child1_mass_dot_wind_accretion;
-    double m2dot = p->child2_mass_dot_wind + p->child2_mass_dot_wind_accretion;
+    double m1dot = p->child1_mass_dot_wind + p->child1_mass_dot_wind_accretion + p->child1_mass_dot_adiabatic_ejection;
+    double m2dot = p->child2_mass_dot_wind + p->child2_mass_dot_wind_accretion + p->child2_mass_dot_adiabatic_ejection;;
 
     factor_h_vec = m1dot/m1 + m2dot/m2 - (m1dot + m2dot)/(m1+m2);
     //factor_h_vec = p->child1_mass_dot_wind/p->child1_mass + p->child2_mass_dot_wind/p->child2_mass - (p->child1_mass_dot_wind + p->child2_mass_dot_wind)/p->child1_mass_plus_child2_mass; /* assuming constant SPECIFIC orbital angular momentum with mass loss, i.e. a(m1+m2)=const. */

@@ -368,7 +368,7 @@ void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
                 p->dspin_vec_dt[i] = p->ospin_dot * (p->spin_vec[i]/spin_vec_norm);
                 //p->dspin_vec_dt[i] = 0.0;
             }
-            p->dmass_dt = p->mass_dot_wind; //+ p->mass_dot_RLOF;
+            p->dmass_dt = p->mass_dot_wind + p->mass_dot_wind_accretion;
             p->dradius_dt = p->radius_dot + p->radius_ddot*delta_time;
             
             #ifdef DEBUG

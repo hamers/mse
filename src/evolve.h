@@ -1,6 +1,7 @@
 #include <math.h>
 #include <cstdlib>
 #include <map>
+#include <algorithm>
 
 #include "types.h"
 #include "../interface.h"

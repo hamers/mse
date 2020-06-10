@@ -28,11 +28,11 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
     print_system(particlesMap,*integration_flag);
 
-    printf("pre... dt %g\n",dt);
-    print_state(R);
+    //printf("pre... dt %g\n",dt);
+    //print_state(R);
     run_integrator(R, dt, &dt_reached, &collision_occurred);
-    printf("post\n");
-    print_state(R);
+    //printf("post\n");
+    //print_state(R);
 
     *t_out = t_old + dt_reached;
 
@@ -300,11 +300,11 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     double dt_reached;
     int collision_occurred;
     
-    dt_an = min(dt_an, maximum_analysis_time);
+    dt_an = CV_min(dt_an, maximum_analysis_time);
     //double dt_an = 0.001 * dt;
-    printf("analyze_mstar_system dt %g\n",dt_an);
+    //printf("analyze_mstar_system dt %g\n",dt_an);
     run_integrator(R, dt_an, &dt_reached, &collision_occurred);
-    printf("done int\n");
+    //printf("done int\n");
     //new_particlesMap.clear();
     //semimajor_axes.clear();
 
@@ -353,7 +353,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
         *stable_system = false;
     }
     
-    printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
+    //printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
     //printf("test %g\n",(new_particlesMap)[0]->metallicity);
     
     //return &particlesMap;
@@ -500,7 +500,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                 {
                     continue;
                 }
-                printf("is %d %d\n",p1->index,p2->index);
+                //printf("is %d %d\n",p1->index,p2->index);
                 m2 = p2->mass;
                 M = m1 + m2;
                 R2_vec = p2->R_vec;
@@ -557,7 +557,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                     b->child2 = p2->index;
                     
                     //found_new_orbit = true;
-                    printf("New binary %d C1 %d C2 %d a %g e %g TA %g M %g\n",b->index,p1->index,p2->index,a,e,true_anomaly,M);
+                    //printf("New binary %d C1 %d C2 %d a %g e %g TA %g M %g\n",b->index,p1->index,p2->index,a,e,true_anomaly,M);
                     
                     b->child1_mass_plus_child2_mass = M;
                     P_orb = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
@@ -587,7 +587,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                 Particle *p = (*it).second;
                 //p->index = particlesMap->size();
                 //p->index = (*particlesMap->end()).first + 1;
-                printf("p->index %d\n",p->index);
+                //printf("p->index %d\n",p->index);
                 
                 (*particlesMap)[p->index] = p;
                 //highest_new_particle_index++;
@@ -601,8 +601,8 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
 
 //    printf("%d\n",R->NumVertex);
     //printf("find binaries done!\n");
-    printf("done an\n");
-    print_system(particlesMap,1);
+    //printf("done an\n");
+    //print_system(particlesMap,1);
 }
 
 

@@ -45,9 +45,13 @@ class test_mse():
         
         #particles = Tools.create_nested_multiple(N_bodies, [40.0,14.8,8.5],[30.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
-        #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
-        particles = Tools.create_nested_multiple(N_bodies, [20.0,6.0,7.5],[10.0,600.0],[0.2,0.6],[0.0001,55.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
+        #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [25.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        
+        
+        #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
@@ -90,6 +94,7 @@ class test_mse():
 
 
         t_print = [[]]
+        internal_indices_print = [[[] for x in range(N_bodies)]]
         k_print = [[[] for x in range(N_bodies)]]
         m_print = [[[] for x in range(N_bodies)]]
         R_print = [[[] for x in range(N_bodies)]]
@@ -110,8 +115,8 @@ class test_mse():
         N = 10
         tend = 1e10
 
-        N =10000
-        tend = 1e8
+        N =5000
+        tend = 5e7
         #tend = 1.4e10
 
         i_status = 0
@@ -137,6 +142,7 @@ class test_mse():
                 print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
                 integration_flags.append([])
+                internal_indices_print.append([[] for x in range(N_bodies)])
                 k_print.append([[] for x in range(N_bodies)])
                 m_print.append([[] for x in range(N_bodies)])
                 R_print.append([[] for x in range(N_bodies)])
@@ -161,6 +167,8 @@ class test_mse():
                 e_print[i_status][index].append(orbits[index].e)
                 a_print[i_status][index].append(orbits[index].a)
             for index in range(N_bodies):
+                internal_indices_print[i_status][index].append(particles[index].index)
+                #print("T",index,internal_index)
                 m_print[i_status][index].append(particles[index].mass)
                 k_print[i_status][index].append(particles[index].stellar_type)
                 R_print[i_status][index].append(particles[index].radius)
@@ -217,7 +225,8 @@ class test_mse():
                 plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
                 
                 for index in range(N_bodies):
-                    color = colors[index]
+                    internal_index = internal_indices_print[i_status][index][0]
+                    color = colors[internal_index]
                     plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
                     plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
                     plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)

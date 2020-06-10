@@ -401,11 +401,11 @@ inline double D_TABLE_FUNC15_DER(double ep, double ep_p2, double ef, double ef_p
 #define __ODE_MACROS
     #define Ith(v,i)    NV_Ith_S(v,i-1)       		/* Ith numbers components 1..NEQ */
     #define IJth(A,i,j) DENSE_ELEM(A,i-1,j-1) 		/* IJth numbers rows,cols 1..NEQ */
-    #ifndef max
-        #define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+    #ifndef CV_max
+        #define CV_max( a, b ) ( ((a) > (b)) ? (a) : (b) )
     #endif
-    #ifndef min
-        #define min(X,Y) ((X) < (Y) ? (X) : (Y))
+    #ifndef CV_min
+        #define CV_min(X,Y) ((X) < (Y) ? (X) : (Y))
     #endif
 #endif
 

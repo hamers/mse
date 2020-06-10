@@ -480,9 +480,9 @@ double get_new_dt(int kw, double mass, double mt, double age, double dt, double 
     //dtm = std::min(dtr, dt);
     //dtm = std::max(dtm,1.0d-07*age);
 
-    dtm = min(dtr, dt);
-    dtm = max(dtm,1.0d-07*age);
-    dtm = max(dtm,1.0e-15);
+    dtm = CV_min(dtr, dt);
+    dtm = CV_max(dtm,1.0d-07*age);
+    dtm = CV_max(dtm,1.0e-15);
     //printf("gdt %g %g %g\n",dtr,dtm,dt);
     
     return dtm;

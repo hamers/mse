@@ -355,7 +355,7 @@ void compute_true_anomaly_from_mean_anomaly_hyperbolic_orbit(double mean_anomaly
     {
         double s1 = fabs_mean_anomaly/(eccentricity-1.0);
         double s2 = pow( 6.0*fabs_mean_anomaly, 1.0/3.0);
-        eccentric_anomaly_next = sign_mean_anomaly*min(s1,s2);
+        eccentric_anomaly_next = sign_mean_anomaly*CV_min(s1,s2);
     }
     else
     {

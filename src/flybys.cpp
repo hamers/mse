@@ -6,12 +6,17 @@
 extern "C"
 {
 
-int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound_orbits, int *integration_flag)
+int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integration_flag)
 {
    
     //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
 
     //printf("handle_next_flyby %d\n",initialize);
+
+    if (*integration_flag > 0)
+    {
+     //   return 0;
+    }
 
     int N_bound_subsystems = 0;
     ParticlesMapIterator it_p;
@@ -48,13 +53,14 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, bool *unbound
     }
 
     
+    bool unbound_orbits = false;
     if (initialize == false and apply_flyby == true)
     {
-        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, unbound_orbits, integration_flag);
+        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, &unbound_orbits, integration_flag);
         //printf("flybys.cpp -- compute_effects_of_flyby_on_system\n");
     }
 
-    if (*unbound_orbits == true)
+    if (unbound_orbits == true)
     {
         printf("flybys.cpp -- handle_next_flyby -- unbound orbits in system due to flyby!\n");
 //        *state = 4; /* TO DO: make general state macros */
@@ -215,26 +221,18 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 
 
         /* */
-        if (flybys_reference_binary != -1) /* Default value -1: use center of mass (keep R_vec and V_vec fixed) */
+        //if (flybys_reference_binary != -1) /* Default value -1: use center of mass (keep R_vec and V_vec fixed) */
         {
             Particle *p = (*particlesMap)[flybys_reference_binary];
-            double *r = p->R_vec;
-            double *v = p->V_vec;
-            #ifdef IGNORE
-            double r[3],v[3];
-            r[0] = p->X;
-            r[1] = p->Y;
-            r[2] = p->Z;
-            v[0] = p->VX;
-            v[1] = p->VY;
-            v[2] = p->VZ;
-            #endif
+            double *R_ref = p->R_vec;
+            double *V_ref = p->V_vec;
+
             for (k=0; k<3; k++)
             {
                 //printf("0 %g %g\n",r[k],v[k]);
                 //printf("1 %g %g \n",R_vec[k],V_vec[k]);
-                R_vec[k] -= r[k];
-                V_vec[k] -= v[k];
+                R_vec[k] -= R_ref[k];
+                V_vec[k] -= V_ref[k];
                 //printf("2 %g %g \n",R_vec[k],V_vec[k]);
             }
             
@@ -266,6 +264,8 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     {
         V_per_vec_unit[k] = V_per_vec[k]/V_per;
     }
+    //printf("FLY pre\n");
+    //print_system(particlesMap,*integration_flag);
     
     double b_i_vec[3],Delta_V_vec[3];
     double *R_vec;
@@ -321,6 +321,10 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     {
         apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
     }
+
+    //printf("FLY post\n");
+    //print_system(particlesMap,*integration_flag);
+
 
     *unbound_orbits = check_for_unbound_orbits(particlesMap);
             

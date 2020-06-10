@@ -166,7 +166,7 @@ int root_finding_functions(realtype time, N_Vector y, realtype *root_functions, 
                         else if (P_p->dynamical_instability_criterion == 3)
                         /* Petrovich 2015 */
                         {
-                            root_functions[i_root] = rp_out/ra_in - ( 2.4*pow( max(mu1,mu2), c_1div3)*sqrt(a_out/a_in) + 1.15 );
+                            root_functions[i_root] = rp_out/ra_in - ( 2.4*pow( CV_max(mu1,mu2), c_1div3)*sqrt(a_out/a_in) + 1.15 );
                         }
                         
                     }

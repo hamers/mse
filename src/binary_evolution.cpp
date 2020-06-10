@@ -44,33 +44,66 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     //printf("handle_mass_transfer -- start\n");
     //print_system(particlesMap,*integration_flag);
 
+    #ifdef IGNORE
+    //for (it = particlesMap->begin(), next_it = it; it != particlesMap->end(); it = next_it)
+    it = particlesMap->begin();
+    while (it != particlesMap->end())
+    {
+        //++next_it;
+        //Particle *donor = (*it_p).second;
+        Particle *donor = (*it).second;
+        printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
+        
+        if (donor->index==0)
+        {
+            //it = particlesMap->erase(particlesMap->find(0));
+         //   it = particlesMap->erase(particlesMap->find(1));
+            it = particlesMap->erase(particlesMap->find(3));
+            //(*particlesMap)[1]->is_binary = true;
+            printf("erase\n");
+            //print_system(particlesMap,*integration_flag);
+        }
+        else
+        {
+            it++;
+        }
+
+    }
+
+    exit(0);
+    #endif
+
+
     std::vector<int> parent_indices,donor_indices,accretor_indices;
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    //for (it = particlesMap->begin(), next_it = it; it != particlesMap->end(); it = next_it)
     {
+        //++next_it;
         Particle *donor = (*it_p).second;
+        //Particle *donor = (*it).second;
 
-//        printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
+        //printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
         if (donor->is_binary == false and donor->is_bound == true)
         {
             donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
             
-            if (donor->RLOF_flag == 1)
+            if (donor->RLOF_flag == 1 and std::count(parent_indices.begin(), parent_indices.end(), donor->parent) == 0)
             {
                 parent_indices.push_back(donor->parent);
                 donor_indices.push_back(donor->index);
                 accretor_indices.push_back(donor->sibling);
-                //int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution);
+                //int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution, it_p);
             }
         }
 
     }
     
-    //std::vector<int>::iterator it;
+    std::vector<int>::iterator it;
     //for (it = parent_indices.begin(); it != parent_indices.end(); it++)
     for (int i=0; i<parent_indices.size(); i++)
     {
-        printf("HMT %d %d %d\n",parent_indices[i], donor_indices[i], accretor_indices[i]);
+        //printf("HMT %d %d %d\n",parent_indices[i], donor_indices[i], accretor_indices[i]);
         int flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
     }
     
@@ -104,7 +137,7 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 }
 
 
-int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)
+int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)//, ParticlesMapIterator &it_p)
 {
     printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
     
@@ -144,7 +177,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     {
         /* `Standard CE evolution. */
         flag = 2;
-        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);//, it_p);
     }
     else if (kw >= 10 and kw <= 12 and q > q_crit_WD_donor)
     {
@@ -163,7 +196,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
         flag = 5;
         stable_mass_transfer_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
     }
-    /* TO DO: contact cases! */
+    /* TO DO: contact cases! -- applies if accretor->in_RLOF=1 */
     
     printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
     
@@ -324,7 +357,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         double m_dot_Eddington = compute_Eddington_accretion_rate(R_accretor, hydrogen_mass_fraction);
         double dme = m_dot_Eddington * dt;
        
-        dm2 = min(dme*tau_donor/dt, -dm1);
+        dm2 = CV_min(dme*tau_donor/dt, -dm1);
         m_accretor_new = accretor->mass + dm2;
     }
     
@@ -528,13 +561,13 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
     //donor->mass_dot_RLOF = 0.0;
     //accretor->mass_dot_RLOF = 0.0;
 
-    collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
+    //collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
 
     return 0;
 }
 
 
-int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)
+int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
 {
     /*
      * **
@@ -782,7 +815,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
                 MC3 = MC1 + M2; // note ASH: replaced `MC3' in BSE code to `MC1' -- does not change anything functionally, but is more clear
             }
             
-            EORBF = max(MC1 * M2/(2.0 * SEPL) , EORBI);
+            EORBF = CV_max(MC1 * M2/(2.0 * SEPL) , EORBI);
             EBINDF = EBINDI - ALPHA1 * (EORBF - EORBI);
         }
         else // Primary becomes a black hole, neutron star, white dwarf or helium star.
@@ -868,7 +901,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             * Calculate the final envelope binding energy.
             */
             
-            EORBF = max(MC1 * MC2/(2.0 * SEPL), EORBI);
+            EORBF = CV_max(MC1 * MC2/(2.0 * SEPL), EORBI);
             EBINDF = EBINDI - ALPHA1*(EORBF - EORBI);
 
             /*
@@ -1023,7 +1056,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         if (iterate == true)
         {
             /* Initial Guess. */
-            MF = max( MC1 + MC22, (M1 + M2) * pow(EBINDF/EBINDI, 1.0/XX) );
+            MF = CV_max( MC1 + MC22, (M1 + M2) * pow(EBINDF/EBINDI, 1.0/XX) );
 
             /* Start iteration */
             while(true)
@@ -1048,7 +1081,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         /* Set the masses and separation. */
         if (MC22 == 0.0)
         {
-            MF = max(MF, MC1 + M2);
+            MF = CV_max(MF, MC1 + M2);
         }
         M2 = 0.0;
         M1 = MF;
@@ -1279,9 +1312,13 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             *integration_flag = 5;
             printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
         }
+
+        star1->RLOF_flag = 0;
+        star2->RLOF_flag = 0;
+        
         printf("end\n");
         print_system(particlesMap,*integration_flag);
-    
+   
     }
     else if (COEL == true)
     {
@@ -1332,6 +1369,9 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
             handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
 
             binary->is_binary = false; /* The binary becomes a body */
+            //it_p = particlesMap->erase(particlesMap->find(star1->index));
+            //it_p = particlesMap->erase(particlesMap->find(star2->index));
+
             particlesMap->erase(star1->index);
             particlesMap->erase(star2->index);
 
@@ -1385,6 +1425,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
         else
         {
             /* Assign merger remnant to star1; remove star2 */
+            //it_p = particlesMap->erase(particlesMap->find(star2->index));
             particlesMap->erase(star2->index);
             star1->stellar_type = KW1;
 
@@ -1614,18 +1655,26 @@ int common_envelope_evolution2(ParticlesMap *particlesMap, int binary_index, int
 
 int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
-    printf("binary_evolution.cpp -- handle_wind_accretion\n");
+ //   printf("binary_evolution.cpp -- handle_wind_accretion\n");
     
     /* TO DO: since wind accretion depends on the orbit, move to ODE integration? */
     
     set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
     double v_orb_p2,v_wind_p2,factor;
-    
+
+    /* First, reset mass_dot_wind_accretion for all particles */ 
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
-
         Particle *p = (*it_p).second;
+        p->mass_dot_wind_accretion = 0.0;
+    }
+
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        
+        Particle *p = (*it_p).second;
+        
         //printf("i %d %d %d\n",donor->index,donor->is_binary,donor->is_bound);
         if (p->is_binary == false and p->is_bound == true)
         {
@@ -1637,7 +1686,11 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             v_wind_p2 = 2.0 * beta_wind_accretion * CONST_G * p->mass / p->radius; /* squared wind speed from p */
             
             factor = (1.0/parent->j) * pow( CONST_G * companion->mass / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * parent->a*parent->a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
-            companion->mass_dot_wind_accretion = min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
+            companion->mass_dot_wind_accretion = CV_min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
+            
+            
+            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
+            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
         }
     }
     
@@ -1649,7 +1702,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
     
     printf("binary_evolution.cpp -- stable_mass_transfer_evolution\n");
-    print_system(particlesMap,*integration_flag);
+    //print_system(particlesMap,*integration_flag);
 
 
    //                 donor->mass_dot_RLOF = m_dot;
@@ -1695,7 +1748,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 
     /* Default value of dm1 -- transferred mass during this time-step */
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
-    double m_fac = min(m_donor, 5.0);
+    double m_fac = CV_min(m_donor, 5.0);
     m_fac *= m_fac;
 
     double log_fac = log(R_donor/R_RL_av_donor);
@@ -1704,21 +1757,21 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     if (kw1 == 2)
     {
         double mew = (m_donor - donor->core_mass)/m_donor;
-        dm1 = max(mew,0.01) * dm1;
+        dm1 = CV_max(mew,0.01) * dm1;
     }
     else if (kw1 == 10)
     {
-        //dm1 = 1.0e3*dm1 / max(R_donor/CONST_R_SUN, 1.0e-4);
-        dm1 = 1.0e3*dm1 * m_donor/max(R_donor/CONST_R_SUN,1.0e-4);
+        //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
+        dm1 = 1.0e3*dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
     }
     
     if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */
     {
-        dm1 = min(dm1, m_donor * dt/t_KH_donor);
+        dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
     }
     else /* Limit to dynamical rate for other cases. NOTE ASH: ignore for now the case "rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc" */
     {
-        dm1 = min(dm1, m_donor * dt/t_dyn_donor);
+        dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
     }
 
     printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
@@ -1728,20 +1781,20 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 * Mass transfer in one Kepler orbit.
 *
          dm1 = 3.0d-06*tb*(LOG(rad(j1)/rol(j1))**3)*
-     &         MIN(mass(j1),5.d0)**2
+     &         CV_min(mass(j1),5.d0)**2
          if(kstar(j1).eq.2)then
             mew = (mass(j1) - massc(j1))/mass(j1)
-            dm1 = MAX(mew,0.01d0)*dm1
+            dm1 = CV_max(mew,0.01d0)*dm1
          elseif(kstar(j1).ge.10)then
-*           dm1 = dm1*1.0d+03/MAX(rad(j1),1.0d-04)
-            dm1 = dm1*1.0d+03*mass(j1)/MAX(rad(j1),1.0d-04)
+*           dm1 = dm1*1.0d+03/CV_max(rad(j1),1.0d-04)
+            dm1 = dm1*1.0d+03*mass(j1)/CV_max(rad(j1),1.0d-04)
          endif
          kst = kstar(j2)
 *
 * Possibly mass transfer needs to be reduced if primary is rotating 
 * faster than the orbit (not currently implemented). 
 *
-*        spnfac = MIN(3.d0,MAX(ospin(j1)/oorb,1.d0))
+*        spnfac = CV_min(3.d0,CV_max(ospin(j1)/oorb,1.d0))
 *        dm1 = dm1/spnfac**2
 *
 * Limit mass transfer to the thermal rate for remaining giant-like stars
@@ -1756,7 +1809,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 *              dm1 = dm1*10.d0**mew
 *           endif
 ***
-            dm1 = MIN(dm1,mass(j1)*tb/tkh(j1))
+            dm1 = CV_min(dm1,mass(j1)*tb/tkh(j1))
          elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.
      &          kstar(j2).le.1.and.q(j1).gt.qc))then
 *
@@ -1775,7 +1828,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
             coel = .true.
             goto 135
          else
-            dm1 = MIN(dm1,mass(j1)*tb/tdyn)
+            dm1 = CV_min(dm1,mass(j1)*tb/tdyn)
          endif
 #endif
 
@@ -1806,11 +1859,11 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         /* Limit mass transfer to the thermal rate for remaining giant-like stars
         * and to the dynamical rate for all others. */
 
-        dm1 = min(dm1, m_donor * dt/t_KH_donor);
+        dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
     }
     else /* NOTE: ignoring the merger case elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc))then */
     {
-        dm1 = min(dm1, m_donor * dt/t_dyn_donor);
+        dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
     }
 
     /* Determine dm2. */
@@ -1825,7 +1878,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     {
         /* Limit according to the thermal timescale of the secondary. */
 
-        dm2 = dm1 * min(1.0, 10.0 * taum/t_KH_accretor);
+        dm2 = dm1 * CV_min(1.0, 10.0 * taum/t_KH_accretor);
     }
     else if (kw2 >= 7 and kw2 <= 9)
     {
@@ -1834,7 +1887,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 
         if (kw1 >= 7)
         {
-            dm2 = dm1 * min(1.0, 10.0 * taum/t_KH_accretor);
+            dm2 = dm1 * CV_min(1.0, 10.0 * taum/t_KH_accretor);
         }
         else
         {
@@ -1843,7 +1896,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
             double dmchk = dm2 - 1.05 * dms_accretor;
             if (dmchk > 0.0 and dm2/m_accretor > 1.0e-4)
             {
-                int kst = min(6, 2*kw2 - 10);
+                int kst = CV_min(6, 2*kw2 - 10);
                 double mcx;
                 if (kst == 4)
                 {
@@ -1874,7 +1927,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
                 /* Accrete until a nova explosion blows away most of the accreted material. */
                 nova = true;
 
-                dm2 = nova_accretion_factor * min(dm1, dme);
+                dm2 = nova_accretion_factor * CV_min(dm1, dme);
             }
             else
             {
@@ -1896,7 +1949,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
             }
             else
             {
-                kw = min(6, 3*kw2 - 27);
+                kw = CV_min(6, 3*kw2 - 27);
 
                 double new_age;
                 double mt2 = m_accretor + (dm2 - dms_accretor);
@@ -1908,7 +1961,7 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     }
     else if (kw2 >= 10)
     {
-        dm2 = min(dm1, dme);
+        dm2 = CV_min(dm1, dme);
     }
     else
     {
@@ -2067,8 +2120,8 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     donor->mass_dot_adiabatic_ejection = 0.0;
     accretor->mass_dot_adiabatic_ejection = - (dm1 - dm2)/dt;
 
-    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_wind %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_wind);
-    print_system(particlesMap,*integration_flag);
+    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection);
+    //print_system(particlesMap,*integration_flag);
     
     return 0;
 }

@@ -19,8 +19,7 @@ int initialize_code(ParticlesMap *particlesMap)
 
     if (include_flybys == true)
     {
-        bool unbound_orbits;        
-        handle_next_flyby(particlesMap,true,&unbound_orbits,&integration_flag);
+        handle_next_flyby(particlesMap,true,&integration_flag);
     }
 
     initialize_stars(particlesMap);
@@ -42,7 +41,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     //if (*integration_flag == 0)
     {
         //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-        printf("beginning of evolve start_time %g  end_time  %g %d %d %d %d\n",start_time,end_time,N_bodies,N_binaries,N_root_finding,N_ODE_equations);
+        //printf("beginning of evolve start_time %g  end_time  %g %d %d %d %d\n",start_time,end_time,N_bodies,N_binaries,N_root_finding,N_ODE_equations);
         //print_system(particlesMap,*integration_flag);
     }
 
@@ -92,7 +91,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     //printf("dt0 %g max_dt %g\n",dt,max_dt);
    // dt = min(dt,min_dt);
     //dt_binary_evolution = min_dt;
-    dt = min(min_dt,max_dt);
+    dt = CV_min(min_dt,max_dt);
     dt_binary_evolution = max_dt;
     
     //printf("initial dt %g\n",dt);
@@ -109,7 +108,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         /* Stellar evolution */
 
-        printf("pre ev\n");
+        //printf("pre ev\n");
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
         //printf("post ev\n");
 
@@ -190,11 +189,11 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         //printf("evolve.cpp -- 1 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
         
         /* Time step (phase 1) */
-        dt = min(dt_stev,dt_binary_evolution);
+        dt = CV_min(dt_stev,dt_binary_evolution);
         
         if (*integration_flag > 0)
         {
-            dt = min(dt,dt_nbody);
+            dt = CV_min(dt,dt_nbody);
         }
         
         /* Secular mass transfer */
@@ -217,7 +216,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
                 printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
                 dt = flybys_t_next_encounter - t;
                 
-                handle_next_flyby(particlesMap, false, &unbound_orbits, integration_flag);
+                handle_next_flyby(particlesMap, false, integration_flag);
 
 //                if (unbound_orbits == true)
 //                {
@@ -249,8 +248,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             //printf("adjust dt to reach end time \n");
         }
 
-        dt = min(dt,max_dt);
-        dt = max(dt,min_dt);
+        dt = CV_min(dt,max_dt);
+        dt = CV_max(dt,min_dt);
 
 
         
@@ -295,7 +294,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             //*state = 1;
         }
     }
-    printf("end of evolve\n");
+    //printf("end of evolve\n");
     //print_system(particlesMap,*integration_flag);
     
     *output_time = t;

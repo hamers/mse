@@ -35,36 +35,36 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
                 int kw2 = child2->stellar_type;
                 if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    //common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
-                    CE_parent_indices.push_back(p->index);
-                    CE_donor_indices.push_back(child1->index);
-                    CE_accretor_indices.push_back(child2->index);
+                    common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
+                    //CE_parent_indices.push_back(p->index);
+                    //CE_donor_indices.push_back(child1->index);
+                    //CE_accretor_indices.push_back(child2->index);
                 }
                 else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    //common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, t, integration_flag);
-                    CE_parent_indices.push_back(p->index);
-                    CE_donor_indices.push_back(child2->index);
-                    CE_accretor_indices.push_back(child1->index);
+                    common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, t, integration_flag);
+                    //CE_parent_indices.push_back(p->index);
+                    //CE_donor_indices.push_back(child2->index);
+                    //CE_accretor_indices.push_back(child1->index);
                 }
                 else /* "pure" collision in other cases */
                 {
-                    //collision_product(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
-                    col_parent_indices.push_back(p->index);
-                    col_C1_indices.push_back(child1->index);
-                    col_C2_indices.push_back(child2->index);
+                    collision_product(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
+                    //col_parent_indices.push_back(p->index);
+                    //col_C1_indices.push_back(child1->index);
+                    //col_C2_indices.push_back(child2->index);
                 }
             }
         }
         
         int i;
-        for (i=0; i<CE_parent_indices.size(); i++)
+        //for (i=0; i<CE_parent_indices.size(); i++)
         {
-            common_envelope_evolution(particlesMap, CE_parent_indices[i], CE_donor_indices[i], CE_accretor_indices[i], t, integration_flag);
+            //common_envelope_evolution(particlesMap, CE_parent_indices[i], CE_donor_indices[i], CE_accretor_indices[i], t, integration_flag);
         }
-        for (i=0; i<col_parent_indices.size(); i++)
+        //for (i=0; i<col_parent_indices.size(); i++)
         {
-            collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
+            //collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
         }
         
         update_structure(particlesMap);
@@ -462,6 +462,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     {
         
         b->is_binary = false; /* The binary becomes a body (or destroyed) */
+//        it_p = particlesMap->erase(particlesMap->find(child1->index));
+//        it_p = particlesMap->erase(particlesMap->find(child2->index));
+
         particlesMap->erase(child1->index);
         particlesMap->erase(child2->index);
 
@@ -536,6 +539,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         if (destroyed == false)
         {
             /* child1 will become the merged object */
+            //it_p = particlesMap->erase(particlesMap->find(child2->index));
             particlesMap->erase(child2->index);
             child1->stellar_type = kw;
             child1->mass = m;

@@ -73,14 +73,21 @@ int ODE_handle_stellar_winds(Particle *p)
 
 int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, double x, double E_0)
 {
-
+    int i;
+    
     double M_d = donor->mass;
     double M_a = accretor->mass;
     double M = M_d + M_a;
     double q = M_d/M_a;
-    double R = donor->radius;
     double tau = donor->emt_tau;
-
+    double R_d = donor->radius;
+    double R_a = accretor->radius;
+    double R_d_p2 = R_d*R_d;
+    double R_a_p2 = R_a*R_a;
+    
+    double Omega_d = donor->spin_vec_norm;
+    double Omega_a = accretor->spin_vec_norm;
+    
     double a = p->a;
     double e = p->e;
     
@@ -137,9 +144,12 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
     if (donor->emt_ejection_radius_mode > 0 or accretor->emt_accretion_radius > 0.0)
     {
+       
         ha = ha_function(e,x,E_0);
         he = he_function(e,x,E_0);
 
+        finite_size_term_a = - q * (accretor->emt_accretion_radius/a) * ha;
+        finite_size_term_e = - q * (accretor->emt_accretion_radius/a) * he;
 
         if (donor->emt_ejection_radius_mode == 1) /*  limit of small donor spin */
         {
@@ -207,18 +217,43 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     }
     //double q_vec_unit[3];
     //cross3(p->h_vec_unit,p->e_vec_unit,q_vec_unit);
+
+
+    /* Compute spin changes due to RLOF */
+    double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
+    double I_donor = compute_moment_of_inertia(M_d, donor->core_mass, R_d, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    double I_donor_dot = donor->sse_k2*donor->dmass_dt*R_d_p2 + 2.0*donor->sse_k2*(M_d - donor->core_mass)*R_d*donor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    double Omega_d_dot = (J_spin_donor_dot - I_donor_dot*Omega_d)/I_donor;
     
-    for (int i=0; i<3; i++)
+    double J_spin_accretor_dot;
+    if (accretor->accretion_disk_is_present == true)
+    {
+        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * R_a);
+    }
+    else
+    {
+        double r_disk = 1.7*accretor->accretion_disk_r_min;
+        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
+    }
+    double I_accretor = compute_moment_of_inertia(M_a, accretor->core_mass, R_a, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
+    double I_accretor_dot = accretor->sse_k2*accretor->dmass_dt*R_a_p2 + 2.0*accretor->sse_k2*(M_a - accretor->core_mass)*R_a*accretor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    double Omega_a_dot = (J_spin_accretor_dot - I_accretor_dot*Omega_a)/I_accretor;
+
+    for (i=0; i<3; i++)
     {
     //        if (p->is_binary == 1)
       //      {
         p->dh_vec_dt[i] += p->h_vec[i] * factor_h_vec;
         p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt  +  e * p->q_vec_unit[i] * domega_dt;
+
+        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
+        accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
         
         //#ifdef VERBOSE
         //printf("mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
         //#endif
     }
+
 
     return 0;
 }

@@ -2046,8 +2046,10 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         }
     }
 
-    /* TO DO: handle changes in spins */
-
+    /* TO DO: determine whether or not an accretion disk forms around the secondary */
+    /* Also, determine emt_ejection_radius_mode and emt_accretion_radius */
+    donor->accretion_disk_is_present = false;
+    accretor->accretion_disk_is_present = false;
 
     /* "New" masses used for aging. Note: the actual masses (and radii) will be updated during the ODE integration.
      * Also, dm1 > 0, dm2 > 0 */

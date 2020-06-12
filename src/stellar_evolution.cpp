@@ -77,10 +77,9 @@ int initialize_stars(ParticlesMap *particlesMap)
             tscls = new double[20];
             lums = new double[10];    
             
-            //star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
-            
-            //hrdiag_(&mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
-            //    &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+//            star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
+//            hrdiag_(&mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
+//                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
             
             double dtp=0.0;
             double ospin=0.0;
@@ -93,7 +92,7 @@ int initialize_stars(ParticlesMap *particlesMap)
             if (kw_desired == 0 or kw_desired == 1) /* ZAMS star; no aging */
             {
                 kw = kw_desired;
-                evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+                evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
             }
             else /* age star until reaching desired stellar type */
             {
@@ -105,7 +104,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                 {
                     //r=lum=mc=rc=menv=renv=tms=0.0;
                     //printf("input %d kw minit %g mt %g tphys %g tphysf %g\n",kw,p->sse_initial_mass,mt,tphys,tphysf);
-                    evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+                    evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
                     age = tphysf - epoch;
 
                     //star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
@@ -168,6 +167,9 @@ int initialize_stars(ParticlesMap *particlesMap)
             p->core_radius = rc*CONST_R_SUN;
             p->convective_envelope_mass = menv;
             p->convective_envelope_radius = renv*CONST_R_SUN;
+
+            p->sse_k2 = k2;
+            p->sse_k3 = 0.21;
 
             /* Set up spins parallel with parent orbit */
             Particle *parent = (*particlesMap)[p->parent];
@@ -256,7 +258,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     double sse_initial_mass,sse_time_step;
     double mt,tphys,tphysf,dtp,epoch,ospin,ospin_old,age;
     double dt,dt_min;
-    double r,lum,mc,rc,menv,renv,tms;
+    double r,lum,mc,rc,menv,renv,tms,k2;
     double r_old,mt_old;
     double rzams,fac,menv_fraction;
     int kw,kw_old;
@@ -330,7 +332,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 #ifdef DEBUG
                 printf("stellar_evolution.cpp -- INPUT evolv1_ kw %d m0 %.15f mt %.15f epoch %.15f tphys %.15f tphysf %.15f dtp %.15f z %.15f zpars[0] %.15f \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp,z,zpars[0]);
                 #endif
-                evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars);
+                evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
 
                 if (tphysf != desired_tphysf)
                 {
@@ -407,7 +409,10 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 p->core_radius = rc*CONST_R_SUN;
                 p->convective_envelope_mass = menv;
                 p->convective_envelope_radius = renv*CONST_R_SUN;
-                
+
+                p->sse_k2 = k2;
+                p->sse_k3 = 0.21;
+                //printf("ks %g %g\n",p->sse_k2,p->sse_k3);
                 //rzams = rzamsf_(&sse_initial_mass);
                 //fac = value2_.lambda;
                 //menv_fraction = menv/(mt - mc);
@@ -516,6 +521,11 @@ void update_stellar_evolution_properties(Particle *p)
     p->core_radius = rc*CONST_R_SUN;
     p->convective_envelope_mass = menv;
     p->convective_envelope_radius = renv*CONST_R_SUN;
+}
+
+double compute_moment_of_inertia(double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+{
+    return k2*(mass - core_mass)*radius*radius + k3*core_mass*core_radius*core_radius;
 }
 
 }

@@ -602,7 +602,7 @@ struct points__
         double pts1,pts2,pts3;
 };
 
-extern "C" void evolv1_(int *kw, double *mass,double *mt, double *r, double *lum, double *mc, double *rc, double *menv, double *renv, double *ospin, double *epoch, double *tms, double *tphys, double *tphysf, double *dtp, double *z, double *zpars);
+extern "C" void evolv1_(int *kw, double *mass,double *mt, double *r, double *lum, double *mc, double *rc, double *menv, double *renv, double *ospin, double *epoch, double *tms, double *tphys, double *tphysf, double *dtp, double *z, double *zpars, double *k2);
 extern "C" void zcnsts_(double* z, double *zpars);
 extern "C" void star_(int *kw, double *mass, double *mt, double *tm, double *tn, double *tscls, double *lums, double *GB, double *zpars);
 extern "C" void deltat_(int *kw, double *age, double *tm, double *tn, double *tscls, double *dt, double *dtr);
@@ -684,6 +684,7 @@ class Particle
     double luminosity;
     double child1_mass_old,child2_mass_old;
     double apsidal_motion_constant, gyration_radius;
+    double sse_k2,sse_k3;
     
     double mass_dot_wind_accretion;
     
@@ -699,7 +700,9 @@ class Particle
     double dynamical_mass_transfer_low_mass_donor_timescale;
     double dynamical_mass_transfer_WD_donor_timescale;
     double compact_object_disruption_mass_loss_timescale;
-        
+    bool accretion_disk_is_present;
+    double accretion_disk_r_min;
+
     /* Common-envelope evolution */
     double common_envelope_alpha;
     double common_envelope_lambda;
@@ -899,6 +902,8 @@ class Particle
         mass_dot_wind_accretion = child1_mass_dot_wind_accretion = child2_mass_dot_wind_accretion = 0.0;
         mass_dot_adiabatic_ejection = child1_mass_dot_adiabatic_ejection = child2_mass_dot_adiabatic_ejection = 0.0;
         sse_main_sequence_timescale = 0.0;
+        sse_k2 = 0.0;
+        sse_k3 = 0.21;
                 
         /* RLOF */
         include_mass_transfer_terms = true;
@@ -911,6 +916,9 @@ class Particle
         dynamical_mass_transfer_low_mass_donor_timescale = 1.0e2;
         dynamical_mass_transfer_WD_donor_timescale = 1.0e2;
         compact_object_disruption_mass_loss_timescale = 1.0e2;
+        
+        accretion_disk_is_present = false;
+        accretion_disk_r_min = 0.0;
         
         /* CE */
         common_envelope_alpha = 1.0;

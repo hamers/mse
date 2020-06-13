@@ -30,6 +30,7 @@
 #include "nbody_evolution.h"
 #include "collision.h"
 #include "test.h"
+#include "apsidal_motion_constant.h"
 
 extern "C"
 {

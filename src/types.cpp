@@ -24,6 +24,7 @@ double CONST_L_SUN = 0.0002710404109745588;
 double CONST_KM_PER_S = 0.210862;
 double CONST_PER_PC3 = 1.14059e-16;
 
+
 // Default parameters //
 double relative_tolerance = 1.0e-12;
 double absolute_tolerance_eccentricity_vectors = 1.0e-10;

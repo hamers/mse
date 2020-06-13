@@ -160,7 +160,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
         b = (*particlesMap)[binary_index];
 
-        n_old = 2.0*M_PI/compute_orbital_period_from_semimajor_axis(m,b->a); /* mean motion just prior to collision */
+        n_old = TWOPI/compute_orbital_period_from_semimajor_axis(m,b->a); /* mean motion just prior to collision */
         get_unit_vector(b->h_vec,h_vec_unit);
         get_unit_vector(b->e_vec,e_vec_unit);
     }
@@ -181,7 +181,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         get_unit_vector(e_vec,e_vec_unit);
         double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
         double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
-        n_old = 2.0*M_PI/P_old;
+        n_old = TWOPI/P_old;
     }
     
     int kw = determine_merger_type(child1->stellar_type,child2->stellar_type);

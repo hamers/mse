@@ -8,12 +8,12 @@ extern "C"
 
 double compute_orbital_period_from_semimajor_axis(double M, double a)
 {
-	return 2.0*M_PI*sqrt(a*a*a/(CONST_G*M));
+	return TWOPI*sqrt(a*a*a/(CONST_G*M));
 }
 
 double compute_semimajor_axis_from_orbital_period(double M, double P)
 {
-    double temp = P/(2.0*M_PI);
+    double temp = P/(TWOPI);
     return pow( temp*temp* CONST_G*M, 1.0/3.0);
 }
 
@@ -25,7 +25,7 @@ int sample_from_3d_maxwellian_distribution(double sigma, double v[3])
         u1 = ((double) rand() / (RAND_MAX));
         u2 = ((double) rand() / (RAND_MAX));
         s = sigma*sqrt(-2.0*log(1.0 - u1));
-        theta = 2.0*M_PI*u2;
+        theta = TWOPI*u2;
         v[2*k-2] = s*cos(theta);
         v[2*k-1] = s*sin(theta);
     }    
@@ -49,7 +49,7 @@ int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double
     double x1 = ((double) rand() / (RAND_MAX));
     double x2 = ((double) rand() / (RAND_MAX));    
     double theta = acos( 2.0*x1 - 1.0 ); /* inclination */
-    double phi = 2.0*M_PI*x2; /* azimuthal angle */
+    double phi = TWOPI*x2; /* azimuthal angle */
     
     double cos_theta = cos(theta);
     double sin_theta = sin(theta);

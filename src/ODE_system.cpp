@@ -177,7 +177,7 @@ void process_direct_integration_quantities(ParticlesMap *particlesMap, double de
             {
                 double n = sqrt(CONST_G*p->mass/(p->a*p->a*p->a));
                 double new_MA = p->initial_mean_anomaly + delta_time*n;
-                new_MA = remainder(new_MA,2.0*M_PI);
+                new_MA = remainder(new_MA,TWOPI);
 
                 p->true_anomaly = compute_true_anomaly_from_mean_anomaly(new_MA,norm3(p->e_vec));
                 from_orbital_vectors_to_cartesian(p->child1_mass,p->child2_mass,p->e_vec,p->h_vec,p->true_anomaly,p->r_vec,p->v_vec);

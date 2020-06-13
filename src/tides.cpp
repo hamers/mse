@@ -1,6 +1,6 @@
 /* MSE */
 
-#include "types.h"
+#include "evolve.h"
 #include "tides.h"
 #include "tools.h" /* for orbital_period */
 #include <stdio.h>
@@ -47,9 +47,7 @@ void handle_secular_tidal_evolution(ParticlesMap *particlesMap, Particle *p)
 }
 
 
-/* start addition 13-09-2016 */
 int const PreMS = 17;
-/* end addition 13-09-2016 */
 
 bool check_for_radiative_damping(int stellar_type, double mass, double convective_envelope_mass, double convective_envelope_radius)
 {
@@ -68,12 +66,10 @@ bool check_for_radiative_damping(int stellar_type, double mass, double convectiv
 }   
 bool check_for_convective_damping(int stellar_type)
 {
-    /* start addition 13-09-2016 */
     if (stellar_type == PreMS)
     {
         return true;
     }
-    /* end addition 13-09-2016 */
     
     if (stellar_type < HeWD)
     {
@@ -217,17 +213,18 @@ double compute_t_V_hurley
     }
     else if (USE_CONVECTIVE_DAMPING == true) // convective damping
     {
-        double P_orb = 2.0*M_PI*sqrt((semimajor_axis*semimajor_axis*semimajor_axis)/(CONST_G*(mass + companion_mass)));
+        //double P_orb = 2.0*M_PI*sqrt((semimajor_axis*semimajor_axis*semimajor_axis)/(CONST_G*(mass + companion_mass)));
+        double P_orb = compute_orbital_period_from_semimajor_axis(mass + companion_mass, semimajor_axis);
 //        printf("a %g\n",semimajor_axis);
         double P_spin,P_tid;
         
-        if (spin_angular_frequency == 0.0)
+        if (spin_angular_frequency < epsilon)
         {
             P_tid = P_orb;
         }
         else
         {
-            P_spin = 2.0*M_PI/spin_angular_frequency;
+            P_spin = TWOPI/spin_angular_frequency;
             P_tid = 1.0/( 1e-10 + fabs( 1.0/P_orb - 1.0/P_spin) );
         }
         double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*(radius - (1.0/2.0)*convective_envelope_radius))/(3.0*luminosity), 1.0/3.0);
@@ -281,9 +278,9 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         //printf("tides.cpp -- star is actually a binary -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
         return 0;
     }
-    if (star->is_bound == false)
+    if (star->is_bound == false or companion->is_bound == false)
     {
-        //printf("tides.cpp -- star is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        //printf("tides.cpp -- star/companion is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
         return 0;
     }
 
@@ -316,8 +313,22 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double M = star->mass;
     double m = companion->mass;
     double R = star->radius;
-    double k_AM = star->apsidal_motion_constant;
-    double rg = star->gyration_radius;
+    
+    double k_AM;
+    double I; // moment of intertia
+    if (star->evolve_as_star == false)
+    {
+        I = star->gyration_radius*M*R*R;
+        k_AM = star->apsidal_motion_constant;
+    }
+    else
+    {
+        I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
+//        printf("pre\n");
+        k_AM = compute_apsidal_motion_constant(star);
+        //k_AM = star->apsidal_motion_constant;
+//        printf("post %g\n",k_AM);
+    }
 
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
@@ -341,6 +352,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("R %g\n",R);
         printf("star->convective_envelope_radius %g\n",star->convective_envelope_radius);
         printf("star->luminosity %g\n",star->luminosity);
+        printf("k_AM %g\n",k_AM);
+        print_system(particlesMap,0);
         exit(-1);
     }
     if (1==0)
@@ -359,8 +372,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 
 
     double tau = 3.0*(1.0 + 1.0/(2.0*k_AM))*R*R*R/(CONST_G*M*t_V);
-
-    double I = rg*M*R*R; // moment of intertia
 
     double R_div_a = R/a;
 	double R_div_a_p5 = pow(R_div_a,5.0);

@@ -27,6 +27,7 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     }
 
     printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
+    print_system(particlesMap,*integration_flag);
     return 0;
 }
 
@@ -2046,13 +2047,8 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         }
     }
 
-    /* TO DO: determine whether or not an accretion disk forms around the secondary */
-    /* Also, determine emt_ejection_radius_mode and emt_accretion_radius */
-    donor->accretion_disk_is_present = false;
-    accretor->accretion_disk_is_present = false;
-
     /* "New" masses used for aging. Note: the actual masses (and radii) will be updated during the ODE integration.
-     * Also, dm1 > 0, dm2 > 0 */
+     * Also, by definition, dm1 > 0, dm2 > 0 */
     double m_donor_new = m_donor - dm1 + donor->mass_dot_wind * dt;
     double m_accretor_new = m_accretor + dm2 + accretor->mass_dot_wind * dt;
    
@@ -2113,7 +2109,41 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
         }
         accretor->epoch = t - accretor->age;
     }
+
+    /* Determine whether or not an accretion disk forms around the secondary
+     * Follow prescription of https://ui.adsabs.harvard.edu/abs/1976ApJ...206..509U/abstract */
+    accretor->emt_accretion_radius = R_accretor;
+
+    accretor->accretion_disk_is_present = false;
+    double q_accretor = m_accretor/m_donor;
+    accretor->accretion_disk_r_min = 0.0425 * rp * pow(q_accretor*(1.0 + q_accretor), 0.25); /* ASH: taking rp instead of separation */
+
+    if (accretor->accretion_disk_r_min < R_accretor)
+    {
+        accretor->accretion_disk_is_present = true;
+        accretor->emt_accretion_radius = 1.7*accretor->accretion_disk_r_min;
+    }
+
+    /* Determine ejection mode */
+    double temp = 1.0 - e;
+    double n_peri = (TWOPI/P_orb) * sqrt( (1.0 + e)/(temp*temp*temp) );
+    double ospin_hat = norm3(donor->spin_vec) / n_peri;
+    double q_donor = m_donor/m_accretor;
+    if (ospin_hat < 0.1) /* "Small" donor spin */
+    {
+        donor->emt_ejection_radius_mode = 1;
+    }
+    else if (q_donor > 10) /* "Large" mass ratio */
+    {
+        donor->emt_ejection_radius_mode = 2;
+    }
+    else /* Other cases: simply to not take into account finite size of donor */
+    {
+        donor->emt_ejection_radius_mode = 0;
+    }
     
+    
+    /* Set mass transfer rates */
     donor->mass_dot_RLOF = -dm1/dt;
     accretor->mass_dot_RLOF = dm2/dt;
 

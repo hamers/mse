@@ -246,6 +246,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         p->dh_vec_dt[i] += p->h_vec[i] * factor_h_vec;
         p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt  +  e * p->q_vec_unit[i] * domega_dt;
 
+        /* Assume mass transfer does not affect the directions of the spins. */
         donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
         accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
         

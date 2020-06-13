@@ -24,7 +24,8 @@ int initialize_code(ParticlesMap *particlesMap)
 
     initialize_stars(particlesMap);
     set_positions_and_velocities(particlesMap);
-    
+ 
+    return 0;
 }
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)

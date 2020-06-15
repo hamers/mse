@@ -795,5 +795,9 @@ int clear_particles(ParticlesMap *particlesMap)
     return 0;
 }
 
+double compute_breakup_angular_frequency(double mass, double radius)
+{
+    return sqrt(CONST_G*mass/(radius*radius*radius));
+}
 
 }

@@ -239,6 +239,13 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     double I_accretor_dot = accretor->sse_k2*accretor->dmass_dt*R_a_p2 + 2.0*accretor->sse_k2*(M_a - accretor->core_mass)*R_a*accretor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
     double Omega_a_dot = (J_spin_accretor_dot - I_accretor_dot*Omega_a)/I_accretor;
 
+    if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
+    {
+        printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);
+        exit(-1);
+    }
+    
+
     for (i=0; i<3; i++)
     {
     //        if (p->is_binary == 1)

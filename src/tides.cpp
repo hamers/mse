@@ -284,6 +284,10 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         return 0;
     }
 
+    if (star->stellar_type == SSE_BH) /* No tides for BHs */
+    {
+        return 0;
+    }
     
     /* orbit quantities */
     double e = binary->e;
@@ -327,7 +331,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 //        printf("pre\n");
         k_AM = compute_apsidal_motion_constant(star);
         //k_AM = star->apsidal_motion_constant;
-//        printf("post %g\n",k_AM);
+        //printf("k_AM %g I %g\n",k_AM,I);
     }
 
     double t_V = compute_t_V(star,companion,a);

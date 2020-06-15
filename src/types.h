@@ -566,6 +566,23 @@ inline void transform_alpha_beta_to_u_u_star(double alpha[4], double beta[4], do
 #ifndef __STEV
 #define __STEV
 
+#define SSE_LOW_MASS_MS 0
+#define SSE_MS 1
+#define SSE_HG 2
+#define SSE_FGB 3
+#define SSE_CHeB 4
+#define SSE_EAGB 5
+#define SSE_TPAGB 6
+#define SSE_HeMS 7
+#define SSE_HeHG 8
+#define SSE_HeGB 9
+#define SSE_HeWD 10
+#define SSE_COWD 11
+#define SSE_ONeWD 12
+#define SSE_NS 13
+#define SSE_BH 14
+#define SSE_MASSLESS_REMNANT 15
+
 struct value1__ 
 {
         double neta,bwind,hewind,mxns;

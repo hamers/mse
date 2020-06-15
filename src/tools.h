@@ -47,4 +47,6 @@ bool equal_number(double x1, double x2, double tol);
 
 int clear_particles(ParticlesMap *particlesMap);
 
+double compute_breakup_angular_frequency(double mass, double radius);
+
 }

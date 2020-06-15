@@ -125,7 +125,7 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
             {
                 unbound_orbits = true;
             }
-            printf("test e %.15f unbound_orbits %d\n",e,unbound_orbits);
+            //printf("test e %.15f unbound_orbits %d\n",e,unbound_orbits);
         }
     }
     

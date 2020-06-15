@@ -372,7 +372,7 @@ void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
             p->dradius_dt = p->radius_dot + p->radius_ddot*delta_time;
             
             #ifdef DEBUG
-            printf("ODE_system.cpp -- reset_ODE_dots -- body i %d dmass_dt %g dradius_dt %g dspin_vec_dt %g %g %g\n",p->index,p->dmass_dt,p->dradius_dt,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2]);
+            printf("ODE_system.cpp -- reset_ODE_dots -- body i %d dmass_dt %g dradius_dt %g dspin_vec_dt %g %g %g p->ospin_dot %g p->spin_vec %g %g %g\n",p->index,p->dmass_dt,p->dradius_dt,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2],p->ospin_dot,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2]);
             #endif
         }
         else
@@ -436,10 +436,21 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
         Particle *p = (*it_p).second;
         if (p->is_binary == false)
         {
+
+            /* Limit to break-up rotation */
+            double f_breakup = 1.0;
+            double Omega_crit = compute_breakup_angular_frequency(p->mass,p->radius);
+
+            if (p->spin_vec_norm > Omega_crit)
+            {
+                f_breakup = 0.0;
+            }
+
             for (k_component=0; k_component<3; k_component++)
             {
-                Ith(y_dot,k + k_component) = p->dspin_vec_dt[k_component];
+                Ith(y_dot,k + k_component) = f_breakup * p->dspin_vec_dt[k_component];
             }
+            
             
             Ith(y_dot,k + 2 + 1) = p->dmass_dt;
             Ith(y_dot,k + 2 + 2) = p->dradius_dt;

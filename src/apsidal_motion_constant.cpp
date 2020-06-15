@@ -104,9 +104,10 @@ double compute_apsidal_motion_constant(Particle *star)
         val = 0.14327923;
     }
 	
-    if (val!=val)
+    if (val!=val or val<0)
     {
-        printf("apsidal_motion_constant.cpp -- ERROR: AMC is NaN index %d kw %d m %g\n",star->index,stellar_type,star->mass);
+        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g\n",val,star->index,stellar_type,star->mass);
+        exit(0);
     }
     return val;
 }

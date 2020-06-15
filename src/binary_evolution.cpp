@@ -26,8 +26,8 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
         *integration_flag = 1;
     }
 
-    printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
-    print_system(particlesMap,*integration_flag);
+    //printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
+    //print_system(particlesMap,*integration_flag);
     return 0;
 }
 
@@ -1689,7 +1689,12 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             factor = (1.0/parent->j) * pow( CONST_G * companion->mass / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * parent->a*parent->a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
             companion->mass_dot_wind_accretion = CV_min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
             
-            
+            if (companion->mass_dot_wind_accretion!=companion->mass_dot_wind_accretion)
+            {
+                printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
+                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->a);
+                exit(-1);
+            }
             //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
             //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
         }

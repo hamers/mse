@@ -292,6 +292,7 @@ class MSE(object):
         self.particles.remove(particle)
 
     def commit_particles(self):
+        self.__set_random_seed()
         
         flag = self.__update_particles_in_code()
         

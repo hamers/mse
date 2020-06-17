@@ -55,6 +55,7 @@ void reset_instantaneous_perturbation_quantities(ParticlesMap *particlesMap)
             p->instantaneous_perturbation_delta_VX = 0.0;
             p->instantaneous_perturbation_delta_VY = 0.0;
             p->instantaneous_perturbation_delta_VZ = 0.0;
+            p->apply_kick = false;
         }
     }
 }

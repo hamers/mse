@@ -1012,7 +1012,7 @@ class Particle
         /* CE */
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
-        common_envelope_timescale = 1.0e4;
+        common_envelope_timescale = 1.0e2;
         
         /* kicks */
         kick_distribution = 0;

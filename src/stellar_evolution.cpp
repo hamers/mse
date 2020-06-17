@@ -377,6 +377,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     //reset_h_vectors = true;
                     *apply_SNe_effects = true;
                     
+                    p->apply_kick = true;
                     p->instantaneous_perturbation_delta_mass = mt - mt_old; /* Will be used by handle_SNe_in_system() */
                     //printf("dm %g\n",p->instantaneous_perturbation_delta_mass);
                     //p->instantaneous_perturbation_delta_mass = 0.1;

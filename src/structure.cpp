@@ -582,6 +582,11 @@ void set_up_derived_quantities(ParticlesMap *particlesMap)
             p->e = norm3(p->e_vec);
             p->h = norm3(p->h_vec);
 
+            if (p->e <= epsilon)
+            {
+                p->e = epsilon;
+            }
+
             for (i=0; i<3; i++)
             {        
                 p->e_vec_unit[i] = p->e_vec[i]/p->e;
@@ -667,5 +672,144 @@ bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integ
    
     return stable;
 }
+
+void handle_instantaneous_and_adiabatic_mass_changes_in_orbit(ParticlesMap *particlesMap, Particle *star1, Particle *star2, double Delta_m1, double Delta_m2, double mass_loss_timescale, int *integration_flag)
+{
+
+    set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
+
+    /* Next, assume instantaneous mass loss for ALL orbits. 
+     * Note: `binary' will be overwritten at the very end below. 
+     * Other orbits, for which mass loss is expected to be adiabatic,
+     * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
+    //star1->apply_kick = false; /* The kicks were already taken into account above */
+    //star2->apply_kick = false; /* The kicks were already taken into account above */
+
+    //double Delta_M1 = M1 - star1->mass;
+    //double Delta_M2 = M2 - star2->mass;
+    star1->instantaneous_perturbation_delta_mass = Delta_m1; // final minus initial mass
+    star2->instantaneous_perturbation_delta_mass = Delta_m2; // final minus initial mass        
+
+    //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this will update the masses of stars 1 and 2 */
+    apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
+    
+    /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
+     * i.e., time of CE >> t_orb */
+    star1->delta_m_adiabatic_mass_loss = Delta_m1;
+    star2->delta_m_adiabatic_mass_loss = Delta_m2;
+    compute_new_orbits_assuming_adiabatic_mass_loss(particlesMap, mass_loss_timescale);
+}
+
+void set_old_parameters_for_adiabatic_mass_loss(ParticlesMap *particlesMap)
+{
+    int i;
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *b = (*it).second;
+        b->delta_m_adiabatic_mass_loss = 0.0;
+        if (b->is_binary == true)
+        {
+            b->P_orb_adiabatic_mass_loss = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
+            b->child1_mass_adiabatic_mass_loss = b->child1_mass;
+            b->child2_mass_adiabatic_mass_loss = b->child2_mass;
+            for (i=0; i<3; i++)
+            {
+                b->h_vec_old_adiabatic_mass_loss[i] = b->h_vec[i];
+                b->e_vec_old_adiabatic_mass_loss[i] = b->e_vec[i];
+            }
+        }
+    }
+}
+
+void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap, double mass_loss_timescale)
+{
+    set_binary_masses_from_body_masses(particlesMap); // to set the correct delta_m_adiabatic for each orbit
+
+    int i;    
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *b = (*it).second;
+        if (b->is_binary == true)
+        {
+            printf("Adiabatic b %d %g %g\n",b->index,b->P_orb_adiabatic_mass_loss , mass_loss_timescale);
+            
+            if (b->P_orb_adiabatic_mass_loss < mass_loss_timescale) // criterion for adiabatic mass loss
+            {
+                
+                double m1_old = b->child1_mass_adiabatic_mass_loss;
+                double m2_old = b->child2_mass_adiabatic_mass_loss;
+                double delta_m1 = b->delta_child1_mass_adiabatic_mass_loss;
+                double delta_m2 = b->delta_child2_mass_adiabatic_mass_loss;
+                //double a_old = compute_a_from_h(m1_old,m2_old, norm3(b->h_vec_old_adiabatic_mass_loss), norm3(b->e_vec_old_adiabatic_mass_loss));
+                //double delta_a = - (b->delta_m_adiabatic_mass_loss/(m1_old + m2_old)) * a_old;
+                //double a = a_old + delta_a;
+                //double h_old = compute_h_from_a(m1_old,m2_old,a,e);
+                double h_old = norm3(b->h_vec_old_adiabatic_mass_loss);
+                //double Delta_h = h_old * ( (delta_m1/m1_old) + (delta_m2/m2_old) - (delta_m1 + delta_m2)/(m1_old + m2_old) );
+                //double h_new = h_old + Delta_h;
+                double m1_new = m1_old + delta_m1;
+                double m2_new = m2_old + delta_m2;
+                double h_new = h_old * ((m1_old + m2_old)/(m1_new + m2_new)) * (m1_new/m1_old) * (m2_new/m2_old);
+                
+                //printf("Adiabatic %g %g h_old %g h_new %g delta m1 %g delta m2 %g m1_old %g m2_old %g Delta_h/h_old %g\n",b->P_orb_adiabatic_mass_loss , mass_loss_timescale,h_old,h_new,delta_m1,delta_m2,m1_old,m2_old,Delta_h/h_old);
+                
+                for (i=0; i<3; i++)
+                {
+                    /* Directions of h and e and magnitude of e do not change for adiabatic mass loss. */
+                    b->h_vec[i] = (b->h_vec_old_adiabatic_mass_loss[i] / h_old) * h_new;
+                    b->e_vec[i] = b->e_vec_old_adiabatic_mass_loss[i];
+                }
+            }
+        }
+    }
+}
+
+void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(double M1_old, double R1_vec_old[3], double V1_vec_old[3], double M2_old, double R2_vec_old[3], double V2_vec_old[3], double M1, double R1_vec[3], double V1_vec[3], double M2, double R2_vec[3], double V2_vec[3], double a, double e)
+{
+    int i;
+    double M_old = M1_old + M2_old;
+    double M = M1 + M2;
+    double R_CM_vec[3],V_CM_vec[3];
+    double r_vec_old[3],v_vec_old[3];
+    
+    for (i=0; i<3; i++)
+    {
+        R_CM_vec[i] = (R1_vec_old[i]*M1_old + R2_vec_old[i]*M2_old) / M_old;
+        r_vec_old[i] = R1_vec_old[i] - R2_vec_old[i];
+        v_vec_old[i] = V1_vec_old[i] - V2_vec_old[i];
+    }
+    
+    /* Compute the old e & h vectors (they determine the direction of the new orbit) */
+    double e_vec_old[3],h_vec_old[3];
+    double true_anomaly_old;
+    from_cartesian_to_orbital_vectors(M1_old, M2_old, r_vec_old, v_vec_old, e_vec_old, h_vec_old, &true_anomaly_old);
+    double e_old = norm3(e_vec_old);
+    double h_old = norm3(h_vec_old);
+    
+    /* Compute the new e & h vectors */
+    double e_vec[3],h_vec[3];
+    double h = compute_h_from_a(M1,M2,a,e);
+    for (i=0; i<3; i++)
+    {
+        e_vec[i] = (e_vec_old[i]/e_old) * e;
+        h_vec[i] = (h_vec_old[i]/h_old) * h;
+    }
+    
+    /* Compute new absolute positions and velocities */
+    double r_vec[3],v_vec[3];
+    from_orbital_vectors_to_cartesian(M1, M2, e_vec, h_vec, true_anomaly_old, r_vec, v_vec);
+    for (i=0; i<3; i++)
+    {
+        R1_vec[i] = R_CM_vec[i] + (M2/M) * r_vec[i];
+        V1_vec[i] = V_CM_vec[i] + (M2/M) * v_vec[i];
+
+        R2_vec[i] = R_CM_vec[i] - (M1/M) * r_vec[i];
+        V2_vec[i] = V_CM_vec[i] - (M1/M) * v_vec[i];
+    }
+}
+
+
 
 }

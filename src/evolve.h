@@ -31,6 +31,7 @@
 #include "collision.h"
 #include "test.h"
 #include "apsidal_motion_constant.h"
+#include "common_envelope_evolution.h"
 
 extern "C"
 {

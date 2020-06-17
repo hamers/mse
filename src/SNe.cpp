@@ -19,22 +19,26 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == 0 and p->evolve_as_star == 1)
+        if (p->is_binary == false and p->evolve_as_star == true)
         {
-            /* delta m was calculated in evolve_stars (stellar_evolution.cpp) */
+            /* p's instantaneous_perturbation_delta_mass is assumed to be set before calling handle_SNe_in_system() */
             p->instantaneous_perturbation_delta_X = 0.0;
             p->instantaneous_perturbation_delta_Y = 0.0;
             p->instantaneous_perturbation_delta_Z = 0.0;
+            p->instantaneous_perturbation_delta_VX = 0.0;
+            p->instantaneous_perturbation_delta_VY = 0.0;
+            p->instantaneous_perturbation_delta_VZ = 0.0;
 
-            if (fabs(p->instantaneous_perturbation_delta_mass) > 0.0)
+            //if (fabs(p->instantaneous_perturbation_delta_mass) > 0.0)
+            if (p->apply_kick == true)
             {
                 flag = sample_kick_velocity(p,&VX,&VY,&VZ);
-                printf("SNe.cpp -- delta_m %g vk %g % g %g\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ);
                 p->instantaneous_perturbation_delta_VX = VX;
                 p->instantaneous_perturbation_delta_VY = VY;
                 p->instantaneous_perturbation_delta_VZ = VZ;
                 index+=1;
             }
+            printf("SNe.cpp -- delta_m %g vk %g % g %g\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ);
             
         }
     }
@@ -53,8 +57,6 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     {
         printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
         *integration_flag = 3;
-                //*state = 3; /* TO DO: make general state macros */
-                //break;
     }
 
     reset_instantaneous_perturbation_quantities(particlesMap);
@@ -76,7 +78,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 
     double vnorm;
     
-    if (p->kick_distribution == 0 or p->apply_kick == false) // no kicks
+    if (p->kick_distribution == 0) // no kicks
     {
         vnorm = 0.0;
     }
@@ -87,7 +89,6 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             double sigma = p->kick_distribution_sigma;
             double v[3];
             sample_from_3d_maxwellian_distribution(sigma, v);
-        //vnorm = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
             vnorm = norm3(v);
         }
     }

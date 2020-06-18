@@ -69,4 +69,10 @@ double beta_wind_accretion = 0.125;
 double mstar_gbs_tolerance = 1.0e-10;
 double mstar_collision_tolerance = 1.0e-10;
 
+double triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1;
+double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1;
+double triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.9;
+double triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.9;
+double triple_mass_transfer_inner_binary_alpha_times_lambda = 5.0;
+
 }

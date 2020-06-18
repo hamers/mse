@@ -77,6 +77,12 @@ extern double beta_wind_accretion;
 extern double mstar_gbs_tolerance;
 extern double mstar_collision_tolerance;
 
+extern double triple_mass_transfer_primary_star_accretion_efficiency_no_disk;
+extern double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk;
+extern double triple_mass_transfer_primary_star_accretion_efficiency_disk;
+extern double triple_mass_transfer_secondary_star_accretion_efficiency_disk;
+extern double triple_mass_transfer_inner_binary_alpha_times_lambda;
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT
@@ -785,12 +791,16 @@ class Particle
     double emt_accretion_radius;
     double emt_tau;
     bool RLOF_at_pericentre_has_occurred_entering_RLOF;
-    double fm;
+    double emt_fm;
     double dynamical_mass_transfer_low_mass_donor_timescale;
     double dynamical_mass_transfer_WD_donor_timescale;
     double compact_object_disruption_mass_loss_timescale;
     bool accretion_disk_is_present;
     double accretion_disk_r_min;
+    
+    /* RLOF -- triple mass transfer */
+    double mass_dot_RLOF_triple;
+    double triple_mass_transfer_a_in_dot;
 
     /* Common-envelope evolution */
     double common_envelope_alpha;
@@ -1001,6 +1011,8 @@ class Particle
         emt_ejection_radius_mode = 0;
         emt_accretion_radius = 0.0;
         emt_tau = 0.0;
+        mass_dot_RLOF_triple = 0.0;
+        triple_mass_transfer_a_in_dot = 0.0;
         
         dynamical_mass_transfer_low_mass_donor_timescale = 1.0e2;
         dynamical_mass_transfer_WD_donor_timescale = 1.0e2;

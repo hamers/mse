@@ -42,6 +42,7 @@ int get_inclination_relative_to_parent(ParticlesMap *particlesMap, int index, do
 
 double compute_a_from_h(double m1, double m2, double h, double e);
 double compute_h_from_a(double m1, double m2, double a, double e);
+double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, double a, double a_dot, double e, double e_dot);
 
 bool equal_number(double x1, double x2, double tol);
 

@@ -1113,21 +1113,36 @@ int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     
     star3->luminosity = L3_f * CONST_L_SUN;
     
+    
+    /* Adjust e & h vectors of the outer binary. 
+     * Note the different units that were used in the above. */
+
+    double a,e; /* The new outer orbit a & e */
+    
+    if (stable == true)
+    {
+        /* Final orbit is determined by available orbital energy */
+        a = a_out_f * CONST_R_SUN;
+        e = e_out_f;
+    }
+    else
+    {
+        /* Unstable; for the the N-body integration, park the inner binary
+         * at the unstable boundary in a circular orbit. */
+        a = rp_out_f_crit * CONST_R_SUN;
+        e = epsilon;
+    }
+    
+    double h = compute_h_from_a(M3_f,M_inner_binary,a,e);
+    for (int i=0; i<3; i++)
+    {
+        outer_binary->e_vec[i] = e * outer_binary->e_vec_unit[i];
+        outer_binary->h_vec[i] = h * outer_binary->h_vec_unit[i];
+    }
+
 
     if (stable == true)
     {
-        /* Adjust e & h vectors of the outer binary. 
-         * Note the different units that were used in the above. */
-
-        double a = a_out_f * CONST_R_SUN;
-        double e = e_out_f;
-        double h = compute_h_from_a(M3_f,M_inner_binary,a,e);
-
-        for (int i=0; i<3; i++)
-        {
-            outer_binary->e_vec[i] = e * outer_binary->e_vec_unit[i];
-            outer_binary->h_vec[i] = h * outer_binary->h_vec_unit[i];
-        }
 
         /* Assume the binary true anomaly is not affected */
         

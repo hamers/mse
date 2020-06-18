@@ -777,6 +777,14 @@ double compute_h_from_a(double m1, double m2, double a, double e)
     return m1 * m2 * sqrt(CONST_G * a * (1.0 - e*e) / (m1 + m2));
 }
 
+double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, double a, double a_dot, double e, double e_dot)
+{
+    return m1_dot/m1 + m2_dot/m2 - c_1div2*(m1_dot + m2_dot)/(m1+m2) + c_1div2*(a_dot/a) - e*e_dot/(1.0 - e*e);
+    //M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
+}
+
+
+
 bool equal_number(double x1, double x2, double tol)
 {
     bool equal = false;
@@ -799,5 +807,6 @@ double compute_breakup_angular_frequency(double mass, double radius)
 {
     return sqrt(CONST_G*mass/(radius*radius*radius));
 }
+
 
 }

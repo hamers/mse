@@ -24,4 +24,6 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag);
 
+double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor);
+
 }

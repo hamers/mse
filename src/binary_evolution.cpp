@@ -88,6 +88,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         if (donor->is_binary == false and donor->is_bound == true)
         {
             donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
+            donor->mass_dot_RLOF_triple = 0.0;
             
             if (donor->RLOF_flag == 1 and std::count(parent_indices.begin(), parent_indices.end(), donor->parent) == 0)
             {
@@ -153,8 +154,10 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double M_accretor = accretor->mass;
 
     /* MT & dynamical timescales */
-    double fm = donor->fm;
+    double fm = donor->emt_fm;
+    //double dt = t - t_old;
     double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
+    //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
     double t_MT = M_donor/fabs(m_dot);
     double R_donor = donor->radius;
     double t_dyn_donor = compute_stellar_dynamical_timescale(M_donor, R_donor);
@@ -649,16 +652,13 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     return 0;
 }
 
+
 int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
     
-    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution\n");
+    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution parent_index %d donor_index %d accretor_index %g\n",parent_index,donor_index,accretor_index);
     //print_system(particlesMap,*integration_flag);
-
-
-   //                 donor->mass_dot_RLOF = m_dot;
-//                    accretor->mass_dot_RLOF = -m_dot;
 
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -691,39 +691,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     
     double dt = t - t_old;
     //double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
-    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
 
 
     /* Default value of dm1 -- transferred mass during this time-step */
+
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
-    double m_fac = CV_min(m_donor, 5.0);
-    m_fac *= m_fac;
+    double dm1 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
 
-    double log_fac = log(R_donor/R_RL_av_donor);
-    double dm1 = fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
-    
-    if (kw1 == 2)
-    {
-        double mew = (m_donor - donor->core_mass)/m_donor;
-        dm1 = CV_max(mew,0.01) * dm1;
-    }
-    else if (kw1 == 10)
-    {
-        //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
-        dm1 = 1.0e3*dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
-    }
-    
-    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */
-    {
-        dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
-    }
-    else /* Limit to dynamical rate for other cases. NOTE ASH: ignore for now the case "rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc" */
-    {
-        dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
-    }
-
-    printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
-    //exit(0);
 #ifdef IGNORE
 *
 * Mass transfer in one Kepler orbit.
@@ -780,7 +755,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
          endif
 #endif
 
-    
     double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
     double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
      
@@ -800,19 +774,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     double tbgb_accretor_old = tscls[0];
 
     bool nova = false;
-
-    /* Adjust dm1 based on donor type. */
-    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7)
-    {
-        /* Limit mass transfer to the thermal rate for remaining giant-like stars
-        * and to the dynamical rate for all others. */
-
-        dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
-    }
-    else /* NOTE: ignoring the merger case elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc))then */
-    {
-        dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
-    }
 
     /* Determine dm2. */
     /* Eddington accretion rate for compact accretors. */
@@ -1111,7 +1072,7 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 {
     printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution\n");
 
-    Particle *parent = (*particlesMap)[parent_index];
+    Particle *outer_binary = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *inner_binary = (*particlesMap)[accretor_index];
 
@@ -1152,59 +1113,108 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
     set_up_derived_quantities(particlesMap); /* for setting a, e, etc. for all orbits */
     
-    
-    #ifdef IGNORE
 
-    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
+//    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double m_donor = donor->mass;
-    double m_accretor = accretor->mass;
+    double m_inner_binary = inner_binary->mass;
+    double m1 = star1->mass;
+    double m2 = star2->mass;
 
-    double q = m_donor/m_accretor;
+
+    double q = m_donor/m_inner_binary;
 
     double R_donor = donor->radius;
-    double R_accretor = accretor->radius;
+    //double R_accretor = accretor->radius;
 
-    double m_old = m_donor + m_accretor;
+    //double m_old = m_donor + m_inner_binary;
 
     int kw1 = donor->stellar_type;
-    int kw2 = accretor->stellar_type;
+    //int kw2 = accretor->stellar_type;
 
     double t_KH_donor = compute_Kelvin_Helmholtz_timescale(kw1,m_donor,donor->core_mass,R_donor,donor->luminosity);
-    double t_KH_accretor = compute_Kelvin_Helmholtz_timescale(kw2,m_accretor,accretor->core_mass,R_accretor,accretor->luminosity);
+    //double t_KH_accretor = compute_Kelvin_Helmholtz_timescale(kw2,m_accretor,accretor->core_mass,R_accretor,accretor->luminosity);
 
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
-    double a = parent->a;
-    double e = parent->e;
-    double rp = a*(1.0-e);
+    double a_out = outer_binary->a;
+    double e_out = outer_binary->e;
+    double rp_out = a_out*(1.0-e_out);
+
+    double a_in = inner_binary->a;
+    double e_in = inner_binary->e;
+    double rp_in = a_in*(1.0-e_in);
     
 //    double fm = donor->fm;
 //    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb); /* NOTE: ignoring mass transfer rates as calculated in BSE */
     
     double dt = t - t_old;
     //double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
-    double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
 
 
-    /* Default value of dm1 -- transferred mass during this time-step */
-    double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
+    /* Default value of dm3 -- transferred mass during this time-step */
+
+    double R_RL_av_donor = roche_radius_pericenter_eggleton(rp_out,q);
+    double dm3 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    
+    donor->mass_dot_RLOF_triple = -dm3/dt;
+    
+    /* Determine the amount of mass accreted in the inner binary. 
+     * Depends on whether or not a circumbinary accretion disk can form. */
+    double q_accretor = m_inner_binary/m_donor;
+    double ra_in = a_in * (1.0 + e_in);
+    double circum_inner_binary_accretion_disk_r_min = 0.0425 * ra_in * pow(q_accretor*(1.0 + q_accretor), 0.25); /* https://ui.adsabs.harvard.edu/abs/1976ApJ...206..509U/abstract */
+
+    bool circum_inner_binary_accretion_disk_is_present = false;
+    if (circum_inner_binary_accretion_disk_r_min > ra_in)
+    {
+        circum_inner_binary_accretion_disk_is_present = true;
+    }
+    
+    double dm1,dm2;
+    if (circum_inner_binary_accretion_disk_is_present == false)
+    {
+        /* Expect that most of the mass from the tertiary will not be accreted by the inner binary */
+        dm1 = triple_mass_transfer_primary_star_accretion_efficiency_no_disk * dm3;
+        dm2 = triple_mass_transfer_secondary_star_accretion_efficiency_no_disk * dm3;
+    }
+    else
+    {
+        /* Expect that more mass is accreted when a circumbinary disk is present. */
+        dm1 = triple_mass_transfer_primary_star_accretion_efficiency_disk * dm3;
+        dm2 = triple_mass_transfer_secondary_star_accretion_efficiency_disk * dm3;
+    }
+
+    star1->mass_dot_RLOF_triple = dm1/dt;
+    star2->mass_dot_RLOF_triple = dm2/dt;
+    
+    double a_in_f = a_in * ( (m1 + dm1)*(m2 + dm2) / (m1*m2 + 2.0*(m1+m2)*dm3/triple_mass_transfer_inner_binary_alpha_times_lambda) );
+    inner_binary->triple_mass_transfer_a_in_dot = (a_in_f - a_in)/dt;
+    
+    /* Effect of mass loss of triple subsystem on the rest of the system. */
+    /* Assume the mass not accreted by the inner binary is lost in an adiabatic wind. */
+    inner_binary->mass_dot_wind = -( dm3 - (dm1 + dm2) )/dt;
+    
+}
+ 
+double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
+{
     double m_fac = CV_min(m_donor, 5.0);
     m_fac *= m_fac;
 
     double log_fac = log(R_donor/R_RL_av_donor);
     double dm1 = fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
     
-    if (kw1 == 2)
+    if (kw1 == SSE_HG)
     {
-        double mew = (m_donor - donor->core_mass)/m_donor;
+        double mew = (m_donor - core_mass_donor)/m_donor;
         dm1 = CV_max(mew,0.01) * dm1;
     }
-    else if (kw1 == 10)
+    else if (kw1 == SSE_HeWD)
     {
         //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
         dm1 = 1.0e3*dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
     }
     
-    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */
+    if (kw1 >= SSE_HG and kw1 <= SSE_HeGB and kw1 != SSE_HeMS) /* Limit mass transfer to the thermal rate for giant-like stars */
     {
         dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
     }
@@ -1213,337 +1223,9 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
     }
 
-    printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
-    //exit(0);
-
-
-    
-    double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
-    double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
-     
-    double tms,tn;
-    double *GB,*tscls,*lums;
-    GB = new double[10];
-    tscls = new double[20];
-    lums = new double[10];  
-
-    /* These quantities are used below to determine aging */
-    star_(&kw1,&donor->sse_initial_mass,&m_donor,&tms,&tn,tscls,lums,GB,donor->zpars);
-    double tms_donor_old = tms;
-    double tbgb_donor_old = tscls[0];
-    
-    star_(&kw2,&accretor->sse_initial_mass,&m_accretor,&tms,&tn,tscls,lums,GB,accretor->zpars);
-    double tms_accretor_old = tms;
-    double tbgb_accretor_old = tscls[0];
-
-    bool nova = false;
-
-    /* Adjust dm1 based on donor type. */
-    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7)
-    {
-        /* Limit mass transfer to the thermal rate for remaining giant-like stars
-        * and to the dynamical rate for all others. */
-
-        dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
-    }
-    else /* NOTE: ignoring the merger case elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.kstar(j2).le.1.and.q(j1).gt.qc))then */
-    {
-        dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
-    }
-
-    /* Determine dm2. */
-    /* Eddington accretion rate for compact accretors. */
-    double hydrogen_mass_fraction = donor->zpars[10];
-    double m_dot_Eddington = compute_Eddington_accretion_rate(R_accretor, hydrogen_mass_fraction);
-    double dme = m_dot_Eddington * dt;
-
-    double taum = (m_accretor/dm1) * dt;
-    
-    if (kw2 <= 2 or kw2 == 4)
-    {
-        /* Limit according to the thermal timescale of the secondary. */
-
-        dm2 = dm1 * CV_min(1.0, 10.0 * taum/t_KH_accretor);
-    }
-    else if (kw2 >= 7 and kw2 <= 9)
-    {
-        /* Naked helium star secondary swells up to a core helium burning star
-         * or SAGB star unless the primary is also a helium star. */
-
-        if (kw1 >= 7)
-        {
-            dm2 = dm1 * CV_min(1.0, 10.0 * taum/t_KH_accretor);
-        }
-        else
-        {
-            dm2 = dm1;
-            
-            double dmchk = dm2 - 1.05 * dms_accretor;
-            if (dmchk > 0.0 and dm2/m_accretor > 1.0e-4)
-            {
-                int kst = CV_min(6, 2*kw2 - 10);
-                double mcx;
-                if (kst == 4)
-                {
-                    /* ignoring the age adjustment -- units seem to be wrong? */
-                    mcx = m_accretor;
-                }
-                else
-                {
-                    mcx = accretor->core_mass;
-                }
-        
-                double mt2 = m_accretor + (dm2 - dms_accretor); /* NOTE: think about dms_accretor */
-                double accretor_age;
-                gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age);
-                
-                accretor->epoch = t - accretor_age*Myr_to_yr;
-            }
-        }
-    }
-    else if (kw1 <= 6 and kw2 >= 10 and kw2 <= 12)
-    {
-        /* White dwarf secondary. */
-
-        if (dm1/dt < 2.71e-7) 
-        {
-            if (dm1/dt < 1.03e-7)
-            {
-                /* Accrete until a nova explosion blows away most of the accreted material. */
-                nova = true;
-
-                dm2 = nova_accretion_factor * CV_min(dm1, dme);
-            }
-            else
-            {
-                /* Steady burning at the surface */
-                dm2 = dm1;
-            }
-                
-        }
-        else
-        {
-            /* Make a new giant envelope. */
-
-            dm2 = dm1;
-
-            int kw;
-            if ( (kw2 == 10 and m_accretor < 0.05) or (kw2 >= 11 and m_accretor < 0.5) ) /* Check for planets or low-mass WDs. */
-            {
-                kw = kw2;
-            }
-            else
-            {
-                kw = CV_min(6, 3*kw2 - 27);
-
-                double new_age;
-                double mt2 = m_accretor + (dm2 - dms_accretor);
-                gntage_(&accretor->core_mass,&mt2,&kw,accretor->zpars,&accretor->sse_initial_mass,&new_age);
-                accretor->age = new_age*Myr_to_yr;
-                accretor->epoch = t - accretor->age;
-            }
-        }
-    }
-    else if (kw2 >= 10)
-    {
-        dm2 = CV_min(dm1, dme);
-    }
-    else
-    {
-        /* We have a giant whose envelope can absorb any transferred material. */
-        dm2 = dm1;
-    }
-    
-    if (kw2 >= 10 and kw2 <= 12)
-    {
-        double mt2 = m_accretor + (dm2 - dms_accretor);
-        if (kw1 <= 10 and kw2 == 10 and mt2 >= 0.7)
-        {
-            /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
-            double Delta_m1 = dm1 + dms_donor;
-            double Delta_m2 = m_accretor;
-            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
-
-            /* The binary becomes a body with the donor's properties. */
-            update_stellar_evolution_properties(donor);
-            parent->is_binary = false; 
-            copy_all_body_properties(donor, parent);
-
-            particlesMap->erase(donor_index);
-            particlesMap->erase(accretor_index);
-        }
-        else if (kw1 <= 10 and kw2 >= 11)
-        {
-            /* CO and ONeWDs accrete helium-rich material until the accumulated 
-            * material exceeds a mass of 0.15 when it ignites. For a COWD with 
-            * mass less than 0.95 the system will be destroyed as an ELD in a 
-            * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-            * will survive with all the material converted to ONe (JH 30/09/99). */
-    
-            if (mt2 - accretor->sse_initial_mass >= 0.15)
-            {
-                if (kw2 == 11)
-                {
-                    double Delta_m1 = dm1 + dms_donor;
-                    double Delta_m2 = m_accretor;
-                    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
-
-                    /* The binary becomes a body with the donor's properties. */
-                    update_stellar_evolution_properties(donor);
-                    parent->is_binary = false; 
-                    copy_all_body_properties(donor, parent);
-
-                    particlesMap->erase(donor_index);
-                    particlesMap->erase(accretor_index);
-                }
-                else
-                {
-                    accretor->sse_initial_mass = mt2;
-                }
-            }
-            else
-            {
-                accretor->sse_initial_mass = mt2;
-            }
-        }
-        if (kw2 == 10 or kw2 == 11)
-        {
-            if (mt2 >= chandrasekhar_mass)
-            {
-                /* If the Chandrasekhar limit is exceeded for a white dwarf then destroy
-                * the white dwarf in a supernova. If the WD is ONe then a neutron star
-                * will survive the supernova and we let HRDIAG take care of this when
-                * the stars are next updated. */
-                
-                dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
-                double Delta_m1 = dm1 + dms_donor;
-                double Delta_m2 = m_accretor;
-                handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
-
-                /* The binary becomes a body with the donor's properties. */
-                update_stellar_evolution_properties(donor);
-                parent->is_binary = false; 
-                copy_all_body_properties(donor, parent);
-
-                particlesMap->erase(donor_index);
-                particlesMap->erase(accretor_index);
-            }
-        }
-    }
-
-    /* "New" masses used for aging. Note: the actual masses (and radii) will be updated during the ODE integration.
-     * Also, by definition, dm1 > 0, dm2 > 0 */
-    double m_donor_new = m_donor - dm1 + donor->mass_dot_wind * dt;
-    double m_accretor_new = m_accretor + dm2 + accretor->mass_dot_wind * dt;
-   
-    /* For a HG star check if the initial mass can be reduced. */    
-    if (kw1 == 2 and donor->sse_initial_mass <= donor->zpars[2])
-    {
-        double m0 = m_donor_new;
-        donor->sse_initial_mass = m_donor;
-
-        star_(&kw1,&donor->sse_initial_mass,&donor->mass,&tms,&tn,tscls,lums,GB,donor->zpars);
-        if (GB[8] < donor->core_mass)
-        {
-            donor->sse_initial_mass = m0;
-        }
-    }
-    if (kw2 == 2 and accretor->sse_initial_mass <= accretor->zpars[2]) /* the same but with donor and accretor swapped */
-    {
-        double m0 = accretor->sse_initial_mass;
-        accretor->sse_initial_mass = m_accretor;
-
-        star_(&kw2,&accretor->sse_initial_mass,&accretor->mass,&tms,&tn,tscls,lums,GB,accretor->zpars);
-        if (GB[8] < accretor->core_mass)
-        {
-            accretor->sse_initial_mass = m0;
-        }
-    }
-
-    /* Always rejuvenate the secondary and age the primary if they are on the main sequence. */
-    if (kw1 <= 2 or kw1 == 7)
-    {
-        star_(&kw1,&donor->sse_initial_mass,&m_donor_new,&tms,&tn,tscls,lums,GB,donor->zpars);
-        if (kw1 == 2)
-        {
-            double age = tms + (donor->age*yr_to_Myr - tms_donor_old) * (tscls[0] - tms)/(tbgb_donor_old - tms_donor_old);
-            donor->age = age*Myr_to_yr;
-        }
-        else
-        {
-            donor->age *= (tms/tms_donor_old);
-        }
-        donor->epoch = t - donor->age;
-    }
-    if (kw2 <= 2 or kw2 == 7)
-    {
-        star_(&kw2,&accretor->sse_initial_mass,&m_accretor_new,&tms,&tn,tscls,lums,GB,accretor->zpars);
-        if (kw2 == 2)
-        {
-            double age = tms + (accretor->age*yr_to_Myr - tms_accretor_old) * (tscls[0] - tms)/(tbgb_accretor_old - tms_accretor_old);
-            accretor->age = age*Myr_to_yr;
-        }
-        else if ((m_accretor_new < 0.35 or m_accretor_new > 1.25) and (kw2 != 7))
-        {
-            accretor->age *= (tms/tms_accretor_old) * ((m_accretor_new - dm2)/m_accretor_new);
-        }
-        else
-        {
-            accretor->age *= (tms/tms_donor_old);
-        }
-        accretor->epoch = t - accretor->age;
-    }
-
-    /* Determine whether or not an accretion disk forms around the secondary
-     * Follow prescription of https://ui.adsabs.harvard.edu/abs/1976ApJ...206..509U/abstract */
-    accretor->emt_accretion_radius = R_accretor;
-
-    accretor->accretion_disk_is_present = false;
-    double q_accretor = m_accretor/m_donor;
-    accretor->accretion_disk_r_min = 0.0425 * rp * pow(q_accretor*(1.0 + q_accretor), 0.25); /* ASH: taking rp instead of separation */
-
-    if (accretor->accretion_disk_r_min < R_accretor)
-    {
-        accretor->accretion_disk_is_present = true;
-        accretor->emt_accretion_radius = 1.7*accretor->accretion_disk_r_min;
-    }
-
-    /* Determine ejection mode */
-    double temp = 1.0 - e;
-    double n_peri = (TWOPI/P_orb) * sqrt( (1.0 + e)/(temp*temp*temp) );
-    double ospin_hat = norm3(donor->spin_vec) / n_peri;
-    double q_donor = m_donor/m_accretor;
-    if (ospin_hat < 0.1) /* "Small" donor spin */
-    {
-        donor->emt_ejection_radius_mode = 1;
-    }
-    else if (q_donor > 10) /* "Large" mass ratio */
-    {
-        donor->emt_ejection_radius_mode = 2;
-    }
-    else /* Other cases: simply to not take into account finite size of donor */
-    {
-        donor->emt_ejection_radius_mode = 0;
-    }
-    
-    
-    /* Set mass transfer rates */
-    donor->mass_dot_RLOF = -dm1/dt;
-    accretor->mass_dot_RLOF = dm2/dt;
-
-    /* Assume that any mass not accreted is ejected from the accretor in an isotropic wind. -- TO DO: could the effect be instantaneous?
-     * This somewhat mimics non-conservative mass transfer. */
-    donor->mass_dot_adiabatic_ejection = 0.0;
-    accretor->mass_dot_adiabatic_ejection = - (dm1 - dm2)/dt;
-
-    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection);
-    //print_system(particlesMap,*integration_flag);
-    
-    #endif
-    
-    return 0;
+    //printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
+    return dm1;
 }
-
 
 
 }

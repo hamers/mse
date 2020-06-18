@@ -71,202 +71,137 @@ int ODE_handle_stellar_winds(Particle *p)
 
 }
 
-int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, double x, double E_0)
+int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
 {
-    int i;
+    Particle *child1 = (*particlesMap)[p->child1];
+    Particle *child2 = (*particlesMap)[p->child2];
     
-    double M_d = donor->mass;
-    double M_a = accretor->mass;
-    double M = M_d + M_a;
-    double q = M_d/M_a;
-    double tau = donor->emt_tau;
-    double R_d = donor->radius;
-    double R_a = accretor->radius;
-    double R_d_p2 = R_d*R_d;
-    double R_a_p2 = R_a*R_a;
-    
-    double Omega_d = donor->spin_vec_norm;
-    double Omega_a = accretor->spin_vec_norm;
-    
-    double a = p->a;
-    double e = p->e;
-    
-    if (e < epsilon)
+    if (child1->is_binary == false and child2->is_binary == false)
+    /* For now, only allow mass transfer between two single stars in a binary (e.g., no transfer from tertiary to inner binary */
     {
-        e = epsilon;
+     //   printf("ok %d %d %d\n",p->index,child1->index,child2->index);
+        ODE_handle_RLOF_emt(p, child1, child2);
+    }
+    else if (child1->is_binary == false and child2->is_binary == true)
+    {
+        ODE_handle_RLOF_triple_mass_transfer(particlesMap, p, child1, child2);
+    }
+    else if (child1->is_binary == true and child2->is_binary == false)
+    {
+        ODE_handle_RLOF_triple_mass_transfer(particlesMap, p, child2, child1);
+    }
+    
+    return 0;
+}
+
+int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *outer_binary, Particle *donor, Particle *inner_binary)
+{
+    /* Mass transfer from tertiary star to inner binary. */
+    
+    if (donor->is_binary == true or inner_binary->is_binary == false)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- ERROR: donor %d should be star; inner binary %d should be a binary!\n",donor->index,inner_binary->index);
+        exit(-1);
     }
 
-    //double epsilon = 1.0e-12;
-    if (M_d <= epsilon or M_a <= epsilon)
+    if (donor->include_mass_transfer_terms==false)
     {
         return 0;
     }
     
-//    double R_a = 0.0;
-
-    double fm,fa,fe,fomega,ga,ge,ha,he;
-    fm=fa=fe=fomega=ga=ge=ha=he=0.0;
-
-    double finite_size_term_a = 0.0;
-    double finite_size_term_e = 0.0;
+    Particle *child1 = (*particlesMap)[inner_binary->child1];
+    Particle *child2 = (*particlesMap)[inner_binary->child2];
     
-    //if model == "sep":
-        //no_RLOF = False
-        //fm = 1.0
-        //fa = np.sqrt(1.0-e**2)
-        //fe = fa*(1.0-e)
-        //fomega = 0.0
+    double m_donor = donor->mass;
+    double m_inner_binary = inner_binary->mass;
 
-    /* TO DO: allow for user-specified MA_tau */
-    double n = sqrt(CONST_G*M/(a*a*a));
-    double MA_tau = n*tau; 
-
-    double cos_eccentric_anomaly,sin_eccentric_anomaly;
-    compute_eccentric_anomaly_from_mean_anomaly(MA_tau, e, &cos_eccentric_anomaly, &sin_eccentric_anomaly);
-
-    double E_tau = atan2(sin_eccentric_anomaly,cos_eccentric_anomaly);
-    if (E_tau > M_PI) /* E_tau cannot not be larger than Pi */
-    {
-        E_tau = M_PI; 
-    }
-    
-    fm = fm_function(e,x,E_0,E_tau);
-    fa = fa_function(e,x,E_0,E_tau);
-    fe = fe_function(e,x,E_0,E_tau);
-    fomega = fomega_function(e,x,E_0,E_tau);
-
-    donor->fm = fm;
-
-    if (fabs(fm) <= epsilon)
-    {
-        fm = epsilon;
-    }
-
-    if (donor->emt_ejection_radius_mode > 0 or accretor->emt_accretion_radius > 0.0)
-    {
+    double R_donor = donor->radius;
        
-        ha = ha_function(e,x,E_0);
-        he = he_function(e,x,E_0);
+    double a_in = inner_binary->a;
+    double a_out = outer_binary->a;
 
-        finite_size_term_a = - q * (accretor->emt_accretion_radius/a) * ha;
-        finite_size_term_e = - q * (accretor->emt_accretion_radius/a) * he;
-
-        if (donor->emt_ejection_radius_mode == 1) /*  limit of small donor spin */
-        {
-            ga = ga_function(e,x,E_0);
-            ge = ge_function(e,x,E_0);
-            double XL0 = XL0_q_function(q);
-            
-            finite_size_term_a += XL0*ga;
-            finite_size_term_e += XL0*ge;
-        }
-        else if (donor->emt_ejection_radius_mode == 2) /* limit of large mass ratio q */
-        {
-            double temp = 1.0 - e;
-            double n_peri = n*sqrt( (1.0 + e)/(temp*temp*temp) );
-            double ospin_hat = norm3(donor->spin_vec) / n_peri;
-            double XL0 = pow(ospin_hat,-2.0/3.0) * temp / pow( 1.0+e, 1.0/3.0);
-
-            finite_size_term_a += XL0*ha;
-            finite_size_term_e += XL0*he;
-                
-        }
+    double q = m_donor/m_inner_binary;
+    double R_Lc = roche_radius_pericenter_eggleton(a_out,q); /* with argument "a", actually computes circular Roche lobe radius */
+    if (R_donor < R_Lc)
+    {
+        /* There is no RLOF of tertiary star; do nothing. */
+        return 0;
     }
 
-    //double P_orb = compute_orbital_period(p);
-    //double M_d_dot_av = -(M_d/P_orb)*fm;
-    //double M_a_dot_av = -M_d_dot_av;
-    double M_d_dot_av = donor->mass_dot_RLOF;
-    double M_a_dot_av = accretor->mass_dot_RLOF;
+    printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
     
-    if (fabs(M_d_dot_av) > 1.0)
-    {
-        printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
-        M_d_dot_av = -1.0;
-        M_a_dot_av = -M_d_dot_av;
-    }
+    double m_C1 = child1->mass;
+    double m_C2 = child2->mass;
+
+    double e_in = inner_binary->e;
+    double e_out = outer_binary->e;
+
+    double m_donor_dot = donor->mass_dot_RLOF_triple;
+    double m_C1_dot = child1->mass_dot_RLOF_triple;
+    double m_C2_dot = child2->mass_dot_RLOF_triple;
+
+        
+    /* Effect on inner orbit -- CE-like behavior. */
+    double a_in_dot = inner_binary->triple_mass_transfer_a_in_dot; /* This was computed beforehand in binary_evolution.cpp -- triple_stable_mass_transfer_evolution() */
+    double e_in_dot = 0.0;
     
-    double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
-    //printf("CF %g\n",common_factor);
-    if (x<=0.0)
-    {
-        printf("mass_changes.cpp -- ERROR: x<=0 (x=%g)\n",x);
-        M_d_dot_av=0.0;
-        M_a_dot_av=0.0;
-    }
+    /* Effect on outer orbit -- non-conservative mass transfer. */
+    double beta = -(m_C1_dot+m_C2_dot)/m_donor_dot;
+    double gamma = m_donor/m_inner_binary; /* Isotropic re-emission (Pols, lecture notes on binary evolution, Chapter 7) */
+    double a_out_dot = compute_a_dot_circular_non_conservative_mass_transfer(a_out,m_donor,m_donor_dot,m_inner_binary,beta,gamma);
+    double e_out_dot = 0.0;
 
-    //printf("mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
+    /* Effect on spins. */
+    double Omega_donor = donor->spin_vec_norm;
+    double J_spin_donor_dot = m_donor*R_donor*R_donor*Omega_donor;
+    double Omega_donor_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_donor, m_donor, m_donor_dot, donor->core_mass, R_donor, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
     
+    /* Assume the spins in the inner binary are unaffected. */
 
-    
-    double da_dt = common_factor*a*( fa*(1.0-q) + finite_size_term_a );
-    double de_dt = common_factor*( fe*(1.0-q) + finite_size_term_e );
-    double domega_dt = common_factor*fomega*( 1.0-q );
-
-//        dM_d_dt += M_d_dot_av
-//        dM_a_dt += -dM_d_dt
-
-    donor->dmass_dt += M_d_dot_av;
-    accretor->dmass_dt += M_a_dot_av;
-
-    double factor_h_vec = M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
-    
-    if (da_dt != da_dt || de_dt != de_dt || domega_dt != domega_dt)
+    if (Omega_donor_dot != Omega_donor_dot)
     {
-        printf("mass_changes.cpp -- ERROR: nans in dots of a/e/omega, %g %g %g\n",da_dt,de_dt,domega_dt);
-    }
-    //double q_vec_unit[3];
-    //cross3(p->h_vec_unit,p->e_vec_unit,q_vec_unit);
-
-
-    /* Compute spin changes due to RLOF */
-    double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
-    double I_donor = compute_moment_of_inertia(M_d, donor->core_mass, R_d, donor->core_radius, donor->sse_k2, donor->sse_k3);
-    double I_donor_dot = donor->sse_k2*donor->dmass_dt*R_d_p2 + 2.0*donor->sse_k2*(M_d - donor->core_mass)*R_d*donor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
-    double Omega_d_dot = (J_spin_donor_dot - I_donor_dot*Omega_d)/I_donor;
-    
-    double J_spin_accretor_dot;
-    if (accretor->accretion_disk_is_present == true)
-    {
-        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * R_a);
-    }
-    else
-    {
-        double r_disk = 1.7*accretor->accretion_disk_r_min;
-        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
-    }
-    double I_accretor = compute_moment_of_inertia(M_a, accretor->core_mass, R_a, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
-    double I_accretor_dot = accretor->sse_k2*accretor->dmass_dt*R_a_p2 + 2.0*accretor->sse_k2*(M_a - accretor->core_mass)*R_a*accretor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
-    double Omega_a_dot = (J_spin_accretor_dot - I_accretor_dot*Omega_a)/I_accretor;
-
-    if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
-    {
-        printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- Omega_donor_dot %g\n",Omega_donor_dot);
         exit(-1);
     }
+
+
+    /* Update dmass_dt. */
+    donor->dmass_dt += m_donor_dot;
+    child1->dmass_dt += m_C1_dot;
+    child2->dmass_dt += m_C2_dot;
     
-
-    for (i=0; i<3; i++)
+    /* Update h,e, and spin vectors. */
+    double h_in_dot_div_h_in = compute_h_dot_div_h(m_C1, m_C1_dot, m_C2, m_C2_dot, a_in, a_in_dot, e_in, e_in_dot);
+    double h_out_dot_div_h_out = compute_h_dot_div_h(m_donor, m_donor_dot, m_inner_binary, m_C1_dot+m_C2_dot, a_out, a_out_dot, e_out, e_out_dot);
+ 
+    for (int i=0; i<3; i++)
     {
-    //        if (p->is_binary == 1)
-      //      {
-        p->dh_vec_dt[i] += p->h_vec[i] * factor_h_vec;
-        p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt  +  e * p->q_vec_unit[i] * domega_dt;
+        inner_binary->dh_vec_dt[i] += inner_binary->h_vec[i] * h_in_dot_div_h_in;
+        outer_binary->dh_vec_dt[i] += outer_binary->h_vec[i] * h_out_dot_div_h_out;
 
-        /* Assume mass transfer does not affect the directions of the spins. */
-        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
-        accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
+        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_donor_dot;
         
-        //#ifdef VERBOSE
-        //printf("mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
-        //#endif
+        //p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt;
     }
-
-
+    
+    
+    
     return 0;
 }
 
+double compute_a_dot_circular_non_conservative_mass_transfer(double a, double m_donor, double m_donor_dot, double m_accretor, double beta, double gamma)
+{
+    /* Pols, lecture notes on binary evolution, Chapter 7, eq. (7.14). */
+    return -2.0*a*(m_donor_dot/m_donor) * ( 1.0 - beta*(m_donor/m_accretor) - (1.0 - beta)*(gamma + c_1div2)*m_donor/(m_donor+m_accretor) );
+}
 
+double compute_Omega_dot_from_J_dot_mass_transfer(double J_spin_dot, double Omega, double mass, double mass_dot, double core_mass, double radius, double radius_dot, double core_radius, double sse_k2, double sse_k3)
+{
+    double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, sse_k2, sse_k3);
+    double I_dot = sse_k2*mass_dot*radius*radius + 2.0*sse_k2*(mass - core_mass)*radius*radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    double Omega_dot = (J_spin_dot - I_dot*Omega)/I;
+    return Omega_dot;
+}
 
 int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
 {
@@ -315,59 +250,219 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
     return 0;
 }
 
-//double R_Lc_div_a(double q) /* TO DO: streamline this with the function in root_finding.cpp */
-/* 1983ApJ...268..368E
-    q is defined as m_primary/m_secondary */
-//{
-    //double q_pow_one_third = pow(q,c_1div3);
-    //double q_pow_two_third = q_pow_one_third*q_pow_one_third;
-    //return 0.49*q_pow_two_third/(0.6*q_pow_two_third + log(1.0 + q_pow_one_third));
-//}
-
-int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
+int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, double x, double E_0)
 {
-    Particle *child1 = (*particlesMap)[p->child1];
-    Particle *child2 = (*particlesMap)[p->child2];
+    /* Implementation of the analytic model of https://ui.adsabs.harvard.edu/abs/2019ApJ...872..119H/abstract,
+     * with one important modification: instead of conservative transfer, adapt it to the non-conservative case. 
+     * This is achieved by setting M_a_dot = - beta * M_d_dot, where beta=1 in the conservative case.
+     * This modifies all the equations in a very simple way: make the replacement q -> q * beta. 
+     * For reference: the "Sepinsky" model (https://ui.adsabs.harvard.edu/abs/2007ApJ...667.1170S/abstract) has
+     * fm = 1.0, fa = \sqrt(1-e^2), fe = fa*(1-e), and fomega = 0.0. */
+    int i;
     
-    if (child1->is_binary == false and child2->is_binary == false)
-    /* For now, only allow mass transfer between two single stars in a binary (e.g., no transfer from tertiary to inner binary */
+    double M_d = donor->mass;
+    double M_a = accretor->mass;
+    double M = M_d + M_a;
+    double q = M_d/M_a;
+    double tau = donor->emt_tau;
+    double R_d = donor->radius;
+    double R_a = accretor->radius;
+    double R_d_p2 = R_d*R_d;
+    double R_a_p2 = R_a*R_a;
+    
+    double Omega_d = donor->spin_vec_norm;
+    double Omega_a = accretor->spin_vec_norm;
+    
+    double a = p->a;
+    double e = p->e;
+    
+    if (e < epsilon)
     {
-     //   printf("ok %d %d %d\n",p->index,child1->index,child2->index);
-        ODE_handle_RLOF_emt(p, child1, child2);
+        e = epsilon;
+    }
+
+    if (M_d <= epsilon or M_a <= epsilon) /* No more mass left; skip. */
+    {
+        return 0;
     }
     
-    return 0;
-}
+    double fm,fa,fe,fomega,ga,ge,ha,he;
+    fm=fa=fe=fomega=ga=ge=ha=he=0.0;
 
+    double finite_size_term_a = 0.0;
+    double finite_size_term_e = 0.0;
+
+    double M_d_dot_av = donor->mass_dot_RLOF;
+    double M_a_dot_av = accretor->mass_dot_RLOF;
+
+    if (fabs(M_d_dot_av) <= epsilon or fabs(M_a_dot_av) <= epsilon) /* Effectively zero mass transfer rate. */
+    {
+        return 0;
+    }
+
+    double beta = -M_a_dot_av/M_d_dot_av; /* Quantifies non-conservativeness. */
+
+    printf("B %g\n",beta);
+    
+    /* TO DO: allow for user-specified MA_tau */
+    double n = sqrt(CONST_G*M/(a*a*a));
+    double MA_tau = n*tau; 
+
+    double cos_eccentric_anomaly,sin_eccentric_anomaly;
+    compute_eccentric_anomaly_from_mean_anomaly(MA_tau, e, &cos_eccentric_anomaly, &sin_eccentric_anomaly);
+
+    double E_tau = atan2(sin_eccentric_anomaly,cos_eccentric_anomaly);
+    if (E_tau > M_PI) /* E_tau cannot not be larger than Pi */
+    {
+        E_tau = M_PI; 
+    }
+    
+    fm = fm_function(e,x,E_0,E_tau);
+    fa = fa_function(e,x,E_0,E_tau);
+    fe = fe_function(e,x,E_0,E_tau);
+    fomega = fomega_function(e,x,E_0,E_tau);
+
+    donor->emt_fm = fm;
+
+    if (fabs(fm) <= epsilon)
+    {
+        fm = epsilon;
+    }
+
+    if (donor->emt_ejection_radius_mode > 0 or accretor->emt_accretion_radius > 0.0)
+    {
+       
+        ha = ha_function(e,x,E_0);
+        he = he_function(e,x,E_0);
+
+        finite_size_term_a = - q * beta * (accretor->emt_accretion_radius/a) * ha;
+        finite_size_term_e = - q * beta * (accretor->emt_accretion_radius/a) * he;
+
+        if (donor->emt_ejection_radius_mode == 1) /*  limit of small donor spin */
+        {
+            ga = ga_function(e,x,E_0);
+            ge = ge_function(e,x,E_0);
+            double XL0 = XL0_q_function(q);
+            
+            finite_size_term_a += XL0*ga;
+            finite_size_term_e += XL0*ge;
+        }
+        else if (donor->emt_ejection_radius_mode == 2) /* limit of large mass ratio q */
+        {
+            double temp = 1.0 - e;
+            double n_peri = n*sqrt( (1.0 + e)/(temp*temp*temp) );
+            double ospin_hat = norm3(donor->spin_vec) / n_peri;
+            double XL0 = pow(ospin_hat,-2.0/3.0) * temp / pow( 1.0+e, 1.0/3.0);
+
+            finite_size_term_a += XL0*ha;
+            finite_size_term_e += XL0*he;
+                
+        }
+    }
+
+    //double P_orb = compute_orbital_period(p);
+    //double M_d_dot_av = -(M_d/P_orb)*fm;
+    //double M_a_dot_av = -M_d_dot_av;
+    
+    if (fabs(M_d_dot_av) > 1.0)
+    {
+        printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
+        M_d_dot_av = -1.0;
+        M_a_dot_av = -M_d_dot_av;
+    }
+    
+    double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
+    //printf("CF %g\n",common_factor);
+    if (x<=0.0)
+    {
+        printf("mass_changes.cpp -- ERROR: x<=0 (x=%g)\n",x);
+        M_d_dot_av=0.0;
+        M_a_dot_av=0.0;
+    }
+
+    //printf("mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
+    
 
     
+    double da_dt = common_factor*a*( fa*(1.0 - q*beta) + finite_size_term_a );
+    double de_dt = common_factor*( fe*(1.0 - q*beta) + finite_size_term_e );
+    double domega_dt = common_factor*fomega*( 1.0 - q*beta );
+
+    /* Update dmass_dt. */
+    donor->dmass_dt += M_d_dot_av;
+    accretor->dmass_dt += M_a_dot_av;
+
+    //double factor_h_vec = M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
+    double factor_h_vec = compute_h_dot_div_h(M_d, M_d_dot_av, M_a, M_a_dot_av, a, da_dt, e, de_dt);
+    
+    if (da_dt != da_dt || de_dt != de_dt || domega_dt != domega_dt)
+    {
+        printf("mass_changes.cpp -- ERROR: nans in dots of a/e/omega, %g %g %g beta %g M_a_dot_av %g M_a_dot_av %g\n",da_dt,de_dt,domega_dt,beta,M_a_dot_av,M_a_dot_av);
+    }
+
+    /* Compute spin changes due to RLOF */
+    double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
+    //double I_donor = compute_moment_of_inertia(M_d, donor->core_mass, R_d, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    //double I_donor_dot = donor->sse_k2*donor->dmass_dt*R_d_p2 + 2.0*donor->sse_k2*(M_d - donor->core_mass)*R_d*donor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    //double Omega_d_dot = (J_spin_donor_dot - I_donor_dot*Omega_d)/I_donor;
+    double Omega_d_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_d, M_d, M_d_dot_av, donor->core_mass, R_d, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    
+    double J_spin_accretor_dot;
+    if (accretor->accretion_disk_is_present == true)
+    {
+        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * R_a);
+    }
+    else
+    {
+        double r_disk = 1.7*accretor->accretion_disk_r_min;
+        J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
+    }
+    //double I_accretor = compute_moment_of_inertia(M_a, accretor->core_mass, R_a, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
+    //double I_accretor_dot = accretor->sse_k2*accretor->dmass_dt*R_a_p2 + 2.0*accretor->sse_k2*(M_a - accretor->core_mass)*R_a*accretor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    //double Omega_a_dot = (J_spin_accretor_dot - I_accretor_dot*Omega_a)/I_accretor;
+    double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
+    
+    if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
+    {
+        printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);
+        exit(-1);
+    }
+    
+
+    for (i=0; i<3; i++)
+    {
+        p->dh_vec_dt[i] += p->h_vec[i] * factor_h_vec;
+        p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt  +  e * p->q_vec_unit[i] * domega_dt;
+
+        /* Assume mass transfer does not affect the directions of the spins. */
+        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
+        accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
+        
+        //#ifdef VERBOSE
+        //printf("mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
+        //#endif
+    }
+
+
+    return 0;
+}
 
 int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
 {
     if (x >= 1.0/(1.0-e))
     {
-     //   if verbose==True:
-      //      print 'No RLOF','x',x,'1.0/(1.0-e)',1.0/(1.0-e)
-        //#return [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         *E_0 = 0.0;
         *in_RLOF = false;
-        //printf("1\n");
     }
     else if (x <= 1.0/(1.0+e))
     {
         *E_0 = M_PI;
-        //if verbose==True:
-            //print 'RLOF all phases','x',x,'1.0/(1.0+e)',1.0/(1.0+e)
         *in_RLOF = true;
-        //printf("2\n");
     }
     else
     {
         *E_0 = acos( (1.0/e)*(1.0 - 1.0/x) );
-        //if verbose==True:
-            //print 'RLOF partial orbit; E_0 = ',E_0
         *in_RLOF = true;
-        //printf("3 arg %g\n",(1.0/e)*(1.0 - 1.0/x) );
     }
     if (*E_0 != *E_0)
     {

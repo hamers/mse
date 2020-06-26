@@ -293,7 +293,7 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
 
 int test_collisions()
 {
-    
+    printf("test.cpp -- test_collisions\n");
     int flag;
     
     //flag = test_collision_MS_MS();
@@ -309,12 +309,13 @@ int test_collisions()
             printf("i %d j %d\n",i,j);
             //if (i!=1 or j!=4)
             //if (i>5 and i<12 or j>5 and j<12)
-            if (i!= 6 or j!= 7)
+            if (j<6)
             {
-                continue;
+                //continue;
             }
-            flag = test_collision_stars(10.0,i,13,j,0);
-            //flag = test_collision_stars(10.0,i,13,j,1);
+            //flag = test_collision_stars(10.0,i,13,j,0);
+            random_seed = 0;
+            flag = test_collision_stars(10.0,i,13,j,1);
             
         }
     }

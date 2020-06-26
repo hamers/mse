@@ -66,7 +66,7 @@ double nova_accretion_factor = 1.0e-3;
 double alpha_wind_accretion = 1.5;
 double beta_wind_accretion = 0.125;
 
-double mstar_gbs_tolerance = 1.0e-10;
+double mstar_gbs_tolerance = 1.0e-12;
 double mstar_collision_tolerance = 1.0e-10;
 
 double triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1;
@@ -74,5 +74,14 @@ double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1;
 double triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.9;
 double triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.9;
 double triple_mass_transfer_inner_binary_alpha_times_lambda = 5.0;
+
+double nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01;
+double nbody_analysis_fractional_integration_time = 0.1;
+double nbody_analysis_maximum_integration_time = 1.0e5;
+
+double nbody_dynamical_instability_direct_integration_time_multiplier = 1.5;
+double nbody_semisecular_direct_integration_time_multiplier = 1.0e2;
+double nbody_supernovae_direct_integration_time_multiplier = 1.5;    
+double nbody_other_direct_integration_time_multiplier = 1.5;
 
 }

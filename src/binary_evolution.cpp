@@ -258,8 +258,8 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     //double fm = donor->fm;
     //double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb);
     
-    double dm1; /* Mass lost from companion due to RLOF */
-    double dm2; /* Mass accreted by companion. */
+    double dm1; /* Mass lost from companion due to RLOF (>0) */
+    double dm2; /* Mass accreted by companion (>0). */
     
     double dt = t - t_old;
     //dm1 = m_donor;
@@ -272,7 +272,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
     double tau_donor = sqrt(t_KH_donor * t_dyn_donor);
     
-    dm1 = -m_donor;
+    dm1 = m_donor;
 
     /* Run star_() on accretor */
     double *GB,*tscls,*tscls_new,*lums,*zpars;
@@ -290,7 +290,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     {
         /* Restrict accretion to thermal timescale of secondary. */
 
-        dm2 = -(tau_donor/t_KH_accretor) * dm1;
+        dm2 = (tau_donor/t_KH_accretor) * dm1;
         m_accretor_new = accretor->mass + dm2;
 
         /* Rejuvenate if the star is still on the main sequence. */
@@ -315,7 +315,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     {
         /* Add all the material to the giant's envelope. */
 
-        dm2 = -dm1;
+        dm2 = dm1;
         m_accretor_new = accretor->mass + dm2;
         
         if (kw2 == 2)
@@ -334,13 +334,13 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     {
         /* Form a new giant envelope. */
 
-        dm2 = -dm1;
+        dm2 = dm1;
         m_accretor_new = accretor->mass + dm2;
         int kw = determine_merger_type(kw1,kw2);
         
         if (kw == 4)
         {
-            accretor->age = accretor->age / (tms*Myr_to_yr);
+            //accretor->age = accretor->age / (tms*Myr_to_yr); /* ASH: this line copied from BSE does not make sense to me (unit-wise); I am ignoring it. */
             accretor->core_mass = accretor->mass;
         }
         
@@ -365,7 +365,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         double m_dot_Eddington = compute_Eddington_accretion_rate(R_accretor, hydrogen_mass_fraction);
         double dme = m_dot_Eddington * dt;
        
-        dm2 = CV_min(dme*tau_donor/dt, -dm1);
+        dm2 = CV_min(dme*tau_donor/dt, dm1);
         m_accretor_new = accretor->mass + dm2;
     }
     
@@ -375,9 +375,9 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
 //    binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set?
 //    binary->apply_kick = false;
     
-    double Delta_m1 = m_donor;
+    double Delta_m1 = -m_donor;
     double Delta_m2 = dm2;
-    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, integration_flag);
 
     /* The binary becomes a body with the accretor's properties. */
     update_stellar_evolution_properties(accretor);
@@ -460,11 +460,11 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
 
     double dt = t - t_old;
     //dm1 = m_dot * dt;
-    dm1 = -m_donor;
+    dm1 = m_donor;
     
     //double dme = 2.08d-03*eddfac*(1.d0/(1.d0 + zpars(11)))*rad(j2)*tb // TO DO: include case for eddfac<10
     
-    dm2 = -dm1;
+    dm2 = dm1;
 
     //double m_new; /* New mass of remnant (if there is one). */
     bool destroyed;;
@@ -521,7 +521,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         exit(-1);
     }
     
-    double Delta_m1 = dm1;
+    double Delta_m1 = -dm1;
     double Delta_m2 = dm2;
     handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_WD_donor_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
 
@@ -893,7 +893,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             parent->is_binary = false; 
             copy_all_body_properties(donor, parent);
 
-            particlesMap->erase(donor_index);
+            //particlesMap->erase(donor_index);
             particlesMap->erase(accretor_index);
         }
         else if (kw1 <= 10 and kw2 >= 11)
@@ -902,7 +902,8 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             * material exceeds a mass of 0.15 when it ignites. For a COWD with 
             * mass less than 0.95 the system will be destroyed as an ELD in a 
             * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-            * will survive with all the material converted to ONe (JH 30/09/99). */
+            * will survive with all the material converted to ONe (JH 30/09/99). 
+            * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
     
             if (mt2 - accretor->sse_initial_mass >= 0.15)
             {
@@ -1201,20 +1202,20 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     m_fac *= m_fac;
 
     double log_fac = log(R_donor/R_RL_av_donor);
-    double dm1 = fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
+    double dm1 = dt * fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
     
-    if (kw1 == SSE_HG)
+    if (kw1 == 2)
     {
         double mew = (m_donor - core_mass_donor)/m_donor;
         dm1 = CV_max(mew,0.01) * dm1;
     }
-    else if (kw1 == SSE_HeWD)
+    else if (kw1 == 10)
     {
         //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
         dm1 = 1.0e3*dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
     }
     
-    if (kw1 >= SSE_HG and kw1 <= SSE_HeGB and kw1 != SSE_HeMS) /* Limit mass transfer to the thermal rate for giant-like stars */
+    if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */
     {
         dm1 = CV_min(dm1, m_donor * dt/t_KH_donor);
     }
@@ -1223,7 +1224,9 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
         dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
     }
 
-    //printf("DM1 %g %g %g\n",dm1,R_donor,R_RL_av_donor);
+    //#ifdef DEBUG
+    printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g RL_av_donor %g\n",dm1,R_donor,R_RL_av_donor);
+    //#endif
     return dm1;
 }
 

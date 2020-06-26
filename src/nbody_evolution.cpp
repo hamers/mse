@@ -28,8 +28,8 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
     print_system(particlesMap,*integration_flag);
 
-    //printf("pre... dt %g\n",dt);
-    //print_state(R);
+    printf("pre... dt %g\n",dt);
+    print_state(R);
     run_integrator(R, dt, &dt_reached, &collision_occurred);
     //printf("post\n");
     //print_state(R);
@@ -80,7 +80,10 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     /* When doing secular integration, some stellar evolution quantities are updated as parts of the ODE solution. In the N-body case, these quantities need to be updated manually */
     update_stellar_evolution_quantities_directly(particlesMap,dt); /* the dt here should be consistent with the dt used to compute the time derivatives in stellar_evolution.cpp */
 
-    if (stable_system == true)
+    int dummy = 0;
+    bool stable_MA01 = check_system_for_dynamical_stability(particlesMap, &dummy);
+
+    if (stable_system == true and stable_MA01 == true)
     {
         *integration_flag = 0; // Switch back to secular
     }
@@ -200,25 +203,29 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
     //double P_orb_max = determine_longest_orbital_period_in_system(particlesMap);
     
     // TO DO: make adjustable
-    double dynamical_instability_direct_integration_time_multiplier = 1.5;
+    //double nbody_dynamical_instability_direct_integration_time_multiplier = 1.5;
     //double dynamical_instability_direct_integration_time_multiplier = 0.01;
-    double semisecular_direct_integration_time_multiplier = 1.0e2;
-    double supernovae_direct_integration_time_multiplier = 1.5;    
+    //double nbody_semisecular_direct_integration_time_multiplier = 1.0e2;
+    //double nbody_supernovae_direct_integration_time_multiplier = 1.5;    
     
     double f;
     if (integration_flag == 1) // dyn. inst.
     {
-        f = dynamical_instability_direct_integration_time_multiplier;
+        f = nbody_dynamical_instability_direct_integration_time_multiplier;
     }
     else if (integration_flag == 2) // semisecular
     {
-        f = semisecular_direct_integration_time_multiplier;
+        f = nbody_semisecular_direct_integration_time_multiplier;
     }
     else if (integration_flag == 3) // SNe
     {
-        f = supernovae_direct_integration_time_multiplier;
+        f = nbody_supernovae_direct_integration_time_multiplier;
     }
-
+    else
+    {
+        f = nbody_other_direct_integration_time_multiplier;
+    }
+    
     double dt = P_orb_max * f;
     
     return dt;
@@ -293,9 +300,9 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
      
     //double dt_an = *P_orb_min*M_PI*10.0;
     //double dt_an = *P_orb_max * 0.01;
-    double dt_an = dt * 0.1;
+    double dt_an = dt * nbody_analysis_fractional_integration_time;
     
-    double maximum_analysis_time = 1.0e5; // TO DO: make user-adjustable
+    double maximum_analysis_time = nbody_analysis_maximum_integration_time;
     
     double dt_reached;
     int collision_occurred;
@@ -338,7 +345,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
 
             Particle *p = (*particlesMap)[binary_indices[index]];
             
-            if (delta_a > 0.01) // TO DO: make adjustable parameter
+            if (delta_a > nbody_analysis_fractional_semimajor_axis_change_parameter)
             {
                 //printf("unstable!\n");
                 *stable_system = false;
@@ -922,8 +929,9 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
             i++;
         }    
     }   
-    
+    mstar_gbs_tolerance = 1.0e-8;
     R->gbs_tolerance = mstar_gbs_tolerance;
+    printf("R->gbs_tolerance %g\n",R->gbs_tolerance);
     R->collision_tolerance = mstar_collision_tolerance;
     return R;
     

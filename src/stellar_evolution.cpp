@@ -363,6 +363,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     //printf("old R %g m %g\n",p->radius,p->mass);
                     //printf("predicted R %g m %g dR/dt %g\n",p->radius + p->radius_dot*dt,p->mass + p->mass_dot*dt,p->radius_dot);
                     p->instantaneous_perturbation_delta_mass = 0.0;
+                    p->apply_kick = false;
                 }
                 else /* kw change with new kw=13 or kw=14 */
                 { /* CAREFULL: the semimajor axis might still change in this case in secular code */

@@ -321,6 +321,12 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                     //printf("parent->sample_orbital_phases_randomly  %d %g \n",parent->sample_orbital_phases_randomly,true_anomaly);
                 }
                 
+                if (true_anomaly != true_anomaly)
+                {
+                    printf("structure.cpp -- set_positions_and_velocities -- ERROR: true_anomaly = %g \n",true_anomaly);
+                    exit(-1);
+                }
+                
                 from_orbital_vectors_to_cartesian(
                     child1_mass,child2_mass,
                     parent->e_vec,parent->h_vec,

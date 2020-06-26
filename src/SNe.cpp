@@ -38,7 +38,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
                 p->instantaneous_perturbation_delta_VZ = VZ;
                 index+=1;
             }
-            printf("SNe.cpp -- delta_m %g vk %g % g %g\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ);
+            printf("SNe.cpp -- delta_m %g vk %g % g %g p->apply_kick %d\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ,p->apply_kick);
             
         }
     }

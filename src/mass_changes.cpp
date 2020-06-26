@@ -302,7 +302,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
     double beta = -M_a_dot_av/M_d_dot_av; /* Quantifies non-conservativeness. */
 
-    printf("B %g\n",beta);
+    //printf("B %g\n",beta);
     
     /* TO DO: allow for user-specified MA_tau */
     double n = sqrt(CONST_G*M/(a*a*a));

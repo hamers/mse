@@ -647,7 +647,7 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
     for (i=0; i<N_binaries; i++)
     {
         Particle *p = particlesMap[index];
-
+        p->true_anomaly = TAs[i];
         //printf("DD %g %g  %g %g %g %g %g %g\n",p->child1_mass, p->child2_mass, smas[i], es[i], \
             INCLs[i], APs[i], LANs[i]);
         compute_orbital_vectors_from_orbital_elements(p->child1_mass, p->child2_mass, smas[i], es[i], \

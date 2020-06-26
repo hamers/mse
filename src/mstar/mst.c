@@ -2230,6 +2230,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                 int possible_collision;
                 double Delta_t_collision;
                 collision_detection_function(R, &possible_collision, collision_occurred, &Delta_t_collision);
+
                 if (*collision_occurred == 1)
                 {
                     not_finished = 0;
@@ -2238,7 +2239,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                 if (possible_collision == 1)
                 {
                     i_col++;
-                    
+
                     double col_Hstep = R->U * Delta_t_collision;
                     if ( fabs(col_Hstep) <= fabs(R->Hstep) ) // Make sure collision detection does not interfere with the timestep determined above
                     {
@@ -2284,7 +2285,7 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
 
     S->gbs_tolerance = GBSTOL;
 
-    S->output_time_tolerance = 1e-4;
+    S->output_time_tolerance = 1e-2;
     S->collision_tolerance = 1e-6;
     S->NumVertex = N;
 

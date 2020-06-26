@@ -83,6 +83,15 @@ extern double triple_mass_transfer_primary_star_accretion_efficiency_disk;
 extern double triple_mass_transfer_secondary_star_accretion_efficiency_disk;
 extern double triple_mass_transfer_inner_binary_alpha_times_lambda;
 
+extern double nbody_analysis_fractional_semimajor_axis_change_parameter;
+extern double nbody_analysis_fractional_integration_time;
+extern double nbody_analysis_maximum_integration_time;
+
+extern double nbody_dynamical_instability_direct_integration_time_multiplier;
+extern double nbody_semisecular_direct_integration_time_multiplier;
+extern double nbody_supernovae_direct_integration_time_multiplier;
+extern double nbody_other_direct_integration_time_multiplier;
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT
@@ -949,7 +958,7 @@ class Particle
         Collision_Partner = -1;
         
         /* default values */
-        check_for_secular_breakdown = false;
+        check_for_secular_breakdown = true;
         check_for_dynamical_instability = true;
         check_for_physical_collision_or_orbit_crossing = true;
         check_for_minimum_periapse_distance = false;
@@ -1029,9 +1038,9 @@ class Particle
         /* kicks */
         kick_distribution = 0;
         kick_distribution_sigma = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
-        apply_kick = true;
+        apply_kick = false;
          
-        sample_orbital_phase_randomly = true;
+        sample_orbital_phase_randomly = false;
         instantaneous_perturbation_delta_mass = 0.0;
         instantaneous_perturbation_delta_X = instantaneous_perturbation_delta_Y = instantaneous_perturbation_delta_Z = 0.0;
         instantaneous_perturbation_delta_VX = instantaneous_perturbation_delta_VY = instantaneous_perturbation_delta_VZ = 0.0;

@@ -17,7 +17,7 @@ double compute_apsidal_motion_constant(Particle *star)
 
     if (stellar_type == 0)
     {
-        val = 0.14; /* Approximate the star as being fully convective such that n = 3/2 */
+        val = 0.14327923; /* Approximate the star as being fully convective such that n = 3/2 */
     }
     
     else if ((stellar_type >= 1) and (stellar_type <= 6))

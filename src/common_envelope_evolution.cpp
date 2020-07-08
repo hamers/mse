@@ -249,7 +249,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             if (RC1 > RL1 * SEPF)
             {
                COEL = true;
-               SEPL = RC1 / RL1; // separation at which the stars coelesced
+               SEPL = RC1 / RL1; // separation at which the stars coalesced
             }
         }
         else

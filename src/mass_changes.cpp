@@ -414,7 +414,10 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     }
     else
     {
-        double r_disk = 1.7*accretor->accretion_disk_r_min;
+        //double r_disk = 1.7*accretor->accretion_disk_r_min;
+        double q_accretor = M_a/M_d;
+        double accretion_disk_r_min =  0.0425 * a*(1.0-e) * pow(q_accretor*(1.0 + q_accretor), 0.25); /* ASH: taking rp instead of separation */
+        double r_disk = 1.7 * accretion_disk_r_min;
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
     }
     //double I_accretor = compute_moment_of_inertia(M_a, accretor->core_mass, R_a, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);

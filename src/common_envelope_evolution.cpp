@@ -367,7 +367,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             
             if (KW1 == 6 and (KW2 == 6 or KW2 >= 11))
             {
-               dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF);
+               dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF); /* ASH: dgcore_ only potentially changes KW (third argument) */
             }
 
             if(KW1 <= 3 and M01 <= ZPARS1[1])
@@ -563,7 +563,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             MC1 = MC1 + MC2;
             MC2 = 0.0;
 
-            /* Obtain a new age for the giant. */
+            /* Obtain a new age and initial mass for the giant. */
 
             gntage_(&MC1,&M1,&KW,ZPARS2,&M01,&AJ1);
             star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);

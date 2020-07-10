@@ -1162,10 +1162,10 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
      * Depends on whether or not a circumbinary accretion disk can form. */
     double q_accretor = m_inner_binary/m_donor;
     double ra_in = a_in * (1.0 + e_in);
-    double circum_inner_binary_accretion_disk_r_min = 0.0425 * ra_in * pow(q_accretor*(1.0 + q_accretor), 0.25); /* https://ui.adsabs.harvard.edu/abs/1976ApJ...206..509U/abstract */
+    double circum_inner_binary_accretion_disk_r_min = 0.0425 * rp_out * pow(q_accretor*(1.0 + q_accretor), 0.25); /* https://ui.adsabs.harvard.edu/abs/1976ApJ...206..509U/abstract */
 
     bool circum_inner_binary_accretion_disk_is_present = false;
-    if (circum_inner_binary_accretion_disk_r_min > ra_in)
+    if (circum_inner_binary_accretion_disk_r_min < ra_in)
     {
         circum_inner_binary_accretion_disk_is_present = true;
     }

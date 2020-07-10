@@ -1022,7 +1022,8 @@ int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     double M_envd3 = M_env3 / (M3 - MC3);
     double R_ZAMS3 = rzamsf_(&M3_sse_init);
     double lambda3 = celamf_(&kw3,&M3_sse_init,&L3,&R3,&R_ZAMS3,&M_envd3,&fac);
-    double alpha3 = star3->common_envelope_alpha;
+    //double alpha3 = star3->common_envelope_alpha;
+    double alpha3 = star3->triple_common_envelope_alpha;
     
     double M_inner_binary = inner_binary->mass;
     double a_in_i = inner_binary->a/CONST_R_SUN;

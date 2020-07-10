@@ -815,7 +815,8 @@ class Particle
     double common_envelope_alpha;
     double common_envelope_lambda;
     double common_envelope_timescale;
-
+    double triple_common_envelope_alpha;
+    
     /* Relative position/velocities (applies to binaries only) */
     double r,v;
     double r_vec[3];
@@ -1034,6 +1035,7 @@ class Particle
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
         common_envelope_timescale = 1.0e2;
+        triple_common_envelope_alpha = 1.0;
         
         /* kicks */
         kick_distribution = 0;

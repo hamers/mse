@@ -90,6 +90,33 @@ double sample_from_power_law_distribution(double alpha, double y_lower, double y
 
 }
 
+double sample_from_Kroupa_93_imf()
+{
+    double m = 0;
+    double x = ((double) rand() / (RAND_MAX));
+    
+    if (x >= 0.0 and x < kroupa_x1)
+    {
+        m = pow( x*kroupa_alpha1_plus_1/kroupa_C1 + kroupa_m1_pow_alpha1_plus_one, kroupa_alpha1_plus_1_pm1);
+    }
+    else if (x >= kroupa_x1 and x < kroupa_x2)
+    {
+        m = pow( (x - kroupa_x1)*kroupa_alpha2_plus_1/kroupa_C2 + kroupa_m2_pow_alpha2_plus_one, kroupa_alpha2_plus_1_pm1);
+    }
+    else if (x >= kroupa_x2 and x <= kroupa_x3)
+    {
+        m = pow( (x - kroupa_x2)*kroupa_alpha3_plus_1/kroupa_C3 + kroupa_m3_pow_alpha3_plus_one, kroupa_alpha3_plus_1_pm1);
+    }
+    else
+    {
+        printf("tools.cpp -- ERROR in sample_from_Kroupa_93_imf\n");
+        exit(-1);
+    }
+    
+    return m;
+}
+
+
 
 /**********************************************
 /* orbital element/vector conversion routines *

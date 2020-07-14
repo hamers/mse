@@ -8,12 +8,14 @@ extern "C"
 
 int test_tools()
 {
+   
     int flag = 0;
     flag += test_a_P_orb_conversion();
     flag += test_a_h_conversion();
     flag += test_orbital_element_conversion();
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
+    //flag += test_kroupa_imf_sampling();
     
     return flag;
 }
@@ -161,6 +163,22 @@ int test_kepler_equation_solver()
     
     return flag;
 }
+
+#ifdef IGNORE
+int test_kroupa_imf_sampling()
+{
+    printf("test.cpp -- test_kroupa_imf_sampling\n");
+    
+    int flag = 0;
+    
+    //double m = sample_from_Kroupa_93_imf();
+    printf("m %g\n",m);
+    //printf("K C1 %g C2 %g C3 %g x1 %g x2 %g x3 %g\n",kroupa_C1,kroupa_C2,kroupa_C3,kroupa_x1,kroupa_x2,kroupa_x3);
+    
+    
+    return flag;
+}
+#endif
 
 int test_binary_evolution()
 {

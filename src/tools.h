@@ -9,6 +9,7 @@ int sample_from_3d_maxwellian_distribution(double sigma, double v[3]);
 double sample_from_y_times_maxwellian_distribution(double sigma);
 int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double r_hat_vec[3], double theta_hat_vec[3], double phi_hat_vec[3]);
 double sample_from_power_law_distribution(double alpha, double y_lower, double y_upper);
+double sample_from_Kroupa_93_imf();
 
 int compute_h_tot_vector(ParticlesMap* particlesMap, double h_tot_vec[3]);
 int compute_orbital_vectors_from_orbital_elements(double child1_mass, double child2_mass, double semimajor_axis, double eccentricity, double inclination, double argument_of_pericenter,double longitude_of_ascending_node, double *e_vec_x, double *e_vec_y, double *e_vec_z, double *h_vec_x, double *h_vec_y, double *h_vec_z);

@@ -84,4 +84,34 @@ double nbody_semisecular_direct_integration_time_multiplier = 1.0e2;
 double nbody_supernovae_direct_integration_time_multiplier = 1.5;    
 double nbody_other_direct_integration_time_multiplier = 1.5;
 
+double kroupa_alpha1 = -1.3;
+double kroupa_alpha2 = -2.2;
+double kroupa_alpha3 = -2.7;
+double kroupa_m1 = 0.1;
+double kroupa_m2 = 0.5;
+double kroupa_m3 = 1.0;
+double kroupa_m4 = 100.0;
+
+double kroupa_alpha1_plus_1 = 1.0 + kroupa_alpha1;
+double kroupa_alpha2_plus_1 = 1.0 + kroupa_alpha2;
+double kroupa_alpha3_plus_1 = 1.0 + kroupa_alpha3;
+double kroupa_alpha1_plus_1_pm1 = 1.0/kroupa_alpha1_plus_1;
+double kroupa_alpha2_plus_1_pm1 = 1.0/kroupa_alpha2_plus_1;
+double kroupa_alpha3_plus_1_pm1 = 1.0/kroupa_alpha3_plus_1;
+
+double kroupa_m1_pow_alpha1_plus_one = pow(kroupa_m1,kroupa_alpha1_plus_1);
+double kroupa_m2_pow_alpha1_plus_one = pow(kroupa_m2,kroupa_alpha1_plus_1);
+double kroupa_m2_pow_alpha2_plus_one = pow(kroupa_m2,kroupa_alpha2_plus_1);
+double kroupa_m3_pow_alpha2_plus_one = pow(kroupa_m3,kroupa_alpha2_plus_1);
+double kroupa_m3_pow_alpha3_plus_one = pow(kroupa_m3,kroupa_alpha3_plus_1);
+double kroupa_m4_pow_alpha3_plus_one = pow(kroupa_m4,kroupa_alpha3_plus_1);
+
+double kroupa_C1 = 1.0/( (1.0/kroupa_alpha1_plus_1)*(kroupa_m2_pow_alpha1_plus_one - kroupa_m1_pow_alpha1_plus_one) + pow(kroupa_m2,kroupa_alpha1-kroupa_alpha2)*(1.0/kroupa_alpha2_plus_1)*(kroupa_m3_pow_alpha2_plus_one - kroupa_m2_pow_alpha2_plus_one) + pow(kroupa_m2,kroupa_alpha1-kroupa_alpha2)*pow(kroupa_m3,kroupa_alpha2-kroupa_alpha3)*(1.0/kroupa_alpha3_plus_1)*(kroupa_m4_pow_alpha3_plus_one - kroupa_m3_pow_alpha3_plus_one) );
+double kroupa_C2 = kroupa_C1 * pow(kroupa_m2,kroupa_alpha1-kroupa_alpha2);
+double kroupa_C3 = kroupa_C2 * pow(kroupa_m3,kroupa_alpha2-kroupa_alpha3);
+
+double kroupa_x1 = (kroupa_C1/kroupa_alpha1_plus_1)*( kroupa_m2_pow_alpha1_plus_one - kroupa_m1_pow_alpha1_plus_one);
+double kroupa_x2 = kroupa_x1 + (kroupa_C2/kroupa_alpha2_plus_1)*( kroupa_m3_pow_alpha2_plus_one - kroupa_m2_pow_alpha2_plus_one);
+double kroupa_x3 = kroupa_x2 + (kroupa_C3/kroupa_alpha3_plus_1)*( kroupa_m4_pow_alpha3_plus_one - kroupa_m3_pow_alpha3_plus_one);
+
 }

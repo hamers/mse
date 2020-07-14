@@ -1043,4 +1043,9 @@ int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, d
     return 0;
 }
 
+double sample_from_kroupa_93_imf_interface()
+{
+    return sample_from_Kroupa_93_imf();
+}
+
 }

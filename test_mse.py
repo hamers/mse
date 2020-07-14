@@ -1582,8 +1582,73 @@ class test_mse():
 
             pyplot.show()
         
+    def test103(self,args):
+        print('Test sample Kroupa 93 IMF')
         
-   
+        code = MSE()
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+        
+        N = 100000
+        
+
+        seed = 0
+        #code.random_seed = seed
+        np.random.seed(seed)
+        
+        ms = []
+        for index in range(N):
+            m = code.test_sample_from_kroupa_93_imf()
+            ms.append(m)
+        ms = np.array(ms)
+
+        assert(round(np.mean(ms),2) == 0.50)
+        
+        if args.verbose==True:
+            print("mean ms/MSun",np.mean(ms))
+        
+        if args.plot == True:
+            Nb=100
+            fontsize=20
+            from matplotlib import pyplot
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1,yscale="log")
+            plot.hist(np.log10(ms),bins=np.linspace(-1.0,2.0,Nb),histtype='step',density=True,color='tab:red')
+            plot.set_xlabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
+            
+            points=np.linspace(-1.0,2.0,Nb)
+            PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]
+            plot.plot(points,PDF_an, color='tab:green')
+
+            pyplot.show()
+        
+
+def kroupa_93_imf(m):
+    print("M",m)
+    alpha1 = -1.3
+    alpha2 = -2.2
+    alpha3 = -2.7
+    m1 = 0.1
+    m2 = 0.5
+    m3 = 1.0
+    m4 = 100.0
+    C1 = 0.2905673356704877
+    C2 = 0.155711179725752
+    C3 = 0.155711179725752
+    
+    if (m>=m1 and m<m2):
+        pdf = C1*pow(m,alpha1)
+    elif (m>=m2 and m<m3):
+        pdf = C2*pow(m,alpha2)
+    elif (m>=m3 and m<=m4):
+        pdf = C3*pow(m,alpha3)
+    else:
+        print("?")
+        pdf = 0.0
+        
+    return pdf
+    
 def sample_random_vector_on_unit_sphere():
     INCL = np.arccos( 2.0*np.random.random() - 1.0)
     LAN = 2.0 * np.pi * np.random.random()

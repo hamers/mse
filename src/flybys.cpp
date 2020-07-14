@@ -485,6 +485,10 @@ double sample_flyby_mass_at_infinity()
     {
         M = sample_from_power_law_distribution(-2.35, flybys_mass_distribution_lower_value, flybys_mass_distribution_upper_value);
     }
+    else if (flybys_mass_distribution == 1)
+    {
+        M = sample_from_Kroupa_93_imf();
+    }
     else
     {
         printf("flybys.cpp -- flybys_mass_distribution = %d is not supported; exiting\n",flybys_mass_distribution);

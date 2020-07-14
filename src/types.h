@@ -92,6 +92,40 @@ extern double nbody_semisecular_direct_integration_time_multiplier;
 extern double nbody_supernovae_direct_integration_time_multiplier;
 extern double nbody_other_direct_integration_time_multiplier;
 
+
+extern double kroupa_alpha1;
+extern double kroupa_alpha2;
+extern double kroupa_alpha3;
+extern double kroupa_m1;
+extern double kroupa_m2;
+extern double kroupa_m3;
+extern double kroupa_m4;
+
+extern double kroupa_alpha1_plus_1;
+extern double kroupa_alpha2_plus_1;
+extern double kroupa_alpha3_plus_1;
+extern double kroupa_alpha1_plus_1_pm1;
+extern double kroupa_alpha2_plus_1_pm1;
+extern double kroupa_alpha3_plus_1_pm1;
+
+extern double kroupa_m1_pow_alpha1_plus_one;
+extern double kroupa_m2_pow_alpha1_plus_one;
+extern double kroupa_m2_pow_alpha2_plus_one;
+extern double kroupa_m3_pow_alpha2_plus_one;
+extern double kroupa_m3_pow_alpha3_plus_one;
+extern double kroupa_m4_pow_alpha3_plus_one;
+
+extern double kroupa_C1;
+extern double kroupa_C2;
+extern double kroupa_C3;
+
+extern double kroupa_x1;
+extern double kroupa_x2;
+extern double kroupa_x3;
+
+
+
+
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
 #define CONST_C_LIGHT_P2	(double)	CONST_C_LIGHT*CONST_C_LIGHT

@@ -253,6 +253,9 @@ class MSE(object):
         self.lib.sample_from_3d_maxwellian_distribution_interface.argtypes = (ctypes.c_double, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double) )
         self.lib.sample_from_3d_maxwellian_distribution_interface.restype = ctypes.c_int
 
+        self.lib.sample_from_kroupa_93_imf_interface.argtypes = ()
+        self.lib.sample_from_kroupa_93_imf_interface.restype = ctypes.c_double
+
     ###############
     
 #    def add_particle(self,particle):
@@ -655,6 +658,13 @@ class MSE(object):
         self.lib.sample_from_3d_maxwellian_distribution_interface(sigma,ctypes.byref(vx),ctypes.byref(vy),ctypes.byref(vz))
         vx,vy,vz = vx.value, vy.value, vz.value
         return vx,vy,vz
+
+    def test_sample_from_kroupa_93_imf(self):
+#        m = ctypes.c_double(0.0)
+        m = self.lib.sample_from_kroupa_93_imf_interface()
+#        m = m.value
+        return m
+
 
     ### Constants ###
     @property

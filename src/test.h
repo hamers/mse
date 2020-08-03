@@ -8,7 +8,9 @@ int test_a_h_conversion();
 int test_orbital_element_conversion();
 int test_kepler_equation_solver();
 int test_orbital_vectors_cartesian_conversion();
-//int test_kroupa_imf_sampling();
+
+int test_stellar_evolution();
+int test_apsidal_motion_constant();
 
 int test_binary_evolution();
 int test_compute_Kelvin_Helmholtz_timescale();

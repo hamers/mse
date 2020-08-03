@@ -126,7 +126,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                     
                     if (j>10000)
                     {
-                        printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution lum %g\n",p->index,kw_desired,kw,lum);
+                        //printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution lum %g\n",p->index,kw_desired,kw,lum);
                         break;
                     }
                 }
@@ -171,21 +171,23 @@ int initialize_stars(ParticlesMap *particlesMap)
             p->sse_k2 = k2;
             p->sse_k3 = 0.21;
 
-            /* Set up spins parallel with parent orbit */
-            Particle *parent = (*particlesMap)[p->parent];
-            //double h_vec[3] = {parent->h_vec_x,parent->h_vec_y,parent->h_vec_z};
-            double *h_vec = parent->h_vec;
-            double h = norm3(h_vec);
-            
-            for (i=0; i<3; i++)
+            /* Set up spins parallel with parent orbit (if the star has a parent) */
+            if (p->parent != -1)
             {
-                p->spin_vec[i] = ospin*h_vec[i]/h;
+                Particle *parent = (*particlesMap)[p->parent];
+                //double h_vec[3] = {parent->h_vec_x,parent->h_vec_y,parent->h_vec_z};
+                double *h_vec = parent->h_vec;
+                double h = norm3(h_vec);
+                
+                for (i=0; i<3; i++)
+                {
+                    p->spin_vec[i] = ospin*h_vec[i]/h;
+                }
+                //p->spin_vec_x = ospin*h_vec[0]/h;
+                //p->spin_vec_y = ospin*h_vec[1]/h;
+                //p->spin_vec_z = ospin*h_vec[2]/h;
+                //printf("initialize %g %d %g %g %g\n",ospin,p->index,p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             }
-            //p->spin_vec_x = ospin*h_vec[0]/h;
-            //p->spin_vec_y = ospin*h_vec[1]/h;
-            //p->spin_vec_z = ospin*h_vec[2]/h;
-            //printf("initialize %g %d %g %g %g\n",ospin,p->index,p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
-            
             p->check_for_RLOF_at_pericentre = true;
         }
     }

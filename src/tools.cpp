@@ -618,11 +618,9 @@ void copy_all_body_properties(Particle *source, Particle *target)
 
 void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
 {
-    //ParticlesMap particlesMap;
     
     int N_binaries = N_bodies-1;
-    //printf("ok1\n");
-    //double masses[2] = {50.0,1.0};
+
     int i;
     int index=0;
     for (i=0; i<N_bodies; i++)
@@ -637,10 +635,9 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         
         index++;
     }
-//printf("ok2 %d %d\n",index,particlesMap.size());
+
     int previous_binary;
-    //index=N_bodies;
-    
+        
     for (i=0; i<N_binaries; i++)
     {
         Particle *p = new Particle(index, true);
@@ -660,16 +657,16 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         previous_binary = index;
         index++;
     }
-    //printf("ok3\n");
+    
     /* determine masses in all binaries */
     int N_root_finding,N_ODE_equations;
     //printf("ok\n");
     /* determine masses in all binaries */
 
     determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
-    //printf("ok4\n");
+    
     set_binary_masses_from_body_masses(&particlesMap);
-    //printf("??? %g\n",particlesMap[2]->child1_mass);
+    
     index=N_bodies;
     for (i=0; i<N_binaries; i++)
     {

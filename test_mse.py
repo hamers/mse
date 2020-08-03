@@ -1596,7 +1596,7 @@ class test_mse():
         seed = 0
         #code.random_seed = seed
         np.random.seed(seed)
-        
+
         ms = []
         for index in range(N):
             m = code.test_sample_from_kroupa_93_imf()

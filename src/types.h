@@ -987,6 +987,7 @@ class Particle
     
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
+        parent = -1;
         stable = true;
         is_bound = true;
         has_found_parent = false;

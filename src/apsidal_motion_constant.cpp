@@ -155,7 +155,7 @@ double AMC_data_function(double log_m, Particle *star)
     int T_HE_IGNITION = 1;
     int T_HE_BURNING = 2;
 
-//    printf("AMC_data_function input log_m %g age %g tms %g\n",log_m, age, tms);
+    //printf("AMC_data_function input log_m %g age %g tms %g\n",log_m, age, tms);
 
 	if (log_m == -0.0969)	/* 0.80 M_SUN */
 	{
@@ -1135,7 +1135,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
-//			printf("tau RG %g age %g\n",tau,age);
+			//printf("tau RG %g age %g timescales[T_BGB] %g\n",tau,age,timescales[T_BGB]);
 			if (tau < d_m_1000[9])
 			{
 				return d_m_1000[7] + d_m_1000[8]*tau;

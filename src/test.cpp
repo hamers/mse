@@ -15,7 +15,6 @@ int test_tools()
     flag += test_orbital_element_conversion();
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
-    //flag += test_kroupa_imf_sampling();
     
     return flag;
 }
@@ -164,22 +163,56 @@ int test_kepler_equation_solver()
     return flag;
 }
 
-#ifdef IGNORE
-int test_kroupa_imf_sampling()
+
+int test_stellar_evolution()
 {
-    printf("test.cpp -- test_kroupa_imf_sampling\n");
-    
+    test_apsidal_motion_constant();
+
     int flag = 0;
-    
-    //double m = sample_from_Kroupa_93_imf();
-    printf("m %g\n",m);
-    //printf("K C1 %g C2 %g C3 %g x1 %g x2 %g x3 %g\n",kroupa_C1,kroupa_C2,kroupa_C3,kroupa_x1,kroupa_x2,kroupa_x3);
-    
     
     return flag;
 }
-#endif
 
+int test_apsidal_motion_constant()
+{
+    /* Currently tests for NaNs in a few cases. */
+    printf("test.cpp -- test_apsidal_motion_constant\n");
+
+    int flag = 0;    
+    int N_m=5;
+    int N_st=15;
+    double masses[N_m] = {0.08,0.5,1.0,10.0,100.0};
+    //double masses[N_m] = {0.09,0.8,4.2,5.4,51.0};
+    int stellar_types[N_st] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14};
+    
+    double k_AM;
+    for (int i=0; i<N_m; i++)
+    {
+        for (int j=0; j<N_st; j++)
+        {
+            ParticlesMap particlesMap;
+            Particle *star = new Particle(0, false);
+            particlesMap[0] = star;
+            
+            star->evolve_as_star = true;
+            star->mass = masses[i];
+            star->sse_initial_mass = masses[i];
+            star->stellar_type = stellar_types[j];
+
+            initialize_stars(&particlesMap);
+        
+            k_AM = compute_apsidal_motion_constant(star);
+            if (k_AM != k_AM)
+            {
+                printf("test.cpp -- test_apsidal_motion_constant -- ERROR: k_AM %g is NaN; m_init %g kw %d age %g\n",k_AM,star->mass,star->stellar_type,star->age);
+                flag = 1;
+            }
+        }
+    }
+
+    return flag;
+}
+    
 int test_binary_evolution()
 {
     printf("test.cpp -- test_binary_evolution\n");
@@ -331,9 +364,9 @@ int test_collisions()
             {
                 //continue;
             }
-            //flag = test_collision_stars(10.0,i,13,j,0);
+            flag = test_collision_stars(10.0,i,13,j,0);
             random_seed = 0;
-            flag = test_collision_stars(10.0,i,13,j,1);
+            //flag = test_collision_stars(10.0,i,13,j,1);
             
         }
     }

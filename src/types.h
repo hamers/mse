@@ -818,7 +818,7 @@ class Particle
     double metallicity;
     double *zpars;
     double convective_envelope_mass,convective_envelope_radius;
-    double core_mass,core_radius;
+    double core_mass,core_mass_old,core_radius;
     double luminosity;
     double child1_mass_old,child2_mass_old;
     double apsidal_motion_constant, gyration_radius;
@@ -876,10 +876,17 @@ class Particle
     
     /* kicks */
     int kick_distribution;
-    double kick_distribution_sigma;
     bool apply_kick;
-    
+    double kick_distribution_1_sigma_km_s_NS;
+    double kick_distribution_1_sigma_km_s_BH;
 
+    double kick_distribution_2_v_km_s_NS;
+    double kick_distribution_2_v_km_s_BH;
+    double kick_distribution_2_sigma;
+
+    double kick_distribution_3_m_NS;
+
+    /* spins */
     double spin_vec[3],dspin_vec_dt[3]; 
     double spin_vec_unit[3];
     double spin_vec_norm;
@@ -1037,6 +1044,7 @@ class Particle
         convective_envelope_mass = 0.0;
         convective_envelope_radius = 0.0;
         core_mass = 0.0;
+        core_mass_old = 0.0;
         core_radius = 0.0;
         luminosity = 0.0;
         apsidal_motion_constant = 0.19;
@@ -1073,10 +1081,17 @@ class Particle
         triple_common_envelope_alpha = 1.0;
         
         /* kicks */
-        kick_distribution = 0;
-        kick_distribution_sigma = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
         apply_kick = false;
-         
+        kick_distribution = 0;
+        kick_distribution_1_sigma_km_s_NS = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
+        kick_distribution_1_sigma_km_s_BH = 0.0;
+
+        kick_distribution_2_v_km_s_NS = 400.0; // https://ui.adsabs.harvard.edu/abs/2020arXiv200608360M/abstract
+        kick_distribution_2_v_km_s_BH = 200.0;
+        kick_distribution_2_sigma = 0.3;
+
+        kick_distribution_3_m_NS = 1.4;
+
         sample_orbital_phase_randomly = false;
         instantaneous_perturbation_delta_mass = 0.0;
         instantaneous_perturbation_delta_X = instantaneous_perturbation_delta_Y = instantaneous_perturbation_delta_Z = 0.0;

@@ -7,6 +7,7 @@ double compute_semimajor_axis_from_orbital_period(double M, double P);
 
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3]);
 double sample_from_y_times_maxwellian_distribution(double sigma);
+double sample_from_normal_distribution(double mu, double sigma);
 int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double r_hat_vec[3], double theta_hat_vec[3], double phi_hat_vec[3]);
 double sample_from_power_law_distribution(double alpha, double y_lower, double y_upper);
 double sample_from_Kroupa_93_imf();

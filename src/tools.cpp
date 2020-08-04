@@ -44,6 +44,18 @@ double sample_from_y_times_maxwellian_distribution(double sigma)
 
 }
 
+double sample_from_normal_distribution(double mu, double sigma)
+{
+    //std::random_device rd{};
+    //std::mt19937 gen{rd()};
+    //return std::normal_distribution<> d{mu,sigma};
+
+    double u1 = ((double) rand() / (RAND_MAX));
+    double u2 = ((double) rand() / (RAND_MAX));
+    double result = mu + sigma * sqrt(-2.0*log(u1)) * cos(TWOPI*u2);
+    return result;
+}
+
 int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double r_hat_vec[3], double theta_hat_vec[3], double phi_hat_vec[3])
 {
     double x1 = ((double) rand() / (RAND_MAX));

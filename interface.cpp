@@ -433,7 +433,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
     return 0;
 }
 
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma)
+int set_kick_properties(int index, int kick_distribution, double kick_distribution_1_sigma_km_s_NS, double kick_distribution_1_sigma_km_s_BH)
 {
     //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
@@ -443,11 +443,12 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
 
     Particle * p = particlesMap[index];
     p->kick_distribution = kick_distribution;
-    p->kick_distribution_sigma = kick_distribution_sigma;
+    p->kick_distribution_1_sigma_km_s_NS = kick_distribution_1_sigma_km_s_NS;
+    p->kick_distribution_1_sigma_km_s_BH = kick_distribution_1_sigma_km_s_BH;
     
     return 0;
 }
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma)
+int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_1_sigma_km_s_NS, double *kick_distribution_1_sigma_km_s_BH)
 
 {
     if (index > particlesMap.size())
@@ -457,7 +458,8 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
   
     Particle * p = particlesMap[index];
     *kick_distribution = p->kick_distribution;
-    *kick_distribution_sigma = p->kick_distribution_sigma;
+    *kick_distribution_1_sigma_km_s_NS = p->kick_distribution_1_sigma_km_s_NS;
+    *kick_distribution_1_sigma_km_s_BH = p->kick_distribution_1_sigma_km_s_BH;
     
     return 0;
 }
@@ -1042,6 +1044,11 @@ int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, d
     *vz = v[2];
     
     return 0;
+}
+
+double sample_from_normal_distribution_interface(double mu, double sigma)
+{
+    return sample_from_normal_distribution(mu,sigma);
 }
 
 double sample_from_kroupa_93_imf_interface()

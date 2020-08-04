@@ -32,8 +32,8 @@ int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as
     double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription);
 int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_as_star, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter);    
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma);
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma);
+int set_kick_properties(int index, int kick_distribution, double kick_distribution_1_sigma_km_s_NS, double kick_distribution_1_sigma_km_s_BH);
+int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_1_sigma_km_s_NS, double *kick_distribution_1_sigma_km_s_BH);
 
 int set_true_anomaly(int index, double value);
 int get_true_anomaly(int index, double *value);
@@ -169,5 +169,7 @@ int determine_compact_object_merger_properties_interface(double m1, double m2, d
     double *M_final);
 
 int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, double *vy, double *vz);
+double sample_from_normal_distribution_interface(double mu, double sigma);
+double sample_from_kroupa_93_imf_interface();
 
 }

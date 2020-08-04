@@ -313,10 +313,12 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             sse_time_step = p->sse_time_step*yr_to_Myr;
             age = p->age*yr_to_Myr;
 
+            p->core_mass_old = p->core_mass;
+
             tphys = start_time*yr_to_Myr;
             tphysf = end_time*yr_to_Myr;
             double desired_tphysf = tphysf;
-            
+           
             dtp = 0.0;
             #ifdef DEBUG
             printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
@@ -532,8 +534,24 @@ double compute_moment_of_inertia(double mass, double core_mass, double radius, d
     return k2*(mass - core_mass)*radius*radius + k3*core_mass*core_radius*core_radius;
 }
 
-
-
-
+void get_core_masses_by_composition(int kw, double core_mass, double *He_core_mass, double *CO_core_mass, double *Ne_core_mass)
+{
+    *He_core_mass = 0.0;
+    *CO_core_mass = 0.0;
+    *Ne_core_mass = 0.0;
+    
+    if (kw <= 3 or kw == 10)
+    {
+        *He_core_mass += core_mass;
+    }
+    else if (kw == 12)
+    {
+        *Ne_core_mass += core_mass;
+    }
+    else
+    {
+        *CO_core_mass += core_mass;
+    }
+}
 
 }

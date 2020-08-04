@@ -1541,31 +1541,41 @@ class test_mse():
             pyplot.show()
         
     def test102(self,args):
-        print('Test sample Maxwellian distribution')
+        print('Test sample elementary distributions')
         
         code = MSE()
 
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         
-        N = 20000
-        
+        N = 50000
 
         seed = 0
         #code.random_seed = seed
         np.random.seed(seed)
         
         vs = []
-        sigma=265.0*code.CONST_KM_PER_S
+        vs2 = []
+        sigma_km_s = 265.0
+        sigma = sigma_km_s*code.CONST_KM_PER_S
+        mu_km_s = 40.0
+        mu=mu_km_s*code.CONST_KM_PER_S
         for index in range(N):
             vx,vy,vz = code.test_sample_from_3d_maxwellian_distribution(sigma)
             v = np.array([vx,vy,vz])
             vs.append(np.linalg.norm(v))
-                    
-        assert(round(np.mean(np.array(vs)),1) == round(2.0*sigma*np.sqrt(2.0/np.pi),1))
+            v2 = code.test_sample_from_normal_distribution(mu,sigma)
+            vs2.append(v2)
+        vs = np.array(vs)
+        vs2 = np.array(vs2)
+        
+        N_r=0
+        assert(round(np.mean(np.array(vs)),N_r) == round(2.0*sigma*np.sqrt(2.0/np.pi),N_r))
+        assert(round(np.mean(np.array(vs2)),N_r) == round(mu,N_r))
         
         if args.verbose==True:
-            print("mean vs/(km/s)",np.mean(np.array(vs)),2.0*sigma*np.sqrt(2.0/np.pi))
+            print("Maxwellian mean vs/(km/s)",np.mean(np.array(vs))," an ", 2.0*sigma*np.sqrt(2.0/np.pi))
+            print("Normal mean vs/(km/s)",np.mean(np.array(vs2))," an ", mu)
         
         if args.plot == True:
             Nb=100
@@ -1573,15 +1583,27 @@ class test_mse():
             from matplotlib import pyplot
             fig=pyplot.figure()
             plot=fig.add_subplot(1,1,1)
-            plot.hist(vs,bins=np.linspace(0.0,500.0,Nb),histtype='step',density=True)
-            plot.set_xlabel("$v/\mathrm{km/s}$",fontsize=fontsize)
+            plot.hist(vs/code.CONST_KM_PER_S,bins=np.linspace(0.0,1000.0,Nb),histtype='step',density=True)
+            plot.set_xlabel("$v/(\mathrm{km/s})$",fontsize=fontsize)
+            plot.set_title("Maxwellian")
             
-            points=np.linspace(0.0,500.0,1000)
-            PDF_an = np.sqrt(2.0/np.pi) * (points**2/(sigma**3)) * np.exp( -points**2/(2.0*sigma**2) )
+            points=np.linspace(0.0,1000.0,1000)
+            PDF_an = np.sqrt(2.0/np.pi) * (points**2/(sigma_km_s**3)) * np.exp( -points**2/(2.0*sigma_km_s**2) )
+            plot.plot(points,PDF_an, color='tab:green')
+
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1)
+            plot.hist(vs2/code.CONST_KM_PER_S,bins=np.linspace(-1000,1000.0,Nb),histtype='step',density=True)
+            plot.set_xlabel("$v/(\mathrm{km/s})$",fontsize=fontsize)
+            plot.set_title("Normal")
+
+            points=np.linspace(-1000,1000.0,1000)
+            PDF_an = (1.0/(sigma_km_s*np.sqrt(2.0*np.pi))) * np.exp( - (points-mu_km_s)**2/(2.0*sigma_km_s**2))
             plot.plot(points,PDF_an, color='tab:green')
 
             pyplot.show()
-        
+
+
     def test103(self,args):
         print('Test sample Kroupa 93 IMF')
         

@@ -77,28 +77,108 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     *vz = cos(theta);
 
     double vnorm;
+    int kw = p->stellar_type;
+    int kick_distribution = p->kick_distribution;
+
+    double He_core_mass,CO_core_mass,Ne_core_mass; 
+    get_core_masses_by_composition(p->stellar_type,p->core_mass_old,&He_core_mass,&CO_core_mass,&Ne_core_mass);
+
+    double m_progenitor = p->mass;
+    double m_remnant = m_progenitor + p->instantaneous_perturbation_delta_mass;
     
-    if (p->kick_distribution == 0) // no kicks
+    if (kick_distribution == 0) // no kicks
     {
         vnorm = 0.0;
     }
-    else if (p->kick_distribution == 1) // Maxwellian for NS; 0 otherwise
+    else if (kick_distribution == 1 or kick_distribution == 3 or kick_distribution == 4 or kick_distribution == 5)
     {
-        if (p->stellar_type == 13)
+        /* Maxwellian distributions with separate sigmas for NS/BH; default for NS: https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract; zero for BH.
+         * When kick_distribution = 3, BH kicks are scaled back by a factor m_BH/m_NS (momentum conservation w.r.t. NS kicks), where m_NS=1.4 MSun by default and kick_distribution_1_sigma_km_s_BH is still used to sample the original BH kick velocity. 
+         * When kick_distribution = 4, a mass fallback prescription from Fryer+ 2012 (2012ApJ...749...91F Section 4.1) is adopted, i.e., the kick is scaled back according to the CO core mass. 
+         * When kick_distribution = 5, a prescription from Giacobbo & Mapelli (2020; https://ui.adsabs.harvard.edu/abs/2020ApJ...891..141G/abstract, Eq. 1) is adopted. */
+         
+
+        if (kw == 13)
         {
-            double sigma = p->kick_distribution_sigma;
+            double sigma = p->kick_distribution_1_sigma_km_s_NS * CONST_KM_PER_S;
             double v[3];
             sample_from_3d_maxwellian_distribution(sigma, v);
             vnorm = norm3(v);
         }
+        else if (kw == 14)
+        {
+            double sigma = p->kick_distribution_1_sigma_km_s_BH * CONST_KM_PER_S;
+            double v[3];
+            sample_from_3d_maxwellian_distribution(sigma, v);
+            vnorm = norm3(v);
+        }
+        
+        if (kick_distribution == 3) // Momentum conservation for BHs
+        {
+            if (kw == 14)
+            {
+                double m_NS = p->kick_distribution_3_m_NS;
+                vnorm *= m_NS/m_remnant;
+            }
+        }
+        
+        if (kick_distribution == 4) // Fryer fallback prescription
+        {
+            double f_fallback;
+
+            if (CO_core_mass < 5.0)
+            {
+                f_fallback = 0.0;
+            }
+            else if (CO_core_mass >= 5.0 and CO_core_mass < 7.6)
+            {
+                f_fallback = 0.378*CO_core_mass - 1.889;
+            }
+            else
+            {
+                f_fallback = 1.0;
+            }
+            vnorm *= (1.0 - f_fallback);
+        }
+        
+        if (kick_distribution == 5) // Giacobbo & Mapelli prescription
+        {
+            vnorm *= ((m_progenitor - m_remnant)/m_remnant) * (1.2/9.0); // <m_NS=1.2>; <m_ej>=9.0
+        }
     }
-    
+    else if (kick_distribution == 2) 
+    {
+        /* Prescription from Mandel & Mueller based on CO core mass, https://ui.adsabs.harvard.edu/abs/2020arXiv200608360M/abstract */
+        
+        double mu_kick;
+        double mass_factor = (CO_core_mass - m_remnant)/m_remnant;
+        if (kw == 13)
+        {
+            mu_kick = p->kick_distribution_2_v_km_s_NS * CONST_KM_PER_S * mass_factor;
+        }
+        else if (kw == 14)
+        {
+            mu_kick = p->kick_distribution_2_v_km_s_BH * CONST_KM_PER_S * mass_factor;
+        }
+        else
+        {
+            printf("SNe.cpp -- sample_kick_velocity -- kick_distribution = 2 -- ERROR: new stellar type %d should be 13 or 14\n",p->stellar_type);
+            exit(-1);
+        }
+        double sigma_kick = mu_kick*p->kick_distribution_2_sigma;
+        
+        vnorm = -1.0;
+        while (vnorm < 0.0)
+        {
+            vnorm = sample_from_normal_distribution(mu_kick,sigma_kick);
+        }
+    }
   //    std::default_random_engine generator (seed);
 
 //  std::normal_distribution<double> distribution (0.0,1.0);
 
 //    vnorm = 0.0;
-    printf("SNe.cpp -- i %d apply_kick %d distr %d sigma %g vnorm %g\n",p->index,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma,vnorm);
+    printf("SNe.cpp -- i %d apply_kick %d distr %d kick_distribution_1_sigma_km_s_NS %g vnorm %g\n",p->index,p->apply_kick,p->kick_distribution,p->kick_distribution_1_sigma_km_s_NS,vnorm);
     *vx *= vnorm;
     *vy *= vnorm;
     *vz *= vnorm;

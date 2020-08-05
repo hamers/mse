@@ -167,9 +167,10 @@ int test_kepler_equation_solver()
 int test_stellar_evolution()
 {
     test_apsidal_motion_constant();
-
-    int flag = 0;
+    test_sse();
     
+    int flag = 0;
+    exit(0);
     return flag;
 }
 
@@ -212,6 +213,223 @@ int test_apsidal_motion_constant()
 
     return flag;
 }
+
+int test_sse()
+{
+    int flag = 0;
+    
+    
+    double z= 0.02;
+    int N=4;
+    double masses[N] = {0.1,1.0,10.0,100.0};
+    
+    int ref_kw_final[N] = {0,3,13,14};
+    double ref_m_init_final[N] = {0.1,0.9995,9.8891,15.3521};
+    double ref_m_final[N] = {0.1,0.9985,1.3693,15.2432};
+    double ref_log10_L_final_LSun[N] = {-3.0181,0.8274,-9.7639,-10.0000};
+    double ref_log10_R_final_RSun[N] = {-0.8710,0.5717,-4.8539,-4.1896};
+    double ref_m_core_final[N] = {0.0,0.1749,1.3693,15.2432};
+    double ref_m_env_final[N] = {5.0e-2,8.1269e-01,1.0e-10,1.0e-10};
+    double ref_epoch_final[N] = {0.0,-21.9511,27.4622,3.9544};
+    double ref_ospin_final[N] = {3.7150,1.4691e1,2.0e8,2.0e8};
+            
+//Tev(Myr)    type      Mo        Mt      log10(L)  log10(R) log10(Teff)  Mc        Menv              epoch      spin     
+//12000.0000    0.0000    0.1000    0.1000   -3.0181   -0.8710    3.4442    0.0000  5.0000E-02      0.0000  3.7150E+00
+//12000.0000    3.0000    0.9995    0.9985    0.8274    0.5717    3.6843    0.1749  8.1269E-01    -21.9511  1.4691E+01
+//12000.0000   13.0000    9.8891    1.3693   -9.7639   -4.8539    3.7492    1.3693  1.0000E-10     27.4622  2.0000E+08
+//12000.0000   14.0000   15.3521   15.2432  -10.0000   -4.1896    3.3580   15.2432  1.0000E-10      3.9544  2.0000E+08
+
+    int kw_final;
+    double m_init_final,m_final,R_final,ospin_final,L_final,m_core_final,m_env_final,epoch_final;
+    
+    for (int i=0; i<N; i++)
+    {
+        flag = test_sse_specific_model(masses[i],z,&kw_final,&m_init_final,&m_final,&R_final,&ospin_final,&L_final,&m_core_final,&m_env_final,&epoch_final);
+        printf("==========================\n");
+        printf("kw_final %d %d\n",kw_final,ref_kw_final[i]);
+        printf("m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
+        printf("m_final %g %g\n",m_final,ref_m_final[i]);
+        printf("log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
+        printf("log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
+        printf("m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
+        printf("m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
+        printf("epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
+        printf("ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
+        
+        if (kw_final != ref_kw_final[i])
+        {
+            printf("test.cpp -- error in test_sse(); non-matching stellar types %d %d\n",kw_final,ref_kw_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_init_final,ref_m_init_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_final,ref_m_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_final %g %g\n",m_final,ref_m_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
+            flag = 1;
+        }
+        if ( !equal_number(log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_core_final,ref_m_core_final[i],1.0e-2) and i!=0)
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_env_final,ref_m_env_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(epoch_final*1e-6,ref_epoch_final[i],1.0e-2) and i!=0)
+        {
+            printf("test.cpp -- error in test_sse(); non-matching epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
+            flag = 1;
+        }        
+        if ( !equal_number(ospin_final,ref_ospin_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
+            flag = 1;
+        }
+    }
+    
+    return flag;
+}
+
+int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final)
+{
+    int flag = 0;
+    
+    ParticlesMap particlesMap;
+    Particle *star = new Particle(0, false);
+    particlesMap[0] = star;
+    
+    star->evolve_as_star = true;
+    star->mass = m;
+    star->sse_initial_mass = m;
+    star->metallicity = z;
+    star->stellar_type = 1;
+    //star->kick_distribution = kick_distribution;
+    
+    initialize_stars(&particlesMap);
+    double t_old,t;
+    t_old = t = 0.0;
+    double dt = 1.0;
+    
+    //double vx,vy,vz;
+    double t_max = 1.2e10;
+    int integration_flag=0;
+    bool unbound_orbits;
+    bool apply_SNe_effects;
+    while (t < t_max)
+    {
+        t+=dt;
+        //printf("t %g t_old %g dt %g\n",t,t_old,dt);
+        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects);
+        if (apply_SNe_effects == true)
+        {
+            handle_SNe_in_system(&particlesMap,&unbound_orbits,&integration_flag);
+        }
+        else
+        {
+            //star->mass = 
+            update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
+        }
+        //t+=dt;
+        //dt = dt_new;
+        t_old = t;
+        if (dt<0)
+        {
+            printf("ERROR %g %\n",dt);
+        }
+        if (t>t_max)
+        {
+            break;
+        }
+        //printf("dt_new %g\n",dt_new);
+    }
+    *kw_final = star->stellar_type;
+    *m_final = star->mass;
+    *m_init_final = star->sse_initial_mass;
+    *R_final = star->radius;
+    *ospin_final = norm3(star->spin_vec);
+    *L_final = star->luminosity;
+    *m_core_final = star->core_mass;
+    *m_env_final = star->convective_envelope_mass;
+    *epoch_final = star->epoch;
+    
+    return flag;
+}
+
+double test_kick_velocity(int kick_distribution, double m)
+{
+    ParticlesMap particlesMap;
+    Particle *star = new Particle(0, false);
+    particlesMap[0] = star;
+    
+    star->evolve_as_star = true;
+    star->mass = m;
+    star->sse_initial_mass = m;
+    star->stellar_type = 1;
+    star->kick_distribution = kick_distribution;
+    
+    initialize_stars(&particlesMap);
+    double t_old,t;
+    t_old = t = 0.0;
+    double dt = 1.0;
+    
+    double vx,vy,vz;
+    double t_max = 1.37e10;
+    
+    bool apply_SNe_effects = false;
+    while (apply_SNe_effects == false)
+    {
+        t+=dt;
+        printf("t %g t_old %g dt %g\n",t,t_old,dt);
+        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects);
+        if (apply_SNe_effects == true)
+        {
+            sample_kick_velocity(star,&vx,&vy,&vz);
+        }
+        else
+        {
+            //star->mass = 
+            update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
+        }
+        //t+=dt;
+        //dt = dt_new;
+        t_old = t;
+        if (dt<0)
+        {
+            printf("ERROR %g %\n",dt);
+        }
+        if (t>t_max)
+        {
+            break;
+        }
+        //printf("dt_new %g\n",dt_new);
+    }
+    double v_vec[3] = {vx,vy,vz};
+    double v_norm = norm3(v_vec);
+    
+    if (apply_SNe_effects == false)
+    {
+        v_norm = -1;
+    }
+    printf("done m %g v %g\n",m,v_norm);
+    return v_norm;
+}
+    
     
 int test_binary_evolution()
 {

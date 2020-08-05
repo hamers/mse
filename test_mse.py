@@ -1644,10 +1644,56 @@ class test_mse():
             plot.plot(points,PDF_an, color='tab:green')
 
             pyplot.show()
+
+    def test104(self,args):
+        print('Test kick velocity recipes')
         
+        code = MSE()
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+        
+        N = 10000
+        
+        seed = 0
+        #code.random_seed = seed
+        np.random.seed(seed)
+
+        ms = []
+        alpha = 2.7
+        m1 = 8.0
+        m2 = 100.0
+        for index in range(N):
+            #m = code.test_sample_from_kroupa_93_imf()
+            x = np.random.random()
+            m = pow( x*(pow(m2,1.0-alpha) - pow(m1,1.0-alpha)) + pow(m1,1.0-alpha), 1.0/(1.0-alpha) )
+            print("m",m)
+            v = code.test_kick_velocity(1,m)
+            print("v",v)
+        ms = np.array(ms)
+
+        assert(round(np.mean(ms),2) == 0.50)
+        
+        if args.verbose==True:
+            print("mean ms/MSun",np.mean(ms))
+        
+        if args.plot == True:
+            Nb=100
+            fontsize=20
+            from matplotlib import pyplot
+            fig=pyplot.figure()
+            plot=fig.add_subplot(1,1,1,yscale="log")
+            plot.hist(np.log10(ms),bins=np.linspace(-1.0,2.0,Nb),histtype='step',density=True,color='tab:red')
+            plot.set_xlabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
+            
+            points=np.linspace(-1.0,2.0,Nb)
+            PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]
+            plot.plot(points,PDF_an, color='tab:green')
+
+            pyplot.show()
 
 def kroupa_93_imf(m):
-    print("M",m)
+
     alpha1 = -1.3
     alpha2 = -2.2
     alpha3 = -2.7
@@ -1666,7 +1712,6 @@ def kroupa_93_imf(m):
     elif (m>=m3 and m<=m4):
         pdf = C3*pow(m,alpha3)
     else:
-        print("?")
         pdf = 0.0
         
     return pdf

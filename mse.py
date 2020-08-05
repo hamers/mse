@@ -259,6 +259,9 @@ class MSE(object):
         self.lib.sample_from_kroupa_93_imf_interface.argtypes = ()
         self.lib.sample_from_kroupa_93_imf_interface.restype = ctypes.c_double
 
+        self.lib.test_kick_velocity.argtypes = (ctypes.c_int,ctypes.c_double,)
+        self.lib.test_kick_velocity.restype = ctypes.c_double
+
     ###############
     
 #    def add_particle(self,particle):
@@ -671,6 +674,9 @@ class MSE(object):
         m = self.lib.sample_from_kroupa_93_imf_interface()
         return m
 
+    def test_kick_velocity(self,kick_distribution,m):
+        v = self.lib.test_kick_velocity(kick_distribution,m)
+        return v
 
     ### Constants ###
     @property

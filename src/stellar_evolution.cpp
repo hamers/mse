@@ -188,6 +188,13 @@ int initialize_stars(ParticlesMap *particlesMap)
                 //p->spin_vec_z = ospin*h_vec[2]/h;
                 //printf("initialize %g %d %g %g %g\n",ospin,p->index,p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
             }
+            else
+            {
+                p->spin_vec[0] = 0.0;
+                p->spin_vec[1] = 0.0;
+                p->spin_vec[2] = ospin;
+            }
+                
             p->check_for_RLOF_at_pericentre = true;
         }
     }
@@ -493,7 +500,8 @@ double get_new_dt(int kw, double mass, double mt, double age, double dt, double 
 
     dtm = CV_min(dtr, dt);
     dtm = CV_max(dtm,1.0d-07*age);
-    dtm = CV_max(dtm,1.0e-15);
+    //dtm = CV_max(dtm,1.0e-15);
+    dtm = CV_max(dtm,1.0e-6);
     //printf("gdt %g %g %g\n",dtr,dtm,dt);
     
     return dtm;

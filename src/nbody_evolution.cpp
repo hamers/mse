@@ -183,7 +183,8 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
             
             p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
             p->radius += p->radius_dot * dt;
-            //printf("dm %.15f %.15f %.15f\n",p->mass_dot_wind,dt,p->mass_dot_wind * dt);
+            //printf("dm %.15f %.15f %.15f %.15f\n",p->mass_dot_wind,dt,p->mass_dot_wind * dt,p->mass_dot_wind_accretion);
+            //printf("update_stellar_evolution_quantities_directly m %g r %g\n",p->mass,p->radius);
             spin_vec_norm = norm3(p->spin_vec);
             if (spin_vec_norm == 0.0)
             {
@@ -193,6 +194,7 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
             for (i=0; i<3; i++)
             {
                 p->spin_vec[i] += p->ospin_dot * (p->spin_vec[i]/spin_vec_norm) * dt;
+                //printf("T p->ospin_dot %g p->spin_vec %g\n",p->ospin_dot,p->spin_vec[i]);
             }
         }
     }

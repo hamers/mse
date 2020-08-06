@@ -1652,44 +1652,104 @@ class test_mse():
 
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
-        
-        N = 10000
+        CONST_KM_PER_S = code.CONST_KM_PER_S
+        N = 5000
         
         seed = 0
         #code.random_seed = seed
         np.random.seed(seed)
 
-        ms = []
+        kick_distributions = [1,2,3,4,5]
+        N_k = len(kick_distributions)
+
+        vs_NS = [[] for x in range(N_k)]
+        vs_BH = [[] for x in range(N_k)]
+        vs = [[] for x in range(N_k)]
         alpha = 2.7
         m1 = 8.0
         m2 = 100.0
-        for index in range(N):
-            #m = code.test_sample_from_kroupa_93_imf()
-            x = np.random.random()
-            m = pow( x*(pow(m2,1.0-alpha) - pow(m1,1.0-alpha)) + pow(m1,1.0-alpha), 1.0/(1.0-alpha) )
-            print("m",m)
-            v = code.test_kick_velocity(1,m)
-            print("v",v)
-        ms = np.array(ms)
+        for index_kick,kick_distribution in enumerate(kick_distributions):
+            for index in range(N):
+                #m = code.test_sample_from_kroupa_93_imf()
+                x = np.random.random()
+                m = pow( x*(pow(m2,1.0-alpha) - pow(m1,1.0-alpha)) + pow(m1,1.0-alpha), 1.0/(1.0-alpha) )
+                #print("m",m)
+                kw,v = code.test_kick_velocity(kick_distribution,m)
+                print("index_kick",index_kick,"m",m,"kw",kw,"v/(km/s)",v/CONST_KM_PER_S)
+                
+                vs[index_kick].append(v/CONST_KM_PER_S)
+                if kw==13:
+                    vs_NS[index_kick].append(v/CONST_KM_PER_S)
+                if kw==14:
+                    vs_BH[index_kick].append(v/CONST_KM_PER_S)
 
-        assert(round(np.mean(ms),2) == 0.50)
+            vs[index_kick] = np.array(vs[index_kick])
+            vs_NS[index_kick] = np.array(vs_NS[index_kick])
+            vs_BH[index_kick] = np.array(vs_BH[index_kick])
+
+
+        #assert(round(np.mean(ms),2) == 0.50)
         
-        if args.verbose==True:
-            print("mean ms/MSun",np.mean(ms))
+#        if args.verbose==True:
+#            print("mean ms/MSun",np.mean(ms))
         
         if args.plot == True:
-            Nb=100
-            fontsize=20
+            Nb=50
+            fontsize=16
+            labelsize=12
             from matplotlib import pyplot
-            fig=pyplot.figure()
-            plot=fig.add_subplot(1,1,1,yscale="log")
-            plot.hist(np.log10(ms),bins=np.linspace(-1.0,2.0,Nb),histtype='step',density=True,color='tab:red')
-            plot.set_xlabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
-            
-            points=np.linspace(-1.0,2.0,Nb)
-            PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]
-            plot.plot(points,PDF_an, color='tab:green')
 
+            pyplot.rc('text',usetex=True)
+            pyplot.rc('legend',fancybox=True)
+
+            fig=pyplot.figure(figsize=(14,9))
+            
+            colors = ['k','tab:red','tab:blue','tab:green','tab:cyan']
+            #bins = np.linspace(0.0,3.0,Nb)
+            bins = np.linspace(0.0,1500.0,Nb)
+            for index_kick in range(N_k):
+                plot=fig.add_subplot(2,3,index_kick+1,yscale="log")
+                color = 'k'#colors[index_kick]
+#                plot.hist(np.log10(vs[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='solid',label='$\mathrm{All}$')
+#                plot.hist(np.log10(vs_BH[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='dotted',label='$\mathrm{BH}$')
+#                plot.hist(np.log10(vs_NS[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='dashed',label='$\mathrm{NS}$')
+
+                plot.hist(vs[index_kick],bins=bins,histtype='step',density=True,color='k',linestyle='solid',label='$\mathrm{All}$')
+                plot.hist(vs_BH[index_kick],bins=bins,histtype='step',density=True,color='tab:red',linestyle='dotted',label='$\mathrm{BH}$')
+                plot.hist(vs_NS[index_kick],bins=bins,histtype='step',density=True,color='tab:blue',linestyle='dashed',label='$\mathrm{NS}$')
+            
+                plot.annotate("$\mathrm{Kick\,distribution\,%s}$"%(index_kick+1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
+                #if index_kick==N_k-1:
+                #plot.set_xlabel("$\mathrm{log}_{10}(v_\mathrm{kick}/(\mathrm{km/s}))$",fontsize=fontsize)
+                plot.set_xlabel("$v_\mathrm{kick}/(\mathrm{km/s})$",fontsize=fontsize)
+                #else:
+                #    plot.set_xticklabels([])
+
+                
+                #if index_kick==0:
+                if 1==1:
+                    points=np.linspace(10.0,1500.0,1000)
+                    sigma_km_s = 265.0
+                    PDF_an = np.sqrt(2.0/np.pi) * (points**2/(sigma_km_s**3)) * np.exp( -points**2/(2.0*sigma_km_s**2) )
+                    #plot.plot(points,PDF_an, color='tab:green',label='$\mathrm{MW}\,\sigma=265\,\mathrm{km/s}$')
+                    plot.plot(points,PDF_an, color='tab:green',label='$\mathrm{Hobbs+05}$')
+                handles,labels = plot.get_legend_handles_labels()
+                plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+                #if index_kick==N_k-1:
+                #    handles,labels = plot.get_legend_handles_labels()
+                #    plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
+                
+                plot.set_ylim(1.0e-5,1.0e-1)
+                
+            plot=fig.add_subplot(2,3,6,yscale="log")
+            #handles,labels = plot.get_legend_handles_labels()
+            plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
+            plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            
+            #points=np.linspace(-1.0,2.0,Nb)
+            #PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]
+            #plot.plot(points,PDF_an, color='tab:green')
+            fig.savefig("kick_distributions.pdf")
             pyplot.show()
 
 def kroupa_93_imf(m):

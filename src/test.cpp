@@ -166,11 +166,10 @@ int test_kepler_equation_solver()
 
 int test_stellar_evolution()
 {
-    test_apsidal_motion_constant();
-    test_sse();
+    int flag;
+    flag += test_apsidal_motion_constant();
+    flag += test_sse();
     
-    int flag = 0;
-    exit(0);
     return flag;
 }
 
@@ -183,7 +182,6 @@ int test_apsidal_motion_constant()
     int N_m=5;
     int N_st=15;
     double masses[N_m] = {0.08,0.5,1.0,10.0,100.0};
-    //double masses[N_m] = {0.09,0.8,4.2,5.4,51.0};
     int stellar_types[N_st] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14};
     
     double k_AM;
@@ -216,6 +214,7 @@ int test_apsidal_motion_constant()
 
 int test_sse()
 {
+    /* Test SSE implementation within MSE by evolving a few stars and comparing the output when evolving standalone in SSE. */
     int flag = 0;
     
     
@@ -319,14 +318,12 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
     star->sse_initial_mass = m;
     star->metallicity = z;
     star->stellar_type = 1;
-    //star->kick_distribution = kick_distribution;
     
     initialize_stars(&particlesMap);
     double t_old,t;
     t_old = t = 0.0;
     double dt = 1.0;
     
-    //double vx,vy,vz;
     double t_max = 1.2e10;
     int integration_flag=0;
     bool unbound_orbits;
@@ -334,7 +331,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
     while (t < t_max)
     {
         t+=dt;
-        //printf("t %g t_old %g dt %g\n",t,t_old,dt);
+
         evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects);
         if (apply_SNe_effects == true)
         {
@@ -342,21 +339,15 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
         }
         else
         {
-            //star->mass = 
             update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
         }
-        //t+=dt;
-        //dt = dt_new;
+
         t_old = t;
-        if (dt<0)
-        {
-            printf("ERROR %g %\n",dt);
-        }
+
         if (t>t_max)
         {
             break;
         }
-        //printf("dt_new %g\n",dt_new);
     }
     *kw_final = star->stellar_type;
     *m_final = star->mass;
@@ -371,7 +362,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
     return flag;
 }
 
-double test_kick_velocity(int kick_distribution, double m)
+int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
 {
     ParticlesMap particlesMap;
     Particle *star = new Particle(0, false);
@@ -395,7 +386,7 @@ double test_kick_velocity(int kick_distribution, double m)
     while (apply_SNe_effects == false)
     {
         t+=dt;
-        printf("t %g t_old %g dt %g\n",t,t_old,dt);
+        //printf("t %g t_old %g dt %g\n",t,t_old,dt);
         evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects);
         if (apply_SNe_effects == true)
         {
@@ -403,11 +394,9 @@ double test_kick_velocity(int kick_distribution, double m)
         }
         else
         {
-            //star->mass = 
             update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
         }
-        //t+=dt;
-        //dt = dt_new;
+
         t_old = t;
         if (dt<0)
         {
@@ -419,15 +408,17 @@ double test_kick_velocity(int kick_distribution, double m)
         }
         //printf("dt_new %g\n",dt_new);
     }
+    *kw = star->stellar_type;
     double v_vec[3] = {vx,vy,vz};
-    double v_norm = norm3(v_vec);
+    *v_norm = norm3(v_vec);
     
     if (apply_SNe_effects == false)
     {
-        v_norm = -1;
+        *v_norm = -1;
     }
-    printf("done m %g v %g\n",m,v_norm);
-    return v_norm;
+    
+    //printf("done m %g v %g\n",m,v_norm);
+    return 0;
 }
     
     

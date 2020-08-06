@@ -86,6 +86,9 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     double m_progenitor = p->mass;
     double m_remnant = m_progenitor + p->instantaneous_perturbation_delta_mass;
     
+    double vnorm_NS,vnorm_BH;
+    double sigma,v[3];
+    
     if (kick_distribution == 0) // no kicks
     {
         vnorm = 0.0;
@@ -96,29 +99,37 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
          * When kick_distribution = 3, BH kicks are scaled back by a factor m_BH/m_NS (momentum conservation w.r.t. NS kicks), where m_NS=1.4 MSun by default and kick_distribution_1_sigma_km_s_BH is still used to sample the original BH kick velocity. 
          * When kick_distribution = 4, a mass fallback prescription from Fryer+ 2012 (2012ApJ...749...91F Section 4.1) is adopted, i.e., the kick is scaled back according to the CO core mass. 
          * When kick_distribution = 5, a prescription from Giacobbo & Mapelli (2020; https://ui.adsabs.harvard.edu/abs/2020ApJ...891..141G/abstract, Eq. 1) is adopted. */
-         
 
-        if (kw == 13)
+        sigma = p->kick_distribution_sigma_km_s_NS * CONST_KM_PER_S;
+        sample_from_3d_maxwellian_distribution(sigma, v);
+        vnorm_NS = norm3(v);
+
+        sigma = p->kick_distribution_sigma_km_s_BH * CONST_KM_PER_S;
+        sample_from_3d_maxwellian_distribution(sigma, v);
+        vnorm_BH = norm3(v);
+
+        if (kick_distribution == 1) // Unmodified Maxwellian distributions with separate sigmas for NS and BHs
         {
-            double sigma = p->kick_distribution_1_sigma_km_s_NS * CONST_KM_PER_S;
-            double v[3];
-            sample_from_3d_maxwellian_distribution(sigma, v);
-            vnorm = norm3(v);
-        }
-        else if (kw == 14)
-        {
-            double sigma = p->kick_distribution_1_sigma_km_s_BH * CONST_KM_PER_S;
-            double v[3];
-            sample_from_3d_maxwellian_distribution(sigma, v);
-            vnorm = norm3(v);
+            if (kw == 13)
+            {
+                vnorm = vnorm_NS;
+            }
+            else if (kw == 14)
+            {   
+                vnorm = vnorm_BH;
+            }
         }
         
         if (kick_distribution == 3) // Momentum conservation for BHs
         {
-            if (kw == 14)
+            if (kw == 13)
+            {
+                vnorm = vnorm_NS;
+            }
+            else if (kw == 14)
             {
                 double m_NS = p->kick_distribution_3_m_NS;
-                vnorm *= m_NS/m_remnant;
+                vnorm = vnorm_NS * m_NS/m_remnant;
             }
         }
         
@@ -138,12 +149,14 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             {
                 f_fallback = 1.0;
             }
-            vnorm *= (1.0 - f_fallback);
+            //printf("kw %d f_fallback %g\n",kw,f_fallback);
+            vnorm = vnorm_NS * (1.0 - f_fallback);
         }
         
         if (kick_distribution == 5) // Giacobbo & Mapelli prescription
         {
-            vnorm *= ((m_progenitor - m_remnant)/m_remnant) * (1.2/9.0); // <m_NS=1.2>; <m_ej>=9.0
+            vnorm = vnorm_NS * (((m_progenitor - m_remnant)/m_remnant) * (1.2/9.0)); // <m_NS=1.2>; <m_ej>=9.0
+            //printf("kw %d f %g\n",kw,((m_progenitor - m_remnant)/m_remnant));
         }
     }
     else if (kick_distribution == 2) 
@@ -173,12 +186,17 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             vnorm = sample_from_normal_distribution(mu_kick,sigma_kick);
         }
     }
+    else
+    {
+        printf("SNe.cpp -- sample_kick_velocity -- ERROR: invalid kick distribution %d \n",kick_distribution);
+        exit(-1);
+    }
   //    std::default_random_engine generator (seed);
 
 //  std::normal_distribution<double> distribution (0.0,1.0);
 
 //    vnorm = 0.0;
-    printf("SNe.cpp -- i %d kw %d apply_kick %d distr %d kick_distribution_1_sigma_km_s_NS %g vnorm %g m_progenitor %g m_remnant %g\n",p->index,kw,p->apply_kick,p->kick_distribution,p->kick_distribution_1_sigma_km_s_NS,vnorm,m_progenitor,m_remnant);
+    printf("SNe.cpp -- i %d kw %d apply_kick %d distr %d kick_distribution_sigma_km_s_NS %g vnorm %g m_progenitor %g m_remnant %g\n",p->index,kw,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma_km_s_NS,vnorm,m_progenitor,m_remnant);
     *vx *= vnorm;
     *vy *= vnorm;
     *vz *= vnorm;

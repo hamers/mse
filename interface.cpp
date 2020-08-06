@@ -433,7 +433,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
     return 0;
 }
 
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_1_sigma_km_s_NS, double kick_distribution_1_sigma_km_s_BH)
+int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH)
 {
     //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
@@ -443,12 +443,12 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
 
     Particle * p = particlesMap[index];
     p->kick_distribution = kick_distribution;
-    p->kick_distribution_1_sigma_km_s_NS = kick_distribution_1_sigma_km_s_NS;
-    p->kick_distribution_1_sigma_km_s_BH = kick_distribution_1_sigma_km_s_BH;
+    p->kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS;
+    p->kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH;
     
     return 0;
 }
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_1_sigma_km_s_NS, double *kick_distribution_1_sigma_km_s_BH)
+int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH)
 
 {
     if (index > particlesMap.size())
@@ -458,8 +458,8 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
   
     Particle * p = particlesMap[index];
     *kick_distribution = p->kick_distribution;
-    *kick_distribution_1_sigma_km_s_NS = p->kick_distribution_1_sigma_km_s_NS;
-    *kick_distribution_1_sigma_km_s_BH = p->kick_distribution_1_sigma_km_s_BH;
+    *kick_distribution_sigma_km_s_NS = p->kick_distribution_sigma_km_s_NS;
+    *kick_distribution_sigma_km_s_BH = p->kick_distribution_sigma_km_s_BH;
     
     return 0;
 }

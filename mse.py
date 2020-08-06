@@ -259,8 +259,8 @@ class MSE(object):
         self.lib.sample_from_kroupa_93_imf_interface.argtypes = ()
         self.lib.sample_from_kroupa_93_imf_interface.restype = ctypes.c_double
 
-        self.lib.test_kick_velocity.argtypes = (ctypes.c_int,ctypes.c_double,)
-        self.lib.test_kick_velocity.restype = ctypes.c_double
+        self.lib.test_kick_velocity.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double))
+        self.lib.test_kick_velocity.restype = ctypes.c_int
 
     ###############
     
@@ -544,11 +544,11 @@ class MSE(object):
                 particle.tides_viscous_time_scale = tides_viscous_time_scale.value
                 particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
 
-                kick_distribution,kick_distribution_1_sigma_km_s_NS,kick_distribution_1_sigma_km_s_BH = ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-                flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_1_sigma_km_s_NS),ctypes.byref(kick_distribution_1_sigma_km_s_BH))
+                kick_distribution,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH = ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_sigma_km_s_NS),ctypes.byref(kick_distribution_sigma_km_s_BH))
                 particle.kick_distribution = kick_distribution.value
-                particle.kick_distribution_1_sigma_km_s_NS = kick_distribution_1_sigma_km_s_NS.value
-                particle.kick_distribution_1_sigma_km_s_BH = kick_distribution_1_sigma_km_s_BH.value
+                particle.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS.value
+                particle.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH.value
 
                 mass_dot = ctypes.c_double(0.0)
                 flag = self.lib.get_mass_dot(particle.index,ctypes.byref(mass_dot))
@@ -675,8 +675,9 @@ class MSE(object):
         return m
 
     def test_kick_velocity(self,kick_distribution,m):
-        v = self.lib.test_kick_velocity(kick_distribution,m)
-        return v
+        kw,v = ctypes.c_int(0),ctypes.c_double(0.0)
+        self.lib.test_kick_velocity(kick_distribution,m,ctypes.byref(kw),ctypes.byref(v))
+        return kw.value,v.value
 
     ### Constants ###
     @property
@@ -974,7 +975,7 @@ class Particle(object):
             integration_method = 0, KS_use_perturbing_potential = True, \
             stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
-            kick_distribution = 1, kick_distribution_1_sigma_km_s_NS = 265.0, kick_distribution_1_sigma_km_s_BH=0.0, \
+            kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=0.0, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
@@ -1024,8 +1025,8 @@ class Particle(object):
         self.include_mass_transfer_terms = include_mass_transfer_terms
 
         self.kick_distribution = kick_distribution
-        self.kick_distribution_1_sigma_km_s_NS = kick_distribution_1_sigma_km_s_NS
-        self.kick_distribution_1_sigma_km_s_BH = kick_distribution_1_sigma_km_s_BH
+        self.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
+        self.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
           
         self.check_for_secular_breakdown=check_for_secular_breakdown
         self.check_for_dynamical_instability=check_for_dynamical_instability

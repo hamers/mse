@@ -2,7 +2,7 @@
 
 #include "nbody_evolution.h"
 #include "evolve.h"
-#include "mstar/regularization.h"
+//#include "mstar/regularization.h"
 
 extern "C"
 {
@@ -16,9 +16,10 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
      * 3: N-body after unbound orbit(s) due to SNe
      * 4: N-body after unbound orbit(s) due to flyby */
      
+    
     /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
-    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap);
+    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
 
     //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
     double dt = t - t_old;
@@ -128,12 +129,12 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
         //printf("R->Collision_Partner[i]; %d\n",R->Collision_Partner[i]);
         
-        col_part_i = R->Collision_Partner[i];
+        col_part_i = R->Stopping_Condition_Partner[i];
         if (col_part_i != -1)
         {
             for (j=0; j<R->NumVertex; j++)
             {
-                col_part_j = R->Collision_Partner[j];
+                col_part_j = R->Stopping_Condition_Partner[j];
                 {
                     if (col_part_j != -1 and col_part_j != col_part_i)
                     {
@@ -150,8 +151,8 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         exit(-1);
     }
 
-    (*particlesMap)[col_part_i]->Collision_Partner = col_part_i;
-    (*particlesMap)[col_part_j]->Collision_Partner = col_part_j;
+    (*particlesMap)[col_part_i]->Stopping_Condition_Partner = col_part_i;
+    (*particlesMap)[col_part_j]->Stopping_Condition_Partner = col_part_j;
 
     /* Positions & velocities are needed for collision handling */
     for (k=0; k<3; k++)
@@ -236,7 +237,7 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
 int handle_dynamical_instability(ParticlesMap *particlesMap)
 {
     //create_mstar_instance_of_system(particlesMap,R);
-    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap);
+    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,1);
     
 //    double P_orb_max = determine_longest_orbital_period_in_system(particlesMap);
 
@@ -882,7 +883,7 @@ void analyze_mstar_system2(struct RegularizedRegion *R)
 }
 
 
-struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap)
+struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag)
 {
      
     initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
@@ -917,9 +918,11 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
         {
             R_vec = p->R_vec;
             V_vec = p->V_vec;
-
+            //printf("test1\n");
             R->Vertex[i].type = 0;
+            //printf("test2 i %d %d %d %d\n",i,N_bodies,p->index,R->Index[i]);
             R->Index[i] = p->index;
+            //printf("test3\n");
             R->Mass[i] = p->mass;
             R->Radius[i] = p->radius;
             for (j=0; j<3; j++)
@@ -928,13 +931,21 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
                 R->Vel[3 * i + j] = V_vec[j];
             }
             
+            R->Stopping_Condition_Mode[i] = 0;
+            
             i++;
         }    
     }   
-    mstar_gbs_tolerance = 1.0e-8;
-    R->gbs_tolerance = mstar_gbs_tolerance;
+    
+    double gbs_tolerance = mstar_gbs_tolerance_default;
+    if (integration_flag == 3)
+    {
+        gbs_tolerance = mstar_gbs_tolerance_kick;
+    }
+
+    R->gbs_tolerance = gbs_tolerance;
     printf("R->gbs_tolerance %g\n",R->gbs_tolerance);
-    R->collision_tolerance = mstar_collision_tolerance;
+    R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
     return R;
     
 }
@@ -943,7 +954,7 @@ void print_state(struct RegularizedRegion *R)
 {
     for (int i=0; i<R->NumVertex; i++)
     {
-        printf("i %d index %d mass %g radius %g collision partner %d\n",i,R->Index[i],R->Mass[i],R->Radius[i],R->Collision_Partner[i]);
+        printf("i %d index %d mass %g radius %g stopping condition partner %d\n",i,R->Index[i],R->Mass[i],R->Radius[i],R->Stopping_Condition_Partner[i]);
         printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
     }

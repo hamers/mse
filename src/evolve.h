@@ -32,6 +32,7 @@
 #include "test.h"
 #include "apsidal_motion_constant.h"
 #include "common_envelope_evolution.h"
+#include "mstar/regularization.h"
 
 extern "C"
 {

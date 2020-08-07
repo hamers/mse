@@ -74,8 +74,9 @@ extern double nova_accretion_factor;
 extern double alpha_wind_accretion;
 extern double beta_wind_accretion;
 
-extern double mstar_gbs_tolerance;
-extern double mstar_collision_tolerance;
+extern double mstar_gbs_tolerance_default;
+extern double mstar_gbs_tolerance_kick;
+extern double mstar_stopping_condition_tolerance;
 
 extern double triple_mass_transfer_primary_star_accretion_efficiency_no_disk;
 extern double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk;
@@ -979,7 +980,7 @@ class Particle
     bool stable;
     bool is_bound;
     
-    int Collision_Partner;
+    int Stopping_Condition_Partner;
     
     /* Used for adiabatic mass loss calculations (CE) */
     double h_vec_old_adiabatic_mass_loss[3],e_vec_old_adiabatic_mass_loss[3];
@@ -998,7 +999,7 @@ class Particle
         stable = true;
         is_bound = true;
         has_found_parent = false;
-        Collision_Partner = -1;
+        Stopping_Condition_Partner = -1;
         
         /* default values */
         check_for_secular_breakdown = true;

@@ -285,7 +285,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
-                star1->kick_distribution = 1;
+                //star1->kick_distribution = 1;
                 //star1->instantaneous_perturbation_delta_mass = M1 - MF;
             }
             
@@ -409,7 +409,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
-                star1->kick_distribution = 1;
+                //star1->kick_distribution = 1;
             }
             
             MF = M2;
@@ -421,7 +421,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             if(KW2 >= 13 and KW < 13) /* secondary became an NS */
             {
                 star2->apply_kick = true;
-                star2->kick_distribution = 1;
+                //star2->kick_distribution = 1;
             }
             
         }
@@ -869,7 +869,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
             bool unbound_orbits = check_for_unbound_orbits(particlesMap);
             if (unbound_orbits == true)
             {
-                *integration_flag = 5;
+                *integration_flag = 3;
                 printf("binary_evolution.cpp -- common_envelope_evolution -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
             }
         }
@@ -1094,7 +1094,7 @@ int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     if (kw3_f >= 13)
     {
         star3->apply_kick = true;
-        star3->kick_distribution = 1;
+        //star3->kick_distribution = 1;
     }
 
     /* Update the tertiary star. 

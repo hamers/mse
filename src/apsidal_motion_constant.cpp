@@ -1476,4 +1476,5 @@ double AMC_data_function(double log_m, Particle *star)
 		}
 	}
 
+    return -1;
 }					

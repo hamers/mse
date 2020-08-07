@@ -1,3 +1,6 @@
+//extern "C"
+//{
+    
 #define SERIAL
 //#define PARALLEL
 #define PRIM
@@ -10,10 +13,10 @@
 #define KMAX 8
 #define MAXSORTTASK 8
 
-#define M_PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214
+//#define M_PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214
 //#define SPEEDOFLIGHT 299792.0
 
-/* The two lines below: modification from Adrian */
+/* The two lines below: modification from A.S.H. */
 #define GCONST (double) 4.0*M_PI*M_PI
 #define SPEEDOFLIGHT (double) 63239.72638679138
 
@@ -31,18 +34,20 @@
 enum velocity_type { PHYSICAL, AUXILIARY };
 enum variable_type { POSITION, VELOCITY, OTHER };
 
-int Ntask;
-int ThisTask;
+#ifdef IGNORE
+extern int Ntask;
+extern int ThisTask;
 
-int NumGbsGroup;
-int NumTaskPerGbsGroup;
-int ThisGbsGroup;
-int ThisTask_in_GbsGroup;
+extern int NumGbsGroup;
+extern int NumTaskPerGbsGroup;
+extern int ThisGbsGroup;
+extern int ThisTask_in_GbsGroup;
 
-int NumTaskPerSortGroup;
-int NumSortGroup;
-int ThisSortGroup;
-int ThisTask_in_SortGroup;
+extern int NumTaskPerSortGroup;
+extern int NumSortGroup;
+extern int ThisSortGroup;
+extern int ThisTask_in_SortGroup;
+#endif
 
 struct OctreeNode {
     int ChildExists[8];
@@ -55,7 +60,7 @@ struct OctreeNode {
     int level;
     int IsLeaf;
     int ID;
-} *OctreeRootNode, **ParticleInNode;
+};
 
 
 struct WeightIndex {
@@ -135,10 +140,12 @@ struct RegularizedRegion {
 
 	double Hstep;
 
-    /* Collision detection */
+    /* Stopping conditions */
     double *Radius;
-    int *Collision_Partner; 
-    double collision_tolerance;
+    int *Stopping_Condition_Mode;
+    int *Stopping_Condition_Partner; 
+    double stopping_condition_tolerance;
+    double *Stopping_Condition_Roche_Lobe_Radius;
     
     /* Identification (for interface with MSE) */
     int *Index;
@@ -156,22 +163,28 @@ struct ToDoList {
 	int NumberOfComputationalTasks;
 	struct ComTask *ComputationalTask;
 	struct RegularizedRegion *CopyOfSingleRegion;
-} ComputationToDoList;
+};
 
-double E0;
+//extern double E0;
 
 // functions
 
 void compute_Post_Newtonian_Acc(struct RegularizedRegion *R, double *Vel);
 int check_relative_proximity( int v1, int v2, const int Nd, struct RegularizedRegion *R, int *d, int *path, int *sign);
 
-void collision_detection_function(struct RegularizedRegion *R, int *possible_collision, int *collision_occurred, double *Delta_t_min);
+void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min);
+double fq_RLOF_Eggleton(double m1, double m2);
 
 // misc
 
-int ok_steps;
-int failed_steps;
+//extern int ok_steps;
+//extern int failed_steps;
 
 #endif
 //void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart);
 //void initialize_mpi_or_serial(void);
+
+#ifndef CV_max
+    #define CV_max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+//}

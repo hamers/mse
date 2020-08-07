@@ -146,8 +146,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
      double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
      int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-     double mstar_gbs_tolerance_, double mstar_collision_tolerance_);
-
+     double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_);
 int get_random_seed(int *value);
 int set_random_seed(int value);
 

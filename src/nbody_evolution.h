@@ -13,7 +13,7 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
 
 int handle_dynamical_instability(ParticlesMap *particlesMap);
 //void create_mstar_instance_of_system(ParticlesMap *particlesMap, struct RegularizedRegion *R);
-struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap);
+struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag);
 
 void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max,double dt);
 void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, ParticlesMap *new_particlesMap);

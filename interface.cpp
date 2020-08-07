@@ -943,7 +943,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
      double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
      int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-     double mstar_gbs_tolerance_, double mstar_collision_tolerance_)
+     double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_)
 {
      relative_tolerance = relative_tolerance_;
      absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -968,9 +968,9 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
      binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;
      
-     mstar_gbs_tolerance = mstar_gbs_tolerance_;
-     mstar_collision_tolerance = mstar_collision_tolerance_;
-     
+     mstar_gbs_tolerance_default = mstar_gbs_tolerance_default_;
+     mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
+     mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
      
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 
@@ -998,6 +998,7 @@ int unit_tests_interface()
 {
     int flag=0;
     flag += test_tools();
+    flag += test_nbody();
     flag += test_stellar_evolution();
     flag += test_binary_evolution();
     flag += test_collisions();

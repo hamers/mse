@@ -50,8 +50,9 @@ class MSE(object):
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 0
 
-        self.__mstar_gbs_tolerance = 1.0e-12
-        self.__mstar_collision_tolerance = 1.0e-12
+        self.__mstar_gbs_tolerance_default = 1.0e-8
+        self.__mstar_gbs_tolerance_kick = 1.0e-6
+        self.__mstar_collision_tolerance = 1.0e-10
 
         self.__particles_committed = False
         self.model_time = 0.0
@@ -203,7 +204,7 @@ class MSE(object):
 
         self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
             ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_int, \
-            ctypes.c_double, ctypes.c_double)
+            ctypes.c_double, ctypes.c_double, ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
          
         self.__set_parameters_in_code() 
@@ -436,7 +437,7 @@ class MSE(object):
                 flag += self.lib.set_spin_vector(particle.index,particle.spin_vec_x,particle.spin_vec_y,particle.spin_vec_z)
                 flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.evolve_as_star,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
                     particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription)
-                flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma)
+                flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma_km_s_NS,particle.kick_distribution_sigma_km_s_BH)
 
                 if set_instantaneous_perturbation_properties==True:
                     flag += self.lib.set_instantaneous_perturbation_properties(particle.index,particle.instantaneous_perturbation_delta_mass, \
@@ -631,7 +632,7 @@ class MSE(object):
              self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
              self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
              self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, \
-             self.__mstar_gbs_tolerance, self.__mstar_collision_tolerance)
+             self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance)
 
     def reset(self):
         self.__init__()
@@ -975,7 +976,7 @@ class Particle(object):
             integration_method = 0, KS_use_perturbing_potential = True, \
             stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
-            kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=0.0, \
+            kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \

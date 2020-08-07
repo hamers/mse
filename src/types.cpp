@@ -66,8 +66,9 @@ double nova_accretion_factor = 1.0e-3;
 double alpha_wind_accretion = 1.5;
 double beta_wind_accretion = 0.125;
 
-double mstar_gbs_tolerance = 1.0e-12;
-double mstar_collision_tolerance = 1.0e-10;
+double mstar_gbs_tolerance_default = 1.0e-12;
+double mstar_gbs_tolerance_kick = 1.0e-10;
+double mstar_stopping_condition_tolerance = 1.0e-10;
 
 double triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1;
 double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1;

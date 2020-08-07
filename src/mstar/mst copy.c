@@ -32,28 +32,6 @@ double **gbsS;
 MPI_Comm MPI_COMM_GBS_GROUP;
 #endif
 
-
-int Ntask;
-int ThisTask;
-
-int NumGbsGroup;
-int NumTaskPerGbsGroup;
-int ThisGbsGroup;
-int ThisTask_in_GbsGroup;
-
-int NumTaskPerSortGroup;
-int NumSortGroup;
-int ThisSortGroup;
-int ThisTask_in_SortGroup;
-
-int ok_steps;
-int failed_steps;
-
-struct ToDoList ComputationToDoList;
-struct OctreeNode *OctreeRootNode;
-struct OctreeNode **ParticleInNode;
-
-
 double tprim1, tprim2, tprim3, tprim4, tprim5;
 double time_coord;
 double time_force;
@@ -2101,20 +2079,7 @@ int extrapolate_all_variables(int korder) {
 }
 
 // Integrate the subsystems using AR-MST for the desired time interval
-void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *stopping_condition_occurred) {
-
-
-    failed_steps = 0;
-    ok_steps = 0;
-    time_force = 0;
-    time_comm = 0;
-
-    time_mst = 0;
-    time_gbs = 0;
-    time_gbscomm = 0;
-    time_coord = 0;
-    tprim1 = 0, tprim2 = 0, tprim3 = 0, tprim4 = 0, tprim5 = 0;
-
+void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *collision_occurred) {
 
     // Needed variables
     double dt = 1e-7;
@@ -2123,14 +2088,12 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     // Initialize the system to integrate
 
     into_CoM_frame(R);
-    
-    
+
 #ifdef PRIM
     PrimMST(R);
 #else
     DivideAndConquerPrim(R);
 #endif
-
 
     compute_total_energy(R);
     R->Hstep = dt * R->U;
@@ -2144,9 +2107,9 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     int redo = 1;
     int status;
 
-    int i_sc;
+    int i_col;
 
-    int i_print=0;
+    int i_print;
     double N_print=100.0;
     double f_time;
     
@@ -2232,7 +2195,10 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
             // Check whether we are ready
             time = R[0].State[R[0].TimeIndex];
-            //printf("t %g\n",time);
+            //if (time < 0.0)
+            {
+                //printf("t %g\n",time);
+            }
             R[0].time = time;
             if (fabs(time - time_interval) / time_interval <
                 R->output_time_tolerance) {
@@ -2246,7 +2212,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     R->Hstep = R->U * (time_interval - time);
                 }
 
-                /* Some debug printing */
+                //printf("MSTAR -- time %g \n",time);
                 if (time < 0.0)
                 {
                     printf("MSTAR -- WARNING time = %g < 0!\n",time);
@@ -2257,42 +2223,44 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0);
                     i_print+=1;
                 }
-                //printf(">>>> %d %g %d\n",i_print,f_time,(int) (f_time*N_print));
+                
+                //printf("t %g\n",time);
 
-                /* Stopping conditions */
-                int possible_stopping_condition;
-                double Delta_t_stopping_condition;
-                stopping_condition_function(R, &possible_stopping_condition, stopping_condition_occurred, &Delta_t_stopping_condition);
-                possible_stopping_condition = 0;
-                if (*stopping_condition_occurred == 1)
+                /* Collision detection */
+                int possible_collision;
+                double Delta_t_collision;
+                collision_detection_function(R, &possible_collision, collision_occurred, &Delta_t_collision);
+
+                if (*collision_occurred == 1)
                 {
                     not_finished = 0;
-                    printf("Stopping condition at t=%g \n",time);
+                    printf("COLLISION at t=%g c1 %d c2 %d\n",time,R->Collision_Partner[0],R->Collision_Partner[1]);
                 }
-                if (possible_stopping_condition == 1)
+                if (possible_collision == 1)
                 {
-                    i_sc++;
-                    
-                    double sc_Hstep = R->U * Delta_t_stopping_condition;
-                    if ( fabs(sc_Hstep) <= fabs(R->Hstep) ) // Make sure stopping condition detection does not interfere with the timestep determined above
+                    i_col++;
+
+                    double col_Hstep = R->U * Delta_t_collision;
+                    if ( fabs(col_Hstep) <= fabs(R->Hstep) ) // Make sure collision detection does not interfere with the timestep determined above
                     {
-                        R->Hstep = sc_Hstep;
+                        R->Hstep = col_Hstep;
                     }
                     
-                    if (i_sc > 100) /* The stopping condition was probably not real; give up */
+                    if (i_col > 100) /* The collision was probably not real; give up */
                     {
-                        possible_stopping_condition = 0;
+                        printf("MSTAR -- giving up possible collision; i_col %d; new Hstep %g\n",i_col,R->Hstep);
+                        possible_collision = 0;
                         R->Hstep = R->U * dt;
-                        i_sc = 0;
+                        i_col = 0;
                     }
                     //printf("possible collision; i_col %d; new Hstep %g\n",i_col,R->Hstep);
                 }
                 else
                 {
-                    if (i_sc>0) /* Reset the timestep if stopping condition iterations occurred; is necessary since otherwise the code could stall indefinitely because of persistently negative timesteps */
+                    if (i_col>0) /* Reset the timestep if collision iterations occurred; is necessary since otherwise the code could stall indefinitely because of persistently negative timesteps */
                     {
                         R->Hstep = R->U * dt;
-                        i_sc = 0;
+                        i_col = 0;
                     }
                 }
                 
@@ -2317,8 +2285,8 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
 
     S->gbs_tolerance = GBSTOL;
 
-    S->output_time_tolerance = 1e-6;
-    S->stopping_condition_tolerance = 1e-6;
+    S->output_time_tolerance = 1e-2;
+    S->collision_tolerance = 1e-6;
     S->NumVertex = N;
 
     S->NumEdge = (N * (N - 1)) / 2;
@@ -2348,11 +2316,10 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->EdgeInMST = calloc(N - 1, sizeof(struct GraphEdge));
     
     S->Radius = calloc(N, sizeof(double));
-    S->Stopping_Condition_Mode = calloc(N, sizeof(int));
-    S->Stopping_Condition_Partner = calloc(N, sizeof(int));
-    S->Stopping_Condition_Roche_Lobe_Radius = calloc(N, sizeof(double));
-
+    S->Collision_Partner = calloc(N, sizeof(int));
+    
     S->Index = calloc(N, sizeof(int));
+        
 }
 
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
@@ -2543,7 +2510,7 @@ int main(int argc, char *argv[]) {
 }
 #endif
 
-void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min)
+void collision_detection_function(struct RegularizedRegion *R, int *possible_collision, int *collision_occurred, double *Delta_t_min)
 {
 
     int istart, istop = R->NumVertex, jstop = R->NumVertex;
@@ -2563,29 +2530,25 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
 
     double dr[3], r, r2;
     double dv[3], da[3];
-    double r_crit,r_crit_p2;
-    double r_criti, r_critj;
+    double r_col,r_col_p2;
     double rdotv,vdotv;
     double determinant;
     double Delta_t;
-    
     *Delta_t_min = 1e100;
-    *possible_stopping_condition = 0;
-    *stopping_condition_occurred = 0;
-    
+    *possible_collision = 0;
+    *collision_occurred = 0;
+    return;
     double *Pos = R->Pos;
     double *Vel = R->Vel;
     double *Acc = R->Acc;
     double *Mass = R->Mass;
     double *Radius = R->Radius;
-    int *Stopping_Condition_Mode = R->Stopping_Condition_Mode;
-    
+
     struct GraphVertex *Vertex = R->Vertex;
 
     for (int i = istart; i < istop; i++) 
     {
-        R->Stopping_Condition_Partner[i] = -1; /* default: no stopping condition partner */
-        R->Stopping_Condition_Roche_Lobe_Radius[i] = -1;
+        R->Collision_Partner[i] = -1; /* default: no collision partner */
     }
 
     for (int i = istart; i < istop; i++) 
@@ -2593,7 +2556,6 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
         const double mi = Mass[i];
         const double radiusi = Radius[i];
         const int Li = Vertex[i].level;
-        const int modei = Stopping_Condition_Mode[i];
 //#ifdef PARALLEL
 //        if (i > istart)
 //        {
@@ -2609,7 +2571,6 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             const double mj = Mass[j];
             const double radiusj = Radius[j];
             const int Lj = Vertex[j].level;
-            const int modej = Stopping_Condition_Mode[j];
 
             int proximity = 0;
             if (abs(Li - Lj) <= Nd) {
@@ -2638,23 +2599,8 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 da[k] = Acc[3 * j + k] - Acc[3 * i + k];
             }
             
-            if (modei == 0 && modej == 0) // classical collision detection
-            {
-                r_crit = radiusi + radiusj;
-            }
-            else if (modei == 1 && modej == 1) // RLOF
-            {
-                r_criti = radiusi / fq_RLOF_Eggleton(mi,mj);
-                r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
-                r_crit = CV_max( r_criti, r_critj );
-            }
-            else
-            {
-                printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
-                exit(-1);
-            }
-            
-            r_crit_p2 = r_crit * r_crit;
+            r_col = radiusi + radiusj;
+            r_col_p2 = r_col * r_col;
             rdotv = 0.0;
             vdotv = 0.0;
             for (int k=0; k<3; k++)
@@ -2664,37 +2610,25 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             }
             r = sqrt(r2);
             
-            /* Determine if a stopping condition actually occurred within the tolerance */
-            if ( fabs(r - r_crit)/r < R->stopping_condition_tolerance )
+            /* Determine if a collision actually occurred within the tolerance */
+            if ( fabs(r - r_col)/r < R->collision_tolerance )
             {
-                *stopping_condition_occurred = 1;
-                R->Stopping_Condition_Partner[i] = j;
-                R->Stopping_Condition_Partner[j] = i;
-                
-                if (modei == 1 && modej == 1)
-                {
-                    if (fabs(r - r_criti)/r < R->stopping_condition_tolerance)
-                    {
-                        R->Stopping_Condition_Roche_Lobe_Radius[i] = r_criti * fq_RLOF_Eggleton(mi,mj);
-                    }
-                    else if (fabs(r - r_critj)/r < R->stopping_condition_tolerance)
-                    {
-                        R->Stopping_Condition_Roche_Lobe_Radius[j] = r_critj * fq_RLOF_Eggleton(mj,mi);
-                    }
-                }
+                *collision_occurred = 1;
+                R->Collision_Partner[i] = j;
+                R->Collision_Partner[j] = i;
             }
 
-            /* Estimate if a stopping condition could have occurred in the past or future,
+            /* Estimate if a collision could have occurred in the past or future,
              * and determine the timestep needed to bring the integrator there. */
             int interpolation_method = 1;
             if (interpolation_method == 0) // straight line trajectories
             {
-                determinant = rdotv * rdotv - (r2 - r_crit_p2) * vdotv;
+                determinant = rdotv * rdotv - (r2 - r_col_p2) * vdotv;
                 if (determinant >= 0.0)
                 {
-                    *possible_stopping_condition = 1;
+                    *possible_collision = 1;
                     Delta_t = ( - rdotv - sqrt(determinant) ) / vdotv;
-                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple stopping conditions (unlikely)
+                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple collisions (unlikely)
                     {
                          *Delta_t_min = Delta_t;
                     }
@@ -2715,7 +2649,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 double b = vdota;
                 double c = vdotv + rdota;
                 double d = 2.0 * rdotv;
-                double e = r2 - r_crit_p2;
+                double e = r2 - r_col_p2;
                 
                 double p = (8.0*a*c - 3.0*b*b)/(8.0*a*a);
                 double q = (b*b*b - 4.0*a*b*c + 8.0*a*a*d)/(8.0*a*a*a);
@@ -2756,9 +2690,9 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
 
                 if (xmin != 1e100)
                 {
-                    *possible_stopping_condition = 1;
+                    *possible_collision = 1;
                     Delta_t = xmin;
-                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple stopping conditions (unlikely)
+                    if (fabs(Delta_t) < fabs(*Delta_t_min)) // determine smallest dt in case of multiple collisions (unlikely)
                     {
                          *Delta_t_min = Delta_t;
                     }
@@ -2766,7 +2700,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
 
 
             }
-            //printf("col test r %g r_crit %g rdotv %g vdotv %g collision_occurred %d possible_collision %d Delta_t %g Delta_t_min %g stopping_condition_tolerance %g (r-r_crit)/r %g \n",r,r_crit,rdotv,vdotv,*collision_occurred,*possible_collision,Delta_t,*Delta_t_min,R->stopping_condition_tolerance,fabs(r - r_crit)/r);
+            //printf("col test r %g r_col %g rdotv %g vdotv %g collision_occurred %d possible_collision %d Delta_t %g Delta_t_min %g collision_tolerance %g (r-r_col)/r %g \n",r,r_col,rdotv,vdotv,*collision_occurred,*possible_collision,Delta_t,*Delta_t_min,R->collision_tolerance,fabs(r - r_col)/r);
         }
     }
         
@@ -2797,13 +2731,4 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
     //clock_t ctime1 = clock();
     //time_comm += (double)(ctime1 - ctime0) / CLOCKS_PER_SEC;
 
-}
-
-double fq_RLOF_Eggleton(double m1, double m2)
-{
-    /* m1 is the donor; m2 the accretor */
-    double q = m1/m2;
-    double q_p1div3 = pow(q,1.0/3.0);
-    double q_p2div3 = q_p1div3*q_p1div3;
-    return 0.49*q_p2div3/( 0.6*q_p2div3 + log(1.0 + q_p1div3) );
 }

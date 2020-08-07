@@ -1193,7 +1193,8 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     /* Effect of mass loss of triple subsystem on the rest of the system. */
     /* Assume the mass not accreted by the inner binary is lost in an adiabatic wind. */
     inner_binary->mass_dot_wind = -( dm3 - (dm1 + dm2) )/dt;
-    
+ 
+    return 0;
 }
  
 double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)

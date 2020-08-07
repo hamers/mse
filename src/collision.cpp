@@ -85,13 +85,13 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         for (it_i = particlesMap->begin(); it_i != particlesMap->end(); it_i++)
         {
             pi = (*it_i).second;
-            col_part_i = pi->Collision_Partner;
+            col_part_i = pi->Stopping_Condition_Partner;
             if (col_part_i != -1)
             {
                 for (it_j = particlesMap->begin(); it_j != particlesMap->end(); it_j++)
                 {
                     pj = (*it_j).second;
-                    col_part_j = pj->Collision_Partner;
+                    col_part_j = pj->Stopping_Condition_Partner;
                     {
                         if (col_part_j != -1 and col_part_j != col_part_i)
                         {
@@ -108,9 +108,9 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
             printf("merger.cpp -- error in handle_collisions: unable to find pair of colliding bodies; col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
             exit(-1);
         }
-        /* Reset Collision_Partner */
-        pi->Collision_Partner = -1;
-        pj->Collision_Partner = -1;
+        /* Reset Stopping_Condition_Partner */
+        pi->Stopping_Condition_Partner = -1;
+        pj->Stopping_Condition_Partner = -1;
         
         //printf("col_part_i %d col_part_j %d pi %d pj %d\n",col_part_i,col_part_j,pi->index,pj->index);
         

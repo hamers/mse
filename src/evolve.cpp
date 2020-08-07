@@ -210,8 +210,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         //printf("test dt %g\n",dt);
         if (include_flybys == true)
         {
-
-            if (t + dt >= flybys_t_next_encounter and last_iteration == false)// and *integration_flag==0)
+            bool apply_flyby = flyby_criterion(particlesMap, integration_flag);
+            if (t + dt >= flybys_t_next_encounter and last_iteration == false and apply_flyby == true)// and *integration_flag==0)
             {
                 //printf("NE t+dt %g flybys_t_next_encounter %g \n",t+dt,flybys_t_next_encounter);
                 printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);

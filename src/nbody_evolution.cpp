@@ -19,21 +19,25 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     
     /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
-    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
-
-    //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
     double dt = t - t_old;
     double dt_reached;
     int collision_occurred;
+
+    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
+
+    double E_init = compute_nbody_total_energy(R);
     
-    printf("nbody_evolution.cpp -- integrate_nbody_system -- t %g dt %g\n",t,dt);
+    //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
+    
+    printf("nbody_evolution.cpp -- integrate_nbody_system -- starting integration -- t %g dt %g E_init %g\n",t,dt,E_init);
     print_system(particlesMap,*integration_flag);
 
-    printf("pre... dt %g\n",dt);
     print_state(R);
     run_integrator(R, dt, &dt_reached, &collision_occurred);
-    //printf("post\n");
-    //print_state(R);
+
+    double E_fin = compute_nbody_total_energy(R);
+    printf("nbody_evolution.cpp -- integrate_nbody_system -- finished integration -- t %g dt_reached %g E_fin %g E_err %g\n",t,dt_reached,E_fin,fabs((E_init-E_fin)/E_init));
+    print_state(R);
 
     *t_out = t_old + dt_reached;
 
@@ -615,7 +619,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     //print_system(particlesMap,1);
 }
 
-
+#ifdef IGNORE
 void analyze_mstar_system2(struct RegularizedRegion *R)
 {
     int i,j;
@@ -881,7 +885,7 @@ void analyze_mstar_system2(struct RegularizedRegion *R)
     printf("analyse done!\n");
 
 }
-
+#endif
 
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag)
 {
@@ -946,8 +950,50 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     R->gbs_tolerance = gbs_tolerance;
     printf("R->gbs_tolerance %g\n",R->gbs_tolerance);
     R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
+    
+    into_CoM_frame(R);
+    
     return R;
     
+}
+
+double compute_nbody_total_energy(struct RegularizedRegion *R)
+{
+    int i,j,k;
+    double m_i,m_j,R_i[3],V_i[3],R_j[3],V_j[3],r[3],v[3];
+    double T = 0.0;
+    double V = 0.0;
+    
+    for (i=0; i<R->NumVertex; i++)
+    {
+        m_i = R->Mass[i];
+        for (k=0; k<3; k++)
+        {
+            R_i[k] = R->Pos[3 * i + k];
+            V_i[k] = R->Vel[3 * i + k];
+        }
+        
+        T += 0.5 * m_i * norm3_squared(V_i);
+        
+        for (j=i+1; j<R->NumVertex; j++)
+        {
+            //printf("i %d j %d\n",i,j);
+            m_j = R->Mass[j];
+            
+            for (k=0; k<3; k++)
+            {
+                R_j[k] = R->Pos[3 * j + k];
+                //V_j[k] = R->Vel[3 * j + k];
+                
+                r[k] = R_i[k] - R_j[k];
+                //v[k] = V_i[k] - V_j[k];
+            }
+                
+            V += - CONST_G * m_i * m_j/norm3(r);
+        }
+    }
+    
+    return T + V;
 }
 
 void print_state(struct RegularizedRegion *R)

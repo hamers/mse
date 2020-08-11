@@ -11,7 +11,7 @@ int test_orbital_vectors_cartesian_conversion();
 
 int test_nbody();
 int test_nbody_two_body_stopping_conditions();
-struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance);
+struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
 double test_nbody_compute_time_of_collision(double CONST_G, double M, double r_col, double a, double e);
 int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, double *a, double *e);
 int test_nbody_two_body_kick();
@@ -27,10 +27,11 @@ int test_binary_evolution();
 int test_compute_Kelvin_Helmholtz_timescale();
 int test_compute_Eddington_accretion_rate();
 int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
+int test_wind_accretion();
 
 int test_collisions();
-int test_collision_MS_MS();
-int test_collision_giant_MS();
+//int test_collision_MS_MS();
+//int test_collision_giant_MS();
 
 int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration_flag);
 

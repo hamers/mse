@@ -32,6 +32,55 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
 }
 
 
+int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
+{
+ //   printf("binary_evolution.cpp -- handle_wind_accretion\n");
+    
+    /* TO DO: since wind accretion depends on the orbital properties, move to ODE integration? */
+    
+    set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
+    double v_orb_p2,v_wind_p2,factor;
+
+    /* First, reset mass_dot_wind_accretion for all particles */ 
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        p->mass_dot_wind_accretion = 0.0;
+    }
+
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        
+        Particle *p = (*it_p).second;
+        
+        //printf("i %d %d %d\n",donor->index,donor->is_binary,donor->is_bound);
+        if (p->is_binary == false and p->is_bound == true)
+        {
+            /* Wind accretion from particle p onto its companion */
+            Particle *parent = (*particlesMap)[p->parent];
+            Particle *companion = (*particlesMap)[p->sibling];
+
+            v_orb_p2 = CONST_G * parent->mass / parent->a;
+            v_wind_p2 = 2.0 * beta_wind_accretion * CONST_G * p->mass / p->radius; /* squared wind speed from p */
+            
+            factor = (1.0/parent->j) * pow( CONST_G * companion->mass / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * parent->a*parent->a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
+            companion->mass_dot_wind_accretion = CV_min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
+            
+            if (companion->mass_dot_wind_accretion!=companion->mass_dot_wind_accretion)
+            {
+                printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
+                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->a);
+                exit(-1);
+            }
+            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
+            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
+        }
+    }
+    
+    return 0;
+}
+
 
 int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
@@ -203,6 +252,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     /* TO DO: contact cases! -- applies if accretor->in_RLOF=1 */
     
     printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
+    print_system(particlesMap,*integration_flag);
     
     if (flag == -1)
     {
@@ -582,55 +632,6 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
     return 0;
 }
 
-
-int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
-{
- //   printf("binary_evolution.cpp -- handle_wind_accretion\n");
-    
-    /* TO DO: since wind accretion depends on the orbital properties, move to ODE integration? */
-    
-    set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
-    double v_orb_p2,v_wind_p2,factor;
-
-    /* First, reset mass_dot_wind_accretion for all particles */ 
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        p->mass_dot_wind_accretion = 0.0;
-    }
-
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        
-        Particle *p = (*it_p).second;
-        
-        //printf("i %d %d %d\n",donor->index,donor->is_binary,donor->is_bound);
-        if (p->is_binary == false and p->is_bound == true)
-        {
-            /* Wind accretion from particle p onto its companion */
-            Particle *parent = (*particlesMap)[p->parent];
-            Particle *companion = (*particlesMap)[p->sibling];
-            
-            v_orb_p2 = CONST_G * parent->mass / parent->a;
-            v_wind_p2 = 2.0 * beta_wind_accretion * CONST_G * p->mass / p->radius; /* squared wind speed from p */
-            
-            factor = (1.0/parent->j) * pow( CONST_G * companion->mass / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * parent->a*parent->a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
-            companion->mass_dot_wind_accretion = CV_max(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
-            
-            if (companion->mass_dot_wind_accretion!=companion->mass_dot_wind_accretion)
-            {
-                printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
-                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->a);
-                exit(-1);
-            }
-            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
-            //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
-        }
-    }
-    
-    return 0;
-}
 
 int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {

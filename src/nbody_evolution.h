@@ -22,10 +22,12 @@ void get_all_semimajor_axes_in_system(ParticlesMap *particlesMap, std::vector<do
 //void analyze_mstar_system2(struct RegularizedRegion *R);
 void extract_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap);
 void print_state(struct RegularizedRegion *R);
+double compute_nbody_total_energy(struct RegularizedRegion *R);
 
 /* Functions below are from MSTAR that need to be accessible from MSE */
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart);
 void initialize_mpi_or_serial(void);
 void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *collision_occurred);
 void free_data(struct RegularizedRegion *R);
+void into_CoM_frame(struct RegularizedRegion *R);
 }

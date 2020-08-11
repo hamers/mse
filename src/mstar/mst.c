@@ -2263,7 +2263,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                 int possible_stopping_condition;
                 double Delta_t_stopping_condition;
                 stopping_condition_function(R, &possible_stopping_condition, stopping_condition_occurred, &Delta_t_stopping_condition);
-                possible_stopping_condition = 0;
+
                 if (*stopping_condition_occurred == 1)
                 {
                     not_finished = 0;
@@ -2579,7 +2579,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
     double *Mass = R->Mass;
     double *Radius = R->Radius;
     int *Stopping_Condition_Mode = R->Stopping_Condition_Mode;
-    
+
     struct GraphVertex *Vertex = R->Vertex;
 
     for (int i = istart; i < istop; i++) 

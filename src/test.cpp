@@ -14,6 +14,7 @@ extern "C"
 
 int test_tools()
 {
+    printf("test.cpp -- test_tools\n");
    
     int flag = 0;
     flag += test_a_P_orb_conversion();
@@ -22,6 +23,10 @@ int test_tools()
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_tools -- passed\n");
+    }
     return flag;
 }
 
@@ -41,6 +46,11 @@ int test_a_P_orb_conversion()
     {
         printf("test.cpp -- error in test_a_P_orb_conversion!\n");
         flag = 1;
+    }
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_a_P_orb_conversion -- passed\n");
     }
     return flag;
 }
@@ -64,13 +74,18 @@ int test_a_h_conversion()
         printf("test.cpp -- error in test_a_h_conversion!\n");
         flag = 1;
     }
+
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_a_h_conversion -- passed\n");
+    }
     return flag;
 }
 
 int test_orbital_element_conversion()
 {
     printf("test.cpp -- test_orbital_element_conversion\n");
-    
+   
     double a,m1,m2,e,INCL,AP,LAN;
     double an,en,INCLn,APn,LANn;
     double e_vec_x,e_vec_y,e_vec_z;
@@ -99,6 +114,11 @@ int test_orbital_element_conversion()
         }
     }
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_orbital_element_conversion -- passed\n");
+    }
+
     return flag;
 }        
 
@@ -140,6 +160,11 @@ int test_orbital_vectors_cartesian_conversion()
         }
     }
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_orbital_vectors_cartesian_conversion -- passed\n");
+    }
+
     return flag;
 }        
 
@@ -166,6 +191,11 @@ int test_kepler_equation_solver()
         }
     }
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_kepler_equation_solver -- passed\n");
+    }
+
     return flag;
 }
 
@@ -176,10 +206,17 @@ int test_kepler_equation_solver()
 
 int test_nbody()
 {
+    printf("test.cpp -- test_nbody\n");
+    
     int flag = 0;
-    //flag += test_nbody_two_body_stopping_conditions();
+    flag += test_nbody_two_body_stopping_conditions();
     flag += test_nbody_two_body_kick();
-    exit(0);
+
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_nbody -- passed\n");
+    }
+
     return flag;
     
 }
@@ -205,11 +242,14 @@ int test_nbody_two_body_stopping_conditions()
         double a_init = a;
         double e_init = e;
         double gbs_tolerance = 1.0e-12;
-        struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance);
+        double stopping_condition_tolerance = 1.0e-12;
+        struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+
+
+        double E_init = compute_nbody_total_energy(R);
 
         //print_state(R);
-            
-//        printf("Running integration...\n");
+
         int split_integration = 0;
         
         double tend = 1.0;
@@ -242,11 +282,12 @@ int test_nbody_two_body_stopping_conditions()
                 }
             }
         }
-        
+        double E_fin = compute_nbody_total_energy(R);
+
         //printf("Integration done reached t %g stopping_condition_occurred %d; t_end_an (collisions only) %g\n",t,stopping_condition_occurred,test_nbody_compute_time_of_collision(GCONST,m1+m2,R1+R2,a,e));
                 
-        //printf("Final state:\n");
-        //print_state(R);
+//        printf("Final state:\n");
+//        print_state(R);
         
         /* Determine final orbital elements of binary for checking (independent of MSTAR) */
         double r[3],v[3];
@@ -269,14 +310,20 @@ int test_nbody_two_body_stopping_conditions()
         //printf("Final a %.15f e %.15f sep %.15f r_col %g r_RLOF1 %g r_RLOF2 %g\n",a,e,r_norm,R1+R2,r_RLOF1,r_RLOF2);
 
         free_data(R);
+
+        double tol = 1.0e-10;
+        if (!equal_number(E_init,E_fin,tol))
+        {
+            printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- E_init %g E_fin %g\n",E_init,E_fin);
+            flag = 1;
+        }
         
-        
-        if (!equal_number(a_init,a,1.0e-10))
+        if (!equal_number(a_init,a,tol))
         {
             printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- a %g a_init %g\n",a,a_init);
             flag = 1;
         }
-        if (!equal_number(e_init,e,1.0e-10))
+        if (!equal_number(e_init,e,tol))
         {
             printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- e %g e_init %g\n",e,e_init);
             flag = 1;
@@ -284,12 +331,12 @@ int test_nbody_two_body_stopping_conditions()
 
         if (stopping_condition_mode == 0)
         {
-            if (!equal_number(r_norm,R1+R2,1.0e-10))
+            if (!equal_number(r_norm,R1+R2,tol))
             {
                 printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g R1+R2 %g\n",r_norm,R1+R2);
                 flag = 1;
             }
-            if (!equal_number(t,t_an,1.0e-10))
+            if (!equal_number(t,t_an,tol))
             {
                 printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- t %g t_an %g\n",t,t_an);
                 flag = 1;
@@ -297,7 +344,7 @@ int test_nbody_two_body_stopping_conditions()
         }
         else if (stopping_condition_mode == 1)
         {
-            if (!equal_number(r_norm,CV_max(r_RLOF1,r_RLOF2),1.0e-10))
+            if (!equal_number(r_norm,CV_max(r_RLOF1,r_RLOF2),tol))
             {
                 printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g max(r_RLOF1,r_RLOF2) %g\n",r_norm,CV_max(r_RLOF1,r_RLOF2));
                 flag = 1;
@@ -306,6 +353,11 @@ int test_nbody_two_body_stopping_conditions()
         
     }
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_nbody_two_body_stopping_conditions -- passed\n");
+    }
+
     return flag;
 }
 
@@ -341,7 +393,7 @@ int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, 
     return 0;
 }
 
-struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance)
+struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance)
 {
      
     struct RegularizedRegion *R;
@@ -393,7 +445,7 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
     R->Stopping_Condition_Mode[0] = stopping_condition_mode;
     R->Stopping_Condition_Mode[1] = stopping_condition_mode;
     R->gbs_tolerance = gbs_tolerance;
-    R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
+    R->stopping_condition_tolerance = stopping_condition_tolerance;
     
    
     return R;
@@ -413,18 +465,12 @@ void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, d
     double m_tot=0.0;
     for (i=0; i<R->NumVertex; i++)
     {
-        //printf("i %d mass %g \n",i,R->Mass[i]);
-        //printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
-        //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
-
-        
         m = R->Mass[i];
         m_tot += m;
         for (j=0; j<3; j++)
         {
             R_cm[j] += m * R->Pos[3 * i + j];
             V_cm[j] += m * R->Vel[3 * i + j];
-            //printf("extract %g \n",p->R_vec[j]);
         }
     }
 
@@ -452,24 +498,27 @@ int test_nbody_two_body_kick()
     double a = 1.0;
     double e = 0.99;
     
-    double a_init = a;
-    double e_init = e;
-    double gbs_tolerance = 1.0e-10;
-    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance);
+    double gbs_tolerance = 1.0e-6;
+    double stopping_condition_tolerance = 1.0e-6;
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
 
-
-    double R_cm[3],V_cm[3];
-    compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    printf("pre R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
+    //double R_cm[3],V_cm[3];
+    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
+    //printf("pre R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
     
+    /* Give kick to *2 */
     int i=1;
     int j=0;
     R->Vel[3 * j + i] += 1000.0*CONST_KM_PER_S;
-    compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    printf("post kick pre int %g %g %g %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
+    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
+    //printf("post kick pre int %g %g %g %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
 
+    into_CoM_frame(R);
+    double E_init = compute_nbody_total_energy(R);
 
-    print_state(R);
+    //print_state(R);
+
+    double a_init,e_init;
 
     double r[3],v[3];
     double M = m1+m2;
@@ -480,10 +529,8 @@ int test_nbody_two_body_kick()
         v[j] = R->Vel[3 * 0 + j] - R->Vel[3 * 1 + j];
     }
 
-    test_nbody_compute_elements(GCONST,M,r,v,&a,&e);
+    test_nbody_compute_elements(GCONST,M,r,v,&a_init,&e_init);
     
-    printf("init a %g e %g\n",a,e);
-    //exit(0);
     int split_integration = 0;
     
     double tend = 10.0;
@@ -517,69 +564,45 @@ int test_nbody_two_body_kick()
         }
     }
     
-    //printf("Integration done reached t %g stopping_condition_occurred %d; t_end_an (collisions only) %g\n",t,stopping_condition_occurred,test_nbody_compute_time_of_collision(GCONST,m1+m2,R1+R2,a,e));
+    double E_fin = compute_nbody_total_energy(R);
             
-    printf("Final state:\n");
-    print_state(R);
+    //printf("Final state:\n");
+    //print_state(R);
     
-    compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    printf("post kick ppost int %g %g %g %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
-    
-    
-    /* Determine final orbital elements of binary for checking (independent of MSTAR) */
+    /* Determine final orbital elements */
     for (int j=0; j<3; j++)
     {
         r[j] = R->Pos[3 * 0 + j] - R->Pos[3 * 1 + j];
         v[j] = R->Vel[3 * 0 + j] - R->Vel[3 * 1 + j];
     }
     
-    //double r_RLOF1 = R1/fq_RLOF_Eggleton(m1,m2);
-    //double r_RLOF2 = R2/fq_RLOF_Eggleton(m2,m1);
-    double r_RLOF1 = R1/roche_radius_pericenter_eggleton(1.0,m1/m2);
-    double r_RLOF2 = R2/roche_radius_pericenter_eggleton(1.0,m2/m1);
-    
-    double t_an = test_nbody_compute_time_of_collision(GCONST,m1+m2,R1+R2,a,e);
-    
     test_nbody_compute_elements(GCONST,M,r,v,&a,&e);
-    double r_norm = norm3(r);
-    printf("Final a %.15f e %.15f sep %.15f r_col %g r_RLOF1 %g r_RLOF2 %g\n",a,e,r_norm,R1+R2,r_RLOF1,r_RLOF2);
 
     free_data(R);
-    
-    #ifdef IGNORE
-    if (!equal_number(a_init,a,1.0e-10))
+
+    double tol = 1.0e-12;
+    if (!equal_number(E_init,E_fin,tol))
     {
-        printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- a %g a_init %g\n",a,a_init);
-        flag = 1;
-    }
-    if (!equal_number(e_init,e,1.0e-10))
-    {
-        printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- e %g e_init %g\n",e,e_init);
+        printf("test.cpp -- error in test_nbody_two_body_kick -- E_init %g E_fin %g\n",E_init,E_fin);
         flag = 1;
     }
 
-    if (stopping_condition_mode == 0)
+    if (!equal_number(a_init,a,tol))
     {
-        if (!equal_number(r_norm,R1+R2,1.0e-10))
-        {
-            printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g R1+R2 %g\n",r_norm,R1+R2);
-            flag = 1;
-        }
-        if (!equal_number(t,t_an,1.0e-10))
-        {
-            printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- t %g t_an %g\n",t,t_an);
-            flag = 1;
-        }
+        printf("test.cpp -- error in test_nbody_two_body_kick -- a %g a_init %g\n",a,a_init);
+        flag = 1;
     }
-    else if (stopping_condition_mode == 1)
+    if (!equal_number(e_init,e,tol))
     {
-        if (!equal_number(r_norm,CV_max(r_RLOF1,r_RLOF2),1.0e-10))
-        {
-            printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g max(r_RLOF1,r_RLOF2) %g\n",r_norm,CV_max(r_RLOF1,r_RLOF2));
-            flag = 1;
-        }
+        printf("test.cpp -- error in test_nbody_two_body_kick -- e %g e_init %g\n",e,e_init);
+        flag = 1;
     }
-    #endif
+
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_nbody_two_body_kick -- passed\n");
+    }
+
     return flag;
 }
 
@@ -590,9 +613,16 @@ int test_nbody_two_body_kick()
 
 int test_stellar_evolution()
 {
+    printf("test.cpp -- test_stellar_evolution\n");
+    
     int flag;
     flag += test_apsidal_motion_constant();
     flag += test_sse();
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_stellar_evolution -- passed\n");
+    }
     
     return flag;
 }
@@ -633,12 +663,26 @@ int test_apsidal_motion_constant()
         }
     }
 
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_apsidal_motion_constant -- passed\n");
+    }
+
     return flag;
 }
 
 int test_sse()
 {
+    printf("test.cpp -- test_sse\n");
+    
     /* Test SSE implementation within MSE by evolving a few stars and comparing the output when evolving standalone in SSE. */
+
+//Tev(Myr)    type      Mo        Mt      log10(L)  log10(R) log10(Teff)  Mc        Menv              epoch      spin     
+//12000.0000    0.0000    0.1000    0.1000   -3.0181   -0.8710    3.4442    0.0000  5.0000E-02      0.0000  3.7150E+00
+//12000.0000    3.0000    0.9995    0.9985    0.8274    0.5717    3.6843    0.1749  8.1269E-01    -21.9511  1.4691E+01
+//12000.0000   13.0000    9.8891    1.3693   -9.7639   -4.8539    3.7492    1.3693  1.0000E-10     27.4622  2.0000E+08
+//12000.0000   14.0000   15.3521   15.2432  -10.0000   -4.1896    3.3580   15.2432  1.0000E-10      3.9544  2.0000E+08
+
     int flag = 0;
     
     
@@ -656,29 +700,25 @@ int test_sse()
     double ref_epoch_final[N] = {0.0,-21.9511,27.4622,3.9544};
     double ref_ospin_final[N] = {3.7150,1.4691e1,2.0e8,2.0e8};
             
-//Tev(Myr)    type      Mo        Mt      log10(L)  log10(R) log10(Teff)  Mc        Menv              epoch      spin     
-//12000.0000    0.0000    0.1000    0.1000   -3.0181   -0.8710    3.4442    0.0000  5.0000E-02      0.0000  3.7150E+00
-//12000.0000    3.0000    0.9995    0.9985    0.8274    0.5717    3.6843    0.1749  8.1269E-01    -21.9511  1.4691E+01
-//12000.0000   13.0000    9.8891    1.3693   -9.7639   -4.8539    3.7492    1.3693  1.0000E-10     27.4622  2.0000E+08
-//12000.0000   14.0000   15.3521   15.2432  -10.0000   -4.1896    3.3580   15.2432  1.0000E-10      3.9544  2.0000E+08
-
     int kw_final;
     double m_init_final,m_final,R_final,ospin_final,L_final,m_core_final,m_env_final,epoch_final;
     
     for (int i=0; i<N; i++)
     {
         flag = test_sse_specific_model(masses[i],z,&kw_final,&m_init_final,&m_final,&R_final,&ospin_final,&L_final,&m_core_final,&m_env_final,&epoch_final);
-        printf("==========================\n");
-        printf("kw_final %d %d\n",kw_final,ref_kw_final[i]);
-        printf("m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
-        printf("m_final %g %g\n",m_final,ref_m_final[i]);
-        printf("log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
-        printf("log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
-        printf("m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
-        printf("m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
-        printf("epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
-        printf("ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
-        
+        if (1==0)
+        {
+            printf("==========================\n");
+            printf("kw_final %d %d\n",kw_final,ref_kw_final[i]);
+            printf("m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
+            printf("m_final %g %g\n",m_final,ref_m_final[i]);
+            printf("log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
+            printf("log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
+            printf("m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
+            printf("m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
+            printf("epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
+            printf("ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
+        }
         if (kw_final != ref_kw_final[i])
         {
             printf("test.cpp -- error in test_sse(); non-matching stellar types %d %d\n",kw_final,ref_kw_final[i]);
@@ -726,6 +766,11 @@ int test_sse()
         }
     }
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_sse -- passed\n");
+    }
+
     return flag;
 }
 
@@ -858,7 +903,14 @@ int test_binary_evolution()
     flag += test_compute_Kelvin_Helmholtz_timescale();
     flag += test_compute_Eddington_accretion_rate();
     flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
+    flag += test_wind_accretion();
     
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_binary_evolution -- passed\n");
+    }
+    
+    exit(0);
     return flag;
 }
 
@@ -897,6 +949,11 @@ int test_compute_Kelvin_Helmholtz_timescale()
         flag += 1;
     }
 
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_compute_Kelvin_Helmholtz_timescale -- passed\n");
+    }
+
     return flag;
 }
 
@@ -916,6 +973,12 @@ int test_compute_Eddington_accretion_rate()
         printf("test.cpp -- error in test_compute_Eddington_accretion_rate! %g %g\n",m_dot,num);
         flag = 1;
     }
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_compute_Eddington_accretion_rate -- passed\n");
+    }
+
     return flag;
 }
 
@@ -975,7 +1038,85 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
     }
     
     //print_system(&particlesMap);
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit -- passed\n");
+    }
+
+    return flag;
+}
+
+int test_wind_accretion()
+{
+    printf("test.cpp -- test_wind_accretion\n");
     
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double m1 = 20.0;
+    double m2 = 15.0;
+    double a = 10.0;
+    double e = 0.9;
+    
+    double masses[2] = {m1,m2};
+    int stellar_types[4] = {1,1};
+    double smas[1] = {a};
+    double es[1] = {e};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+
+    //initialize_code(&particlesMap);
+    initialize_stars(&particlesMap);
+    
+    Particle *star1 = particlesMap[0];
+    Particle *star2 = particlesMap[1];
+    Particle *orbit = particlesMap[2];
+    int integration_flag = 0;
+    double t_old = 0.0;
+    double t = 0.0;
+    double dt_binary_evolution;
+    
+    /* Let *1 have a wind which is partially accreted by *2 */
+    double m1_dot = -1.0e-5;
+    double m2_dot = 0.0;
+    star1->mass_dot_wind = m1_dot;
+    star2->mass_dot_wind = m2_dot;
+    handle_wind_accretion(&particlesMap, t_old, t, &dt_binary_evolution, &integration_flag);
+    
+    double R1 = star1->radius;
+    double mdot_test = star2->mass_dot_wind_accretion;
+    
+    double mdot_an;
+    double v_orb_p2 = CONST_G * (m1+m2)/a;
+    double v_wind_p2 = 2.0 * beta_wind_accretion * CONST_G * m1 / R1; /* squared wind speed from p */
+
+    double factor = (1.0/sqrt(1.0 - e*e)) * pow( CONST_G * m2 / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * a*a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
+
+    if (factor >= 1.0)
+    {
+        mdot_an = -m1_dot;
+    }
+    else
+    {
+        mdot_an = -factor*m1_dot;
+    }
+            
+    int flag = 0;
+    double tol = 1e-12;
+    if ( !equal_number(mdot_test,mdot_an,tol) )
+    {
+        printf("test.cpp -- test_wind_acretion -- error: mdot_test %g mdot_an %g\n",mdot_test,mdot_an);
+        flag = 1;
+    }
+
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_wind_accretion -- passed\n");
+    }
+
     return flag;
 }
 
@@ -1001,11 +1142,16 @@ int test_collisions()
             {
                 //continue;
             }
-            flag = test_collision_stars(10.0,i,13,j,0);
+            flag += test_collision_stars(10.0,i,13,j,0);
             random_seed = 0;
             //flag = test_collision_stars(10.0,i,13,j,1);
             
         }
+    }
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_collisions -- passed\n");
     }
     //flag = test_collision_stars(10.0,3,8,6);
     //flag = test_collision_stars(5.01,4,2.0);

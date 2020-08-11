@@ -50,7 +50,7 @@ class MSE(object):
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 0
 
-        self.__mstar_gbs_tolerance_default = 1.0e-8
+        self.__mstar_gbs_tolerance_default = 1.0e-10
         self.__mstar_gbs_tolerance_kick = 1.0e-6
         self.__mstar_collision_tolerance = 1.0e-10
 

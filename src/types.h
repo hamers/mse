@@ -1083,7 +1083,7 @@ class Particle
         
         /* kicks */
         apply_kick = false;
-        kick_distribution = 0;
+        kick_distribution = 1;
         kick_distribution_sigma_km_s_NS = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
         kick_distribution_sigma_km_s_BH = 50.0;
 

@@ -38,7 +38,7 @@ class MSE(object):
         self.__CONST_PER_PC3 = 1.14059e-16
 
 
-        self.__relative_tolerance = 1.0e-14
+        self.__relative_tolerance = 1.0e-12
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-10
         self.__include_quadrupole_order_terms = True
         self.__include_octupole_order_binary_pair_terms = True

@@ -1653,7 +1653,7 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         CONST_KM_PER_S = code.CONST_KM_PER_S
-        N = 5000
+        N = 500
         
         seed = 0
         #code.random_seed = seed

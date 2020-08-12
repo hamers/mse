@@ -589,6 +589,7 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
          else
          {
             ECC = epsilon;
+            //ECC = 1.0e-8;
          }
 
          /* Set both cores in co-rotation with the orbit on exit of CE */

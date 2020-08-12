@@ -2317,7 +2317,7 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
 
     S->gbs_tolerance = GBSTOL;
 
-    S->output_time_tolerance = 1e-6;
+    S->output_time_tolerance = 1e-4;
     S->stopping_condition_tolerance = 1e-6;
     S->NumVertex = N;
 

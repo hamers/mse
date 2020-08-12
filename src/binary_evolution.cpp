@@ -658,7 +658,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 {
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
     
-    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution parent_index %d donor_index %d accretor_index %g\n",parent_index,donor_index,accretor_index);
+    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
     //print_system(particlesMap,*integration_flag);
 
     Particle *parent = (*particlesMap)[parent_index];

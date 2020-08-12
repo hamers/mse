@@ -7,7 +7,7 @@
 extern "C"
 {
 #define CVODE_EXTENDED_PRECISION
- 
+
 //#define VERBOSE
  
 #ifndef __FOUND_ROOT
@@ -881,11 +881,13 @@ class Particle
     double kick_distribution_sigma_km_s_NS;
     double kick_distribution_sigma_km_s_BH;
 
-    double kick_distribution_2_v_km_s_NS;
-    double kick_distribution_2_v_km_s_BH;
-    double kick_distribution_2_sigma;
+    double kick_distribution_2_m_NS;
+    double kick_distribution_4_m_NS;
+    double kick_distribution_4_m_ej;
 
-    double kick_distribution_3_m_NS;
+    double kick_distribution_5_v_km_s_NS;
+    double kick_distribution_5_v_km_s_BH;
+    double kick_distribution_5_sigma;
 
     /* spins */
     double spin_vec[3],dspin_vec_dt[3]; 
@@ -1068,9 +1070,9 @@ class Particle
         mass_dot_RLOF_triple = 0.0;
         triple_mass_transfer_a_in_dot = 0.0;
         
-        dynamical_mass_transfer_low_mass_donor_timescale = 1.0e2;
-        dynamical_mass_transfer_WD_donor_timescale = 1.0e2;
-        compact_object_disruption_mass_loss_timescale = 1.0e2;
+        dynamical_mass_transfer_low_mass_donor_timescale = 1.0e3;
+        dynamical_mass_transfer_WD_donor_timescale = 1.0e3;
+        compact_object_disruption_mass_loss_timescale = 1.0e3;
         
         accretion_disk_is_present = false;
         accretion_disk_r_min = 0.0;
@@ -1078,7 +1080,7 @@ class Particle
         /* CE */
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
-        common_envelope_timescale = 1.0e2;
+        common_envelope_timescale = 1.0e3;
         triple_common_envelope_alpha = 1.0;
         
         /* kicks */
@@ -1087,11 +1089,13 @@ class Particle
         kick_distribution_sigma_km_s_NS = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
         kick_distribution_sigma_km_s_BH = 50.0;
 
-        kick_distribution_2_v_km_s_NS = 400.0; // https://ui.adsabs.harvard.edu/abs/2020arXiv200608360M/abstract
-        kick_distribution_2_v_km_s_BH = 200.0;
-        kick_distribution_2_sigma = 0.3;
+        kick_distribution_2_m_NS = 1.4;
+        kick_distribution_4_m_NS = 1.2;
+        kick_distribution_4_m_ej = 9.0;
 
-        kick_distribution_3_m_NS = 1.4;
+        kick_distribution_5_v_km_s_NS = 400.0; // https://ui.adsabs.harvard.edu/abs/2020arXiv200608360M/abstract
+        kick_distribution_5_v_km_s_BH = 200.0;
+        kick_distribution_5_sigma = 0.3;
 
         sample_orbital_phase_randomly = false;
         instantaneous_perturbation_delta_mass = 0.0;

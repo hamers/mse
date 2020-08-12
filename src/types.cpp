@@ -36,7 +36,7 @@ bool include_dotriacontupole_order_binary_pair_terms = true;
 bool include_double_averaging_corrections = false;
 int random_seed = 0;
 
-double epsilon = 1.0e-15; /* used for tiny numbers close to machine precision */
+double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 
 bool include_flybys = true;
 bool flybys_correct_for_gravitational_focussing = true;

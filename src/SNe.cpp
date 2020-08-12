@@ -93,7 +93,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     {
         vnorm = 0.0;
     }
-    else if (kick_distribution == 1 or kick_distribution == 3 or kick_distribution == 4 or kick_distribution == 5)
+    else if (kick_distribution == 1 or kick_distribution == 2 or kick_distribution == 3 or kick_distribution == 4)
     {
         /* Maxwellian distributions with separate sigmas for NS/BH; default for NS: https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract; zero for BH.
          * When kick_distribution = 3, BH kicks are scaled back by a factor m_BH/m_NS (momentum conservation w.r.t. NS kicks), where m_NS=1.4 MSun by default and kick_distribution_1_sigma_km_s_BH is still used to sample the original BH kick velocity. 
@@ -120,7 +120,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             }
         }
         
-        if (kick_distribution == 3) // Momentum conservation for BHs
+        if (kick_distribution == 2) // Momentum conservation for BHs
         {
             if (kw == 13)
             {
@@ -128,12 +128,12 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             }
             else if (kw == 14)
             {
-                double m_NS = p->kick_distribution_3_m_NS;
+                double m_NS = p->kick_distribution_2_m_NS;
                 vnorm = vnorm_NS * m_NS/m_remnant;
             }
         }
         
-        if (kick_distribution == 4) // Fryer fallback prescription
+        if (kick_distribution == 3) // Fryer fallback prescription
         {
             double f_fallback;
 
@@ -153,13 +153,13 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             vnorm = vnorm_NS * (1.0 - f_fallback);
         }
         
-        if (kick_distribution == 5) // Giacobbo & Mapelli prescription
+        if (kick_distribution == 4) // Giacobbo & Mapelli prescription
         {
-            vnorm = vnorm_NS * (((m_progenitor - m_remnant)/m_remnant) * (1.2/9.0)); // <m_NS=1.2>; <m_ej>=9.0
+            vnorm = vnorm_NS * (((m_progenitor - m_remnant)/m_remnant) * (p->kick_distribution_4_m_NS/p->kick_distribution_4_m_ej)); // <m_NS=1.2>; <m_ej>=9.0
             //printf("kw %d f %g\n",kw,((m_progenitor - m_remnant)/m_remnant));
         }
     }
-    else if (kick_distribution == 2) 
+    else if (kick_distribution == 5) 
     {
         /* Prescription from Mandel & Mueller based on CO core mass, https://ui.adsabs.harvard.edu/abs/2020arXiv200608360M/abstract */
         
@@ -167,18 +167,18 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         double mass_factor = (CO_core_mass - m_remnant)/m_remnant;
         if (kw == 13)
         {
-            mu_kick = p->kick_distribution_2_v_km_s_NS * CONST_KM_PER_S * mass_factor;
+            mu_kick = p->kick_distribution_5_v_km_s_NS * CONST_KM_PER_S * mass_factor;
         }
         else if (kw == 14)
         {
-            mu_kick = p->kick_distribution_2_v_km_s_BH * CONST_KM_PER_S * mass_factor;
+            mu_kick = p->kick_distribution_5_v_km_s_BH * CONST_KM_PER_S * mass_factor;
         }
         else
         {
             printf("SNe.cpp -- sample_kick_velocity -- kick_distribution = 2 -- ERROR: new stellar type %d should be 13 or 14\n",p->stellar_type);
             exit(-1);
         }
-        double sigma_kick = mu_kick*p->kick_distribution_2_sigma;
+        double sigma_kick = mu_kick*p->kick_distribution_5_sigma;
         
         vnorm = -1.0;
         while (vnorm < 0.0)

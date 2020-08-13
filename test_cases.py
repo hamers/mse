@@ -115,7 +115,7 @@ class test_mse():
         N = 10
         tend = 1e10
 
-        N =5000
+        N =500
         tend = 5e7
         #tend = 1.4e10
 
@@ -137,7 +137,9 @@ class test_mse():
             bodies = [x for x in particles if x.is_binary==False]
             N_orbits = len(orbits)
             N_bodies = len(bodies)
-
+    
+            print("LOG",code.log[-1]["particles"][0].parent,code.log[-1]["time"],code.log[-1]["event_flag"])
+            
             if code.structure_change == True:
                 print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])

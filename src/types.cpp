@@ -5,8 +5,10 @@
 extern "C"
 {
 
-int highest_particle_index = 0;
+//int highest_particle_index = 0;
 ParticlesMap particlesMap;
+LogData logData;
+
 
 // Default constants //
 double CONST_G = 4.0*M_PI*M_PI; 

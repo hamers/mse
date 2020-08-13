@@ -1155,10 +1155,34 @@ class Particle
 
 typedef std::map<int, Particle *> ParticlesMap;
 typedef std::map<int, Particle *>::iterator ParticlesMapIterator;
-
-
-//extern int highest_particle_index;
 extern ParticlesMap particlesMap;
+
+
+/* Logging */
+#ifndef __Logging
+#define __Logging
+class Log_type
+{
+    public:
+    
+    int index;
+    double time;
+    int event_flag;
+    
+    ParticlesMap particlesMap;
+    
+    //int N_particles,N_bodies,N_binaries;
+  
+    Log_type()
+    {
+        index = 0;
+    }
+};
+#endif
+
+typedef std::vector<Log_type> LogData;
+extern LogData logData;
+
 
 /* CVODE UserData */
 #ifndef __UserData

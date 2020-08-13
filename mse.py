@@ -110,14 +110,14 @@ class MSE(object):
         self.lib.get_children.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.get_children.restype = ctypes.c_int
 
-        self.lib.get_number_of_particles.argtypes = (ctypes.POINTER(ctypes.c_int),)
+        self.lib.get_number_of_particles.argtypes = ()
         self.lib.get_number_of_particles.restype = ctypes.c_int
 
-        self.lib.get_internal_index_in_particlesMap.argtypes = (ctypes.c_int, ctypes.POINTER(ctypes.c_int),)
+        self.lib.get_internal_index_in_particlesMap.argtypes = (ctypes.c_int,)
         self.lib.get_internal_index_in_particlesMap.restype = ctypes.c_int
 
-        self.lib.get_is_binary.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
-        self.lib.get_is_binary.restype = ctypes.c_int
+        self.lib.get_is_binary.argtypes = (ctypes.c_int,)
+        self.lib.get_is_binary.restype = ctypes.c_bool
 
         self.lib.get_is_bound.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
         self.lib.get_is_bound.restype = ctypes.c_int
@@ -236,6 +236,21 @@ class MSE(object):
 
         self.lib.initialize_code_interface.argtypes = ()
         self.lib.initialize_code_interface.restype = ctypes.c_int
+        
+        
+        ### logging ###
+        self.lib.get_size_of_log_data.argtypes = ()
+        self.lib.get_size_of_log_data.restype = ctypes.c_int
+        
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int))
+        self.lib.get_log_entry_properties.restype = ctypes.c_int
+        
+        self.lib.get_body_properties_from_log_entry.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int), \
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_body_properties_from_log_entry.restype = ctypes.c_int
+        
         
         ### tests ###
         self.lib.unit_tests_interface.argtypes = ()
@@ -572,19 +587,15 @@ class MSE(object):
 
     def __copy_particle_structure_from_code(self):
         self.particles = []
-        N_particles = ctypes.c_int(0)
-        flag = self.lib.get_number_of_particles(ctypes.byref(N_particles))
-        N_particles = N_particles.value
+        #N_particles = ctypes.c_int(0)
+        #flag = self.lib.get_number_of_particles(ctypes.byref(N_particles))
+        #N_particles = N_particles.value
+        N_particles = self.lib.get_number_of_particles()
         
         for i in range(N_particles):
             
-            internal_index = ctypes.c_int(0)
-            self.lib.get_internal_index_in_particlesMap(i,ctypes.byref(internal_index))
-            internal_index = internal_index.value
-            
-            is_binary = ctypes.c_bool(False)
-            flag = self.lib.get_is_binary(internal_index,ctypes.byref(is_binary))
-            is_binary = is_binary.value
+            internal_index = self.lib.get_internal_index_in_particlesMap(i)
+            is_binary = self.lib.get_is_binary(internal_index)
 
             mass = ctypes.c_double(0.0)
             flag = self.lib.get_mass(internal_index,ctypes.byref(mass))
@@ -641,6 +652,48 @@ class MSE(object):
     def __set_random_seed(self):
         self.lib.set_random_seed(self.random_seed)
 
+    ### Logging ###
+    def __get_log(self):
+        N_log = self.lib.get_size_of_log_data()
+        #print("get_log",N_log)
+        log = []
+        for index_log in range(N_log):
+            entry = {}
+            particles = []
+            N_particles = self.lib.get_number_of_particles()
+            
+            time = ctypes.c_double(0.0)
+            event_flag = ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag))
+            entry.update({'time':time.value,'event_flag':event_flag.value})
+            
+            for index_particle in range(N_particles):
+                internal_index = self.lib.get_internal_index_in_particlesMap(index_particle)
+
+                parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
+                mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
+                    ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
+                    ctypes.byref(epoch),ctypes.byref(age), \
+                    ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin))
+
+                p = Particle(is_binary=False,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
+                    convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value)
+                p.index = internal_index
+                p.parent = parent.value
+                p.ospin = ospin.value
+
+                particles.append(p)
+
+            entry.update({'particles':particles})
+            log.append(entry)
+                
+        return log
+
+    @property
+    def log(self):
+        return self.__get_log()
+
 
     ### Tests ###
     def unit_tests(self):
@@ -679,6 +732,7 @@ class MSE(object):
         kw,v = ctypes.c_int(0),ctypes.c_double(0.0)
         self.lib.test_kick_velocity(kick_distribution,m,ctypes.byref(kw),ctypes.byref(v))
         return kw.value,v.value
+
 
     ### Constants ###
     @property
@@ -1173,6 +1227,7 @@ class Particle(object):
                 raise ValueError('Velocity vector must be len=3 vector.')
         else:
             raise TypeError('Velocity vector must be a np vector with len=3.')
+
 
 class Tools(object):
  

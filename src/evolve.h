@@ -33,6 +33,7 @@
 #include "apsidal_motion_constant.h"
 #include "common_envelope_evolution.h"
 #include "mstar/regularization.h"
+#include "logging.h"
 
 extern "C"
 {

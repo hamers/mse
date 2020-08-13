@@ -24,6 +24,8 @@ int initialize_code(ParticlesMap *particlesMap)
 
     initialize_stars(particlesMap);
     set_positions_and_velocities(particlesMap);
+
+    update_log_data(particlesMap, 0.0, 0, 0);
  
     return 0;
 }
@@ -32,6 +34,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 {
     //printf("evolve \n");
     
+   
     /* Obtain stellar evolution metallicity-dependent parameters (only has to be done once) */
 //    double z = 0.02; /* change in future */
 //    double *zpars;
@@ -297,6 +300,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     //printf("end of evolve\n");
     //print_system(particlesMap,*integration_flag);
+    
+    update_log_data(particlesMap, t, *integration_flag, 0);
     
     *output_time = t;
     *hamiltonian = 0.0;

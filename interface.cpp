@@ -67,14 +67,12 @@ int get_children(int index, int *child1, int *child2)
     return 0;
 }
 
-int get_number_of_particles(int *N_particles)
+int get_number_of_particles()
 {
-    *N_particles = particlesMap.size();
-    
-    return 0;
+    return particlesMap.size();
 }
 
-int get_is_binary(int index, bool *is_binary)
+bool get_is_binary(int index)
 {
     if (index > particlesMap.size())
     {
@@ -82,15 +80,15 @@ int get_is_binary(int index, bool *is_binary)
     }
   
     Particle * p = particlesMap[index];
-    *is_binary = p->is_binary;
+    return p->is_binary;
     
     //printf("get_is_binary i %d\n",index,
-    return 0;
+    //return 0;
 }
 
-int get_internal_index_in_particlesMap(int absolute_index, int *index)
+int get_internal_index_in_particlesMap(int absolute_index)
 {
-    *index = -1;
+    int index = -1;
     
     int i=0;
     ParticlesMapIterator it_p;
@@ -102,15 +100,15 @@ int get_internal_index_in_particlesMap(int absolute_index, int *index)
 //        printf("get_internal_index_in_particlesMap absolute_index %d i %d p->index %d\n",absolute_index,i,p->index);
         if (i == absolute_index)
         {
-            *index = p->index;
+            index = p->index;
         }
         i++;
     }
-    
+    return index;
     
 //    printf("get_internal_index_in_particlesMap absolute_index %d index %d\n",absolute_index,*index);
     
-    return 0;
+//    return 0;
 }
 
 int get_is_bound(int index, bool *is_bound)
@@ -1057,4 +1055,47 @@ double sample_from_kroupa_93_imf_interface()
     return sample_from_Kroupa_93_imf();
 }
 
+
+/***********
+/* Logging *
+ ***********/
+ 
+int get_size_of_log_data()
+{
+    return logData.size();
+}
+ 
+int get_log_entry_properties(int log_index, double *time, int *event_flag)
+{
+    Log_type entry = logData[log_index];
+    *time = entry.time;
+    *event_flag = entry.event_flag;
+
+    return 0;
+}
+ 
+int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin)
+{
+    Log_type entry = logData[log_index];
+    ParticlesMap particlesMap = entry.particlesMap;
+    Particle *p = particlesMap[particle_index];
+
+    *parent = p->parent;
+    *mass = p->mass;
+    *radius = p->radius;
+    *stellar_type = p->stellar_type;
+    *core_mass = p->core_mass;
+    *sse_initial_mass = p->sse_initial_mass;
+    *convective_envelope_mass = p->convective_envelope_mass;
+    *epoch = p->epoch;
+    *age = p->age;
+    *core_radius = p->core_radius;
+    *convective_envelope_radius = p->convective_envelope_radius;
+    *luminosity = p->luminosity;
+    *ospin = norm3(p->spin_vec);
+    return 0;
+}
+    
+ 
 }

@@ -12,9 +12,9 @@ int delete_particle(int index);
 int set_children(int index, int child1, int child2);
 int get_children(int index, int *child1, int *child2);
 
-int get_number_of_particles(int *N_particles);
-int get_internal_index_in_particlesMap(int absolute_index, int *index);
-int get_is_binary(int index, bool *is_binary);
+int get_number_of_particles();
+int get_internal_index_in_particlesMap(int absolute_index);
+bool get_is_binary(int index);
 int get_is_bound(int index, bool *is_bound);
 
 int set_mass(int index, double mass);
@@ -170,5 +170,16 @@ int determine_compact_object_merger_properties_interface(double m1, double m2, d
 int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, double *vy, double *vz);
 double sample_from_normal_distribution_interface(double mu, double sigma);
 double sample_from_kroupa_93_imf_interface();
+
+
+/***********
+ * Logging *
+ * ********/
+
+
+int get_size_of_log_data();
+int get_log_entry_properties(int log_index, double *time, int *event_flag);
+int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin);
 
 }

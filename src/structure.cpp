@@ -498,7 +498,7 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
                 p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
                 &semimajor_axis, &eccentricity, &inclination, &argument_of_pericenter, &longitude_of_ascending_node); 
             flybys_internal_semimajor_axis = semimajor_axis;
-            printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- flybys_reference_binary %d M_int %g a_int %g\n",flybys_reference_binary,flybys_internal_mass,flybys_internal_semimajor_axis);
+            //printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- flybys_reference_binary %d M_int %g a_int %g\n",flybys_reference_binary,flybys_internal_mass,flybys_internal_semimajor_axis);
         }
     }
 }

@@ -48,7 +48,7 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [11.0,1.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [16.0,1.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
         
         
         #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
@@ -115,7 +115,7 @@ class test_mse():
         N = 10
         tend = 1e10
 
-        N =500
+        N =1000
         tend = 5e7
         #tend = 1.4e10
 
@@ -124,6 +124,7 @@ class test_mse():
         seed=1
         dt = tend/float(N)
         i = 0
+        
         while t<tend:
 
             t+=dt
@@ -138,7 +139,11 @@ class test_mse():
             N_orbits = len(orbits)
             N_bodies = len(bodies)
     
-            print("LOG",code.log[-1]["particles"][0].parent,code.log[-1]["time"],code.log[-1]["event_flag"])
+            #i_rel = Tools.compute_mutual_inclination(code.log[-1]["particles"][3].INCL,code.log[-1]["particles"][4].INCL,code.log[-1]["particles"][3].LAN,code.log[-1]["particles"][4].LAN)
+            #print("IREL",(180.0/np.pi)*i_rel)
+            #print("LOG",code.log[-1]["particles"][3].INCL,code.log[-1]["time"],code.log[-1]["event_flag"])
+            #if code.log[-1]["event_flag"] != 0:
+            #    print("LOG","event",code.log[-1]["event_flag"],"index1",code.log[-1]["index1"],"index2",code.log[-1]["index2"],"binary index",code.log[-1]["binary_index"],code.log[-1]["particles"])
             
             if code.structure_change == True:
                 print("Python restruct")#,children1,children1_old,children2,children2_old)
@@ -195,6 +200,11 @@ class test_mse():
             
             i += 1
 
+        log_CEs = [x for x in code.log if x["event_flag"] == 5]
+        t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
+        #print("log_CEs",[x["time"] for x in log_CEs])
+        #exit(0)
+
         N_status = i_status+1
         
         for i_status in range(N_status):
@@ -250,9 +260,13 @@ class test_mse():
                 
                 linewidth+=0.8
 
-
-
             fontsize=18
+            
+            for k,t in enumerate(t_CEs_Myr):
+                plot2.axvline(x=t,linestyle='dashed',color='tab:red')
+                plot2.annotate("$\mathrm{CE}$",xy=(t,1.0e3),fontsize=fontsize)
+
+            
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
             plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)

@@ -1065,12 +1065,17 @@ int get_size_of_log_data()
     return logData.size();
 }
  
-int get_log_entry_properties(int log_index, double *time, int *event_flag)
+int get_log_entry_properties(int log_index, double *time, int *event_flag, int *index1, int *index2, int *binary_index)
 {
     Log_type entry = logData[log_index];
     *time = entry.time;
     *event_flag = entry.event_flag;
 
+    Log_info_type log_info = entry.log_info;
+    *index1 = log_info.index1;
+    *index2 = log_info.index2;
+    *binary_index = log_info.binary_index;
+    
     return 0;
 }
  
@@ -1081,6 +1086,11 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     ParticlesMap particlesMap = entry.particlesMap;
     Particle *p = particlesMap[particle_index];
 
+    if (p->is_binary == true)
+    {
+        printf("interface.cpp -- get_body_properties_from_log_entry -- ERROR: particle is binary, not body! \n");
+        exit(-1);
+    }
     *parent = p->parent;
     *mass = p->mass;
     *radius = p->radius;
@@ -1096,6 +1106,47 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     *ospin = norm3(p->spin_vec);
     return 0;
 }
+
+int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
+    double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN)
+{
+    /* determine masses in all binaries */
+    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
+    set_binary_masses_from_body_masses(&particlesMap);
+
+    Log_type entry = logData[log_index];
+    ParticlesMap particlesMap = entry.particlesMap;
+    Particle *p = particlesMap[particle_index];
+
+    if (p->is_binary == false)
+    {
+        printf("interface.cpp -- get_get_binary_properties_from_log_entry -- ERROR: particle is body, not binary! \n");
+        exit(-1);
+    }
+    *parent = p->parent;
+    *child1 = p->child1;
+    *child2 = p->child2;
+    *mass = p->mass;
+    *TA = p->true_anomaly;
     
+    double h_tot_vec[3];
+    compute_h_tot_vector(&particlesMap,h_tot_vec);
+
+    compute_orbital_elements_from_orbital_vectors(p->child1_mass, p->child2_mass, h_tot_vec, \
+        p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
+        a, e, INCL, AP, LAN);
+    
+    #ifdef IGNORE
+    *a = p->a;
+    *e = p->e;
+    *INCL = p->INCL;
+    *AP = p->AP;
+    *LAN = p->LAN;
+    #endif
+    
+    return 0;
+}
+
  
 }

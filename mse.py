@@ -50,8 +50,8 @@ class MSE(object):
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 0
 
-        self.__mstar_gbs_tolerance_default = 1.0e-10
-        self.__mstar_gbs_tolerance_kick = 1.0e-6
+        self.__mstar_gbs_tolerance_default = 1.0e-8
+        self.__mstar_gbs_tolerance_kick = 1.0e-3
         self.__mstar_collision_tolerance = 1.0e-10
 
         self.__particles_committed = False
@@ -242,7 +242,7 @@ class MSE(object):
         self.lib.get_size_of_log_data.argtypes = ()
         self.lib.get_size_of_log_data.restype = ctypes.c_int
         
-        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int))
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
         self.lib.get_log_entry_properties.restype = ctypes.c_int
         
         self.lib.get_body_properties_from_log_entry.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int), \
@@ -251,7 +251,12 @@ class MSE(object):
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_body_properties_from_log_entry.restype = ctypes.c_int
         
-        
+        self.lib.get_binary_properties_from_log_entry.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int), \
+                        ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double))
+        self.lib.get_binary_properties_from_log_entry.restype = ctypes.c_int
+
+
+       
         ### tests ###
         self.lib.unit_tests_interface.argtypes = ()
         self.lib.unit_tests_interface.restype = ctypes.c_int
@@ -663,25 +668,37 @@ class MSE(object):
             N_particles = self.lib.get_number_of_particles()
             
             time = ctypes.c_double(0.0)
-            event_flag = ctypes.c_int(0)
-            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag))
-            entry.update({'time':time.value,'event_flag':event_flag.value})
+            event_flag,index1,index2,binary_index = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index))
+            entry.update({'time':time.value,'event_flag':event_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value})
             
             for index_particle in range(N_particles):
                 internal_index = self.lib.get_internal_index_in_particlesMap(index_particle)
+                is_binary = self.lib.get_is_binary(internal_index)
+                
+                if is_binary == False:
+                    parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
+                    mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                    flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
+                        ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
+                        ctypes.byref(epoch),ctypes.byref(age), \
+                        ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin))
 
-                parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
-                mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-                flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
-                    ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
-                    ctypes.byref(epoch),ctypes.byref(age), \
-                    ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin))
+                    p = Particle(is_binary=is_binary,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
+                        convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value)
+                    p.index = internal_index
+                    p.parent = parent.value
+                    p.ospin = ospin.value
+                else:
+                    parent,child1,child2 = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+                    mass,a,e,TA,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                    flag = self.lib.get_binary_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(child1),ctypes.byref(child2), \
+                        ctypes.byref(mass), ctypes.byref(a),ctypes.byref(e),ctypes.byref(TA),ctypes.byref(INCL), ctypes.byref(AP), ctypes.byref(LAN))
 
-                p = Particle(is_binary=False,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
-                    convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value)
-                p.index = internal_index
-                p.parent = parent.value
-                p.ospin = ospin.value
+                    p = Particle(is_binary=is_binary,mass=mass.value,child1=child1.value,child2=child2.value,a=a.value,e=e.value,TA=TA.value,INCL=INCL.value,AP=AP.value,LAN=LAN.value)
+                    p.index = internal_index
+                    p.parent = parent.value
+                    p.mass = mass.value
 
                 particles.append(p)
 
@@ -1192,7 +1209,7 @@ class Particle(object):
             if self.is_binary == False:
                 return "Particle(is_binary={0}, index={1:d}, mass={2:g})".format(self.is_binary,self.index,self.mass)
             else:
-                return "Particle(is_binary={0}, index={1:d}, mass={2:g}, child1={3:d}, child2={4:d}, a={5:g}, e={6:g}, INCL={7:g}, AP={8:g}, LAN={9:g})".format(self.is_binary,self.index,self.mass,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
+                return "Particle(is_binary={0}, index={1:d}, mass={2:g}, child1={3:d}, child2={4:d}, a={5:g}, e={6:g}, INCL={7:g}, AP={8:g}, LAN={9:g})".format(self.is_binary,self.index,self.mass,self.child1,self.child2,self.a,self.e,self.INCL,self.AP,self.LAN)
 
     @property
     def pos(self):

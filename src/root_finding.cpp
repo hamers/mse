@@ -326,7 +326,7 @@ int root_finding_functions(realtype time, N_Vector y, realtype *root_functions, 
     return 0;
 }
 
-int investigate_roots_in_system(ParticlesMap *particlesMap)
+int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integration_flag)
 {
     /* TO DO/ consideration: could roots happen simultaneously? */
     
@@ -354,6 +354,24 @@ int investigate_roots_in_system(ParticlesMap *particlesMap)
                     p->RLOF_flag = 0;
                 }
                 
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.binary_index = p->parent;
+                log_info.index1 = p->index;
+                log_info.index2 = p->sibling;
+                int event_flag;
+                if (p->RLOF_flag = 1)
+                {
+                    event_flag = 3;
+                }
+                else
+                {
+                    event_flag = 4;
+                }
+                update_log_data(particlesMap, t, integration_flag, event_flag, log_info);
+                #endif
+
+                
                 printf("mass_changes.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
                 
                 //p->check_for_RLOF_at_pericentre = 0; /* do not subsequently check for RLOF during ODE integration */
@@ -369,11 +387,24 @@ int investigate_roots_in_system(ParticlesMap *particlesMap)
             {
                 p->dynamical_instability_has_occurred = false;
                 return_flag = 2;
+                
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.binary_index = p->index;
+                update_log_data(particlesMap, t, integration_flag, 7, log_info);
+                #endif
             }
             if (p->secular_breakdown_has_occurred == true)
             {
                 p->secular_breakdown_has_occurred = false;
                 return_flag = 3;
+
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.binary_index = p->index;
+                update_log_data(particlesMap, t, integration_flag, 8, log_info);
+                #endif
+
             }
             if (p->physical_collision_or_orbit_crossing_has_occurred == true)
             {

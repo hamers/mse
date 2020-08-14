@@ -931,6 +931,15 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     printf("binary_evolution.cpp -- common_envelope_evolution -- end\n");
     print_system(particlesMap,*integration_flag);
 
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = index1;
+    log_info.index2 = index2;
+    update_log_data(particlesMap, t, *integration_flag, 5, log_info);
+    #endif
+
+
     return 0;
 }
 

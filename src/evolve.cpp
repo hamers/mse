@@ -25,8 +25,12 @@ int initialize_code(ParticlesMap *particlesMap)
     initialize_stars(particlesMap);
     set_positions_and_velocities(particlesMap);
 
-    update_log_data(particlesMap, 0.0, 0, 0);
- 
+    #ifdef LOGGING
+    //update_log_data(particlesMap, 0.0, 0, 0, 0, 0);
+    Log_info_type log_info;
+    update_log_data(particlesMap, 0.0, 0, 0, log_info);
+    #endif
+    
     return 0;
 }
 
@@ -155,10 +159,11 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             printf("ROOT occurred; setting t = t_out; t %g t_out %g\n",t,t_out);
             print_system(particlesMap,*integration_flag);
             
-            flag = investigate_roots_in_system(particlesMap);
+            flag = investigate_roots_in_system(particlesMap, t, *integration_flag);
             if (flag == 1) // RLOF
             {
                 printf("RLOF occurred, but continuing dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
+
                 *CVODE_flag = 0;
             }
             else if (flag == 2) // Dynamical instability
@@ -217,7 +222,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             if (t + dt >= flybys_t_next_encounter and last_iteration == false and apply_flyby == true)// and *integration_flag==0)
             {
                 //printf("NE t+dt %g flybys_t_next_encounter %g \n",t+dt,flybys_t_next_encounter);
-                printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
+                //printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
                 dt = flybys_t_next_encounter - t;
                 
                 handle_next_flyby(particlesMap, false, integration_flag);
@@ -301,7 +306,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     //printf("end of evolve\n");
     //print_system(particlesMap,*integration_flag);
     
-    update_log_data(particlesMap, t, *integration_flag, 0);
+    //update_log_data(particlesMap, t, *integration_flag, 0);
     
     *output_time = t;
     *hamiltonian = 0.0;

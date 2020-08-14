@@ -432,6 +432,26 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 //p->common_envelope_lambda = celamf_(&kw,&sse_initial_mass,&lum,&r,&rzams,&menv_fraction,&fac);
                 //printf("kw %d lambda %g menv_fraction %g\n",kw,p->common_envelope_lambda,menv_fraction);
                 
+                /* Logging */
+                #ifdef LOGGING
+                if (kw != kw_old)
+                {
+                    Log_info_type log_info;
+                    log_info.index1 = p->index;
+
+                    if (kw < 13)
+                    {
+                        //update_log_data(particlesMap, end_time, -1, 1, p->index, -1);
+                        update_log_data(particlesMap, end_time, -1, 1, log_info);
+                        
+                    }
+                    else
+                    {
+                        update_log_data(particlesMap, end_time, -1, 2, log_info);
+                    }
+                }
+                #endif
+
             }
             p->sse_time_step = sse_time_step*Myr_to_yr;
 

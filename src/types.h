@@ -7,6 +7,7 @@
 extern "C"
 {
 #define CVODE_EXTENDED_PRECISION
+#define LOGGING
 
 //#define VERBOSE
  
@@ -1161,6 +1162,20 @@ extern ParticlesMap particlesMap;
 /* Logging */
 #ifndef __Logging
 #define __Logging
+class Log_info_type
+{
+    public:
+    int index1,index2;
+    int binary_index;
+    
+    Log_info_type()
+    {
+        index1 = -1;
+        index2 = -1;
+        binary_index = -1;
+    }
+};
+
 class Log_type
 {
     public:
@@ -1168,6 +1183,9 @@ class Log_type
     int index;
     double time;
     int event_flag;
+    int integration_flag;
+
+    Log_info_type log_info;
     
     ParticlesMap particlesMap;
     

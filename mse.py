@@ -242,9 +242,16 @@ class MSE(object):
         self.lib.get_size_of_log_data.argtypes = ()
         self.lib.get_size_of_log_data.restype = ctypes.c_int
         
-        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.get_log_entry_properties.restype = ctypes.c_int
         
+        self.lib.get_internal_index_in_particlesMap_log.argtypes = (ctypes.c_int,ctypes.c_int)
+        self.lib.get_internal_index_in_particlesMap_log.restype = ctypes.c_int
+
+        self.lib.get_is_binary_log.argtypes = (ctypes.c_int,ctypes.c_int)
+        self.lib.get_is_binary_log.restype = ctypes.c_bool
+
+
         self.lib.get_body_properties_from_log_entry.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
@@ -351,6 +358,8 @@ class MSE(object):
         orbits = [p for p in self.particles if p.is_binary == True]
         children1_old = [o.child1.index for o in orbits]
         children2_old = [o.child2.index for o in orbits]
+        #children1_old = [o.child1 for o in orbits]
+        #children2_old = [o.child2 for o in orbits]
 
         ### integrate system of ODEs ###
         start_time = self.model_time
@@ -388,6 +397,8 @@ class MSE(object):
         orbits = [p for p in self.particles if p.is_binary == True]
         children1 = [o.child1.index for o in orbits]
         children2 = [o.child2.index for o in orbits]
+#        children1 = [o.child1 for o in orbits]
+#        children2 = [o.child2 for o in orbits]
             
         self.structure_change = False
         if children1 != children1_old or children2 != children2_old:
@@ -447,6 +458,7 @@ class MSE(object):
             
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
+                #flag += self.lib.set_children(particle.index,particle.child1,particle.child2)
                 flag += self.lib.set_orbital_elements(particle.index,particle.a, particle.e, particle.TA, particle.INCL, particle.AP, particle.LAN, particle.sample_orbital_phase_randomly)
                 flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms)
                 flag += self.lib.set_integration_method(particle.index,particle.integration_method,particle.KS_use_perturbing_potential)
@@ -480,6 +492,7 @@ class MSE(object):
         for index,particle in enumerate(self.particles):
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
+                #flag += self.lib.set_children(particle.index,particle.child1,particle.child2)
         
         flag = 0
         for index,particle in enumerate(self.particles):
@@ -665,16 +678,16 @@ class MSE(object):
         for index_log in range(N_log):
             entry = {}
             particles = []
-            N_particles = self.lib.get_number_of_particles()
+            #N_particles = self.lib.get_number_of_particles()
             
             time = ctypes.c_double(0.0)
-            event_flag,index1,index2,binary_index = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
-            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index))
-            entry.update({'time':time.value,'event_flag':event_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value})
+            N_particles,event_flag,index1,index2,binary_index = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index))
+            entry.update({'time':time.value,'event_flag':event_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value})
             
-            for index_particle in range(N_particles):
-                internal_index = self.lib.get_internal_index_in_particlesMap(index_particle)
-                is_binary = self.lib.get_is_binary(internal_index)
+            for index_particle in range(N_particles.value):
+                internal_index = self.lib.get_internal_index_in_particlesMap_log(index_log,index_particle)
+                is_binary = self.lib.get_is_binary_log(index_log,internal_index)
                 
                 if is_binary == False:
                     parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
@@ -698,9 +711,20 @@ class MSE(object):
                     p = Particle(is_binary=is_binary,mass=mass.value,child1=child1.value,child2=child2.value,a=a.value,e=e.value,TA=TA.value,INCL=INCL.value,AP=AP.value,LAN=LAN.value)
                     p.index = internal_index
                     p.parent = parent.value
+                    p.child1_index=child1.value
+                    p.child2_index=child2.value
                     p.mass = mass.value
 
                 particles.append(p)
+
+            for i,p in enumerate(particles):
+                if p.is_binary == True:
+                    i1 = [j for j in range(N_particles.value) if particles[j].index == p.child1_index][0]
+                    i2 = [j for j in range(N_particles.value) if particles[j].index == p.child2_index][0]
+                    #print("i1",i1,"i2",i2,"i",i,"p.child1_index",p.child1_index,"p.child2_index",p.child2_index)
+                    p.child1 = particles[i1]
+                    p.child2 = particles[i2]
+
 
             entry.update({'particles':particles})
             log.append(entry)
@@ -1200,16 +1224,18 @@ class Particle(object):
                     self.KS_use_perturbing_potential = KS_use_perturbing_potential
                     
     def __repr__(self):
+
         if self.index is None:
             if self.is_binary == False:
                 return "Particle(is_binary={0}, mass={1:g})".format(self.is_binary,self.mass)
             else:
-                return "Particle(is_binary={0}, mass={1:g}, child1={2:d}, child2={3:d}, a={4:g}, e={5:g}, INCL={6:g}, AP={7:g}, LAN={8:g})".format(self.is_binary,self.mass,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
+                #return "Particle(is_binary={0}, child1={1:d}, child2={2:d}, a={3:g}, e={4:g}, INCL={5:g}, AP={6:g}, LAN={7:g})".format(self.is_binary,self.child1,self.child2,self.a,self.e,self.INCL,self.AP,self.LAN)
+                return "Particle(is_binary={0})".format(self.is_binary)
         else:
             if self.is_binary == False:
                 return "Particle(is_binary={0}, index={1:d}, mass={2:g})".format(self.is_binary,self.index,self.mass)
             else:
-                return "Particle(is_binary={0}, index={1:d}, mass={2:g}, child1={3:d}, child2={4:d}, a={5:g}, e={6:g}, INCL={7:g}, AP={8:g}, LAN={9:g})".format(self.is_binary,self.index,self.mass,self.child1,self.child2,self.a,self.e,self.INCL,self.AP,self.LAN)
+                return "Particle(is_binary={0}, index={1:d}, child1={2:d}, child2={3:d}, a={4:g}, e={5:g}, INCL={6:g}, AP={7:g}, LAN={8:g})".format(self.is_binary,self.index,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
 
     @property
     def pos(self):
@@ -1261,12 +1287,14 @@ class Tools(object):
 
         particles = []
 
+        #absolute_index=0
+
         for index in range(N_bodies):
             particle = Particle(is_binary=False,mass=masses[index])
             if radii is not None:
                 particle.radius = radii[index]
             particles.append(particle)
-
+            #absolute_index += 1
         
         #previous_binary = particles[-1]
         for index in range(N_binaries):
@@ -1282,6 +1310,7 @@ class Tools(object):
             previous_binary = particle
             particles.append(particle)
             
+            #absolute_index += 1
 #            print 'p',particles
         
         return particles
@@ -1292,3 +1321,243 @@ class Tools(object):
         cos_INCL_rel = np.cos(INCL_k)*np.cos(INCL_l) + np.sin(INCL_k)*np.sin(INCL_l)*np.cos(LAN_k-LAN_l)
         return np.arccos(cos_INCL_rel)
 
+
+
+    @staticmethod
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.0,line_width_vertical = 0.4,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+        """
+        Generate a Mobile diagram of a given multiple system.
+        """
+        
+        try:
+            import matplotlib
+        except ImportError:
+            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to make a Mobile diagram!")
+            exit(0)
+
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+
+#        print("N",len(bodies),len(binaries))
+        if len(binaries)==0:
+            if len(bodies)==0:
+                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
+                exit(0)
+            else:
+                Tools.draw_bodies(plot,bodies,fontsize)
+                return
+
+        Tools.determine_binary_levels_in_particles(particles)            
+        #binaries_sorted_by_level = binaries.sorted_by_attribute("level")
+        top_level_binary = [x for x in binaries if x.level==0][0]
+        print("top_level_binary",top_level_binary.a)
+        
+
+        if use_default_colors==True:
+            ### Assign some colors from mcolors to the orbits ###
+            import matplotlib.colors as mcolors
+            colors = mcolors.TABLEAU_COLORS
+            color_names = list(colors)
+            
+            for index in range(len(binaries)):
+                color_name = color_names[index]
+                color=colors[color_name]
+            
+                o = binaries[index]
+                o.color = color
+
+        ### Make mobile diagram ###
+        top_level_binary.x = 0.0
+        top_level_binary.y = 0.0
+        x_min = x_max = y_min = 0.0
+        y_max = line_width_vertical
+    
+        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
+        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+
+        
+        plot.set_xticks([])
+        plot.set_yticks([])
+        print("minmax",x_min,x_max,y_min,y_max)
+        beta = 0.45
+        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
+        plot.set_ylim([y_min - beta*np.fabs(y_min),y_max + beta*np.fabs(y_max)])
+        
+        #plot.autoscale(enable=True,axis='both')
+        
+
+    @staticmethod
+    def determine_binary_masses(particles):
+        ### set binary masses -- to ensure this happens correctly, do this from highest level to lowest level ###
+
+        Tools.determine_binary_levels_in_particles(particles)
+
+        max_level = np.amax([x.level for x in particles])
+        level = max_level
+        while (level > -1):
+            for index,p in enumerate(particles):
+                if (p.is_binary == True and p.level == level):
+                    p.mass = p.child1.mass + p.child2.mass
+            level -= 1
+
+    @staticmethod
+    def determine_binary_levels_in_particles(particles):
+        for index,p in enumerate(particles):
+            p.index = index
+            p.parent = None
+
+        ### determine top binary ###
+        for index_particle_1,particle_1 in enumerate(particles):
+            if particle_1.is_binary == True:
+                child1 = particle_1.child1
+                child2 = particle_1.child2
+                
+                for index_particle_2,particle_2 in enumerate(particles):
+                    if (index_particle_2 == child1.index or index_particle_2 == child2.index):
+                        particle_2.parent = particle_1
+                        
+        for index_particle_1,particle_1 in enumerate(particles):
+            particle_1.level = 0
+            
+            child = particle_1;
+            parent = particle_1.parent
+
+            if (parent != None): ### if parent == -1, P_p is the `top' binary, for which level=0 
+                while (parent != None): ### search parents until reaching the top binary 
+                    for index_particle_2,particle_2 in enumerate(particles):
+                        
+                        if parent == None: break
+                        if (particle_2.index == parent.index):
+                            particle_1.level += 1
+                            
+                            parent = particle_2.parent
+    @staticmethod
+    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
+        x = particle.x
+        y = particle.y
+        
+        child1 = particle.child1
+        child2 = particle.child2
+
+        #from decimal import Decimal
+        #plot.annotate("$a = % \, \mathrm{AU}$"%(particle.semimajor_axis.value_in(units.AU)),xytext=(x,y))
+        #text = "$a = %s \, \mathrm{AU}$"%(round(particle.semimajor_axis.value_in(units.AU),1))
+        #text = "$a = \mathrm{%.1E}$"%(Decimal(particle.a))
+        #text = "$a=\mathrm{%.1E\,au}$"%(Decimal(particle.a))
+        text = "$a=\mathrm{%s\,au}$"%(round(particle.a,1))
+        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color)
+     
+        #text = "$e = %.2f$"%(particle.e)
+        text = "$e = %.2f$"%(particle.e)
+        
+        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
+
+        alpha = 1.0
+        if child1.is_binary == True and child2.is_binary == True:
+            alpha = 3.5
+
+        if child1.is_binary == True and child2.is_binary == False:
+            alpha = 2.2
+        if child1.is_binary == False and child2.is_binary == True:
+            alpha = 2.2
+
+        ### lines to child1 ###
+        plot.plot( [x,x - alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
+        plot.plot( [x - alpha*line_width_horizontal,x - alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
+        
+        ### lines to child2 ###
+        plot.plot( [x,x + alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
+        plot.plot( [x + alpha*line_width_horizontal,x + alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
+
+        ### positions of children ###
+        child1 = particle.child1
+        child2 = particle.child2
+        
+        child1.x = particle.x - alpha*line_width_horizontal
+        child2.x = particle.x + alpha*line_width_horizontal
+
+        child1.y = particle.y - line_width_vertical
+        child2.y = particle.y - line_width_vertical
+
+
+        if (child1.x<x_min): x_min = child1.x
+        if (child1.x>x_max): x_max = child1.x
+        if (child2.x<x_min): x_min = child2.x
+        if (child2.x>x_max): x_max = child2.x
+
+        if (child1.y<y_min): y_min = child1.y
+        if (child1.y>y_max): y_max = child1.y
+        if (child2.y<y_min): y_min = child2.y
+        if (child2.y>y_max): y_max = child2.y
+
+        
+        ### handle children ###
+        if child1.is_binary == True:
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+        else:
+            color = Tools.get_color_for_star(child1.stellar_type)
+            plot.scatter([child1.x],[child1.y],color=color)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
+            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.4*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$\mathrm{%d}$"%child1.index
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.2*line_width_vertical),color='k',fontsize=0.5*fontsize)
+
+        if child2.is_binary == True:
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+        else:
+            color = Tools.get_color_for_star(child2.stellar_type)
+            plot.scatter([child2.x],[child2.y],color=color)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
+            #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.4*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$\mathrm{%d}$"%child2.index
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.2*line_width_vertical),color='k',fontsize=0.5*fontsize)
+
+        return x_min,x_max,y_min,y_max
+
+    @staticmethod
+    def get_color_for_star(stellar_type):
+        if (stellar_type <= 1): color='gold'
+        elif (stellar_type == 2): color='darkorange'
+        elif (stellar_type == 3): color='firebrick'
+        elif (stellar_type == 4): color='darkorange'
+        elif (stellar_type == 5): color='orangered'
+        elif (stellar_type == 6): color='crimson'
+        elif (stellar_type == 7): color='royalblue'
+        elif (stellar_type == 8): color='orangered'
+        elif (stellar_type == 9): color='crimson'
+        elif (stellar_type == 10): color='silver'
+        elif (stellar_type == 11): color='silver'
+        elif (stellar_type == 12): color='silver'
+        elif (stellar_type == 13): color='gainsboro'
+        elif (stellar_type == 14): color='k'
+        else: color = 'k'
+
+        return color
+
+    @staticmethod
+    def draw_bodies(plot,bodies,fontsize):
+        dx = 0.5
+        dy = 0.5
+        for index,body in enumerate(bodies):
+            color = Tools.get_color_for_star(body.stellar_type)
+            plot.scatter([index],[0],color=color)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
+            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
+            plot.annotate(text,xy=(index - dx,dy),color='k',fontsize=fontsize)
+
+            text = "$\mathrm{%d}$"%body.index
+            plot.annotate(text,xy=(index - dx,-dy),color='k',fontsize=fontsize)
+        
+        plot.set_xlim([-2*dx,len(bodies)])
+        #plot.set_ylim([-2*dy,len(bodies)])
+        plot.set_ylim([-2*dy,2*dy])
+
+        plot.set_xticks([])
+        plot.set_yticks([])

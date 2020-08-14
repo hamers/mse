@@ -1065,7 +1065,7 @@ int get_size_of_log_data()
     return logData.size();
 }
  
-int get_log_entry_properties(int log_index, double *time, int *event_flag, int *index1, int *index2, int *binary_index)
+int get_log_entry_properties(int log_index, double *time, int *event_flag, int *N_particles, int *index1, int *index2, int *binary_index)
 {
     Log_type entry = logData[log_index];
     *time = entry.time;
@@ -1076,15 +1076,54 @@ int get_log_entry_properties(int log_index, double *time, int *event_flag, int *
     *index2 = log_info.index2;
     *binary_index = log_info.binary_index;
     
+    ParticlesMap entry_particlesMap = entry.particlesMap;
+    *N_particles = entry_particlesMap.size();
+    
     return 0;
+}
+ 
+bool get_is_binary_log(int log_index, int particle_index)
+{
+    Log_type entry = logData[log_index];
+    ParticlesMap entry_particlesMap = entry.particlesMap;
+    Particle *p = entry_particlesMap[particle_index];
+
+    return p->is_binary;
+}
+
+int get_internal_index_in_particlesMap_log(int log_index, int absolute_index)
+{
+    Log_type entry = logData[log_index];
+    ParticlesMap entry_particlesMap = entry.particlesMap;
+//    Particle *p = particlesMap[particle_index];
+
+    int index = -1;
+    
+    int i=0;
+    ParticlesMapIterator it_p;
+    
+    for (it_p = entry_particlesMap.begin(); it_p != entry_particlesMap.end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+
+//        printf("get_internal_index_in_particlesMap absolute_index %d i %d p->index %d\n",absolute_index,i,p->index);
+        if (i == absolute_index)
+        {
+            index = p->index;
+        }
+        i++;
+    }
+    return index;
+    
+//    printf("get_internal_index_in_particlesMap absolute_index %d index %d\n",absolute_index,*index);
 }
  
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
     double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin)
 {
     Log_type entry = logData[log_index];
-    ParticlesMap particlesMap = entry.particlesMap;
-    Particle *p = particlesMap[particle_index];
+    ParticlesMap entry_particlesMap = entry.particlesMap;
+    Particle *p = entry_particlesMap[particle_index];
 
     if (p->is_binary == true)
     {
@@ -1110,14 +1149,15 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
 int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN)
 {
-    /* determine masses in all binaries */
-    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
-    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
-    set_binary_masses_from_body_masses(&particlesMap);
 
     Log_type entry = logData[log_index];
-    ParticlesMap particlesMap = entry.particlesMap;
-    Particle *p = particlesMap[particle_index];
+    ParticlesMap entry_particlesMap = entry.particlesMap;
+    Particle *p = entry_particlesMap[particle_index];
+
+    /* determine masses in all binaries */
+    int N_bodies, N_binaries, N_root_finding, N_ODE_equations;
+    determine_binary_parents_and_levels(&entry_particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
+    set_binary_masses_from_body_masses(&entry_particlesMap);
 
     if (p->is_binary == false)
     {
@@ -1131,7 +1171,7 @@ int get_binary_properties_from_log_entry(int log_index, int particle_index, int 
     *TA = p->true_anomaly;
     
     double h_tot_vec[3];
-    compute_h_tot_vector(&particlesMap,h_tot_vec);
+    compute_h_tot_vector(&entry_particlesMap,h_tot_vec);
 
     compute_orbital_elements_from_orbital_vectors(p->child1_mass, p->child2_mass, h_tot_vec, \
         p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],

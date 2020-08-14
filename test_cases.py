@@ -49,7 +49,12 @@ class test_mse():
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
         particles = Tools.create_nested_multiple(N_bodies, [16.0,1.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        
+
+        #fig=pyplot.figure(figsize=(8,6))
+        #plot=fig.add_subplot(1,1,1)
+        #Tools.generate_mobile_diagram(particles,plot)
+        #pyplot.show()
+        #exit(0)
         
         #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
@@ -141,7 +146,8 @@ class test_mse():
     
             #i_rel = Tools.compute_mutual_inclination(code.log[-1]["particles"][3].INCL,code.log[-1]["particles"][4].INCL,code.log[-1]["particles"][3].LAN,code.log[-1]["particles"][4].LAN)
             #print("IREL",(180.0/np.pi)*i_rel)
-            #print("LOG",code.log[-1]["particles"][3].INCL,code.log[-1]["time"],code.log[-1]["event_flag"])
+            #print("LOG a",code.log[0]["particles"][4].a,code.log[-1]["time"],code.log[-1]["event_flag"])
+            #print("LOG",code.log)
             #if code.log[-1]["event_flag"] != 0:
             #    print("LOG","event",code.log[-1]["event_flag"],"index1",code.log[-1]["index1"],"index2",code.log[-1]["index2"],"binary index",code.log[-1]["binary_index"],code.log[-1]["particles"])
             
@@ -213,9 +219,44 @@ class test_mse():
         print("Final properties -- ","masses/MSun",[m_print[-1][i][-1] for i in range(N_bodies)])
         
         if HAS_MATPLOTLIB==True and args.plot==True:
-            if 1==1:
+            if 1==0:
                 pyplot.rc('text',usetex=True)
                 pyplot.rc('legend',fancybox=True)  
+        
+            print("log",len(code.log))
+            fig=pyplot.figure(figsize=(14,14))
+            N_r = int(np.sqrt(len(code.log)))+1
+            N_c = N_r
+            for index_log,log in enumerate(code.log):
+                plot=fig.add_subplot(N_r,N_c,index_log+1)
+                particles = log["particles"]
+                Tools.generate_mobile_diagram(particles,plot)
+                if log["event_flag"] == 0:
+                    text = "$\mathrm{Initial\,system}$"
+                elif log["event_flag"] == 1:
+                    text = "$\mathrm{Stellar\,type\,change}$"
+                elif log["event_flag"] == 2:
+                    text = "$\mathrm{SNe}$"
+                elif log["event_flag"] == 3:
+                    text = "$\mathrm{RLOF\,start}$"
+                elif log["event_flag"] == 4:
+                    text = "$\mathrm{RLOF\,end}$"
+                elif log["event_flag"] == 5:
+                    text = "$\mathrm{CE}$"
+                elif log["event_flag"] == 6:
+                    text = "$\mathrm{Collision}$"
+                elif log["event_flag"] == 7:
+                    text = "$\mathrm{Dyn.\,inst.}$"
+                elif log["event_flag"] == 8:
+                    text = "$\mathrm{Sec.\,break.}$"
+                else:
+                    text = ""
+                plot.set_title(text,fontsize=18)
+                plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=16)
+                #if index_log>0: break
+            pyplot.show()
+
+
         
             fig=pyplot.figure(figsize=(8,8))
             Np=3
@@ -277,7 +318,7 @@ class test_mse():
 
 
     def test2(self,args):
-        print('Triple with stellar evolution')
+        print('Quadruple with stellar evolution')
         
         N_bodies=4
         
@@ -292,7 +333,11 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         particles = Tools.create_nested_multiple(N_bodies, [5.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
 
-        
+#        fig=pyplot.figure(figsize=(8,6))
+#        plot=fig.add_subplot(1,1,1)
+#        Tools.generate_mobile_diagram(particles,plot)
+#        pyplot.show()
+
         #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,3.5,2.0],[35.0,400.0,5000.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         #particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])

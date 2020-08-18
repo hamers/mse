@@ -340,6 +340,9 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                     {
                         r_parent[i] = 0.0;
                         v_parent[i] = 0.0;
+                        
+                        parent->R_vec[i] = r_parent[i];
+                        parent->V_vec[i] = v_parent[i];
                     }
                 }
                 else

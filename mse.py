@@ -687,6 +687,7 @@ class MSE(object):
             
             for index_particle in range(N_particles.value):
                 internal_index = self.lib.get_internal_index_in_particlesMap_log(index_log,index_particle)
+
                 is_binary = self.lib.get_is_binary_log(index_log,internal_index)
                 
                 if is_binary == False:
@@ -1339,6 +1340,7 @@ class Tools(object):
         binaries = [x for x in particles if x.is_binary==True]
 
 #        print("N",len(bodies),len(binaries))
+
         if len(binaries)==0:
             if len(bodies)==0:
                 print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
@@ -1346,12 +1348,16 @@ class Tools(object):
             else:
                 Tools.draw_bodies(plot,bodies,fontsize)
                 return
-
+        
         Tools.determine_binary_levels_in_particles(particles)            
         #binaries_sorted_by_level = binaries.sorted_by_attribute("level")
         top_level_binary = [x for x in binaries if x.level==0][0]
-        print("top_level_binary",top_level_binary.a)
+        #print("top_level_binary",top_level_binary.a)
         
+        for index,particle in enumerate(particles):
+            if particle.is_binary == False and particle.parent == -1:
+                pass
+                ### TO DO: implement drawing of particles without parent
 
         if use_default_colors==True:
             ### Assign some colors from mcolors to the orbits ###
@@ -1378,8 +1384,8 @@ class Tools(object):
         
         plot.set_xticks([])
         plot.set_yticks([])
-        print("minmax",x_min,x_max,y_min,y_max)
-        beta = 0.45
+        #print("minmax",x_min,x_max,y_min,y_max)
+        beta = 0.65
         plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
         plot.set_ylim([y_min - beta*np.fabs(y_min),y_max + beta*np.fabs(y_max)])
         
@@ -1403,7 +1409,7 @@ class Tools(object):
     @staticmethod
     def determine_binary_levels_in_particles(particles):
         for index,p in enumerate(particles):
-            p.index = index
+            p.index_temp = index
             p.parent = None
 
         ### determine top binary ###
@@ -1413,7 +1419,7 @@ class Tools(object):
                 child2 = particle_1.child2
                 
                 for index_particle_2,particle_2 in enumerate(particles):
-                    if (index_particle_2 == child1.index or index_particle_2 == child2.index):
+                    if (index_particle_2 == child1.index_temp or index_particle_2 == child2.index_temp):
                         particle_2.parent = particle_1
                         
         for index_particle_1,particle_1 in enumerate(particles):
@@ -1427,7 +1433,7 @@ class Tools(object):
                     for index_particle_2,particle_2 in enumerate(particles):
                         
                         if parent == None: break
-                        if (particle_2.index == parent.index):
+                        if (particle_2.index_temp == parent.index_temp):
                             particle_1.level += 1
                             
                             parent = particle_2.parent
@@ -1495,33 +1501,33 @@ class Tools(object):
         if child1.is_binary == True:
             x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
         else:
-            color = Tools.get_color_for_star(child1.stellar_type)
-            plot.scatter([child1.x],[child1.y],color=color)
+            color,s = Tools.get_color_and_size_for_star(child1.stellar_type,child1.radius)
+            plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
             text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
             #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
-            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.4*line_width_vertical),color='k',fontsize=fontsize)
-            text = "$\mathrm{%d}$"%child1.index
-            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.2*line_width_vertical),color='k',fontsize=0.5*fontsize)
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
 
         if child2.is_binary == True:
             x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
         else:
-            color = Tools.get_color_for_star(child2.stellar_type)
-            plot.scatter([child2.x],[child2.y],color=color)
+            color,s = Tools.get_color_and_size_for_star(child2.stellar_type,child2.radius)
+            plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
             #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
             #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
             text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
             #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
-            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.4*line_width_vertical),color='k',fontsize=fontsize)
-            text = "$\mathrm{%d}$"%child2.index
-            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.2*line_width_vertical),color='k',fontsize=0.5*fontsize)
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$%d; \,k=%d$"%(child2.index,child2.stellar_type)
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
 
         return x_min,x_max,y_min,y_max
 
     @staticmethod
-    def get_color_for_star(stellar_type):
+    def get_color_and_size_for_star(stellar_type,radius):
         if (stellar_type <= 1): color='gold'
         elif (stellar_type == 2): color='darkorange'
         elif (stellar_type == 3): color='firebrick'
@@ -1538,22 +1544,30 @@ class Tools(object):
         elif (stellar_type == 14): color='k'
         else: color = 'k'
 
-        return color
+        CONST_R_SUN = 0.004649130343817401
+        CONST_KM = 1.0/(1.4966e9)
 
+        s = 5 + 50*np.log10(radius/CONST_R_SUN)
+        if (stellar_type >= 10):
+            s = 5 + 20*np.log10(radius/CONST_KM)
+
+        return color,s
+        
     @staticmethod
     def draw_bodies(plot,bodies,fontsize):
         dx = 0.5
         dy = 0.5
         for index,body in enumerate(bodies):
-            color = Tools.get_color_for_star(body.stellar_type)
-            plot.scatter([index],[0],color=color)
+            color,s = Tools.get_color_and_size_for_star(body.stellar_type,body.radius)
+            plot.scatter([index],[0],color=color,s=s)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
             text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
-            plot.annotate(text,xy=(index - dx,dy),color='k',fontsize=fontsize)
-
-            text = "$\mathrm{%d}$"%body.index
             plot.annotate(text,xy=(index - dx,-dy),color='k',fontsize=fontsize)
+
+            #text = "$\mathrm{%d}$"%body.index
+            text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
+            plot.annotate(text,xy=(index - dx,0.5*dy),color='k',fontsize=fontsize)
         
         plot.set_xlim([-2*dx,len(bodies)])
         #plot.set_ylim([-2*dy,len(bodies)])

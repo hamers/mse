@@ -970,6 +970,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
      mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
      mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
      
+     //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 
      return 0;

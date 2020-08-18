@@ -48,7 +48,7 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [16.0,1.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [12.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
 
         #fig=pyplot.figure(figsize=(8,6))
         #plot=fig.add_subplot(1,1,1)
@@ -224,7 +224,7 @@ class test_mse():
                 pyplot.rc('legend',fancybox=True)  
         
             print("log",len(code.log))
-            fig=pyplot.figure(figsize=(14,14))
+            fig=pyplot.figure(figsize=(16,16))
             N_r = int(np.sqrt(len(code.log)))+1
             N_c = N_r
             for index_log,log in enumerate(code.log):
@@ -254,7 +254,8 @@ class test_mse():
                 plot.set_title(text,fontsize=18)
                 plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=16)
                 #if index_log>0: break
-            pyplot.show()
+            fig.savefig("test1M.pdf")
+            #pyplot.show()
 
 
         

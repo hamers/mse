@@ -17,13 +17,13 @@ int initialize_code(ParticlesMap *particlesMap)
 
     int integration_flag = 0;
 
+    initialize_stars(particlesMap);
+    set_positions_and_velocities(particlesMap);
+
     if (include_flybys == true)
     {
         handle_next_flyby(particlesMap,true,&integration_flag);
     }
-
-    initialize_stars(particlesMap);
-    set_positions_and_velocities(particlesMap);
 
     #ifdef LOGGING
     //update_log_data(particlesMap, 0.0, 0, 0, 0, 0);
@@ -117,8 +117,11 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Stellar evolution */
 
         //printf("pre ev\n");
+        //print_system(particlesMap,*integration_flag);
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
+        
         //printf("post ev\n");
+        //print_system(particlesMap,*integration_flag);
 
         /* SNe */
         if (apply_SNe_effects == true)
@@ -130,6 +133,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Binary evolution */
         flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
         //printf("post bin\n");
+        //print_system(particlesMap,*integration_flag);
         //printf("evolve.cpp -- 3 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
         
         
@@ -146,6 +150,9 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             //printf("done nbody dt_nbody %g dt_stev %g \n",dt_nbody,dt_stev);
             //printf("DN 1 %g\n",(*particlesMap)[0]->R_vec[0]);
         }
+
+        //printf("post dyn\n");
+        //print_system(particlesMap,*integration_flag);
         
         t = t_out;
         
@@ -163,7 +170,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             if (flag == 1) // RLOF
             {
                 printf("RLOF occurred, but continuing dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
-
+                dt_binary_evolution = dt_stev/10.0;
+                printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",dt_binary_evolution,dt_stev);
                 *CVODE_flag = 0;
             }
             else if (flag == 2) // Dynamical instability
@@ -245,6 +253,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
         //printf("evolve.cpp -- 4 -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
         /* Time-step without flybys */
+        //printf("post fly\n");
+        //print_system(particlesMap,*integration_flag);
 
         //dt = max(dt,1.0e0);
 

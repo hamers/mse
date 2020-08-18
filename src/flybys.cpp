@@ -77,7 +77,7 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
         //printf("flybys.cpp -- handle_next_flyby -- N_bound_subsystems = %d;; not applying flyby\n",N_bound_subsystems);
         //apply_flyby = false;
     //}
-
+    //printf("FLYBY %g %g %g %g %g %g %g\n",M_per,b_vec[0],b_vec[1],b_vec[2],V_vec[0],V_vec[1],V_vec[2]);
     
     bool unbound_orbits = false;
     if (initialize == false and apply_flyby == true)
@@ -117,12 +117,13 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         i += 1;
         /* Sample perturber mass at R_enc */
         *M_per = sample_flyby_mass_at_R_enc();
+        //printf("sample_next_flyby.cpp -- M_per %g S %d\n",*M_per,random_seed);
         M_tot = flybys_internal_mass + *M_per;
         mu = CONST_G*M_tot;
         
         /* Sample perturber velocity at R_enc */
         sample_flyby_position_and_velocity_at_R_enc(particlesMap,R_vec,V_vec);
-
+        //printf("sample_next_flyby.cpp -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
         /* Compute properties of perturber orbit */
         V = norm3(V_vec);
 
@@ -165,7 +166,7 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         //printf("delta_time_encounter %g\n",delta_time_encounter);
         if (delta_time_encounter <= 0.0)
         {
-            //printf("flybys.cpp -- sample_next_flyby -- FATAL ERROR delta_time_encounter <= 0\n");
+            printf("flybys.cpp -- sample_next_flyby -- FATAL ERROR delta_time_encounter <= 0\n");
             exit(-1);
         }
         *t_next_encounter += delta_time_encounter;
@@ -237,6 +238,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
         double r_hat_vec[3],theta_hat_vec[3],phi_hat_vec[3];
         sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(r_hat_vec,theta_hat_vec,phi_hat_vec);
 
+        //printf("T %g %g %g %g %g %g %g %g %g\n",r_hat_vec[0],r_hat_vec[1],r_hat_vec[2],theta_hat_vec[0],theta_hat_vec[1],theta_hat_vec[2],phi_hat_vec[0],phi_hat_vec[1],phi_hat_vec[2]);
         int k;
         for (k=0; k<3; k++)
         {
@@ -245,13 +247,16 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
         }
 
 
+        //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 1 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
         /* */
         if (flybys_reference_binary != -1) /* Default value -1: use center of mass (keep R_vec and V_vec fixed) */
         {
+            
             Particle *p = (*particlesMap)[flybys_reference_binary];
             double *R_ref = p->R_vec;
             double *V_ref = p->V_vec;
 
+            //printf("flybys_reference_binary != -1 %d R_ref %g %g %g V_ref %g %g %g \n",flybys_reference_binary,R_ref[0],R_ref[1],R_ref[2],V_ref[0],V_ref[1],V_ref[2]);
             for (k=0; k<3; k++)
             {
                 //printf("0 %g %g\n",r[k],v[k]);
@@ -262,6 +267,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
             }
             
         }
+        //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 2 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
     }
     else
     {
@@ -499,7 +505,7 @@ double sample_flyby_mass_at_R_enc()
             sampled_mass = true;
         }
     }
-    
+
     return M;
 }
 

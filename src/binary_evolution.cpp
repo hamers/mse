@@ -70,7 +70,8 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             if (companion->mass_dot_wind_accretion!=companion->mass_dot_wind_accretion)
             {
                 printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
-                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->a);
+                print_system(particlesMap,*integration_flag);
+                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
                 exit(-1);
             }
             //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);
@@ -203,11 +204,9 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double M_accretor = accretor->mass;
 
     /* MT & dynamical timescales */
-    double fm = donor->emt_fm;
-    //double dt = t - t_old;
-    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
-    //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
-    double t_MT = M_donor/fabs(m_dot);
+    //double fm = donor->emt_fm;
+    
+    
     double R_donor = donor->radius;
     double t_dyn_donor = compute_stellar_dynamical_timescale(M_donor, R_donor);
 
@@ -216,9 +215,39 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double q_crit = compute_q_crit_for_common_envelope_evolution(donor->stellar_type, M_donor, donor->core_mass);
     double q_crit_low_mass_donor = 0.695;
     double q_crit_WD_donor = 0.628;
+
+    /* Estimate of mass transfer timescale */
+    double a = parent->a;
+    double e = parent->e;
+    double R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
+    double x = R_Lc/R_donor;
+    double E_0;
+    bool in_RLOF;
+    determine_E_0(e, x, &E_0, &in_RLOF);
+    double fm = fm_function(e,x,E_0,0.0); /* set E_tau = 0 here */
+
+    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
+    double fabs_m_dot = fabs(m_dot);
+    //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
+    
+    double t_MT;
+    if (fabs_m_dot <= epsilon)
+    {
+        t_MT = 1.0e100;
+    }
+    else
+    {
+        t_MT = M_donor/fabs_m_dot;
+    }
+
+    if (t_MT != t_MT)
+    {
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- ERROR: t_MT = %g; a %g e %g R_Lc %g x %g E_0 %g \n",t_MT,a,e,R_Lc,x,E_0);
+        exit(-1);
+    }
     
     int kw = donor->stellar_type;
-
+    printf("t_MT %g emt_fm %g\n",t_MT,fm);
     /* Different cases */
     if (kw == 0 and q > q_crit_low_mass_donor)
     {

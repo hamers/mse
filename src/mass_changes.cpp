@@ -322,7 +322,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     fe = fe_function(e,x,E_0,E_tau);
     fomega = fomega_function(e,x,E_0,E_tau);
 
-    donor->emt_fm = fm;
+    //donor->emt_fm = fm;
 
     if (fabs(fm) <= epsilon)
     {

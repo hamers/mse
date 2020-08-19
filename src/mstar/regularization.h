@@ -174,6 +174,10 @@ int check_relative_proximity( int v1, int v2, const int Nd, struct RegularizedRe
 
 void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min);
 double fq_RLOF_Eggleton(double m1, double m2);
+void out_of_CoM_frame(struct RegularizedRegion *R);
+//extern double mst_CoM_R[3];
+//extern double mst_CoM_V[3];
+
 
 // misc
 

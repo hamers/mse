@@ -19,6 +19,8 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     
     /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
+                    
+
     double dt = t - t_old;
     double dt_reached;
     int collision_occurred;
@@ -951,7 +953,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     printf("R->gbs_tolerance %g\n",R->gbs_tolerance);
     R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
     
-    into_CoM_frame(R);
+    //into_CoM_frame(R);
     
     return R;
     

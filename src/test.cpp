@@ -403,8 +403,8 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
    
     int N = 2;
     
-    double R_cm_vec[3] = {0.0,0.0,0.0};
-    double V_cm_vec[3] = {0.0,0.0,0.0};
+    double R_cm_vec[3] = {0.1,0.0,0.0};
+    double V_cm_vec[3] = {0.2,0.0,0.0};
     double r_vec[3],v_vec[3];
     
     double e_vec[3] = {1.0,0.0,0.0};
@@ -502,18 +502,20 @@ int test_nbody_two_body_kick()
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
 
-    //double R_cm[3],V_cm[3];
-    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    //printf("pre R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
     
     /* Give kick to *2 */
     int i=1;
     int j=0;
     R->Vel[3 * j + i] += 1000.0*CONST_KM_PER_S;
+
+    //double R_cm[3],V_cm[3];
+    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
+    //printf("pre int R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
+
     //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
     //printf("post kick pre int %g %g %g %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
 
-    into_CoM_frame(R);
+    //into_CoM_frame(R);
     double E_init = compute_nbody_total_energy(R);
 
     //print_state(R);
@@ -565,6 +567,10 @@ int test_nbody_two_body_kick()
     }
     
     double E_fin = compute_nbody_total_energy(R);
+
+
+    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
+    //printf("post int R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
             
     //printf("Final state:\n");
     //print_state(R);

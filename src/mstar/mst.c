@@ -24,6 +24,9 @@ double *maxerror;
 double **error, **result;
 double **gbsS;
 
+//double mst_CoM_R[3];
+//double mst_CoM_V[3];
+
 #ifdef PARALLEL
 #include <mpi.h>
 #endif
@@ -1667,6 +1670,14 @@ void into_CoM_frame(struct RegularizedRegion *R) {
         }
     }
 
+    //for (int k = 0; k < 3; k++)
+    //{
+        //mst_CoM_R[k] = R->CoM_Pos[k];
+        //mst_CoM_V[k] = R->CoM_Vel[k];
+        //printf("INIT k %d MST TEST %g %g \n",k,R->CoM_Pos[k],mst_CoM_R[k]);
+    //}
+
+
     clock_t timing1 = clock();
     time_coord += (double)(timing1 - timing0) / CLOCKS_PER_SEC;
 }
@@ -2310,6 +2321,9 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
     } while (not_finished);
     
+    
+    out_of_CoM_frame(R);
+    
     *end_time = time;
 }
 
@@ -2807,3 +2821,21 @@ double fq_RLOF_Eggleton(double m1, double m2)
     double q_p2div3 = q_p1div3*q_p1div3;
     return 0.49*q_p2div3/( 0.6*q_p2div3 + log(1.0 + q_p1div3) );
 }
+
+void out_of_CoM_frame(struct RegularizedRegion *R)
+{
+
+//    for (int k = 0; k < 3; k++)
+//    {
+//        printf("FIN k %d MST TEST %g \n",k,R->CoM_Pos[k]);
+//    }
+     
+    for (int i = 0; i < R->NumVertex; i++) {
+        for (int k = 0; k < 3; k++) {
+            R->Pos[3 * i + k] += R->CoM_Pos[k];
+            R->Vel[3 * i + k] += R->CoM_Vel[k];
+        }
+    }
+
+}
+

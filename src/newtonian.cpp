@@ -3,13 +3,21 @@
 #include "types.h"
 #include "newtonian.h"
 #include "../interface.h" /* for parameters */
-#include <stdio.h>
+#include "evolve.h"
+//#include <stdio.h>
 
 extern "C"
 {
     
 void compute_EOM_Newtonian_for_particle(ParticlesMap *particlesMap, Particle *p, double *hamiltonian, double *KS_V, bool compute_hamiltonian_only)
 {
+    
+    if (p->exclude_for_secular_integration == true)
+    {
+        //printf("newtonian.cpp -- compute_EOM_Newtonian_for_particle -- not applying terms for particle %d\n",p->index);
+        return;
+    }
+    
     std::vector<int>::iterator it_parent_p,it_parent_q;
 
     /* binary pairs */
@@ -1454,6 +1462,40 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
         exit(-1);
     }
 
+}
+
+double compute_order_of_magnitude_secular_timescale_for_pair(ParticlesMap *particlesMap, int inner_binary_index, int outer_binary_index, int connecting_child_in_outer_binary)
+{
+
+    Particle *inner_binary = (*particlesMap)[inner_binary_index];
+    Particle *outer_binary = (*particlesMap)[outer_binary_index];
+    
+    //Particle *P_child1 = (*particlesMap)[inner_binary->child1];
+    //Particle *P_child2 = (*particlesMap)[inner_binary->child2];
+    Particle *P_sibling;
+    if (connecting_child_in_outer_binary==1)
+    {
+        P_sibling = (*particlesMap)[outer_binary->child2];
+    }
+    else if (connecting_child_in_outer_binary==2)
+    {
+        P_sibling = (*particlesMap)[outer_binary->child1];
+    }
+
+    double M_in = inner_binary->mass;
+    double m3 = P_sibling->mass;
+    double M_out = M_in + m3;
+
+    double a_in = inner_binary->a;
+    double a_out = outer_binary->a;
+    
+    double e_out = outer_binary->e;
+
+    double P_in = compute_orbital_period_from_semimajor_axis(M_in,a_in);
+    double P_out = compute_orbital_period_from_semimajor_axis(M_out,a_out);
+    double t_sec = (P_out*P_out/P_in)*(M_out/m3)*pow(1.0 - e_out*e_out,3.0/2.0);
+        
+    return t_sec;
 }
 
 }

@@ -36,7 +36,7 @@ class MSE(object):
         self.__CONST_L_SUN = 0.0002710404109745588
         self.__CONST_KM_PER_S = 0.210862
         self.__CONST_PER_PC3 = 1.14059e-16
-
+        self.__CONST_PARSEC = 206201.0
 
         self.__relative_tolerance = 1.0e-12
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-10
@@ -839,6 +839,16 @@ class MSE(object):
     def CONST_PER_PC3(self, value):
         self.__CONST_PER_PC3 = value
         self.__set_constants_in_code()
+
+    @property
+    def CONST_PARSEC(self):
+        return self.__CONST_PARSEC
+
+    @CONST_PARSEC.setter
+    def CONST_PARSEC(self, value):
+        self.__CONST_PARSEC = value
+        self.__set_constants_in_code()
+
 
     ##################
     ### Parameters ###

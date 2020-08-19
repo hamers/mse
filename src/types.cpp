@@ -38,6 +38,8 @@ bool include_dotriacontupole_order_binary_pair_terms = true;
 bool include_double_averaging_corrections = false;
 int random_seed = 0;
 
+double secular_integration_exclusion_safety_factor = 1.0e-3;
+
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 
 bool include_flybys = true;

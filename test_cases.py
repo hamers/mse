@@ -48,7 +48,7 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [12.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [10.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
 
         #fig=pyplot.figure(figsize=(8,6))
         #plot=fig.add_subplot(1,1,1)
@@ -103,6 +103,9 @@ class test_mse():
         k_print = [[[] for x in range(N_bodies)]]
         m_print = [[[] for x in range(N_bodies)]]
         R_print = [[[] for x in range(N_bodies)]]
+        X_print = [[[] for x in range(N_bodies)]]
+        Y_print = [[[] for x in range(N_bodies)]]
+        Z_print = [[[] for x in range(N_bodies)]]
         Rc_print = [[[] for x in range(N_bodies)]]
         R_L_print = [[[] for x in range(N_bodies)]]
         t_V_print = [[[] for x in range(N_bodies)]]
@@ -159,6 +162,9 @@ class test_mse():
                 k_print.append([[] for x in range(N_bodies)])
                 m_print.append([[] for x in range(N_bodies)])
                 R_print.append([[] for x in range(N_bodies)])
+                X_print.append([[] for x in range(N_bodies)])
+                Y_print.append([[] for x in range(N_bodies)])
+                Z_print.append([[] for x in range(N_bodies)])
                 Rc_print.append([[] for x in range(N_bodies)])
                 R_L_print.append([[] for x in range(N_bodies)])
                 t_V_print.append([[] for x in range(N_bodies)])
@@ -185,6 +191,9 @@ class test_mse():
                 m_print[i_status][index].append(particles[index].mass)
                 k_print[i_status][index].append(particles[index].stellar_type)
                 R_print[i_status][index].append(particles[index].radius)
+                X_print[i_status][index].append(particles[index].X)
+                Y_print[i_status][index].append(particles[index].Y)
+                Z_print[i_status][index].append(particles[index].Z)
                 t_V_print[i_status][index].append(particles[index].tides_viscous_time_scale)
                 Rc_print[i_status][index].append(particles[index].convective_envelope_radius)
                 R_L_print[i_status][index].append(particles[index].roche_lobe_radius_pericenter)
@@ -265,6 +274,9 @@ class test_mse():
             plot2=fig.add_subplot(Np,1,2,yscale="log")
             plot3=fig.add_subplot(Np,1,3,yscale="linear")
             
+            fig_pos=fig=pyplot.figure(figsize=(8,8))
+            plot_pos=fig_pos.add_subplot(1,1,1)
+            
             colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
             linewidth=1.0
             for i_status in range(N_status):
@@ -286,6 +298,10 @@ class test_mse():
                     plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
                     plot2.plot(1.0e-6*t_print[i_status],R_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
                     plot2.plot(1.0e-6*t_print[i_status],Rc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
+                    
+                    parsec_in_AU = code.CONST_PARSEC
+                    plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
+                    
                     #if index in [0,1]:
                         #plot2.plot(1.0e-6*t_print,R_L_print[index],color='g',linestyle='dotted',linewidth=linewidth)
                     #plot3.plot(1.0e-6*t_print,t_V_print[index],color='k',linestyle='solid',linewidth=linewidth)
@@ -314,6 +330,10 @@ class test_mse():
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
             plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)
+            
+            plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)
+            plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
+            
             fig.savefig("test1.pdf")
             pyplot.show()
 

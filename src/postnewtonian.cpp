@@ -2,7 +2,8 @@
 
 #include "types.h"
 #include "postnewtonian.h"
-#include <stdio.h>
+#include "evolve.h"
+//#include <stdio.h>
 extern "C"
 {
     
@@ -31,6 +32,13 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
     double m1 = binary->child1_mass;
     double m2 = binary->child2_mass;
     double mt = m1+m2;
+
+    if (binary->exclude_for_secular_integration == true)
+    {
+        //printf("postnewtonian.cpp -- compute_EOM_pairwise_1PN -- not applying 1PN terms for particle %d\n",binary->index);
+        return 0;
+    }
+
 
     double hamiltonian_1PN = -3.0*CONST_G_P2*m1*m2*mt/(a*a*CONST_C_LIGHT_P2*j);
     if (compute_hamiltonian_only == true)
@@ -104,6 +112,19 @@ double compute_spin_frequency_from_spin_parameter(double m, double chi)
     double Omega = CONST_C_LIGHT_P3 * chi / ( 2.0 * CONST_G * m * (1.0 + sqrt(1.0 - chi*chi)) );
     
     return Omega;
+}
+
+double compute_1PN_timescale(double a, double M, double e)
+{
+    //double GMdiva = CONST_G*M/a;
+    double j_p2 = 1.0 - e*e;
+    //double Z_1PN = 3.0*sqrt(GMdiva)*GMdiva/(a*CONST_C_LIGHT_P2*j_p2);
+    //double t_1PN = 1.0/Z_1PN;
+    
+    double P_orb = compute_orbital_period_from_semimajor_axis(M, a);
+    double rg = CONST_G*M/(CONST_C_LIGHT_P2);
+    double t_1PN = c_1div3 * P_orb * j_p2 * (a/rg);
+    return t_1PN;
 }
 
 }

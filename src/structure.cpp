@@ -338,11 +338,11 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                      /* without loss of generality, set the initial CM of the system to the origin */
                     for (i=0; i<3; i++)
                     {
-                        r_parent[i] = 0.0;
-                        v_parent[i] = 0.0;
+                        r_parent[i] = parent->R_vec[i];
+                        v_parent[i] = parent->V_vec[i];
                         
-                        parent->R_vec[i] = r_parent[i];
-                        parent->V_vec[i] = v_parent[i];
+                        //parent->R_vec[i] = r_parent[i];
+                        //parent->V_vec[i] = v_parent[i];
                     }
                 }
                 else
@@ -367,6 +367,24 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
         level++;
     }
 }
+
+void update_positions_unbound_bodies(ParticlesMap *particlesMap, double time_step)
+{
+    int i;
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *p = (*it).second;
+        if ((p->is_binary == false) && (p->is_bound == false))
+        {
+            for (i=0; i<3; i++)
+            {
+                p->R_vec[i] += p->V_vec[i] * time_step;
+            }
+        }
+    }
+}
+
 
 void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *particlesMap)
 {

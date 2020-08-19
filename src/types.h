@@ -47,6 +47,8 @@ extern bool include_double_averaging_corrections;
 extern double epsilon;
 extern int random_seed;
 
+extern double secular_integration_exclusion_safety_factor;
+
 extern bool include_flybys;
 extern bool flybys_correct_for_gravitational_focussing;
 extern int flybys_velocity_distribution;
@@ -946,6 +948,7 @@ class Particle
     double e,e_p2;
     double j,j_p2,j_p3,j_p4,j_p5; // j=sqrt(1-e^2)
     double h,a;
+    bool exclude_for_secular_integration;
     
 //    Particle(int index, int is_binary, int child1, int child2, double mass, double radius, double spin_vec_x, double spin_vec_y, double spin_vec_z, double e_vec_x, double e_vec_y, double e_vec_z, double h_vec_x, double h_vec_y, double h_vec_z, int include_pairwise_1PN_terms, int include_pairwise_25PN_terms, int include_tides_terms, double tides_Q_prime, double tides_gyration_radius, int check_for_secular_breakdown, int secular_breakdown_has_occurred, int check_for_dynamical_instability, int dynamical_instability_has_occurred, int dynamical_instability_criterion, int check_for_physical_collision, int physical_collision_has_occurred) : index(index), is_binary(is_binary), child1(child1), child2(child2), mass(mass), radius(radius), spin_vec_x(spin_vec_x), spin_vec_y(spin_vec_y), spin_vec_z(spin_vec_z), e_vec_x(e_vec_x), e_vec_y(e_vec_y), e_vec_z(e_vec_z), h_vec_x(h_vec_x), h_vec_y(h_vec_y), h_vec_z(h_vec_z), include_pairwise_1PN_terms(include_pairwise_1PN_terms), include_pairwise_25PN_terms(include_pairwise_25PN_terms), include_tides_terms(include_tides_terms), tides_Q_prime(tides_Q_prime), tides_gyration_radius(tides_gyration_radius), 
 
@@ -1036,6 +1039,11 @@ class Particle
         tides_viscous_time_scale_prescription = 1; /* 0: constant, user-specified t_V; 1: using Hurley prescription */
         minimum_eccentricity_for_tidal_precession = 1.0e-3;
         spin_vec_x_dot = spin_vec_y_dot = spin_vec_z_dot = 0.0;
+
+        R_vec[0] = R_vec[1] = R_vec[2] = 0.0;
+        V_vec[0] = V_vec[1] = V_vec[2] = 0.0;
+        
+        exclude_for_secular_integration = false;
 
         /* stellar evolution */
         stellar_type = 1;

@@ -20,4 +20,7 @@ void compute_EOM_binary_pairs_single_averaged(ParticlesMap *particlesMap, int in
 void compute_EOM_binary_pairs_double_averaged(ParticlesMap *particlesMap, int inner_binary_index, int outer_binary_index, int connecting_child_in_outer_binary, double *hamiltonian, double *KS_V, bool compute_hamiltonian_only);
 
 void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index, int binary_B_index, int binary_C_index, int connecting_child_in_binary_B_to_binary_A, int connecting_child_in_binary_C_to_binary_B, double *hamiltonian, double *KS_V, bool compute_hamiltonian_only);
+
+double compute_order_of_magnitude_secular_timescale_for_pair(ParticlesMap *particlesMap, int inner_binary_index, int outer_binary_index, int connecting_child_in_outer_binary);
+
 }

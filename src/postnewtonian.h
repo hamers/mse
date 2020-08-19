@@ -8,4 +8,5 @@ double compute_EOM_pairwise_25PN(ParticlesMap *particlesMap, int binary_index, b
 double compute_spin_parameter_from_spin_frequency(double m, double Omega);
 double compute_spin_frequency_from_spin_parameter(double m, double chi);
 
+double compute_1PN_timescale(double a, double M, double e);
 }

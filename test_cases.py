@@ -48,7 +48,7 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [10.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [10.0,10.0,7.5],[15.5,4000.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
 
         #fig=pyplot.figure(figsize=(8,6))
         #plot=fig.add_subplot(1,1,1)
@@ -77,7 +77,6 @@ class test_mse():
 
        #     orbit.include_tidal_friction_terms = False
 
-
                 
         code = MSE()
         code.enable_root_finding = True
@@ -87,7 +86,7 @@ class test_mse():
         code.include_flybys = True
         #code.flybys_reference_binary = orbits[0].index
         #print 'a',orbits[0].a
-        code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
+        code.flybys_stellar_density = 10*0.1*code.CONST_PER_PC3
         code.flybys_encounter_sphere_radius = 1.0e5
 
 

@@ -498,13 +498,13 @@ int test_nbody_two_body_kick()
     double a = 1.0;
     double e = 0.99;
     
-    double gbs_tolerance = 1.0e-6;
+    double gbs_tolerance = 1.0e-8;
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
 
     
     /* Give kick to *2 */
-    int i=1;
+    int i=2;
     int j=0;
     R->Vel[3 * j + i] += 1000.0*CONST_KM_PER_S;
 
@@ -609,6 +609,131 @@ int test_nbody_two_body_kick()
         printf("test.cpp -- test_nbody_two_body_kick -- passed\n");
     }
 
+    return flag;
+}
+
+
+/**********
+ * Flybys *
+***********/
+    
+int test_flybys()
+{
+    printf("test.cpp -- test_flybys\n");
+    
+    int flag=0;
+    flag += test_flybys_integrals();
+    flag += test_flybys_perturber_sampling();
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_flybys -- passed\n");
+    }
+    
+    return flag;
+}
+
+int test_flybys_integrals()
+{
+    printf("test.cpp -- test_flybys_integrals\n");
+    
+    int flag = 0;
+    flybys_mass_distribution = 0;
+    flybys_mass_distribution_lower_value = 0.1;
+    flybys_mass_distribution_upper_value = 100.0;
+    flybys_mass_distribution = 0;
+    flybys_encounter_sphere_radius = 1.0e5;
+    flybys_stellar_density = 0.1*CONST_PER_PC3;
+    flybys_stellar_relative_velocity_dispersion = 1.0*CONST_KM_PER_S;
+    flybys_internal_mass = 20.0;
+    
+    double total_encounter_rate, stellar_density;
+    compute_total_encounter_rate_and_density_at_R_enc(&total_encounter_rate,&stellar_density);
+    
+    double integral_rate = total_encounter_rate/(2.0*sqrt(2.0*M_PI)*flybys_encounter_sphere_radius*flybys_encounter_sphere_radius*flybys_stellar_density*flybys_stellar_relative_velocity_dispersion);
+    double integral_density = stellar_density/flybys_stellar_density;
+    
+    if (!equal_number(integral_rate,1.181,1.0e-3))
+    {
+        printf("test.cpp -- test_flybys_integrals -- error in integral_rate %g\n",integral_rate);
+        flag = 1;
+    }
+    if (!equal_number(integral_density,1.136,1.0e-3))
+    {
+        printf("test.cpp -- test_flybys_integrals -- error in integral_density %g\n",integral_density);
+        flag = 1;
+    }
+    
+    double W_max = compute_W_max();
+    if (!equal_number(W_max,1.583,1.0e-3))
+    {
+        printf("test.cpp -- test_flybys_integrals -- error in W_max %g\n",W_max);
+        flag = 1;
+    }
+
+    return flag;
+}
+
+int test_flybys_perturber_sampling()
+{
+    int flag = 0;
+    flybys_mass_distribution = 0;
+    flybys_mass_distribution_lower_value = 0.1;
+    flybys_mass_distribution_upper_value = 100.0;
+    flybys_mass_distribution = 0;
+    flybys_encounter_sphere_radius = 1.0e5;
+    flybys_stellar_density = 0.1*CONST_PER_PC3;
+    flybys_stellar_relative_velocity_dispersion = 30.0*CONST_KM_PER_S;
+    flybys_internal_mass = 20.0;
+        
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double masses[4] = {10.0,12.0};
+    int stellar_types[4] = {1,1};
+    double smas[3] = {10.0};
+    double es[3] = {0.01};
+    double TAs[3] = {0.01};
+    double INCLs[3] = {0.01};
+    double APs[3] = {0.01};
+    double LANs[3] = {0.01};
+    random_seed=0;
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+
+    int N_points = 10000;
+    bool apply_flyby;
+    double t_next_encounter;
+    int N_enc=0;
+    int N_not_impulsive=0;
+    double M_per;
+    double b_vec[3],V_vec[3];
+
+    double b_vec_mean[3];
+    double M_per_mean = 0.0;
+
+    for (int k=0; k<3; k++)
+    {
+        b_vec_mean[k] = 0.0;
+    }
+
+    for (int i=0; i<N_points; i++)
+    {
+        sample_next_flyby(&particlesMap, &apply_flyby, &t_next_encounter, &N_enc, &N_not_impulsive, &M_per, b_vec, V_vec);
+        printf("T R %g %g %g V %g %g %g\n",b_vec[0],b_vec[1],b_vec[2],V_vec[0],V_vec[1],V_vec[2]);
+        M_per_mean += M_per;
+        for (int k=0; k<3; k++)
+        {
+            b_vec_mean[k] += b_vec[k];
+        }
+    }
+
+    M_per_mean /= ((double) N_points);
+    for (int k=0; k<3; k++)
+    {
+        b_vec_mean[k] /= ((double) N_points);
+    }
+
+
+    printf("D %g %g %g M %g\n",b_vec_mean[0],b_vec_mean[1],b_vec_mean[2],M_per_mean);
     return flag;
 }
 
@@ -1043,7 +1168,6 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
         flag = 1;
     }
     
-    //print_system(&particlesMap);
     if (flag == 0)
     {
         printf("test.cpp -- test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit -- passed\n");
@@ -1265,6 +1389,9 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     
     return 0;
 }
+
+
+
 
 
 }

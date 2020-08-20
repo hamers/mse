@@ -998,6 +998,7 @@ int unit_tests_interface()
     int flag=0;
     flag += test_tools();
     flag += test_nbody();
+    flag += test_flybys();
     flag += test_stellar_evolution();
     flag += test_binary_evolution();
     flag += test_collisions();

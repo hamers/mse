@@ -17,6 +17,10 @@ int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, 
 int test_nbody_two_body_kick();
 void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
 
+int test_flybys();
+int test_flybys_integrals();
+int test_flybys_perturber_sampling();
+
 int test_stellar_evolution();
 int test_apsidal_motion_constant();
 int test_sse();

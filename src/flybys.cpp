@@ -62,7 +62,6 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
     {
         compute_total_encounter_rate_and_density_at_R_enc(&flybys_total_encounter_rate_at_R_enc, &flybys_stellar_density_at_R_enc);
         flybys_W_max = compute_W_max();
-        printf("flybys_W_max %g\n",flybys_W_max);
     }
 
     double b_vec[3], V_vec[3];
@@ -249,7 +248,8 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 
         //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 1 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
         /* */
-        if (flybys_reference_binary != -1) /* Default value -1: use center of mass (keep R_vec and V_vec fixed) */
+        #ifdef IGNORE
+        if (flybys_reference_binary != -1) /* Default value -1: use center of mass (center R_vec and V_vec around origin) */
         {
             
             Particle *p = (*particlesMap)[flybys_reference_binary];
@@ -267,6 +267,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
             }
             
         }
+        #endif
         //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 2 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
     }
     else
@@ -281,8 +282,8 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 
 int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, int *integration_flag)
 {
-    int flag;
-    double vx,vy,vz;
+    //int flag;
+    //double vx,vy,vz;
     ParticlesMapIterator it_p;
     //std::vector<int>::iterator it_parent_p,it_parent_q;
 
@@ -299,10 +300,22 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     //print_system(particlesMap,*integration_flag);
     
     double b_i_vec[3],Delta_V_vec[3];
-    double *R_vec;
     double b_per_vec_minus_R_vec[3];
     double b_per_vec_minus_R_vec_dot_V_per_vec_unit,b_i_temp;
     
+    double R_ref[3] = {0.0,0.0,0.0};
+    if (flybys_reference_binary != -1) /* Default value -1: use center of mass (center R_vec and V_vec around origin) */
+    {
+        
+        Particle *p = (*particlesMap)[flybys_reference_binary];
+        for (k=0; k<3; k++)
+        {
+            R_ref[k] = p->R_vec[k];
+            
+        }
+        //printf("R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
+    }
+
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
@@ -318,17 +331,16 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
             {
                 set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used in secular case */
             }
-            R_vec = p->R_vec;
 
             for (k=0; k<3; k++)
             {
-                b_per_vec_minus_R_vec[k] = b_per_vec[k] - R_vec[k];
+                b_per_vec_minus_R_vec[k] = b_per_vec[k] - p->R_vec[k] - R_ref[k];
             }
             b_per_vec_minus_R_vec_dot_V_per_vec_unit = dot3(b_per_vec_minus_R_vec,V_per_vec_unit);
             
             for (k=0; k<3; k++)
             {
-                b_i_vec[k] = b_per_vec[k] - R_vec[k] - V_per_vec_unit[k]*b_per_vec_minus_R_vec_dot_V_per_vec_unit;
+                b_i_vec[k] = b_per_vec_minus_R_vec[k] - V_per_vec_unit[k]*b_per_vec_minus_R_vec_dot_V_per_vec_unit;
             }
             
             b_i_temp = 2.0*(CONST_G*M_per/V_per)/norm3_squared(b_i_vec);
@@ -378,7 +390,6 @@ int compute_total_encounter_rate_and_density_at_R_enc(double *total_encounter_ra
     }
     else
     {
-
         int N_points = 1000;
 
         double points[N_points];
@@ -415,8 +426,6 @@ int compute_total_encounter_rate_and_density_at_R_enc(double *total_encounter_ra
             V = V_function(x);
             W = W_function(x);
 
-    //        #print 'i',index,mean_M,'x',x
-                
             mass_fraction = 0.0;
             for (l=0; l<N_points; l++)
             {
@@ -428,9 +437,8 @@ int compute_total_encounter_rate_and_density_at_R_enc(double *total_encounter_ra
 
             integral_density += mass_fraction*W;
             integral_rate += mass_fraction*V;
-    //        #print 'f',fraction,'V',V,'x',x
         }
-        printf("flybys.cpp -- compute_total_encounter_rate_and_density_at_R_enc -- integral_density %g integral_rate %g \n",integral_density,integral_rate);
+        //printf("flybys.cpp -- compute_total_encounter_rate_and_density_at_R_enc -- integral_density %g integral_rate %g \n",integral_density,integral_rate);
         *total_encounter_rate = Gamma_0*integral_rate;
         *stellar_density = integral_density*flybys_stellar_density;
     }
@@ -525,6 +533,7 @@ double sample_flyby_mass_at_infinity()
         printf("flybys.cpp -- flybys_mass_distribution = %d is not supported; exiting\n",flybys_mass_distribution);
         exit(-1);
     }
+    //printf("SI %d %g\n",flybys_mass_distribution,M);
     
     return M;
 }

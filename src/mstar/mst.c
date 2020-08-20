@@ -2280,6 +2280,8 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     not_finished = 0;
                     printf("Stopping condition at t=%g \n",time);
                 }
+
+                //#ifdef IGNORE
                 if (possible_stopping_condition == 1)
                 {
                     i_sc++;
@@ -2293,6 +2295,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     if (i_sc > 100) /* The stopping condition was probably not real; give up */
                     {
                         possible_stopping_condition = 0;
+                        printf("mstar --  Giving up stopping condition search t %g\n",time);
                         R->Hstep = R->U * dt;
                         i_sc = 0;
                     }
@@ -2306,6 +2309,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                         i_sc = 0;
                     }
                 }
+                //#endif
                 
                 int old_epoch = epoch;
                 epoch = (int)floor(time / percent);
@@ -2700,7 +2704,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
 
             /* Estimate if a stopping condition could have occurred in the past or future,
              * and determine the timestep needed to bring the integrator there. */
-            int interpolation_method = 1;
+            int interpolation_method = 0;
             if (interpolation_method == 0) // straight line trajectories
             {
                 determinant = rdotv * rdotv - (r2 - r_crit_p2) * vdotv;

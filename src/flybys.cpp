@@ -81,7 +81,7 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
     bool unbound_orbits = false;
     if (initialize == false and apply_flyby == true)
     {
-        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, &unbound_orbits, integration_flag);
+        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, &unbound_orbits, true, integration_flag);
         //printf("flybys.cpp -- compute_effects_of_flyby_on_system\n");
     }
 
@@ -114,6 +114,7 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
     while (satisfied_criteria == false)
     {
         i += 1;
+        
         /* Sample perturber mass at R_enc */
         *M_per = sample_flyby_mass_at_R_enc();
         //printf("sample_next_flyby.cpp -- M_per %g S %d\n",*M_per,random_seed);
@@ -123,7 +124,8 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         /* Sample perturber velocity at R_enc */
         sample_flyby_position_and_velocity_at_R_enc(particlesMap,R_vec,V_vec);
         //printf("sample_next_flyby.cpp -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
-        /* Compute properties of perturber orbit */
+        
+        /* Compute impact parameter for perturber orbit */
         V = norm3(V_vec);
 
         for (k=0; k<3; k++)
@@ -138,8 +140,6 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
             b_vec[k] = R_vec[k] - V_vec_unit[k]*R_vec_dot_V_vec_unit;
         }
 
-        //#Delta_t = -2.0*R_vec.dot(V_per_vec_unit)/V_per
-
         /* Compute angular speed ratio and reject unsuitable cases */
         Q = norm3(b_vec); /* effective Q */
         V_infty = V; /* effective V_infty */
@@ -149,18 +149,9 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         n_internal = sqrt( CONST_G*flybys_internal_mass/(flybys_internal_semimajor_axis*flybys_internal_semimajor_axis*flybys_internal_semimajor_axis));
         angular_speed_ratio = theta_dot_peri/n_internal;
         
-//        if cmd_options["verbose"] == 1:
-  //          print 'sample_next_impulsive_encounter; ', 'AS_ratio',angular_speed_ratio
-        
-       // #t_ref = time_next_encounter - Delta_t_orbit ### time of pericenter passage; note that Delta_t_orbit < 0
-        //#t_from_R_enc_to_periapse = - Delta_t_orbit ### time needed for perturber to move from R_enc to Q
-        //#t_passed = t_ref - Delta_t_orbit ### time when again hitting the encounter sphere
-        //#delta_time_in_encounter_sphere = -2.0*Delta_t_orbit
-        
         /* Compute time of next encounter */
         u = ((double) rand() / (RAND_MAX));
         delta_time_encounter = -log(u) / flybys_total_encounter_rate_at_R_enc;
-        //delta_time_encounter *= 0.01;
         
         //printf("delta_time_encounter %g\n",delta_time_encounter);
         if (delta_time_encounter <= 0.0)
@@ -179,37 +170,8 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         }
 
         *apply_flyby = true;
-        //#next_external_time = time + dt
-        
-        //#print 'Delta_t',dt.value_in(units.Myr)
-        
-//#        if (t + dt > tend and i < minimum_number_of_encounters): ### ensure that the minimum number of encounters is reached 
-//#            continue
-
+       
         satisfied_criteria = true;
-
-        //if store_encounter_data == True:
-            //output_arrays["external_e_arrays"].append(E | units.none)
-            //output_arrays["external_q_arrays"].append(Q)
-            //output_arrays["external_angular_speed_ratio_arrays"].append(angular_speed_ratio | units.none)            
-            //#output_arrays["N_not_hyperbolic"] = N_not_hyperbolic | units.none
-            //output_arrays["N_not_impulsive"] = N_not_impulsive | units.none
-            
-            //print 'N_not_impulsive',N_not_impulsive
-            
-
-        //if cmd_options["verbose"] == -1:
-        //#if cmd_options["verbose"] == True:
-        //#if 1==1:
-          //  #print 'time',time.value_in(units.Myr),'dt',dt.value_in(units.Myr)
-            //print 'delta_time_encounter',delta_time_encounter.value_in(units.Myr)
-            //print 'time_next_encounter',time_next_encounter.value_in(units.Myr)
-            //print 'm_per',m_per.value_in(units.MSun),'M_m',M_m.value_in(units.MSun)
-            //print 'mu',mu,'R',R.value_in(units.AU),'R_vec',R_vec.value_in(units.AU),'V_vec',V_vec.value_in(units.km/units.s),'V',np.sqrt(V_vec[0]**2+V_vec[1]**2+V_vec[2]**2).value_in(units.km/units.s)
-            //print 'q',q.value_in(units.AU),'e',e,'angular_speed_ratio',angular_speed_ratio
-            //print 'N_not_hyperbolic',N_not_hyperbolic,'N_not_impulsive',N_not_impulsive
-            
-           //# print 'external_particle',external_particle
     }
     
     *N_enc += 1;
@@ -227,24 +189,16 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
         sample_from_3d_maxwellian_distribution(flybys_stellar_relative_velocity_dispersion, v_prime);
         v_prime[2] = sample_from_y_times_maxwellian_distribution(flybys_stellar_relative_velocity_dispersion); /* Need to sample the z-component from a distribution \propto y*Exp[-y^2/(2 sigma^2)] */
         
-        //double vx_prime = helper_functions.sample_distribution(None, None, stellar_relative_velocity_distribution_x)
-        //double vy_prime = helper_functions.sample_distribution(None, None, stellar_relative_velocity_distribution_y)
-        //double vz_prime = helper_functions.sample_distribution(None, None, stellar_relative_velocity_distribution_z)
-        //v_prime_norm = np.sqrt(vx_prime**2+vy_prime**2+vz_prime**2)
-        //#print 'v',vx_prime.value_in(units.km/units.s),vy_prime.value_in(units.km/units.s),vz_prime.value_in(units.km/units.s),v.value_in(units.km/units.s)
-
         /* Sample direction of perturber */
         double r_hat_vec[3],theta_hat_vec[3],phi_hat_vec[3];
         sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(r_hat_vec,theta_hat_vec,phi_hat_vec);
 
-        //printf("T %g %g %g %g %g %g %g %g %g\n",r_hat_vec[0],r_hat_vec[1],r_hat_vec[2],theta_hat_vec[0],theta_hat_vec[1],theta_hat_vec[2],phi_hat_vec[0],phi_hat_vec[1],phi_hat_vec[2]);
         int k;
         for (k=0; k<3; k++)
         {
             R_vec[k] = r_hat_vec[k]*flybys_encounter_sphere_radius;
             V_vec[k] = v_prime[0]*theta_hat_vec[k] + v_prime[1]*phi_hat_vec[k] - fabs(v_prime[2])*r_hat_vec[k];
         }
-
 
         //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 1 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
         /* */
@@ -259,11 +213,8 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
             //printf("flybys_reference_binary != -1 %d R_ref %g %g %g V_ref %g %g %g \n",flybys_reference_binary,R_ref[0],R_ref[1],R_ref[2],V_ref[0],V_ref[1],V_ref[2]);
             for (k=0; k<3; k++)
             {
-                //printf("0 %g %g\n",r[k],v[k]);
-                //printf("1 %g %g \n",R_vec[k],V_vec[k]);
                 R_vec[k] -= R_ref[k];
                 V_vec[k] -= V_ref[k];
-                //printf("2 %g %g \n",R_vec[k],V_vec[k]);
             }
             
         }
@@ -280,14 +231,9 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
 }
 
 
-int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, int *integration_flag)
+int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, bool reset, int *integration_flag)
 {
-    //int flag;
-    //double vx,vy,vz;
     ParticlesMapIterator it_p;
-    //std::vector<int>::iterator it_parent_p,it_parent_q;
-
-//    int seed = orbital_phases_random_seed;
     int k;
     
     double V_per = norm3(V_per_vec);
@@ -296,8 +242,6 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
     {
         V_per_vec_unit[k] = V_per_vec[k]/V_per;
     }
-    //printf("FLY pre\n");
-    //print_system(particlesMap,*integration_flag);
     
     double b_i_vec[3],Delta_V_vec[3];
     double b_per_vec_minus_R_vec[3];
@@ -313,9 +257,9 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
             R_ref[k] = p->R_vec[k];
             
         }
-        //printf("R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
     }
-
+    //printf("R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
+    
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
@@ -365,13 +309,12 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
         apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
     }
 
-    //printf("FLY post\n");
-    //print_system(particlesMap,*integration_flag);
-
-
     *unbound_orbits = check_for_unbound_orbits(particlesMap);
             
-    reset_instantaneous_perturbation_quantities(particlesMap);
+    if (reset == true)
+    {
+        reset_instantaneous_perturbation_quantities(particlesMap);
+    }
 
     return 0;
 }
@@ -537,6 +480,5 @@ double sample_flyby_mass_at_infinity()
     
     return M;
 }
-
 
 }

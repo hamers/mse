@@ -170,6 +170,10 @@ int determine_compact_object_merger_properties_interface(double m1, double m2, d
 int sample_from_3d_maxwellian_distribution_interface(double sigma, double *vx, double *vy, double *vz);
 double sample_from_normal_distribution_interface(double mu, double sigma);
 double sample_from_kroupa_93_imf_interface();
+int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interface(double *r_hat_vec_x, double *r_hat_vec_y,double *r_hat_vec_z, \
+    double *theta_hat_vec_x, double *theta_hat_vec_y,double *theta_hat_vec_z, \
+    double *phi_hat_vec_x, double *phi_hat_vec_y,double *phi_hat_vec_z);
+
 
 
 /***********

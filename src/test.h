@@ -19,7 +19,8 @@ void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, d
 
 int test_flybys();
 int test_flybys_integrals();
-int test_flybys_perturber_sampling();
+int test_flybys_compute_effects_of_flyby_on_system();
+int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma, double M_int, double *M_per, double *b_vec_x, double *b_vec_y, double *b_vec_z, double *V_vec_x, double *V_vec_y, double *V_vec_z);
 
 int test_stellar_evolution();
 int test_apsidal_motion_constant();

@@ -2,6 +2,7 @@ CXX = /usr/local/bin/g++-9
 CXX = /usr/local/bin/c++-9
 CXX = c++-9
 CXX = g++-10
+CXX = g++-10
 
 FC = gfortran
 
@@ -60,7 +61,7 @@ cleansse:
 	$(RM) src/bse/*.o*
 cleanc:
 	@echo "Removing compiled C/C++ libraries"
-	$(RM) libmse.so src/*.o* src/cvode/*.o* src/mstar/*.o*
+	$(RM) interface.o libmse.so src/*.o* src/cvode/*.o* src/mstar/*.o*
 cleanlib:
 	@echo "Removing libmse library"
 	$(RM) libmse.so

@@ -760,7 +760,7 @@ void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap,
         Particle *b = (*it).second;
         if (b->is_binary == true)
         {
-            printf("Adiabatic b %d %g %g\n",b->index,b->P_orb_adiabatic_mass_loss , mass_loss_timescale);
+            //printf("Adiabatic b %d %g %g\n",b->index,b->P_orb_adiabatic_mass_loss , mass_loss_timescale);
             
             if (b->P_orb_adiabatic_mass_loss < mass_loss_timescale) // criterion for adiabatic mass loss
             {

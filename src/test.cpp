@@ -47,11 +47,7 @@ int test_a_P_orb_conversion()
         printf("test.cpp -- error in test_a_P_orb_conversion!\n");
         flag = 1;
     }
-    
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_a_P_orb_conversion -- passed\n");
-    }
+
     return flag;
 }
 
@@ -75,10 +71,6 @@ int test_a_h_conversion()
         flag = 1;
     }
 
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_a_h_conversion -- passed\n");
-    }
     return flag;
 }
 
@@ -114,11 +106,6 @@ int test_orbital_element_conversion()
         }
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_orbital_element_conversion -- passed\n");
-    }
-
     return flag;
 }        
 
@@ -160,11 +147,6 @@ int test_orbital_vectors_cartesian_conversion()
         }
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_orbital_vectors_cartesian_conversion -- passed\n");
-    }
-
     return flag;
 }        
 
@@ -191,11 +173,6 @@ int test_kepler_equation_solver()
         }
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_kepler_equation_solver -- passed\n");
-    }
-
     return flag;
 }
 
@@ -353,11 +330,6 @@ int test_nbody_two_body_stopping_conditions()
         
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_nbody_two_body_stopping_conditions -- passed\n");
-    }
-
     return flag;
 }
 
@@ -604,11 +576,6 @@ int test_nbody_two_body_kick()
         flag = 1;
     }
 
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_nbody_two_body_kick -- passed\n");
-    }
-
     return flag;
 }
 
@@ -623,7 +590,8 @@ int test_flybys()
     
     int flag=0;
     flag += test_flybys_integrals();
-    flag += test_flybys_perturber_sampling();
+    /* Note: test_flybys_perturber_sampling is carried out within Python (test_mse.py) */
+    flag += test_flybys_compute_effects_of_flyby_on_system();
     
     if (flag == 0)
     {
@@ -674,8 +642,51 @@ int test_flybys_integrals()
     return flag;
 }
 
-int test_flybys_perturber_sampling()
+int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma_rel, double M_int, double *M_per, double *b_vec_x, double *b_vec_y, double *b_vec_z, double *V_vec_x, double *V_vec_y, double *V_vec_z) 
 {
+    int flag = 0;
+    flybys_mass_distribution = 0;
+    flybys_mass_distribution_lower_value = 0.1;
+    flybys_mass_distribution_upper_value = 100.0;
+    flybys_mass_distribution = 0;
+    flybys_encounter_sphere_radius = R_enc;
+    flybys_stellar_density = n_star;
+    flybys_stellar_relative_velocity_dispersion = sigma_rel;
+    flybys_internal_mass = M_int;
+        
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double masses[2] = {10.0,12.0};
+    int stellar_types[2] = {1,1};
+    double smas[1] = {10.0};
+    double es[1] = {0.01};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+
+    bool apply_flyby;
+    double t_next_encounter;
+    double b_vec[3],V_vec[3];
+    int N_enc=0;
+    int N_not_impulsive=0;
+    
+    sample_next_flyby(&particlesMap, &apply_flyby, &t_next_encounter, &N_enc, &N_not_impulsive, M_per, b_vec, V_vec);
+    *b_vec_x = b_vec[0];
+    *b_vec_y = b_vec[1];
+    *b_vec_z = b_vec[2];
+    *V_vec_x = V_vec[0];
+    *V_vec_y = V_vec[1];
+    *V_vec_z = V_vec[2];
+    
+    return flag;
+}
+
+int test_flybys_compute_effects_of_flyby_on_system()
+{
+    printf("test.cpp -- test_flybys_compute_effects_of_flyby_on_system\n");
     int flag = 0;
     flybys_mass_distribution = 0;
     flybys_mass_distribution_lower_value = 0.1;
@@ -684,56 +695,77 @@ int test_flybys_perturber_sampling()
     flybys_encounter_sphere_radius = 1.0e5;
     flybys_stellar_density = 0.1*CONST_PER_PC3;
     flybys_stellar_relative_velocity_dispersion = 30.0*CONST_KM_PER_S;
-    flybys_internal_mass = 20.0;
-        
+    flybys_reference_binary = -1;
+    
     ParticlesMap particlesMap;
     int N_bodies = 2;
-    double masses[4] = {10.0,12.0};
-    int stellar_types[4] = {1,1};
-    double smas[3] = {10.0};
-    double es[3] = {0.01};
-    double TAs[3] = {0.01};
-    double INCLs[3] = {0.01};
-    double APs[3] = {0.01};
-    double LANs[3] = {0.01};
-    random_seed=0;
+    double m1 = 10.0;
+    double m2 = 8.0;
+    flybys_internal_mass = m1+m2;
+    
+    double masses[2] = {m1,m2};
+    int stellar_types[2] = {1,1};
+    double smas[1] = {10.0};
+    double es[1] = {0.01};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+
     create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
 
-    int N_points = 10000;
-    bool apply_flyby;
-    double t_next_encounter;
-    int N_enc=0;
-    int N_not_impulsive=0;
-    double M_per;
-    double b_vec[3],V_vec[3];
+    Particle *s1 = particlesMap[0];
+    Particle *s2 = particlesMap[1];
+    
+    s1->R_vec[0] = 1.0e2;
+    s1->R_vec[1] = 1.0e1;
+    s1->R_vec[2] = 2.0e1;
 
-    double b_vec_mean[3];
-    double M_per_mean = 0.0;
-
-    for (int k=0; k<3; k++)
+    s2->R_vec[0] = -1.0e2;
+    s2->R_vec[1] = -1.0e1;
+    s2->R_vec[2] = -4.0e1;
+        
+    double M_per = 100.0;
+    double b_per_vec[3] = {1.0e3,1.0e3,1.0e2};
+    double V_per_vec[3] = {10.0*CONST_KM_PER_S,5.0*CONST_KM_PER_S,15.0*CONST_KM_PER_S};
+    bool unbound_orbits;
+    int integration_flag;
+    compute_effects_of_flyby_on_system(&particlesMap, M_per,b_per_vec,V_per_vec,&unbound_orbits,false,&integration_flag);
+    
+    double tol = 1.0e-2; /* Note: smaller tolerance than 1e-2 yields discrepancies; most likely due to slightly different values of constants used */
+    if (!equal_number(s1->instantaneous_perturbation_delta_VX,0.818813,tol))
     {
-        b_vec_mean[k] = 0.0;
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s1 Delta VX %g\n",s1->instantaneous_perturbation_delta_VX);
+        flag = 1;
     }
-
-    for (int i=0; i<N_points; i++)
+    if (!equal_number(s1->instantaneous_perturbation_delta_VY,1.35592,tol))
     {
-        sample_next_flyby(&particlesMap, &apply_flyby, &t_next_encounter, &N_enc, &N_not_impulsive, &M_per, b_vec, V_vec);
-        printf("T R %g %g %g V %g %g %g\n",b_vec[0],b_vec[1],b_vec[2],V_vec[0],V_vec[1],V_vec[2]);
-        M_per_mean += M_per;
-        for (int k=0; k<3; k++)
-        {
-            b_vec_mean[k] += b_vec[k];
-        }
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s1 Delta VY %g\n",s1->instantaneous_perturbation_delta_VY);
+        flag = 1;
     }
-
-    M_per_mean /= ((double) N_points);
-    for (int k=0; k<3; k++)
+    if (!equal_number(s1->instantaneous_perturbation_delta_VZ,-0.99785,tol))
     {
-        b_vec_mean[k] /= ((double) N_points);
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s1 Delta VZ %g\n",s1->instantaneous_perturbation_delta_VZ);
+        flag = 1;
     }
-
-
-    printf("D %g %g %g M %g\n",b_vec_mean[0],b_vec_mean[1],b_vec_mean[2],M_per_mean);
+    if (!equal_number(s2->instantaneous_perturbation_delta_VX,0.888464,tol))
+    {
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s2 Delta VX %g\n",s2->instantaneous_perturbation_delta_VX);
+        flag = 1;
+    }
+    if (!equal_number(s2->instantaneous_perturbation_delta_VY,1.14714,tol))
+    {
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s2 Delta VY %g\n",s2->instantaneous_perturbation_delta_VY);
+        flag = 1;
+    }
+    if (!equal_number(s2->instantaneous_perturbation_delta_VZ,-0.97469,tol))
+    {
+        printf("test.cpp -- test_compute_effects_of_flyby_on_system -- error in s2 Delta VZ %g\n",s2->instantaneous_perturbation_delta_VZ);
+        flag = 1;
+    }
+    
+//    printf("S1 %g %g %g\n",s1->instantaneous_perturbation_delta_VX,s1->instantaneous_perturbation_delta_VY,s1->instantaneous_perturbation_delta_VZ);
+//    printf("S2 %g %g %g\n",s2->instantaneous_perturbation_delta_VX,s2->instantaneous_perturbation_delta_VY,s2->instantaneous_perturbation_delta_VZ);
     return flag;
 }
 
@@ -792,11 +824,6 @@ int test_apsidal_motion_constant()
                 flag = 1;
             }
         }
-    }
-
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_apsidal_motion_constant -- passed\n");
     }
 
     return flag;
@@ -897,11 +924,6 @@ int test_sse()
         }
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_sse -- passed\n");
-    }
-
     return flag;
 }
 
@@ -1080,11 +1102,6 @@ int test_compute_Kelvin_Helmholtz_timescale()
         flag += 1;
     }
 
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_compute_Kelvin_Helmholtz_timescale -- passed\n");
-    }
-
     return flag;
 }
 
@@ -1105,11 +1122,6 @@ int test_compute_Eddington_accretion_rate()
         flag = 1;
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_compute_Eddington_accretion_rate -- passed\n");
-    }
-
     return flag;
 }
 
@@ -1168,11 +1180,6 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
         flag = 1;
     }
     
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit -- passed\n");
-    }
-
     return flag;
 }
 
@@ -1240,11 +1247,6 @@ int test_wind_accretion()
     {
         printf("test.cpp -- test_wind_acretion -- error: mdot_test %g mdot_an %g\n",mdot_test,mdot_an);
         flag = 1;
-    }
-
-    if (flag == 0)
-    {
-        printf("test.cpp -- test_wind_accretion -- passed\n");
     }
 
     return flag;

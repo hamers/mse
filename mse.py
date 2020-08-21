@@ -287,8 +287,17 @@ class MSE(object):
         self.lib.sample_from_kroupa_93_imf_interface.argtypes = ()
         self.lib.sample_from_kroupa_93_imf_interface.restype = ctypes.c_double
 
+        self.lib.sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interface.argtypes = (ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+            ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interface.restype = ctypes.c_int
+
         self.lib.test_kick_velocity.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double))
         self.lib.test_kick_velocity.restype = ctypes.c_int
+
+        self.lib.test_flybys_perturber_sampling.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double, \
+            ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+            ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.test_flybys_perturber_sampling.restype = ctypes.c_int
 
     ###############
     
@@ -770,11 +779,29 @@ class MSE(object):
         m = self.lib.sample_from_kroupa_93_imf_interface()
         return m
 
+    def test_sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(self):
+        r_hat_vec_x,r_hat_vec_y,r_hat_vec_z,theta_hat_vec_x,theta_hat_vec_y,theta_hat_vec_z,phi_hat_vec_x,phi_hat_vec_y,phi_hat_vec_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0), \
+            ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0), ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        self.lib.sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interface(ctypes.byref(r_hat_vec_x),ctypes.byref(r_hat_vec_y),ctypes.byref(r_hat_vec_z), \
+            ctypes.byref(theta_hat_vec_x),ctypes.byref(theta_hat_vec_y),ctypes.byref(theta_hat_vec_z), \
+            ctypes.byref(phi_hat_vec_x),ctypes.byref(phi_hat_vec_y),ctypes.byref(phi_hat_vec_z))
+
+        r_hat_vec = np.array( [r_hat_vec_x.value, r_hat_vec_y.value, r_hat_vec_z.value] )
+        theta_hat_vec = np.array( [theta_hat_vec_x.value, theta_hat_vec_y.value, theta_hat_vec_z.value] )
+        phi_hat_vec = np.array( [phi_hat_vec_x.value, phi_hat_vec_y.value, phi_hat_vec_z.value] )
+        return r_hat_vec,theta_hat_vec,phi_hat_vec
+
     def test_kick_velocity(self,kick_distribution,m):
         kw,v = ctypes.c_int(0),ctypes.c_double(0.0)
         self.lib.test_kick_velocity(kick_distribution,m,ctypes.byref(kw),ctypes.byref(v))
         return kw.value,v.value
 
+    def test_flybys_perturber_sampling(self,R_enc,n_star,sigma_rel,M_int):
+        M_per,b_vec_x,b_vec_y,b_vec_z,V_vec_x,V_vec_y,V_vec_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        self.lib.test_flybys_perturber_sampling(R_enc,n_star,sigma_rel,M_int,ctypes.byref(M_per),ctypes.byref(b_vec_x),ctypes.byref(b_vec_y),ctypes.byref(b_vec_z),ctypes.byref(V_vec_x),ctypes.byref(V_vec_y),ctypes.byref(V_vec_z)) 
+        b_vec = np.array( [ b_vec_x.value,b_vec_y.value,b_vec_z.value] )
+        V_vec = np.array( [ V_vec_x.value,V_vec_y.value,V_vec_z.value] )
+        return M_per.value,b_vec,V_vec
 
     ### Constants ###
     @property

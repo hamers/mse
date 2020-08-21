@@ -1549,26 +1549,59 @@ class test_mse():
         CONST_C = code.CONST_C
         
         N = 50000
+        N2 = 10000
 
         seed = 0
         #code.random_seed = seed
         np.random.seed(seed)
-        
+
+       
         vs = []
         vs2 = []
         sigma_km_s = 265.0
         sigma = sigma_km_s*code.CONST_KM_PER_S
         mu_km_s = 40.0
         mu=mu_km_s*code.CONST_KM_PER_S
+
+        r_hat_vecs = []
+        theta_hat_vecs = []
+        phi_hat_vecs = []
+
         for index in range(N):
             vx,vy,vz = code.test_sample_from_3d_maxwellian_distribution(sigma)
             v = np.array([vx,vy,vz])
             vs.append(np.linalg.norm(v))
             v2 = code.test_sample_from_normal_distribution(mu,sigma)
             vs2.append(v2)
+            
         vs = np.array(vs)
         vs2 = np.array(vs2)
-        
+
+        for index in range(N2):
+            r_hat_vec,theta_hat_vec,phi_hat_vec = code.test_sample_spherical_coordinates_unit_vectors_from_isotropic_distribution()
+            r_hat_vecs.append(r_hat_vec)
+            theta_hat_vecs.append(theta_hat_vec)
+            phi_hat_vecs.append(phi_hat_vec)
+
+        ### Check that r, theta, and phi hat vectors have zero components on average ###
+        tol = 1e-2
+        assert( np.mean( np.array( [x[0] for x in r_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[1] for x in r_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[2] for x in r_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[0] for x in theta_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[1] for x in theta_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[2] for x in theta_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[0] for x in phi_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[1] for x in phi_hat_vecs] )) <= tol )
+        assert( np.mean( np.array( [x[2] for x in phi_hat_vecs] )) <= tol )
+
+        ### Check orthogonality of r, theta, and phi hat vectors ###
+        tol = 1e-12
+        assert( np.sum( np.array([np.dot(x,y) for x,y in zip(r_hat_vecs,theta_hat_vecs)])) <= tol)
+        assert( np.sum( np.array([np.dot(x,y) for x,y in zip(r_hat_vecs,phi_hat_vecs)])) <= tol)
+        assert( np.sum( np.array([np.dot(x,y) for x,y in zip(theta_hat_vecs,phi_hat_vecs)])) <= tol)
+
+        ### Check properties of Maxwellian and normal distributions ###
         N_r=0
         assert(round(np.mean(np.array(vs)),N_r) == round(2.0*sigma*np.sqrt(2.0/np.pi),N_r))
         assert(round(np.mean(np.array(vs2)),N_r) == round(mu,N_r))
@@ -1752,6 +1785,93 @@ class test_mse():
             fig.savefig("kick_distributions.pdf")
             pyplot.show()
 
+    def test105(self,args):
+        print('Test flybys sampling')
+        
+        code = MSE()
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+        CONST_KM_PER_S = code.CONST_KM_PER_S
+        N = 10000
+        
+        seed = 0
+        #code.random_seed = seed
+        np.random.seed(seed)
+
+        R_enc = 1.0e4
+        n_star = 0.1*code.CONST_PER_PC3
+        sigma_rel = 10.0*code.CONST_KM_PER_S
+        M_int = 20.0
+
+        b_vecs = []
+        V_vecs = []
+        M_pers = []
+        bs = []
+        Vs = []
+        for index in range(N):
+            M_per,b_vec,V_vec = code.test_flybys_perturber_sampling(R_enc,n_star,sigma_rel,M_int)
+            M_pers.append(M_per)
+            b_vecs.append(b_vec)
+            V_vecs.append(V_vec)
+            bs.append(np.linalg.norm(b_vec))
+            Vs.append(np.linalg.norm(V_vec))
+
+        bs = np.array(bs)
+        Vs = np.array(Vs)
+        
+        b1 = 0.0
+        b2 = R_enc
+        b_mean_an = (2.0/3.0)*(b2**3 - b1**3)/(b2**2 - b1**2) ### mean b value assuming dN/db = 2b/(b2^2 - b1^2)
+        
+        tol = 1.0e-2
+        assert( (b_mean_an - np.mean(bs))/b_mean_an <= tol)
+        
+        ### On average, individual components of b vec should be zero (isotropic orientations) ###
+        assert( np.mean(np.array( [x[0] for x in b_vecs]))/b_mean_an <= tol ) 
+        assert( np.mean(np.array( [x[1] for x in b_vecs]))/b_mean_an <= tol ) 
+        assert( np.mean(np.array( [x[2] for x in b_vecs]))/b_mean_an <= tol ) 
+        
+        if args.verbose==True:
+            print("mean bs/au",np.mean(bs),' an ',b_mean_an)
+        
+        if args.plot == True:
+            Nb=50
+            fontsize=16
+            labelsize=12
+            from matplotlib import pyplot
+
+#            pyplot.rc('text',usetex=True)
+#            pyplot.rc('legend',fancybox=True)
+
+            fig=pyplot.figure(figsize=(8,10))
+            
+            plot1=fig.add_subplot(2,1,1,yscale="log")
+            plot2=fig.add_subplot(2,1,2,yscale="log")
+
+            bins = np.linspace(2,np.log10(R_enc)+1,Nb)
+            plot1.hist(np.log10(bs),bins=bins,histtype='step',density=True,color='k',linestyle='solid',label='$\mathrm{Num}$')
+            bins = np.linspace(0,100.0,Nb)
+            plot2.hist(Vs/code.CONST_KM_PER_S,bins=bins,histtype='step',density=True,color='k',linestyle='solid',label='$\mathrm{Num}$')
+            
+            points = np.linspace(2,np.log10(R_enc)+1,1000)
+            plot1.plot(points, np.log(10.0)*2.0 * pow(10.0,2*points)/(b2**2 - b1**2), color='tab:green',label="$\mathrm{d}N/\mathrm{d}b \propto b$")
+
+            plot1.set_xlabel("$\log_{10}(b/\mathrm{au})$",fontsize=fontsize)
+            plot1.set_ylabel("$\mathrm{d} N/\mathrm{d} \log_{10} (b)$",fontsize=fontsize)
+
+            plot2.set_xlabel("$V_\mathrm{enc}/(\mathrm{km \,s^{-1}}))$",fontsize=fontsize)
+            plot2.set_ylabel("$\mathrm{d} N/\mathrm{d} V_\mathrm{enc}$",fontsize=fontsize)
+
+            handles,labels = plot1.get_legend_handles_labels()
+            plot1.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
+            
+            plot1.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            plot2.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+
+            pyplot.show()
+
+
 def kroupa_93_imf(m):
 
     alpha1 = -1.3
@@ -1822,3 +1942,4 @@ if __name__ == '__main__':
     
     print("="*50)
     print("All tests passed!")
+

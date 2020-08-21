@@ -21,7 +21,8 @@ double *resultbuf;
 double *y;
 double *yscal;
 double *maxerror;
-double **error, **result;
+double **error;
+double **result;
 double **gbsS;
 
 //double mst_CoM_R[3];

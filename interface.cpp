@@ -1057,6 +1057,24 @@ double sample_from_kroupa_93_imf_interface()
     return sample_from_Kroupa_93_imf();
 }
 
+int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interface(double *r_hat_vec_x, double *r_hat_vec_y,double *r_hat_vec_z, \
+    double *theta_hat_vec_x, double *theta_hat_vec_y,double *theta_hat_vec_z, \
+    double *phi_hat_vec_x, double *phi_hat_vec_y,double *phi_hat_vec_z)
+{
+    double r_hat_vec[3],theta_hat_vec[3],phi_hat_vec[3];
+    sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(r_hat_vec,theta_hat_vec,phi_hat_vec);
+    *r_hat_vec_x = r_hat_vec[0];
+    *r_hat_vec_y = r_hat_vec[1];
+    *r_hat_vec_z = r_hat_vec[2];
+    *theta_hat_vec_x = theta_hat_vec[0];
+    *theta_hat_vec_y = theta_hat_vec[1];
+    *theta_hat_vec_z = theta_hat_vec[2];
+    *phi_hat_vec_x = phi_hat_vec[0];
+    *phi_hat_vec_y = phi_hat_vec[1];
+    *phi_hat_vec_z = phi_hat_vec[2];
+    
+    return 0;
+}
 
 /***********
 /* Logging *

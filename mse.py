@@ -50,8 +50,8 @@ class MSE(object):
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 0
 
-        self.__mstar_gbs_tolerance_default = 1.0e-8
-        self.__mstar_gbs_tolerance_kick = 1.0e-3
+        self.__mstar_gbs_tolerance_default = 1.0e-12
+        self.__mstar_gbs_tolerance_kick = 1.0e-10
         self.__mstar_collision_tolerance = 1.0e-10
 
         self.__particles_committed = False
@@ -1353,81 +1353,10 @@ class Tools(object):
         
         return particles
 
-
     @staticmethod
     def compute_mutual_inclination(INCL_k,INCL_l,LAN_k,LAN_l):
         cos_INCL_rel = np.cos(INCL_k)*np.cos(INCL_l) + np.sin(INCL_k)*np.sin(INCL_l)*np.cos(LAN_k-LAN_l)
         return np.arccos(cos_INCL_rel)
-
-
-
-    @staticmethod
-    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.0,line_width_vertical = 0.4,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
-        """
-        Generate a Mobile diagram of a given multiple system.
-        """
-        
-        try:
-            import matplotlib
-        except ImportError:
-            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to make a Mobile diagram!")
-            exit(0)
-
-        bodies = [x for x in particles if x.is_binary==False]
-        binaries = [x for x in particles if x.is_binary==True]
-
-#        print("N",len(bodies),len(binaries))
-
-        if len(binaries)==0:
-            if len(bodies)==0:
-                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
-                exit(0)
-            else:
-                Tools.draw_bodies(plot,bodies,fontsize)
-                return
-        
-        Tools.determine_binary_levels_in_particles(particles)            
-        #binaries_sorted_by_level = binaries.sorted_by_attribute("level")
-        top_level_binary = [x for x in binaries if x.level==0][0]
-        #print("top_level_binary",top_level_binary.a)
-        
-        for index,particle in enumerate(particles):
-            if particle.is_binary == False and particle.parent == -1:
-                pass
-                ### TO DO: implement drawing of particles without parent
-
-        if use_default_colors==True:
-            ### Assign some colors from mcolors to the orbits ###
-            import matplotlib.colors as mcolors
-            colors = mcolors.TABLEAU_COLORS
-            color_names = list(colors)
-            
-            for index in range(len(binaries)):
-                color_name = color_names[index]
-                color=colors[color_name]
-            
-                o = binaries[index]
-                o.color = color
-
-        ### Make mobile diagram ###
-        top_level_binary.x = 0.0
-        top_level_binary.y = 0.0
-        x_min = x_max = y_min = 0.0
-        y_max = line_width_vertical
-    
-        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
-        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
-
-        
-        plot.set_xticks([])
-        plot.set_yticks([])
-        #print("minmax",x_min,x_max,y_min,y_max)
-        beta = 0.65
-        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
-        plot.set_ylim([y_min - beta*np.fabs(y_min),y_max + beta*np.fabs(y_max)])
-        
-        #plot.autoscale(enable=True,axis='both')
-        
 
     @staticmethod
     def determine_binary_masses(particles):
@@ -1474,6 +1403,78 @@ class Tools(object):
                             particle_1.level += 1
                             
                             parent = particle_2.parent
+                            
+    @staticmethod
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.0,line_width_vertical = 0.4,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+        """
+        Generate a Mobile diagram of a given multiple system.
+        """
+        
+        try:
+            import matplotlib
+        except ImportError:
+            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to generate a Mobile diagram!")
+            exit(0)
+
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+
+#        print("N",len(bodies),len(binaries))
+
+        if len(binaries)==0:
+            if len(bodies)==0:
+                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
+                exit(0)
+            else:
+                Tools.draw_bodies(plot,bodies,fontsize)
+                return
+
+        Tools.determine_binary_levels_in_particles(particles)                    
+        unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
+        #if len(unbound_bodies)>0:
+            
+        
+        #binaries_sorted_by_level = binaries.sorted_by_attribute("level")
+        top_level_binary = [x for x in binaries if x.level==0][0]
+        #print("top_level_binary",top_level_binary.a)
+        
+        for index,particle in enumerate(particles):
+            if particle.is_binary == False and particle.parent == -1:
+                pass
+                ### TO DO: implement drawing of particles without parent
+
+        if use_default_colors==True:
+            ### Assign some colors from mcolors to the orbits ###
+            import matplotlib.colors as mcolors
+            colors = mcolors.TABLEAU_COLORS
+            color_names = list(colors)
+            
+            for index in range(len(binaries)):
+                color_name = color_names[index]
+                color=colors[color_name]
+            
+                o = binaries[index]
+                o.color = color
+
+        ### Make mobile diagram ###
+        top_level_binary.x = 0.0
+        top_level_binary.y = 0.0
+        x_min = x_max = y_min = 0.0
+        y_max = line_width_vertical
+    
+        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
+        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+
+        
+        plot.set_xticks([])
+        plot.set_yticks([])
+        #print("minmax",x_min,x_max,y_min,y_max)
+        beta = 0.65
+        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
+        plot.set_ylim([y_min - beta*np.fabs(y_min),y_max + beta*np.fabs(y_max)])
+        
+        #plot.autoscale(enable=True,axis='both')
+        
     @staticmethod
     def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
         x = particle.x

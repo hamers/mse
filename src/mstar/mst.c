@@ -21,7 +21,7 @@ double *resultbuf;
 double *y;
 double *yscal;
 double *maxerror;
-double **error;
+double **extrapolation_error;
 double **result;
 double **gbsS;
 
@@ -2004,7 +2004,7 @@ void copy_regularized_region(struct RegularizedRegion *Orig,
 }
 
 void extrapolate_single_variable(double *y, const int N, double *result,
-                                 double *error, double *yscal) {
+                                 double *err, double *yscal) {
 
     for (int i = 0; i < N; i++) {
         gbsS[i][0] = y[i];
@@ -2016,12 +2016,8 @@ void extrapolate_single_variable(double *y, const int N, double *result,
                 (nterm * gbsS[i + 1][j - 1] - gbsS[i][j - 1]) / (nterm - 1.0);
         }
     }
-    // for (int i = 1; i < N; i++) {
-    //    result[i - 1] = gbsS[0][i];
-    //    error[i - 1] = fabs(gbsS[0][i] - gbsS[0][i - 1]) / yscal[i];
-    //}
     result[N - 2] = gbsS[0][N - 1];
-    error[N - 2] = fabs(gbsS[0][N - 1] - gbsS[0][N - 1 - 1]) / yscal[N - 1];
+    err[N - 2] = fabs(gbsS[0][N - 1] - gbsS[0][N - 1 - 1]) / yscal[N - 1];
 }
 
 int extrapolate_all_variables(int korder) {
@@ -2045,14 +2041,60 @@ int extrapolate_all_variables(int korder) {
     int loop_end = block * (ThisTask + 1);
     if (ThisTask == Ntask - 1) { loop_end = NumDynVariables; }
 
+    // Antti debugging: modifications in this function start
+
+    // Antti debugging: modify scaling
+/*   variables in the state vector
+     0           ---> 3*nvertex-1 : positions
+     3*nvertex-1 ---> 6*nvertex-1 : velocities
+     6*nvertex-2 ---> 6*nvertex-1 : binding energy
+     6*nvertex-1 ---> 6*nvertex   : time
+*/
+
+    int NumPos = 3*(ThisR->NumVertex-1);
+    int NumVel = NumPos;
+
+    double PosScale[korder], VelScale[korder], BScale[korder], TScale[korder];
+
+    for (int i = 0; i < korder; i++) {
+	PosScale[i] = 0.0;
+	VelScale[i] = 0.0;
+	BScale[i] = 0.0;
+	TScale[i] = 0.0;
+    }
+
+    for (int v = 0; v < NumPos; v++) {
+	for (int i = 0; i < korder; i++) {
+		if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > PosScale[i] ) { PosScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
+	}
+    }
+    for (int v = NumPos; v < NumPos+NumVel; v++) {
+	for (int i = 0; i < korder; i++) {
+               if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > VelScale[i] ) { VelScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
+	}
+    }
+    int v = NumDynVariables-2;
+    for (int i = 0; i < korder; i++) {
+	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > BScale[i] ) { BScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
+    }
+    v = NumDynVariables-1;
+    for (int i = 0; i < korder; i++) {
+	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > TScale[i] ) { TScale[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]; }
+    }
+
     for (int v = loop_start; v < loop_end; v++) {
         for (int i = 0; i < korder; i++) {
-            y[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]]
-                       .State[v];
-            yscal[i] = fabs(y[i]);
+            y[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v];
+	    if( v == NumDynVariables-1 ) { yscal[i] = TScale[i]; }
+	    if( v == NumDynVariables-2 ) { yscal[i] = BScale[i]; }
+	    if( v < NumPos ) { yscal[i] = PosScale[i]; }
+	    if( v >= NumPos && v < NumPos+NumVel ) { yscal[i] = VelScale[i]; }
+
         }
-        extrapolate_single_variable(y, korder, result[v], error[v], yscal);
+        extrapolate_single_variable(y, korder, result[v], extrapolation_error[v], yscal);
     }
+
+    // Antti debugging: modifications in this function end here
 
     for (int i = 0; i < NumDynVariables; i++) {
         errorbuf[i] = 0;
@@ -2060,7 +2102,7 @@ int extrapolate_all_variables(int korder) {
     }
 
     for (int i = loop_start; i < loop_end; i++) {
-        errorbuf[i] = error[i][korder - 2];
+        errorbuf[i] = extrapolation_error[i][korder - 2];
         resultbuf[i] = result[i][korder - 2];
     }
 
@@ -2106,6 +2148,7 @@ int extrapolate_all_variables(int korder) {
 
         if (Hnextfac > 0.7) { Hnextfac = 0.7; }
         ThisR->Hstep *= Hnextfac;
+
     }
     free(SubStepDivision);
 
@@ -2129,7 +2172,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
 
     // Needed variables
-    double dt = 1e-7;
+    double dt = 1e-3;
     double Hstep;
     double time;
     // Initialize the system to integrate
@@ -2379,6 +2422,10 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
     int MaxDynamicalVariables = 6 * (MaxNumPart - 1) + 2;
     *R = calloc(1, sizeof(struct RegularizedRegion));
 
+    int NumDynVariables = MaxDynamicalVariables;
+
+    extrapolation_error = calloc(NumDynVariables, sizeof(double *));
+
     allocate_regularized_region(R[0], MaxNumPart);
 
     gbsS = calloc(KMAX, sizeof(double *));
@@ -2387,18 +2434,17 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
     }
 
     int korder = 8;
-    int NumDynVariables = MaxDynamicalVariables;
 
     errorbuf = calloc(NumDynVariables, sizeof(double));
     resultbuf = calloc(NumDynVariables, sizeof(double));
     y = calloc(korder, sizeof(double));
     yscal = calloc(korder, sizeof(double));
     maxerror = calloc(korder - 1, sizeof(double));
-    error = calloc(NumDynVariables, sizeof(double *));
+
     result = calloc(NumDynVariables, sizeof(double *));
 
     for (int i = 0; i < NumDynVariables; i++) {
-        error[i] = calloc(korder - 1, sizeof(double));
+        extrapolation_error[i] = calloc(korder - 1, sizeof(double));
         result[i] = calloc(korder - 1, sizeof(double));
     }
     indexlist = calloc(8, sizeof(int *));

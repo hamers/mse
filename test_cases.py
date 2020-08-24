@@ -48,9 +48,12 @@ class test_mse():
         #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
         
         #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [10.0,10.0,7.5],[15.5,4000.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
+        particles = Tools.create_nested_multiple(N_bodies, [14.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
 
         #fig=pyplot.figure(figsize=(8,6))
+        
+        #Tools.determine_binary_levels_in_particles(particles)
+        
         #plot=fig.add_subplot(1,1,1)
         #Tools.generate_mobile_diagram(particles,plot)
         #pyplot.show()
@@ -119,11 +122,12 @@ class test_mse():
         t = 0.0
         integration_flags = [[]]
         
-        N = 10
-        tend = 1e10
+        #N = 10
+        #tend = 1e10
 
-        N =1000
+        N =100
         tend = 5e7
+        tend = 15e6
         #tend = 1.4e10
 
         i_status = 0
@@ -232,36 +236,52 @@ class test_mse():
                 pyplot.rc('legend',fancybox=True)  
         
             print("log",len(code.log))
-            fig=pyplot.figure(figsize=(16,16))
-            N_r = int(np.sqrt(len(code.log)))+1
-            N_c = N_r
+            
+            plot_log = []
+            previous_event_flag = -1
             for index_log,log in enumerate(code.log):
+                event_flag = log["event_flag"]
+                if previous_event_flag == event_flag and event_flag == 3:
+                    continue
+                plot_log.append(log)
+                previous_event_flag = event_flag
+                            
+            N_l = len(plot_log)
+            fontsize=N_l
+            fig=pyplot.figure(figsize=(N_l,N_l))
+            N_r = int(np.sqrt(N_l))+1
+            N_c = N_r
+            for index_log,log in enumerate(plot_log):
                 plot=fig.add_subplot(N_r,N_c,index_log+1)
                 particles = log["particles"]
-                Tools.generate_mobile_diagram(particles,plot)
-                if log["event_flag"] == 0:
+                event_flag = log["event_flag"]
+                
+                Tools.generate_mobile_diagram(particles,plot,fontsize=0.5*N_l)
+                if event_flag == 0:
                     text = "$\mathrm{Initial\,system}$"
-                elif log["event_flag"] == 1:
+                elif event_flag == 1:
                     text = "$\mathrm{Stellar\,type\,change}$"
-                elif log["event_flag"] == 2:
+                elif event_flag == 2:
                     text = "$\mathrm{SNe}$"
-                elif log["event_flag"] == 3:
+                elif event_flag == 3:
                     text = "$\mathrm{RLOF\,start}$"
-                elif log["event_flag"] == 4:
+                elif event_flag == 4:
                     text = "$\mathrm{RLOF\,end}$"
-                elif log["event_flag"] == 5:
+                elif event_flag == 5:
                     text = "$\mathrm{CE}$"
-                elif log["event_flag"] == 6:
+                elif event_flag == 6:
                     text = "$\mathrm{Collision}$"
-                elif log["event_flag"] == 7:
+                elif event_flag == 7:
                     text = "$\mathrm{Dyn.\,inst.}$"
-                elif log["event_flag"] == 8:
+                elif event_flag == 8:
                     text = "$\mathrm{Sec.\,break.}$"
                 else:
                     text = ""
-                plot.set_title(text,fontsize=18)
-                plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=16)
+                
+                plot.set_title(text,fontsize=fontsize)
+                plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
                 #if index_log>0: break
+    
             fig.savefig("test1M.pdf")
             #pyplot.show()
 
@@ -273,7 +293,7 @@ class test_mse():
             plot2=fig.add_subplot(Np,1,2,yscale="log")
             plot3=fig.add_subplot(Np,1,3,yscale="linear")
             
-            fig_pos=fig=pyplot.figure(figsize=(8,8))
+            fig_pos=pyplot.figure(figsize=(8,8))
             plot_pos=fig_pos.add_subplot(1,1,1)
             
             colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
@@ -282,10 +302,6 @@ class test_mse():
                 #color = colors[i_status]
                 N_bodies = N_bodies_status[i_status]
                 N_orbits = N_orbits_status[i_status]
-
-                
-                
-                
                 
                 plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
                 
@@ -334,6 +350,7 @@ class test_mse():
             plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
             
             fig.savefig("test1.pdf")
+            fig_pos.savefig("test1O.pdf")
             pyplot.show()
 
 
@@ -351,7 +368,7 @@ class test_mse():
         
         
         #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        particles = Tools.create_nested_multiple(N_bodies, [5.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
+        particles = Tools.create_nested_multiple(N_bodies, [7.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
 
 #        fig=pyplot.figure(figsize=(8,6))
 #        plot=fig.add_subplot(1,1,1)

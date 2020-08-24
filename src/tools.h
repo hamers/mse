@@ -5,6 +5,7 @@ extern "C"
 double compute_orbital_period_from_semimajor_axis(double M, double a);
 double compute_semimajor_axis_from_orbital_period(double M, double P);
 
+double generate_random_number();
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3]);
 double sample_from_y_times_maxwellian_distribution(double sigma);
 double sample_from_normal_distribution(double mu, double sigma);

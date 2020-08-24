@@ -2,7 +2,8 @@ import numpy as np
 import argparse
 import time
         
-from mse import MSE,Particle,Tools
+from mse import MSE,Particle
+from tools import Tools
 
 """
 Several routines for testing the code/installation. 

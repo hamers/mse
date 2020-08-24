@@ -831,7 +831,7 @@ int initialize_code_interface()
 int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
     //printf("interface %g %g\n",start_time,time_step);
-    srand(random_seed);
+    //srand(random_seed);
 
     //printf("setting seed %d\n",random_seed);
     int result = evolve(&particlesMap, start_time, end_time, output_time, hamiltonian, state, CVODE_flag, CVODE_error_code, integration_flag);

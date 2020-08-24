@@ -7,7 +7,9 @@ import numpy as np
 import numpy.random as randomf
 import argparse
 
-from mse import MSE,Particle,Tools
+from mse import MSE,Particle
+from tools import Tools
+
 
 try:
     from matplotlib import pyplot
@@ -40,6 +42,19 @@ class test_mse():
 
     def test1(self,args):
         print('Triple with stellar evolution')
+        N_bodies = 3
+        configuration="fully nested"
+        masses = [14.0,10.0,7.5]
+        metallicities = [0.01,0.03,0.005]
+        semimajor_axes = [15.5,400.0]
+        eccentricities = [0.1,0.6]
+        inclinations = [0.0001,85.0*np.pi/180.0]
+        arguments_of_pericentre = [85.0*np.pi/180.0,0.01*np.pi/180.0]
+        longitudes_of_ascending_node = [0.01,0.01]
+        end_time = 5.0e7
+        N_steps = 1000
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps)
+        exit(0)
         
         N_bodies=3
         

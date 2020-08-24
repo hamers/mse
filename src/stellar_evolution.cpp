@@ -109,7 +109,7 @@ int initialize_stars(ParticlesMap *particlesMap)
 
                     //star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
                     //deltat_(&kw,&age,&tm,&tn,tscls,&dtm,&dtr);
-                    dt = get_new_dt(kw,sse_initial_mass,mt,age,dt,zpars);
+                    dt = get_new_dt_sse(kw,sse_initial_mass,mt,age,dt,zpars);
                     //dt = max(dtm,dtr);
 //                    dt = min(dtr, dtm);
 //                    dt = max(dt,1.0d-07*age);
@@ -218,18 +218,6 @@ int initialize_stars(ParticlesMap *particlesMap)
     return 0;
 }
 
-#ifdef IGNORE
-int initialize_spins(ParticlesMap *particlesMap)
-{
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == 0 and p->evolve_as_star == 1)
-        {
-            Particle *parent = ParticlesMap[p->parent];
-#endif            
-
 int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects)
 {
     /* TO DO: apsidal_motion_constant? */
@@ -335,7 +323,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             {
                 //printf("old dt %g kw %d\n",sse_time_step,kw);
                 age = tphys - epoch;
-                sse_time_step = get_new_dt(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
+                sse_time_step = get_new_dt_sse(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
                 //printf("new dt %g kw %d\n",sse_time_step,kw);
             }
             else
@@ -351,7 +339,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 }
 
                 age = tphysf - epoch;
-                sse_time_step = get_new_dt(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
+                sse_time_step = get_new_dt_sse(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
                 #ifdef DEBUG
                 printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
                 #endif
@@ -500,7 +488,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     return 0;
 }
 
-double get_new_dt(int kw, double mass, double mt, double age, double dt, double *zpars)
+double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, double *zpars)
 {
     //printf("get_new_dt %d %g %g %g %g\n",kw,mass,mt,age,dt);
     double dtm,dtr;

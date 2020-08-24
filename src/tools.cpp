@@ -17,6 +17,11 @@ double compute_semimajor_axis_from_orbital_period(double M, double P)
     return pow( temp*temp* CONST_G*M, 1.0/3.0);
 }
 
+double generate_random_number()
+{
+    return ((double) rand() / (RAND_MAX));
+}
+
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3])
 {
     double u1,u2,s,theta;

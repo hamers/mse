@@ -91,6 +91,8 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
             for (int k=0; k<3; k++)
             {
                 q->spin_vec[k] = p->spin_vec[k];
+                q->R_vec[k] = p->R_vec[k];
+                q->V_vec[k] = p->V_vec[k];
             }
         }
         else
@@ -103,6 +105,8 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
             {
                 q->h_vec[k] = p->h_vec[k];
                 q->e_vec[k] = p->e_vec[k];
+                q->R_vec[k] = p->R_vec[k];
+                q->V_vec[k] = p->V_vec[k];
             }
         }
         

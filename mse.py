@@ -255,7 +255,9 @@ class MSE(object):
         self.lib.get_body_properties_from_log_entry.argtypes = (ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
-                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_body_properties_from_log_entry.restype = ctypes.c_int
         
         self.lib.get_binary_properties_from_log_entry.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int), \
@@ -701,17 +703,24 @@ class MSE(object):
                 
                 if is_binary == False:
                     parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
-                    mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                    mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin,X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                     flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
                         ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
                         ctypes.byref(epoch),ctypes.byref(age), \
-                        ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin))
+                        ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin), \
+                        ctypes.byref(X), ctypes.byref(Y), ctypes.byref(Z), ctypes.byref(VX), ctypes.byref(VY), ctypes.byref(VZ))
 
                     p = Particle(is_binary=is_binary,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
                         convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value)
                     p.index = internal_index
                     p.parent = parent.value
                     p.ospin = ospin.value
+                    p.X = X.value
+                    p.Y = Y.value
+                    p.Z = Z.value
+                    p.VX = VX.value
+                    p.VY = VY.value
+                    p.VZ = VZ.value
                 else:
                     parent,child1,child2 = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
                     mass,a,e,TA,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
@@ -1405,7 +1414,7 @@ class Tools(object):
                             parent = particle_2.parent
                             
     @staticmethod
-    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.0,line_width_vertical = 0.4,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
         """
         Generate a Mobile diagram of a given multiple system.
         """
@@ -1431,7 +1440,8 @@ class Tools(object):
 
         Tools.determine_binary_levels_in_particles(particles)                    
         unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
-        #if len(unbound_bodies)>0:
+        if len(unbound_bodies)>0:
+            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.4*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
             
         
         #binaries_sorted_by_level = binaries.sorted_by_attribute("level")
@@ -1469,9 +1479,9 @@ class Tools(object):
         plot.set_xticks([])
         plot.set_yticks([])
         #print("minmax",x_min,x_max,y_min,y_max)
-        beta = 0.65
+        beta = 0.7
         plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
-        plot.set_ylim([y_min - beta*np.fabs(y_min),y_max + beta*np.fabs(y_max)])
+        plot.set_ylim([y_min - beta*np.fabs(y_min),1.5*y_max + beta*np.fabs(y_max)])
         
         #plot.autoscale(enable=True,axis='both')
         
@@ -1501,9 +1511,9 @@ class Tools(object):
             alpha = 3.5
 
         if child1.is_binary == True and child2.is_binary == False:
-            alpha = 2.2
+            alpha = 2.5
         if child1.is_binary == False and child2.is_binary == True:
-            alpha = 2.2
+            alpha = 2.5
 
         ### lines to child1 ###
         plot.plot( [x,x - alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
@@ -1592,24 +1602,36 @@ class Tools(object):
         return color,s
         
     @staticmethod
-    def draw_bodies(plot,bodies,fontsize):
-        dx = 0.5
-        dy = 0.5
+    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
+        #dx = 0.5
+        #dy = 0.5
         for index,body in enumerate(bodies):
             color,s = Tools.get_color_and_size_for_star(body.stellar_type,body.radius)
-            plot.scatter([index],[0],color=color,s=s)
+            plot.scatter([index],[y_ref],color=color,s=s)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
             text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
-            plot.annotate(text,xy=(index - dx,-dy),color='k',fontsize=fontsize)
+            plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
 
             #text = "$\mathrm{%d}$"%body.index
             text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
-            plot.annotate(text,xy=(index - dx,0.5*dy),color='k',fontsize=fontsize)
-        
+            plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
+            
+            try:
+                VX = body.VX
+                VY = body.VY
+                VZ = body.VZ
+                V = np.sqrt(VX**2 + VY**2 + VZ**2)
+                x = index
+                y = y_ref
+                Adx = 0.5*dx*VX/V
+                Ady = 0.5*dx*VY/V
+                plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
+            except AttributeError:
+                pass
         plot.set_xlim([-2*dx,len(bodies)])
         #plot.set_ylim([-2*dy,len(bodies)])
-        plot.set_ylim([-2*dy,2*dy])
+        plot.set_ylim([y_ref-2*dy,y_ref+2*dy])
 
         plot.set_xticks([])
         plot.set_yticks([])

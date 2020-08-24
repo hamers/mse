@@ -1139,7 +1139,7 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index)
 }
  
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
-    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin)
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ)
 {
     Log_type entry = logData[log_index];
     ParticlesMap entry_particlesMap = entry.particlesMap;
@@ -1163,6 +1163,13 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     *convective_envelope_radius = p->convective_envelope_radius;
     *luminosity = p->luminosity;
     *ospin = norm3(p->spin_vec);
+    *X = p->R_vec[0];
+    *Y = p->R_vec[1];
+    *Z = p->R_vec[2];
+    *VX = p->V_vec[0];
+    *VY = p->V_vec[1];
+    *VZ = p->V_vec[2];
+    
     return 0;
 }
 

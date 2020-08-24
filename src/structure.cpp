@@ -372,15 +372,21 @@ void update_positions_unbound_bodies(ParticlesMap *particlesMap, double time_ste
 {
     int i;
     ParticlesMapIterator it;
+    double fraction;
     for (it = particlesMap->begin(); it != particlesMap->end(); it++)
     {
         Particle *p = (*it).second;
         if ((p->is_binary == false) && (p->is_bound == false))
         {
+            
+            fraction = p->mass_dot_wind*time_step/p->mass;
             for (i=0; i<3; i++)
             {
+                p->V_vec[i] -= p->V_vec[i] * fraction; // Slow down the star assuming linear momentum conservation */
+                
                 p->R_vec[i] += p->V_vec[i] * time_step;
             }
+            
         }
     }
 }

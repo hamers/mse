@@ -125,9 +125,9 @@ class test_mse():
         #N = 10
         #tend = 1e10
 
-        N =100
+        N =1000
         tend = 5e7
-        tend = 15e6
+        #tend = 15e6
         #tend = 1.4e10
 
         i_status = 0

@@ -4,26 +4,17 @@ import ctypes
 import tools
 
 """
-SecularMultiple
-    
-A code to compute the secular (orbit-averaged) gravitational dynamics of hierarchical multiple systems
-composed of nested binary orbits (simplex-type systems) with any configuration and any number of bodies.
-A particle can repesent a binary (`is_binary = True') or a body (`is_binary = False').
-The structure of the system is determined by linking to other particles with the attributes child1 and child2.
-Tidal interactions and relativistic corrections are included in an ad hoc fashion
-(tides: treating the companion as a single body, even if it is not; relativistic terms:
-only including binary-binary interactions).
-    
-Includes routines for external perturbations (flybys & supernovae).
+Multiple Stellar Evolution (`MSE`) -- A Population Synthesis Code for Multiple-Star Systems
 
-If you use this code for work in scientific publications, please cite:
-https://ui.adsabs.harvard.edu/abs/2016MNRAS.459.2827H (the original paper)
-https://ui.adsabs.harvard.edu/abs/2018MNRAS.476.4139H (updates with external perturbations)
+!!! This is a very early-stage version with still many bugs and missing features. !!!
 
-Make sure to first compile the code using `make'. The script `test_secularmultiple.py' can be used to test the
-installation. See examples.py for some examples.
+A code to model the long-term evolution of hierarchical multiple-star systems (binaries, triples, quadruples, and higher-order systems) from the main sequence until  remnant phase. Takes into account gravitational dynamical evolution, stellar evolution (using the `sse` tracks), and binary interactions (such as mass transfer and common-envelope evolution).
 
-Adrian Hamers, June 2019
+Includes routines for external perturbations from flybys in the field, or (to limited extent) encounters in dense stellar systems such as galactic nuclei.
+
+C++ compiler and Fortran compilers are required, as well as Python (2/3) for the Python interface. Make sure to first compile the code using `make`. Please modify the Makefile according to your installation (`CXX` and `FC` should be correctly assigned).
+
+The script `test_mse.py` can be used to test the installation.
 """
 
 

@@ -118,7 +118,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                     //dtm = min(dtr, dt);
                     //dtm = max(dtm,1.0d-07*age);
     
-                    //printf("&kw %d, &mass %g, &mt %g, &tm %g, &tn %g dtm %g dtr %g epoch %g\n",kw, mass, mt, tm, tn, dtm, dtr,epoch);
+                    //printf("&kw %d, &mass %g, &mt %g, &tm %g, &tn %g dtm %g dtr %g epoch %g age %g\n",kw, mass, mt, tm, tn, dtm, dtr,epoch,age);
                     tphys = tphysf;
                     tphysf += dt;
                     //printf("kw %d tphys %g tphysf %g dt %g\n",kw,tphys,tphysf,dt);
@@ -161,6 +161,7 @@ int initialize_stars(ParticlesMap *particlesMap)
             p->age = age*Myr_to_yr;
             p->sse_main_sequence_timescale = tms*Myr_to_yr;
             p->epoch = epoch*Myr_to_yr;
+            //p->epoch = 0.0;
 
             p->luminosity = lum*CONST_L_SUN;
             p->core_mass = mc;
@@ -292,7 +293,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             mt = mt_old = p->mass;
             sse_initial_mass = p->sse_initial_mass;
             kw = kw_old = p->stellar_type;
-            epoch = p->epoch*yr_to_Myr;
+            //epoch = p->epoch*yr_to_Myr;
             r = r_old = p->radius/CONST_R_SUN;
             
             z = p->metallicity;
@@ -313,6 +314,8 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             tphys = start_time*yr_to_Myr;
             tphysf = end_time*yr_to_Myr;
             double desired_tphysf = tphysf;
+
+            epoch = tphys - age;
            
             dtp = 0.0;
             #ifdef DEBUG

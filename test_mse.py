@@ -1549,8 +1549,8 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         
-        N = 50000
-        N2 = 10000
+        N = 60000
+        N2 = 20000
 
         seed = 0
         #code.random_seed = seed
@@ -1561,7 +1561,7 @@ class test_mse():
         vs2 = []
         sigma_km_s = 265.0
         sigma = sigma_km_s*code.CONST_KM_PER_S
-        mu_km_s = 40.0
+        mu_km_s = 50.0
         mu=mu_km_s*code.CONST_KM_PER_S
 
         r_hat_vecs = []
@@ -1604,6 +1604,7 @@ class test_mse():
 
         ### Check properties of Maxwellian and normal distributions ###
         N_r=0
+
         assert(round(np.mean(np.array(vs)),N_r) == round(2.0*sigma*np.sqrt(2.0/np.pi),N_r))
         assert(round(np.mean(np.array(vs2)),N_r) == round(mu,N_r))
         
@@ -1931,7 +1932,8 @@ if __name__ == '__main__':
     
     N_tests = 14
     if args.test==0:
-        tests = range(1,N_tests+1)
+        #tests = range(1,N_tests+1)
+        tests = [100,101,102,103,105]
     else:
         tests = [args.test]
 

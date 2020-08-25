@@ -12,4 +12,4 @@ C++ compiler and Fortran compilers are required, as well as Python (2/3) for the
 The script `test_mse.py` can be used to test the
 installation. 
 
-Adrian Hamers, March 2020
+Adrian Hamers, August 2020

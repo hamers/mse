@@ -45,331 +45,40 @@ class test_mse():
         N_bodies = 3
         configuration="fully nested"
         masses = [14.0,10.0,7.5]
+        #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
+        #semimajor_axes = [15.5,400.0]
         semimajor_axes = [15.5,400.0]
         eccentricities = [0.1,0.6]
         inclinations = [0.0001,85.0*np.pi/180.0]
         arguments_of_pericentre = [85.0*np.pi/180.0,0.01*np.pi/180.0]
         longitudes_of_ascending_node = [0.01,0.01]
         end_time = 5.0e7
+        #end_time = 1.0e9
         N_steps = 1000
-        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps)
-        exit(0)
-        
-        N_bodies=3
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [40.0,14.8,8.5],[30.0,600.0],[0.2,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [34.0,25.8,8.5],[30.0,500.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [24.0,6.0,7.5],[15.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-        particles = Tools.create_nested_multiple(N_bodies, [14.0,10.0,7.5],[15.5,400.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[85.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01]) ### promising
-
-        #fig=pyplot.figure(figsize=(8,6))
-        
-        #Tools.determine_binary_levels_in_particles(particles)
-        
-        #plot=fig.add_subplot(1,1,1)
-        #Tools.generate_mobile_diagram(particles,plot)
-        #pyplot.show()
-        #exit(0)
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [22.0,6.0,7.5],[12.5,600.0],[0.1,0.6],[0.0001,85.0*np.pi/180.0],[15.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        
-        
-        #particles = Tools.create_nested_multiple(N_bodies, [4.0,2.8,1.5],[3000.0,400000.0],[0.1,0.3],[0.0001,89.9*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        #particles = Tools.create_nested_multiple(N_bodies, [30.0,25.8,3.5,2.0],[35.0,400.0,5000.0],[0.1,0.6],[0.0001,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        #particles = Tools.create_nested_multiple(N_bodies, [6.0,4.6,3.5,2.5],[10.0,1000.0,12000.0],[0.1,0.3,0.3],[0.0001,51.0*np.pi/180.0,123.0*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01,0.01])
-        #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0,1.0],[10.0,200.0],[0.1,0.6],[0.0001,89.8*np.pi/180.0],[45.0*np.pi/180.0,0.01*np.pi/180.0],[0.01,0.01])
-        #particles = Tools.create_nested_multiple(N_bodies, [1.0,1.0],[1.0],[0.1],[0.0001,],[45.0*np.pi/180.0,],[0.01])
-        
-        #particles = [Particle(is_binary=False,mass=8.5,metallicity=0.02)]
-        #particles = [Particle(is_binary=False,mass=10.0),Particle(is_binary=False,mass=10.1)]
-        orbits = [x for x in particles if x.is_binary==True]
-        bodies = [x for x in particles if x.is_binary==False]
-
-        N_orbits = len(orbits)
-        
-       # for orbit in orbits:
-       #     orbit.check_for_physical_collision_or_orbit_crossing = True
-
-       #     orbit.include_tidal_friction_terms = False
-
-                
-        code = MSE()
-        code.enable_root_finding = True
-        code.add_particles(particles)
-        code.orbital_phases_random_seed = 1
-        
-        code.include_flybys = True
-        #code.flybys_reference_binary = orbits[0].index
-        #print 'a',orbits[0].a
-        code.flybys_stellar_density = 10*0.1*code.CONST_PER_PC3
-        code.flybys_encounter_sphere_radius = 1.0e5
-
-
-        for b in bodies:
-            b.kick_distribution_sigma = 0*265.0*code.CONST_KM_PER_S
-       #     b.metallicity = 0.02
-       #     b.include_tidal_friction_terms = True
-
-
-
-        t_print = [[]]
-        internal_indices_print = [[[] for x in range(N_bodies)]]
-        k_print = [[[] for x in range(N_bodies)]]
-        m_print = [[[] for x in range(N_bodies)]]
-        R_print = [[[] for x in range(N_bodies)]]
-        X_print = [[[] for x in range(N_bodies)]]
-        Y_print = [[[] for x in range(N_bodies)]]
-        Z_print = [[[] for x in range(N_bodies)]]
-        Rc_print = [[[] for x in range(N_bodies)]]
-        R_L_print = [[[] for x in range(N_bodies)]]
-        t_V_print = [[[] for x in range(N_bodies)]]
-        mc_print = [[[] for x in range(N_bodies)]]
-        a_print = [[[] for x in range(N_orbits)]]
-        e_print = [[[] for x in range(N_orbits)]]
-        rel_INCL_print = [[[] for x in range(N_orbits)]]
-        
-        N_orbits_status = [N_orbits]
-        N_bodies_status = [N_bodies]
-        
-        t = 0.0
-        integration_flags = [[]]
-        
-        #N = 10
-        #tend = 1e10
-
-        N =1000
-        tend = 5e7
-        #tend = 15e6
-        #tend = 1.4e10
-
-        i_status = 0
-        #print("rel_INCL_print",rel_INCL_print[0][2])
-        seed=1
-        dt = tend/float(N)
-        i = 0
-        
-        while t<tend:
-
-            t+=dt
-            code.evolve_model(t)
-            
-            flag = code.CVODE_flag
-            state = code.state
-
-            particles = code.particles
-            orbits = [x for x in particles if x.is_binary==True]
-            bodies = [x for x in particles if x.is_binary==False]
-            N_orbits = len(orbits)
-            N_bodies = len(bodies)
-    
-            #i_rel = Tools.compute_mutual_inclination(code.log[-1]["particles"][3].INCL,code.log[-1]["particles"][4].INCL,code.log[-1]["particles"][3].LAN,code.log[-1]["particles"][4].LAN)
-            #print("IREL",(180.0/np.pi)*i_rel)
-            #print("LOG a",code.log[0]["particles"][4].a,code.log[-1]["time"],code.log[-1]["event_flag"])
-            #print("LOG",code.log)
-            #if code.log[-1]["event_flag"] != 0:
-            #    print("LOG","event",code.log[-1]["event_flag"],"index1",code.log[-1]["index1"],"index2",code.log[-1]["index2"],"binary index",code.log[-1]["binary_index"],code.log[-1]["particles"])
-            
-            if code.structure_change == True:
-                print("Python restruct")#,children1,children1_old,children2,children2_old)
-                t_print.append([])
-                integration_flags.append([])
-                internal_indices_print.append([[] for x in range(N_bodies)])
-                k_print.append([[] for x in range(N_bodies)])
-                m_print.append([[] for x in range(N_bodies)])
-                R_print.append([[] for x in range(N_bodies)])
-                X_print.append([[] for x in range(N_bodies)])
-                Y_print.append([[] for x in range(N_bodies)])
-                Z_print.append([[] for x in range(N_bodies)])
-                Rc_print.append([[] for x in range(N_bodies)])
-                R_L_print.append([[] for x in range(N_bodies)])
-                t_V_print.append([[] for x in range(N_bodies)])
-                mc_print.append([[] for x in range(N_bodies)])
-                a_print.append([[] for x in range(N_orbits)])
-                e_print.append([[] for x in range(N_orbits)])
-                rel_INCL_print.append([[] for x in range(N_orbits)])
-                
-                N_orbits_status.append(N_orbits)
-                N_bodies_status.append(N_bodies)
-                
-                i_status += 1
-                
-            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'as',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
-           # print("bound",[x.is_bound for x in bodies])
-            
-            for index in range(N_orbits):
-                rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
-                e_print[i_status][index].append(orbits[index].e)
-                a_print[i_status][index].append(orbits[index].a)
-            for index in range(N_bodies):
-                internal_indices_print[i_status][index].append(particles[index].index)
-                #print("T",index,internal_index)
-                m_print[i_status][index].append(particles[index].mass)
-                k_print[i_status][index].append(particles[index].stellar_type)
-                R_print[i_status][index].append(particles[index].radius)
-                X_print[i_status][index].append(particles[index].X)
-                Y_print[i_status][index].append(particles[index].Y)
-                Z_print[i_status][index].append(particles[index].Z)
-                t_V_print[i_status][index].append(particles[index].tides_viscous_time_scale)
-                Rc_print[i_status][index].append(particles[index].convective_envelope_radius)
-                R_L_print[i_status][index].append(particles[index].roche_lobe_radius_pericenter)
-                mc_print[i_status][index].append(particles[index].convective_envelope_mass)
-
-            t_print[i_status].append(t)        
-            integration_flags[i_status].append(code.integration_flag)
-            if flag==2:
-                print("Root",t,'RLOF',[o.RLOF_at_pericentre_has_occurred for o in orbits],'col',[o.physical_collision_or_orbit_crossing_has_occurred for o in orbits],'dyn inst',[o.dynamical_instability_has_occurred for o in orbits],'sec break',[o.secular_breakdown_has_occurred for o in orbits],'min peri',[o.minimum_periapse_distance_has_occurred for o in orbits],'GW',[o.GW_condition_has_occurred for o in orbits])
-                break
-            if flag==3:
-                print("SNe")
-                break
-            if state==3:
-                print("unbound")
-                break
-            code.random_seed = seed
-            seed += 1
-            
-            i += 1
-
-        log_CEs = [x for x in code.log if x["event_flag"] == 5]
-        t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
-        #print("log_CEs",[x["time"] for x in log_CEs])
-        #exit(0)
-
-        N_status = i_status+1
-        
-        for i_status in range(N_status):
-            t_print[i_status] = np.array(t_print[i_status])
-
-        print("Final properties -- ","masses/MSun",[m_print[-1][i][-1] for i in range(N_bodies)])
-        
-        if HAS_MATPLOTLIB==True and args.plot==True:
-            if 1==0:
-                pyplot.rc('text',usetex=True)
-                pyplot.rc('legend',fancybox=True)  
-        
-            print("log",len(code.log))
-            
-            plot_log = []
-            previous_event_flag = -1
-            for index_log,log in enumerate(code.log):
-                event_flag = log["event_flag"]
-                if previous_event_flag == event_flag and event_flag == 3:
-                    continue
-                plot_log.append(log)
-                previous_event_flag = event_flag
-                            
-            N_l = len(plot_log)
-            fontsize=N_l
-            fig=pyplot.figure(figsize=(N_l,N_l))
-            N_r = int(np.sqrt(N_l))+1
-            N_c = N_r
-            for index_log,log in enumerate(plot_log):
-                plot=fig.add_subplot(N_r,N_c,index_log+1)
-                particles = log["particles"]
-                event_flag = log["event_flag"]
-                
-                Tools.generate_mobile_diagram(particles,plot,fontsize=0.5*N_l)
-                if event_flag == 0:
-                    text = "$\mathrm{Initial\,system}$"
-                elif event_flag == 1:
-                    text = "$\mathrm{Stellar\,type\,change}$"
-                elif event_flag == 2:
-                    text = "$\mathrm{SNe}$"
-                elif event_flag == 3:
-                    text = "$\mathrm{RLOF\,start}$"
-                elif event_flag == 4:
-                    text = "$\mathrm{RLOF\,end}$"
-                elif event_flag == 5:
-                    text = "$\mathrm{CE}$"
-                elif event_flag == 6:
-                    text = "$\mathrm{Collision}$"
-                elif event_flag == 7:
-                    text = "$\mathrm{Dyn.\,inst.}$"
-                elif event_flag == 8:
-                    text = "$\mathrm{Sec.\,break.}$"
-                else:
-                    text = ""
-                
-                plot.set_title(text,fontsize=fontsize)
-                plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
-                #if index_log>0: break
-    
-            fig.savefig("test1M.pdf")
-            #pyplot.show()
-
-
-        
-            fig=pyplot.figure(figsize=(8,8))
-            Np=3
-            plot1=fig.add_subplot(Np,1,1)
-            plot2=fig.add_subplot(Np,1,2,yscale="log")
-            plot3=fig.add_subplot(Np,1,3,yscale="linear")
-            
-            fig_pos=pyplot.figure(figsize=(8,8))
-            plot_pos=fig_pos.add_subplot(1,1,1)
-            
-            colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
-            linewidth=1.0
-            for i_status in range(N_status):
-                #color = colors[i_status]
-                N_bodies = N_bodies_status[i_status]
-                N_orbits = N_orbits_status[i_status]
-                
-                plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
-                
-                for index in range(N_bodies):
-                    internal_index = internal_indices_print[i_status][index][0]
-                    color = colors[internal_index]
-                    plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
-                    plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
-                    plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print[i_status],R_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print[i_status],Rc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
-                    
-                    parsec_in_AU = code.CONST_PARSEC
-                    plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
-                    
-                    #if index in [0,1]:
-                        #plot2.plot(1.0e-6*t_print,R_L_print[index],color='g',linestyle='dotted',linewidth=linewidth)
-                    #plot3.plot(1.0e-6*t_print,t_V_print[index],color='k',linestyle='solid',linewidth=linewidth)
-                    #linewidth+=0.8
-                    
-                linewidth=1.0
-                for index in range(N_orbits):
-                    color = colors[index]
-                    smas = np.array(a_print[i_status][index])
-                    es = np.array(e_print[i_status][index])
-                    plot2.plot(1.0e-6*t_print[i_status],smas,color=color,linestyle='dotted',linewidth=linewidth)
-                    plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
-                    #plot3.plot(1.0e-6*t_print,(180.0/np.pi)*rel_INCL_print[index],color='k',linestyle='solid',linewidth=linewidth)
-                
-                linewidth+=0.8
-
-            fontsize=18
-            
-            for k,t in enumerate(t_CEs_Myr):
-                plot2.axvline(x=t,linestyle='dashed',color='tab:red')
-                plot2.annotate("$\mathrm{CE}$",xy=(t,1.0e3),fontsize=fontsize)
-
-            
-            plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
-            plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
-            plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
-            plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
-            plot2.set_ylim(1.0e-5,1.0e5)
-            
-            plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)
-            plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
-            
-            fig.savefig("test1.pdf")
-            fig_pos.savefig("test1O.pdf")
-            pyplot.show()
-
+        stellar_types = [1,1,1]
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types)
 
     def test2(self,args):
+        print('Triple with stellar evolution')
+        N_bodies = 3
+        configuration="fully nested"
+        masses = [50.0,40.0,7.5]
+        #masses = [2.0,1.0,1.5]
+        metallicities = [0.01,0.03,0.005]
+        #semimajor_axes = [15.5,400.0]
+        semimajor_axes = [0.01,400.0]
+        eccentricities = [0.1,0.6]
+        inclinations = [0.0001,85.0*np.pi/180.0]
+        arguments_of_pericentre = [85.0*np.pi/180.0,0.01*np.pi/180.0]
+        longitudes_of_ascending_node = [0.01,0.01]
+        end_time = 5.0e7
+        #end_time = 1.0e9
+        N_steps = 1000
+        stellar_types = [13,13,13]
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types)
+        
+    def test2b(self,args):
         print('Quadruple with stellar evolution')
         
         N_bodies=4

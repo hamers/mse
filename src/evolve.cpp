@@ -202,6 +202,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             break;
         }
         i+=1;
+        *integration_flag=1;
 
     }
 

@@ -6,7 +6,7 @@ import ctypes
 class Tools(object):
  
     @staticmethod       
-    def create_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None):
+    def create_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None):
         from mse import Particle
 
         """
@@ -26,6 +26,8 @@ class Tools(object):
                 particle.radius = radii[index]
             if metallicities is not None:
                 particle.metallicity = metallicities[index]
+            if stellar_types is not None:
+                particle.stellar_type = stellar_types[index]
                 
             particles.append(particle)
         
@@ -44,7 +46,7 @@ class Tools(object):
         return particles
 
     @staticmethod
-    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None):
+    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None):
         from mse import Particle
         
         """
@@ -65,6 +67,8 @@ class Tools(object):
                 particle.radius = radii[index]
             if metallicities is not None:
                 particle.metallicity = metallicities[index]
+            if stellar_types is not None:
+                particle.stellar_type = stellar_types[index]
                 
             particles.append(particle)
 
@@ -379,12 +383,12 @@ class Tools(object):
         return text
 
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True):
 
         if configuration == "fully nested":
-            particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities)
+            particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
         elif configuration == "2+2 quadruple":
-            particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities)
+            particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
         else:
             print("evolve_system.py: configuration ",configuration," currently not supported!")
             exit(-1)
@@ -583,8 +587,10 @@ class Tools(object):
                 plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
                 
                 for index in range(N_bodies):
-                    internal_index = internal_indices_print[i_status][index][0]
-                    color = colors[internal_index]
+                    #print("internal_indices_print[i_status][index]",internal_indices_print[i_status][index],index,internal_indices_print)
+                    #internal_index = internal_indices_print[i_status][index][0]
+                    #color = colors[internal_index]
+                    color=colors[index]
                     plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
                     plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
                     plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
@@ -621,7 +627,7 @@ class Tools(object):
                 plot2.annotate("$\mathrm{CE}$",xy=(t,1.0e3),fontsize=fontsize)
             
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
-            plot2.set_ylabel("$r/\mathrm{AU}$",fontsize=fontsize)
+            plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
             plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)

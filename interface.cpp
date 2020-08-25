@@ -1001,7 +1001,7 @@ int unit_tests_interface()
     flag += test_flybys();
     flag += test_stellar_evolution();
     flag += test_binary_evolution();
-    flag += test_collisions();
+    //flag += test_collisions();
     
     return flag;
 }

@@ -1063,7 +1063,6 @@ int test_binary_evolution()
         printf("test.cpp -- test_binary_evolution -- passed\n");
     }
     
-    exit(0);
     return flag;
 }
 

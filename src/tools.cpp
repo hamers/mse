@@ -17,7 +17,7 @@ double compute_semimajor_axis_from_orbital_period(double M, double P)
     return pow( temp*temp* CONST_G*M, 1.0/3.0);
 }
 
-double generate_random_number()
+double generate_random_number_between_zero_and_unity()
 {
     return ((double) rand() / (RAND_MAX));
 }
@@ -27,8 +27,8 @@ int sample_from_3d_maxwellian_distribution(double sigma, double v[3])
     double u1,u2,s,theta;
     for (int k=1; k<3; k++)
     {
-        u1 = ((double) rand() / (RAND_MAX));
-        u2 = ((double) rand() / (RAND_MAX));
+        u1 = generate_random_number_between_zero_and_unity();
+        u2 = generate_random_number_between_zero_and_unity();
         s = sigma*sqrt(-2.0*log(1.0 - u1));
         theta = TWOPI*u2;
         v[2*k-2] = s*cos(theta);
@@ -42,7 +42,7 @@ double sample_from_y_times_maxwellian_distribution(double sigma)
 {
     /* Sample random variable y from a distribution dN/dy \propto y*Exp[-y^2/(2 sigma^2)] */
     
-    double x = ((double) rand() / (RAND_MAX));
+    double x = generate_random_number_between_zero_and_unity();
     double y = sigma*sqrt( -2.0*log(1.0 - x) );
     
     return y;
@@ -55,16 +55,16 @@ double sample_from_normal_distribution(double mu, double sigma)
     //std::mt19937 gen{rd()};
     //return std::normal_distribution<> d{mu,sigma};
 
-    double u1 = ((double) rand() / (RAND_MAX));
-    double u2 = ((double) rand() / (RAND_MAX));
+    double u1 = generate_random_number_between_zero_and_unity();
+    double u2 = generate_random_number_between_zero_and_unity();
     double result = mu + sigma * sqrt(-2.0*log(u1)) * cos(TWOPI*u2);
     return result;
 }
 
 int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution(double r_hat_vec[3], double theta_hat_vec[3], double phi_hat_vec[3])
 {
-    double x1 = ((double) rand() / (RAND_MAX));
-    double x2 = ((double) rand() / (RAND_MAX));    
+    double x1 = generate_random_number_between_zero_and_unity();
+    double x2 = generate_random_number_between_zero_and_unity();
     double theta = acos( 2.0*x1 - 1.0 ); /* inclination */
     double phi = TWOPI*x2; /* azimuthal angle */
     
@@ -92,7 +92,7 @@ double sample_from_power_law_distribution(double alpha, double y_lower, double y
 {
     /* Sample random variable y from dN/dy ~ y^y_\alpha */
 
-    double x = ((double) rand() / (RAND_MAX));
+    double x = generate_random_number_between_zero_and_unity();
     double y;
     if (alpha == -1.0)
     {
@@ -110,7 +110,7 @@ double sample_from_power_law_distribution(double alpha, double y_lower, double y
 double sample_from_Kroupa_93_imf()
 {
     double m = 0;
-    double x = ((double) rand() / (RAND_MAX));
+    double x = generate_random_number_between_zero_and_unity();
     
     if (x >= 0.0 and x < kroupa_x1)
     {
@@ -435,9 +435,7 @@ void compute_true_anomaly_from_mean_anomaly_hyperbolic_orbit(double mean_anomaly
 
 double sample_random_true_anomaly(double eccentricity)//,int seed)
 {
-    //srand(seed);
-    double x = ((double) rand() / (RAND_MAX));
-    //printf("x %g %g\n",x,(double) rand());
+    double x = generate_random_number_between_zero_and_unity();
     double mean_anomaly = (2.0*x - 1.0)*M_PI;
     double true_anomaly = compute_true_anomaly_from_mean_anomaly(mean_anomaly,eccentricity);
 

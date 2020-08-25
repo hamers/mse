@@ -372,21 +372,45 @@ void update_positions_unbound_bodies(ParticlesMap *particlesMap, double time_ste
 {
     int i;
     ParticlesMapIterator it;
-    double fraction;
+    double m0,m_dot_div_m0,factor_V,factor_R;
     for (it = particlesMap->begin(); it != particlesMap->end(); it++)
     {
         Particle *p = (*it).second;
         if ((p->is_binary == false) && (p->is_bound == false))
         {
+            m0 = p->mass - p->mass_dot_wind * time_step; // mass at the beginning of the timestep
+            m_dot_div_m0 = p->mass_dot_wind/m0;
             
-            fraction = p->mass_dot_wind*time_step/p->mass;
-            for (i=0; i<3; i++)
+            if (fabs(m_dot_div_m0) <= epsilon)
             {
-                p->V_vec[i] -= p->V_vec[i] * fraction; // Slow down the star assuming linear momentum conservation */
-                
-                p->R_vec[i] += p->V_vec[i] * time_step;
+                for (i=0; i<3; i++)
+                {
+                    p->R_vec[i] += p->V_vec[i]*time_step;
+                }
             }
-            
+            else
+            {
+                #ifdef IGNORE
+                factor_V = exp(- m_dot_div_m * time_step);
+                factor_R = (1.0 - factor_V)/m_dot_div_m;
+
+                for (i=0; i<3; i++)
+                {
+                    p->R_vec[i] += p->V_vec[i]*factor_R;
+                    p->V_vec[i] *= factor_V;
+                }
+                #endif
+                
+                factor_V = 1.0/(1.0 + m_dot_div_m0 * time_step);
+                factor_R = log(1.0 + m_dot_div_m0 * time_step)/m_dot_div_m0;
+                //printf("id %d mdot %g T %g %g %g %g \n",p->index,p->mass_dot_wind,m_dot_div_m,factor_V,factor_R,time_step);
+                for (i=0; i<3; i++)
+                {
+                    p->R_vec[i] += p->V_vec[i]*factor_R; // V_vec is still the old value here (at the beginning of the timestep)
+                    p->V_vec[i] *= factor_V;
+                }
+
+            }
         }
     }
 }

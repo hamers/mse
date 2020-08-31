@@ -2,8 +2,7 @@ import numpy as np
 import argparse
 import time
         
-from mse import MSE,Particle
-from tools import Tools
+from mse import MSE,Particle,Tools
 
 """
 Several routines for testing the code/installation. 
@@ -12,7 +11,7 @@ Specific tests can be run with the command line --t i, where i is the
 number of the test. Use --verbose for verbose terminal output, and --plot to
 make and show plots if applicable (required Matplotlib).
 
-Adrian Hamers, March 2020
+Adrian Hamers, August 2020
 """
 
 try:

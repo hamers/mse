@@ -1,14 +1,13 @@
 """
-Some examples illustrating the usage of SecularMultiple
-Adrian Hamers, June 2019
+Some examples illustrating the usage of MSE
+Adrian Hamers, August 2020
 """
 
 import numpy as np
 import numpy.random as randomf
 import argparse
 
-from mse import MSE,Particle
-from tools import Tools
+from mse import MSE,Particle,Tools
 
 
 try:

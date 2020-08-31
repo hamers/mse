@@ -871,6 +871,7 @@ int apply_user_specified_instantaneous_perturbation_interface()
 int reset_interface()
 {
     clear_particles(&particlesMap);
+    logData.clear();
     
     return 0;
 }

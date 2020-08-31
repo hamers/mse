@@ -66,7 +66,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     bool apply_SNe_effects = false;
     bool unbound_orbits = false;
 
-    /* Get initial timestep -- set by stellar evolution or user output time */
+    /* Initial timestep */
     double min_dt = 1.0e0;
     double max_dt = end_time - start_time;
 
@@ -202,7 +202,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             break;
         }
         i+=1;
-        *integration_flag=1;
+        //*integration_flag=1;
 
     }
 

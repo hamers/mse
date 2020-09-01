@@ -32,8 +32,13 @@ int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as
     double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription);
 int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_as_star, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter);    
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_1_sigma_km_s_NS, double kick_distribution_1_sigma_km_s_BH);
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_1_sigma_km_s_NS, double *kick_distribution_1_sigma_km_s_BH);
+int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
+    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma);
+int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
+    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma);
+
+int set_binary_evolution_properties(int index, double dynamical_mass_transfer_low_mass_donor_timescale, double dynamical_mass_transfer_WD_donor_timescale, double compact_object_disruption_mass_loss_timescale, \
+    double common_envelope_alpha, double common_envelope_lambda, double common_envelope_timescale, double triple_common_envelope_alpha);
 
 int set_true_anomaly(int index, double value);
 int get_true_anomaly(int index, double *value);
@@ -140,13 +145,17 @@ int get_de_dt(int index, double *de_dt);
 
 int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_);
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
-     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
-     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
-     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
-     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
-     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-     double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_);
+    bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
+    bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
+    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
+    double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
+    double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
+    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
+    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, \
+    double nbody_analysis_fractional_semimajor_axis_change_parameter, double nbody_analysis_fractional_integration_time, double nbody_analysis_maximum_integration_time, \
+    double nbody_dynamical_instability_direct_integration_time_multiplier, double nbody_semisecular_direct_integration_time_multiplier, double nbody_supernovae_direct_integration_time_multiplier, double nbody_other_direct_integration_time_multiplier, \
+    double chandrasekhar_mass, double eddington_accretion_factor, double nova_accretion_factor, double alpha_wind_accretion, double beta_wind_accretion, \
+    double triple_mass_transfer_primary_star_accretion_efficiency_no_disk, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk, double triple_mass_transfer_primary_star_accretion_efficiency_disk, double triple_mass_transfer_secondary_star_accretion_efficiency_disk, double triple_mass_transfer_inner_binary_alpha_times_lambda);
 int get_random_seed(int *value);
 int set_random_seed(int value);
 

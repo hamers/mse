@@ -38,12 +38,30 @@ class MSE(object):
         self.__include_dotriacontupole_order_binary_pair_terms = True
         self.__include_double_averaging_corrections = False
 
-        self.__binary_evolution_CE_energy_flag = 0
-        self.__binary_evolution_CE_spin_flag = 0
-
         self.__mstar_gbs_tolerance_default = 1.0e-12
         self.__mstar_gbs_tolerance_kick = 1.0e-8
         self.__mstar_collision_tolerance = 1.0e-10
+        self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
+        self.__nbody_analysis_fractional_integration_time = 0.05
+        self.__nbody_analysis_maximum_integration_time = 1.0e5
+        self.__nbody_dynamical_instability_direct_integration_time_multiplier = 1.5
+        self.__nbody_semisecular_direct_integration_time_multiplier = 1.0e2
+        self.__nbody_supernovae_direct_integration_time_multiplier = 1.5
+        self.__nbody_other_direct_integration_time_multiplier = 1.5
+        
+        self.__binary_evolution_CE_energy_flag = 0
+        self.__binary_evolution_CE_spin_flag = 0
+        self.__chandrasekhar_mass = 1.44
+        self.__eddington_accretion_factor = 10.0
+        self.__nova_accretion_factor = 1.0e-3
+        self.__alpha_wind_accretion = 1.5
+        self.__beta_wind_accretion = 0.125
+
+        self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1
+        self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1
+        self.__triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.9
+        self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.9
+        self.__triple_mass_transfer_inner_binary_alpha_times_lambda = 5.0
 
         self.__particles_committed = False
         self.model_time = 0.0
@@ -73,12 +91,6 @@ class MSE(object):
 
         __current_dir__ = os.path.dirname(os.path.realpath(__file__))
         lib_path = os.path.join(__current_dir__, 'libmse.so')
-
-        #print 'lib_path',lib_path
-#        if not os.path.isfile(lib_path):
-            # try to find the library from the parent directory
-#            lib_path = os.path.join(os.path.abspath(os.path.join(__current_dir__, os.pardir)), 'libmse.so')
-            #print 'not fil'
 
         if not os.path.isfile(lib_path):
             print('Library libmse.so not exist -- trying to compile')
@@ -119,9 +131,6 @@ class MSE(object):
         self.lib.get_mass.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
         self.lib.get_mass.restype = ctypes.c_int
 
-#        self.lib.set_mass_dot.argtypes = (ctypes.c_int,ctypes.c_double)
-#        self.lib.set_mass_dot.restype = ctypes.c_int
-
         self.lib.set_mass_transfer_terms.argtypes = (ctypes.c_int,ctypes.c_bool)
         self.lib.set_mass_transfer_terms.restype = ctypes.c_int
 
@@ -146,12 +155,19 @@ class MSE(object):
         self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_stellar_evolution_properties.restype = ctypes.c_int
 
+
         ### kicks ###
-        self.lib.set_kick_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double)
+        self.lib.set_kick_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_kick_properties.restype = ctypes.c_int
 
-        self.lib.get_kick_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_kick_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_kick_properties.restype = ctypes.c_int
+
+
+        ### binary evolution ###
+        self.lib.set_binary_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
+        self.lib.set_binary_evolution_properties.restype = ctypes.c_int
+
 
         ### orbital elements ###
         self.lib.set_orbital_elements.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
@@ -195,9 +211,13 @@ class MSE(object):
 
         self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
             ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_int, \
-            ctypes.c_double, ctypes.c_double, ctypes.c_double)
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
-         
+
         self.__set_parameters_in_code() 
          
         self.lib.evolve_interface.argtypes = (ctypes.c_double,ctypes.c_double, \
@@ -456,6 +476,9 @@ class MSE(object):
                 particle.VRR_eta_20_init,particle.VRR_eta_a_22_init,particle.VRR_eta_b_22_init,particle.VRR_eta_a_21_init,particle.VRR_eta_b_21_init, \
                 particle.VRR_eta_20_final,particle.VRR_eta_a_22_final,particle.VRR_eta_b_22_final,particle.VRR_eta_a_21_final,particle.VRR_eta_b_21_final,particle.VRR_initial_time,particle.VRR_final_time)
 
+        flag += self.lib.set_binary_evolution_properties(particle.index,particle.dynamical_mass_transfer_low_mass_donor_timescale,particle.dynamical_mass_transfer_WD_donor_timescale,particle.compact_object_disruption_mass_loss_timescale, \
+            particle.common_envelope_alpha, particle.common_envelope_lambda, particle.common_envelope_timescale, particle.triple_common_envelope_alpha)
+
         if particle.is_external==False:
             
             if particle.is_binary==True:
@@ -471,7 +494,8 @@ class MSE(object):
                 flag += self.lib.set_spin_vector(particle.index,particle.spin_vec_x,particle.spin_vec_y,particle.spin_vec_z)
                 flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.evolve_as_star,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
                     particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription)
-                flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma_km_s_NS,particle.kick_distribution_sigma_km_s_BH)
+                flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma_km_s_NS,particle.kick_distribution_sigma_km_s_BH, \
+                    particle.kick_distribution_2_m_NS,particle.kick_distribution_4_m_NS,particle.kick_distribution_4_m_ej,particle.kick_distribution_5_v_km_s_NS,particle.kick_distribution_5_v_km_s_BH,particle.kick_distribution_5_sigma)
 
                 if set_instantaneous_perturbation_properties==True:
                     flag += self.lib.set_instantaneous_perturbation_properties(particle.index,particle.instantaneous_perturbation_delta_mass, \
@@ -580,11 +604,19 @@ class MSE(object):
                 particle.tides_viscous_time_scale = tides_viscous_time_scale.value
                 particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
 
-                kick_distribution,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH = ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-                flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_sigma_km_s_NS),ctypes.byref(kick_distribution_sigma_km_s_BH))
+                kick_distribution,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH,kick_distribution_2_m_NS,kick_distribution_4_m_NS,kick_distribution_4_m_ej,kick_distribution_5_v_km_s_NS,kick_distribution_5_v_km_s_BH,kick_distribution_5_sigma \
+                    = ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(kick_distribution_sigma_km_s_NS),ctypes.byref(kick_distribution_sigma_km_s_BH), \
+                ctypes.byref(kick_distribution_2_m_NS),ctypes.byref(kick_distribution_4_m_NS),ctypes.byref(kick_distribution_4_m_ej),ctypes.byref(kick_distribution_5_v_km_s_NS),ctypes.byref(kick_distribution_5_v_km_s_BH),ctypes.byref(kick_distribution_5_sigma))
                 particle.kick_distribution = kick_distribution.value
                 particle.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS.value
                 particle.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH.value
+                particle.kick_distribution_2_m_NS = kick_distribution_2_m_NS.value
+                particle.kick_distribution_4_m_NS = kick_distribution_4_m_NS.value
+                particle.kick_distribution_4_m_ej = kick_distribution_4_m_ej.value
+                particle.kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS.value
+                particle.kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH.value
+                particle.kick_distribution_5_sigma = kick_distribution_5_sigma.value
 
                 mass_dot = ctypes.c_double(0.0)
                 flag = self.lib.get_mass_dot(particle.index,ctypes.byref(mass_dot))
@@ -653,14 +685,18 @@ class MSE(object):
 
 
     def __set_parameters_in_code(self):
-         self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__include_quadrupole_order_terms, \
-             self.__include_octupole_order_binary_pair_terms,self.__include_octupole_order_binary_triplet_terms, \
-             self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
-             self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
-             self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
-             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
-             self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, \
-             self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance)
+        self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__include_quadrupole_order_terms, \
+            self.__include_octupole_order_binary_pair_terms,self.__include_octupole_order_binary_triplet_terms, \
+            self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
+            self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
+            self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
+            self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
+            self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, \
+            self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance, \
+            self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_maximum_integration_time, \
+            self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
+            self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
+            self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda)
 
     def reset(self):
         self.__init__()
@@ -881,7 +917,6 @@ class MSE(object):
     @property
     def relative_tolerance(self):
         return self.__relative_tolerance
-
     @relative_tolerance.setter
     def relative_tolerance(self, value):
         self.__relative_tolerance = value
@@ -890,7 +925,6 @@ class MSE(object):
     @property
     def absolute_tolerance_eccentricity_vectors(self):
         return self.__absolute_tolerance_eccentricity_vectors
-
     @absolute_tolerance_eccentricity_vectors.setter
     def absolute_tolerance_eccentricity_vectors(self, value):
         self.__absolute_tolerance_eccentricity_vectors = value
@@ -899,7 +933,6 @@ class MSE(object):
     @property
     def include_quadrupole_order_terms(self):
         return self.__include_quadrupole_order_terms
-
     @include_quadrupole_order_terms.setter
     def include_quadrupole_order_terms(self, value):
         self.__include_quadrupole_order_terms = value
@@ -908,7 +941,6 @@ class MSE(object):
     @property
     def include_octupole_order_binary_pair_terms(self):
         return self.__include_octupole_order_binary_pair_terms
-
     @include_octupole_order_binary_pair_terms.setter
     def include_octupole_order_binary_pair_terms(self, value):
         self.__include_octupole_order_binary_pair_terms = value
@@ -917,7 +949,6 @@ class MSE(object):
     @property
     def include_octupole_order_binary_triplet_terms(self):
         return self.__include_octupole_order_binary_triplet_terms
-
     @include_octupole_order_binary_triplet_terms.setter
     def include_octupole_order_binary_triplet_terms(self, value):
         self.__include_octupole_order_binary_triplet_terms = value
@@ -926,7 +957,6 @@ class MSE(object):
     @property
     def include_hexadecupole_order_binary_pair_terms(self):
         return self.__include_hexadecupole_order_binary_pair_terms
-
     @include_hexadecupole_order_binary_pair_terms.setter
     def include_hexadecupole_order_binary_pair_terms(self, value):
         self.__include_hexadecupole_order_binary_pair_terms = value
@@ -935,7 +965,6 @@ class MSE(object):
     @property
     def include_dotriacontupole_order_binary_pair_terms(self):
         return self.__include_dotriacontupole_order_binary_pair_terms
-
     @include_dotriacontupole_order_binary_pair_terms.setter
     def include_dotriacontupole_order_binary_pair_terms(self, value):
         self.__include_dotriacontupole_order_binary_pair_terms = value
@@ -944,7 +973,6 @@ class MSE(object):
     @property
     def include_double_averaging_corrections(self):
         return self.__include_double_averaging_corrections
-
     @include_double_averaging_corrections.setter
     def include_double_averaging_corrections(self, value):
         self.__include_double_averaging_corrections = value
@@ -953,7 +981,6 @@ class MSE(object):
 #    @property
 #    def include_VRR(self):
 #        return self.__include_VRR
-    
 #    @include_VRR.setter
 #    def include_VRR(self, value):
 #        self.__include_VRR = value
@@ -963,7 +990,6 @@ class MSE(object):
     @property
     def random_seed(self):
         return self.__random_seed
-
     @random_seed.setter
     def random_seed(self, value):
         self.__random_seed = value
@@ -974,7 +1000,6 @@ class MSE(object):
     @property
     def include_flybys(self):
         return self.__include_flybys
-    
     @include_flybys.setter
     def include_flybys(self, value):
         self.__include_flybys = value
@@ -983,7 +1008,6 @@ class MSE(object):
     @property
     def flybys_reference_binary(self):
         return self.__flybys_reference_binary
-    
     @flybys_reference_binary.setter
     def flybys_reference_binary(self, value):
         self.__flybys_reference_binary = value
@@ -992,7 +1016,6 @@ class MSE(object):
     @property
     def flybys_correct_for_gravitational_focussing(self):
         return self.__flybys_correct_for_gravitational_focussing
-    
     @flybys_correct_for_gravitational_focussing.setter
     def flybys_correct_for_gravitational_focussing(self, value):
         self.__flybys_correct_for_gravitational_focussing = value
@@ -1001,7 +1024,6 @@ class MSE(object):
     @property
     def flybys_velocity_distribution(self):
         return self.__flybys_velocity_distribution
-    
     @flybys_velocity_distribution.setter
     def flybys_velocity_distribution(self, value):
         self.__flybys_velocity_distribution = value
@@ -1010,7 +1032,6 @@ class MSE(object):
     @property
     def flybys_mass_distribution(self):
         return self.__flybys_mass_distribution
-    
     @flybys_mass_distribution.setter
     def flybys_mass_distribution(self, value):
         self.__flybys_mass_distribution = value
@@ -1019,7 +1040,6 @@ class MSE(object):
     @property
     def flybys_mass_distribution_lower_value(self):
         return self.__flybys_mass_distribution_lower_value
-    
     @flybys_mass_distribution_lower_value.setter
     def flybys_mass_distribution_lower_value(self, value):
         self.__flybys_mass_distribution_lower_value = value
@@ -1028,7 +1048,6 @@ class MSE(object):
     @property
     def flybys_mass_distribution_upper_value(self):
         return self.__flybys_mass_distribution_upper_value
-    
     @flybys_mass_distribution_upper_value.setter
     def flybys_mass_distribution_upper_value(self, value):
         self.__flybys_mass_distribution_upper_value = value
@@ -1037,7 +1056,6 @@ class MSE(object):
     @property
     def flybys_encounter_sphere_radius(self):
         return self.__flybys_encounter_sphere_radius
-    
     @flybys_encounter_sphere_radius.setter
     def flybys_encounter_sphere_radius(self, value):
         self.__flybys_encounter_sphere_radius = value
@@ -1046,7 +1064,6 @@ class MSE(object):
     @property
     def flybys_stellar_density(self):
         return self.__flybys_stellar_density
-    
     @flybys_stellar_density.setter
     def flybys_stellar_density(self, value):
         self.__flybys_stellar_density = value
@@ -1055,10 +1072,83 @@ class MSE(object):
     @property
     def flybys_stellar_relative_velocity_dispersion(self):
         return self.__flybys_stellar_relative_velocity_dispersion
-    
     @flybys_stellar_relative_velocity_dispersion.setter
     def flybys_stellar_relative_velocity_dispersion(self, value):
         self.__flybys_stellar_relative_velocity_dispersion = value
+        self.__set_parameters_in_code()
+
+
+    ### N-body ###
+    @property
+    def mstar_gbs_tolerance(self):
+        return self.__mstar_gbs_tolerance
+    @mstar_gbs_tolerance.setter
+    def mstar_gbs_tolerance(self, value):
+        self.__mstar_gbs_tolerance = value
+        self.__set_parameters_in_code()
+
+    @property
+    def mstar_collision_tolerance(self):
+        return self.__mstar_collision_tolerance
+    @mstar_collision_tolerance.setter
+    def mstar_collision_tolerance(self, value):
+        self.__mstar_collision_tolerance = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_analysis_fractional_semimajor_axis_change_parameter(self):
+        return self.__nbody_analysis_fractional_semimajor_axis_change_parameter
+    @nbody_analysis_fractional_semimajor_axis_change_parameter.setter
+    def nbody_analysis_fractional_semimajor_axis_change_parameter(self, value):
+        self.__nbody_analysis_fractional_semimajor_axis_change_parameter = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_analysis_fractional_integration_time(self):
+        return self.__nbody_analysis_fractional_integration_time
+    @nbody_analysis_fractional_integration_time.setter
+    def nbody_analysis_fractional_integration_time(self, value):
+        self.__nbody_analysis_fractional_integration_time = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_analysis_maximum_integration_time(self):
+        return self.__nbody_analysis_maximum_integration_time
+    @nbody_analysis_maximum_integration_time.setter
+    def nbody_analysis_maximum_integration_time(self, value):
+        self.__nbody_analysis_maximum_integration_time = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_dynamical_instability_direct_integration_time_multiplier(self):
+        return self.__nbody_dynamical_instability_direct_integration_time_multiplier
+    @nbody_dynamical_instability_direct_integration_time_multiplier.setter
+    def nbody_dynamical_instability_direct_integration_time_multiplier(self, value):
+        self.__nbody_dynamical_instability_direct_integration_time_multiplier = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_semisecular_direct_integration_time_multiplier(self):
+        return self.__nbody_semisecular_direct_integration_time_multiplier
+    @nbody_semisecular_direct_integration_time_multiplier.setter
+    def nbody_semisecular_direct_integration_time_multiplier(self, value):
+        self.__nbody_semisecular_direct_integration_time_multiplier = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_supernovae_direct_integration_time_multiplier(self):
+        return self.__nbody_supernovae_direct_integration_time_multiplier
+    @nbody_supernovae_direct_integration_time_multiplier.setter
+    def nbody_supernovae_direct_integration_time_multiplier(self, value):
+        self.__nbody_supernovae_direct_integration_time_multiplier = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_other_direct_integration_time_multiplier(self):
+        return self.__nbody_other_direct_integration_time_multiplier
+    @nbody_other_direct_integration_time_multiplier.setter
+    def nbody_other_direct_integration_time_multiplier(self, value):
+        self.__nbody_other_direct_integration_time_multiplier = value
         self.__set_parameters_in_code()
 
 
@@ -1066,7 +1156,6 @@ class MSE(object):
     @property
     def binary_evolution_CE_energy_flag(self):
         return self.__binary_evolution_CE_energy_flag
-    
     @binary_evolution_CE_energy_flag.setter
     def binary_evolution_CE_energy_flag(self, value):
         self.__binary_evolution_CE_energy_flag = value
@@ -1075,37 +1164,100 @@ class MSE(object):
     @property
     def binary_evolution_CE_spin_flag(self):
         return self.__binary_evolution_CE_spin_flag
-    
     @binary_evolution_CE_spin_flag.setter
     def binary_evolution_CE_spin_flag(self, value):
         self.__binary_evolution_CE_spin_flag = value
         self.__set_parameters_in_code()
-        
-    ### N-body ###
+
     @property
-    def mstar_gbs_tolerance(self):
-        return self.__mstar_gbs_tolerance
-    
-    @binary_evolution_CE_spin_flag.setter
-    def mstar_gbs_tolerance(self, value):
-        self.__mstar_gbs_tolerance = value
+    def chandrasekhar_mass(self):
+        return self.__chandrasekhar_mass
+    @chandrasekhar_mass.setter
+    def chandrasekhar_mass(self, value):
+        self.__chandrasekhar_mass = value
         self.__set_parameters_in_code()
 
     @property
-    def mstar_collision_tolerance(self):
-        return self.__mstar_collision_tolerance
-    
-    @binary_evolution_CE_spin_flag.setter
-    def mstar_collision_tolerance(self, value):
-        self.__mstar_collision_tolerance = value
+    def eddington_accretion_factor(self):
+        return self.__eddington_accretion_factor
+    @eddington_accretion_factor.setter
+    def eddington_accretion_factor(self, value):
+        self.__eddington_accretion_factor = value
         self.__set_parameters_in_code()
+
+    @property
+    def nova_accretion_factor(self):
+        return self.__nova_accretion_factor
+    @nova_accretion_factor.setter
+    def nova_accretion_factor(self, value):
+        self.__nova_accretion_factor = value
+        self.__set_parameters_in_code()
+
+    @property
+    def alpha_wind_accretion(self):
+        return self.__alpha_wind_accretion
+    @alpha_wind_accretion.setter
+    def alpha_wind_accretion(self, value):
+        self.__alpha_wind_accretion = value
+        self.__set_parameters_in_code()
+
+    @property
+    def beta_wind_accretion(self):
+        return self.__beta_wind_accretion
+    @beta_wind_accretion.setter
+    def beta_wind_accretion(self, value):
+        self.__beta_wind_accretion = value
+        self.__set_parameters_in_code()
+
+    
+    ### Triple evolution ###
+    @property
+    def triple_mass_transfer_primary_star_accretion_efficiency_no_disk(self):
+        return self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk
+    @triple_mass_transfer_primary_star_accretion_efficiency_no_disk.setter
+    def triple_mass_transfer_primary_star_accretion_efficiency_no_disk(self, value):
+        self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk = value
+        self.__set_parameters_in_code()
+
+    @property
+    def triple_mass_transfer_secondary_star_accretion_efficiency_no_disk(self):
+        return self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk
+    @triple_mass_transfer_secondary_star_accretion_efficiency_no_disk.setter
+    def triple_mass_transfer_secondary_star_accretion_efficiency_no_disk(self, value):
+        self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = value
+        self.__set_parameters_in_code()
+
+    @property
+    def triple_mass_transfer_primary_star_accretion_efficiency_disk(self):
+        return self.__triple_mass_transfer_primary_star_accretion_efficiency_disk
+    @triple_mass_transfer_primary_star_accretion_efficiency_disk.setter
+    def triple_mass_transfer_primary_star_accretion_efficiency_disk(self, value):
+        self.__triple_mass_transfer_primary_star_accretion_efficiency_disk = value
+        self.__set_parameters_in_code()
+
+    @property
+    def triple_mass_transfer_secondary_star_accretion_efficiency_disk(self):
+        return self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk
+    @triple_mass_transfer_secondary_star_accretion_efficiency_disk.setter
+    def triple_mass_transfer_secondary_star_accretion_efficiency_disk(self, value):
+        self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk = value
+        self.__set_parameters_in_code()
+
+    @property
+    def triple_mass_transfer_inner_binary_alpha_times_lambda(self):
+        return self.__triple_mass_transfer_inner_binary_alpha_times_lambda
+    @triple_mass_transfer_inner_binary_alpha_times_lambda.setter
+    def triple_mass_transfer_inner_binary_alpha_times_lambda(self, value):
+        self.__triple_mass_transfer_inner_binary_alpha_times_lambda = value
+        self.__set_parameters_in_code()
+
 
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
             integration_method = 0, KS_use_perturbing_potential = True, \
             stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
-            kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, \
+            kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
@@ -1120,7 +1272,9 @@ class Particle(object):
             VRR_model=0, VRR_include_mass_precession=0, VRR_mass_precession_rate=0.0, VRR_Omega_vec_x=0.0, VRR_Omega_vec_y=0.0, VRR_Omega_vec_z=0.0, \
             VRR_eta_20_init=0.0, VRR_eta_a_22_init=0.0, VRR_eta_b_22_init=0.0, VRR_eta_a_21_init=0.0, VRR_eta_b_21_init=0.0, \
             VRR_eta_20_final=0.0, VRR_eta_a_22_final=0.0, VRR_eta_b_22_final=0.0, VRR_eta_a_21_final=0.0, VRR_eta_b_21_final=0.0, \
-            VRR_initial_time = 0.0, VRR_final_time = 1.0,roche_lobe_radius_pericenter=0.0):
+            VRR_initial_time = 0.0, VRR_final_time = 1.0,roche_lobe_radius_pericenter=0.0, \
+            dynamical_mass_transfer_low_mass_donor_timescale=1.0e3, dynamical_mass_transfer_WD_donor_timescale=1.0e3, compact_object_disruption_mass_loss_timescale=1.0e3, common_envelope_alpha=1.0, common_envelope_lambda=1.0, common_envelope_timescale=1.0e3, triple_common_envelope_alpha=1.0):
+                
                 
                 ### TO DO: remove default values for check_for_... here
 
@@ -1157,6 +1311,12 @@ class Particle(object):
         self.kick_distribution = kick_distribution
         self.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
         self.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
+        self.kick_distribution_2_m_NS = kick_distribution_2_m_NS
+        self.kick_distribution_4_m_NS = kick_distribution_4_m_NS
+        self.kick_distribution_4_m_ej = kick_distribution_4_m_ej
+        self.kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS
+        self.kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH
+        self.kick_distribution_5_sigma = kick_distribution_5_sigma
           
         self.check_for_secular_breakdown=check_for_secular_breakdown
         self.check_for_dynamical_instability=check_for_dynamical_instability
@@ -1204,6 +1364,14 @@ class Particle(object):
         self.VRR_eta_b_21_final = VRR_eta_b_21_final
         self.VRR_initial_time = VRR_initial_time
         self.VRR_final_time = VRR_final_time
+
+        self.dynamical_mass_transfer_low_mass_donor_timescale = dynamical_mass_transfer_low_mass_donor_timescale
+        self.dynamical_mass_transfer_WD_donor_timescale = dynamical_mass_transfer_WD_donor_timescale
+        self.compact_object_disruption_mass_loss_timescale = compact_object_disruption_mass_loss_timescale
+        self.common_envelope_alpha = common_envelope_alpha
+        self.common_envelope_lambda = common_envelope_lambda
+        self.common_envelope_timescale = common_envelope_timescale
+        self.triple_common_envelope_alpha = triple_common_envelope_alpha
 
         if is_binary==False:
             if mass==None:

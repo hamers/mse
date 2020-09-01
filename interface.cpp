@@ -431,7 +431,8 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
     return 0;
 }
 
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH)
+int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
+    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma)
 {
     //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
@@ -439,14 +440,21 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
 //      return -1;
     }
 
-    Particle * p = particlesMap[index];
+    Particle *p = particlesMap[index];
     p->kick_distribution = kick_distribution;
     p->kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS;
     p->kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH;
+    p->kick_distribution_2_m_NS = kick_distribution_2_m_NS;
+    p->kick_distribution_4_m_NS = kick_distribution_4_m_NS;
+    p->kick_distribution_4_m_ej = kick_distribution_4_m_ej;
+    p->kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS;
+    p->kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH;
+    p->kick_distribution_5_sigma = kick_distribution_5_sigma;
     
     return 0;
 }
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH)
+int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
+    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma)
 
 {
     if (index > particlesMap.size())
@@ -454,14 +462,34 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
 //      return -1;
     }
   
-    Particle * p = particlesMap[index];
+    Particle *p = particlesMap[index];
     *kick_distribution = p->kick_distribution;
     *kick_distribution_sigma_km_s_NS = p->kick_distribution_sigma_km_s_NS;
     *kick_distribution_sigma_km_s_BH = p->kick_distribution_sigma_km_s_BH;
+    *kick_distribution_2_m_NS = p->kick_distribution_2_m_NS;
+    *kick_distribution_4_m_NS = p->kick_distribution_4_m_NS;
+    *kick_distribution_4_m_ej = p->kick_distribution_4_m_ej;
+    *kick_distribution_5_v_km_s_NS = p->kick_distribution_5_v_km_s_NS;
+    *kick_distribution_5_v_km_s_BH = p->kick_distribution_5_v_km_s_BH;
+    *kick_distribution_5_sigma = p->kick_distribution_5_sigma;
     
     return 0;
 }
 
+int set_binary_evolution_properties(int index, double dynamical_mass_transfer_low_mass_donor_timescale, double dynamical_mass_transfer_WD_donor_timescale, double compact_object_disruption_mass_loss_timescale, \
+    double common_envelope_alpha, double common_envelope_lambda, double common_envelope_timescale, double triple_common_envelope_alpha)
+{
+    Particle *p = particlesMap[index];
+    p->dynamical_mass_transfer_low_mass_donor_timescale = dynamical_mass_transfer_low_mass_donor_timescale;
+    p->dynamical_mass_transfer_WD_donor_timescale = dynamical_mass_transfer_WD_donor_timescale;
+    p->compact_object_disruption_mass_loss_timescale = compact_object_disruption_mass_loss_timescale;
+    p->common_envelope_alpha = common_envelope_alpha;
+    p->common_envelope_lambda = common_envelope_lambda;
+    p->common_envelope_timescale = common_envelope_timescale;
+    p->triple_common_envelope_alpha = triple_common_envelope_alpha;
+    
+    return 0;
+}
 
 /*******************************
  * instantaneous perturbations *
@@ -936,41 +964,66 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
 }
 
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
-     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
-     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
-     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
-     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
-     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-     double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_)
+    bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
+    bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
+    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
+    double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
+    double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
+    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
+    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, \
+    double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_maximum_integration_time_, \
+    double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
+    double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
+    double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_)
 {
-     relative_tolerance = relative_tolerance_;
-     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
-     include_quadrupole_order_terms = include_quadrupole_order_terms_;
-     include_octupole_order_binary_pair_terms = include_octupole_order_binary_pair_terms_;
-     include_octupole_order_binary_triplet_terms = include_octupole_order_binary_triplet_terms_;
-     include_hexadecupole_order_binary_pair_terms = include_hexadecupole_order_binary_pair_terms_;
-     include_dotriacontupole_order_binary_pair_terms = include_dotriacontupole_order_binary_pair_terms_;
-     include_double_averaging_corrections = include_double_averaging_corrections_;
+    relative_tolerance = relative_tolerance_;
+    absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
+    include_quadrupole_order_terms = include_quadrupole_order_terms_;
+    include_octupole_order_binary_pair_terms = include_octupole_order_binary_pair_terms_;
+    include_octupole_order_binary_triplet_terms = include_octupole_order_binary_triplet_terms_;
+    include_hexadecupole_order_binary_pair_terms = include_hexadecupole_order_binary_pair_terms_;
+    include_dotriacontupole_order_binary_pair_terms = include_dotriacontupole_order_binary_pair_terms_;
+    include_double_averaging_corrections = include_double_averaging_corrections_;
      
-     include_flybys = include_flybys_;
-     flybys_correct_for_gravitational_focussing = flybys_correct_for_gravitational_focussing_;
-     flybys_velocity_distribution = flybys_velocity_distribution_;
-     flybys_mass_distribution = flybys_mass_distribution_;
-     flybys_reference_binary = flybys_reference_binary_;
-     flybys_mass_distribution_lower_value = flybys_mass_distribution_lower_value_;
-     flybys_mass_distribution_upper_value = flybys_mass_distribution_upper_value_;
-     flybys_encounter_sphere_radius = flybys_encounter_sphere_radius_;
-     flybys_stellar_density = flybys_stellar_density_;
-     flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_;
+    include_flybys = include_flybys_;
+    flybys_correct_for_gravitational_focussing = flybys_correct_for_gravitational_focussing_;
+    flybys_velocity_distribution = flybys_velocity_distribution_;
+    flybys_mass_distribution = flybys_mass_distribution_;
+    flybys_reference_binary = flybys_reference_binary_;
+    flybys_mass_distribution_lower_value = flybys_mass_distribution_lower_value_;
+    flybys_mass_distribution_upper_value = flybys_mass_distribution_upper_value_;
+    flybys_encounter_sphere_radius = flybys_encounter_sphere_radius_;
+    flybys_stellar_density = flybys_stellar_density_;
+    flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_;
      
-     binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
-     binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;
+    mstar_gbs_tolerance_default = mstar_gbs_tolerance_default_;
+    mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
+    mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
+
+    binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
+    binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;
+
+    nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;
+    nbody_analysis_fractional_integration_time = nbody_analysis_fractional_integration_time_;
+    nbody_analysis_maximum_integration_time = nbody_analysis_maximum_integration_time_;
+    
+    nbody_dynamical_instability_direct_integration_time_multiplier = nbody_dynamical_instability_direct_integration_time_multiplier_;
+    nbody_semisecular_direct_integration_time_multiplier = nbody_semisecular_direct_integration_time_multiplier_;
+    nbody_supernovae_direct_integration_time_multiplier = nbody_supernovae_direct_integration_time_multiplier_;
+    nbody_other_direct_integration_time_multiplier = nbody_other_direct_integration_time_multiplier_;
+
+    chandrasekhar_mass = chandrasekhar_mass_;
+    eddington_accretion_factor = eddington_accretion_factor_;
+    nova_accretion_factor = nova_accretion_factor_;
+    alpha_wind_accretion = alpha_wind_accretion_;
+    beta_wind_accretion = beta_wind_accretion_;
      
-     mstar_gbs_tolerance_default = mstar_gbs_tolerance_default_;
-     mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
-     mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
-     
+    triple_mass_transfer_primary_star_accretion_efficiency_no_disk = triple_mass_transfer_primary_star_accretion_efficiency_no_disk_;
+    triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_;
+    triple_mass_transfer_primary_star_accretion_efficiency_disk = triple_mass_transfer_primary_star_accretion_efficiency_disk_;
+    triple_mass_transfer_secondary_star_accretion_efficiency_disk = triple_mass_transfer_secondary_star_accretion_efficiency_disk_;
+    triple_mass_transfer_inner_binary_alpha_times_lambda = triple_mass_transfer_inner_binary_alpha_times_lambda_;
+
      //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 

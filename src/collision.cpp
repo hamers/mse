@@ -585,7 +585,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                     child1->spin_vec[i] = spin_vec[i];
                 }
             }
-            child1->apply_kick = true; /* Default value for (stellar evolution) bodies */
+            child1->apply_kick = false; /* Default value for (stellar evolution) bodies */
             child1->RLOF_flag = 0;
             
             printf("CP N-body not destroyed post\n");

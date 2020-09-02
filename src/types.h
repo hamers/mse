@@ -80,6 +80,7 @@ extern double beta_wind_accretion;
 extern double mstar_gbs_tolerance_default;
 extern double mstar_gbs_tolerance_kick;
 extern double mstar_stopping_condition_tolerance;
+extern double mstar_output_time_tolerance;
 
 extern double triple_mass_transfer_primary_star_accretion_efficiency_no_disk;
 extern double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk;

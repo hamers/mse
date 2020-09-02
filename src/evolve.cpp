@@ -34,7 +34,6 @@ int initialize_code(ParticlesMap *particlesMap)
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
-
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
     //if (*integration_flag == 0)
     {

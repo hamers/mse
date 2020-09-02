@@ -104,11 +104,17 @@ double compute_apsidal_motion_constant(Particle *star)
         val = 0.14327923;
     }
 	
-    if (val!=val or val<0)
+    if (val!=val)
     {
-        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g\n",val,star->index,stellar_type,star->mass);
+        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
         exit(0);
     }
+    if (val<0)
+    {
+        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
+        exit(0);
+    }
+
     return val;
 }
 
@@ -1291,6 +1297,11 @@ double AMC_data_function(double log_m, Particle *star)
 			{
 				return d_m_1200[18] + d_m_1200[19]*tau;
 			}
+
+		}
+		else
+		{
+			return 0.04;
 
 		}
 	}

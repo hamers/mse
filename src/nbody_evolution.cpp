@@ -47,6 +47,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     {
         printf("COL\n");
         
+        update_pos_vel_from_mstar_system(R,particlesMap);
         handle_collisions_nbody(R, particlesMap, t, integration_flag);
         *integration_flag = 1; // continue with direct N-body after the collision, at least initially
 
@@ -56,7 +57,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     if (*integration_flag == 2) // Continue with direct N-body after semisecular regime; need to make sure particlesMap is updated with pos/vel of bodies
     {
-        extract_pos_vel_from_mstar_system(R,particlesMap);
+        update_pos_vel_from_mstar_system(R,particlesMap);
         
         /* Update orbits */
         update_masses_positions_and_velocities_of_all_binaries(particlesMap);
@@ -160,6 +161,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
     (*particlesMap)[col_part_i]->Stopping_Condition_Partner = col_part_i;
     (*particlesMap)[col_part_j]->Stopping_Condition_Partner = col_part_j;
 
+    #ifdef IGNORE
     /* Positions & velocities are needed for collision handling */
     for (k=0; k<3; k++)
     {
@@ -170,6 +172,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         (*particlesMap)[col_part_j]->V_vec[k] = R->Vel[3 * col_part_j + k];
         
     }
+    #endif
     //collision_product(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
     handle_collisions(particlesMap,t,integration_flag);
     
@@ -296,7 +299,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     std::vector<int> binary_indices, future_binary_indices;
     
     //printf("0\n");
-    extract_pos_vel_from_mstar_system(R, particlesMap);
+    extract_pos_vel_from_mstar_system_and_reset_particlesMap(R, particlesMap);
     //printf("1\n");
     find_binaries_in_system(particlesMap,P_orb_min,P_orb_max);
     //printf("2\n");
@@ -326,7 +329,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
 
     ParticlesMap future_particlesMap;    
     double future_P_orb_min,future_P_orb_max;
-    extract_pos_vel_from_mstar_system(R, &future_particlesMap);
+    extract_pos_vel_from_mstar_system_and_reset_particlesMap(R, &future_particlesMap);
     find_binaries_in_system(&future_particlesMap,&future_P_orb_min,&future_P_orb_max);
 //    printf("P_orb_max2 %g\n",P_orb_max);
     get_all_semimajor_axes_in_system(&future_particlesMap, &future_semimajor_axes, &future_binary_indices);    
@@ -375,7 +378,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     //return &particlesMap;
 }
 
-void extract_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap)
+void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct RegularizedRegion *R, ParticlesMap *particlesMap)
 {
     int i,j;
     bool is_binary;
@@ -394,6 +397,33 @@ void extract_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap
         (*particlesMap)[index] = p;
         
         p->mass = R->Mass[i];
+        for (j=0; j<3; j++)
+        {
+            p->R_vec[j] = R->Pos[3 * i + j];
+            p->V_vec[j] = R->Vel[3 * i + j];
+            //printf("extract %g \n",p->R_vec[j]);
+        }
+        
+    }
+}    
+
+void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap)
+{
+    int i,j;
+    bool is_binary;
+    int index;
+    
+    for (i=0; i<R->NumVertex; i++)
+    {
+        //printf("i %d mass %g \n",i,R->Mass[i]);
+        //printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
+        //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+
+        is_binary = false;
+        //index = particlesMap->size();
+        index = R->Index[i];
+        Particle *p = (*particlesMap)[index];
+        
         for (j=0; j<3; j++)
         {
             p->R_vec[j] = R->Pos[3 * i + j];
@@ -950,9 +980,10 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     }
 
     R->gbs_tolerance = gbs_tolerance;
-    printf("R->gbs_tolerance %g\n",R->gbs_tolerance);
     R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
-    
+    R->output_time_tolerance = mstar_output_time_tolerance;
+
+    printf("R->gbs_tolerance %g R->stopping_condition_tolerance %g R->output_time_tolerance %g\n",R->gbs_tolerance,R->stopping_condition_tolerance,R->output_time_tolerance);
     //into_CoM_frame(R);
     
     return R;

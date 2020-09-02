@@ -64,6 +64,7 @@ double flybys_internal_semimajor_axis = 0.0;
 double mstar_gbs_tolerance_default = 1.0e-12;
 double mstar_gbs_tolerance_kick = 1.0e-8;
 double mstar_stopping_condition_tolerance = 1.0e-10;
+double mstar_output_time_tolerance = 1.0e-4;
 
 double nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01;
 double nbody_analysis_fractional_integration_time = 0.05;

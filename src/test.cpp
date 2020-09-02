@@ -796,9 +796,9 @@ int test_apsidal_motion_constant()
     printf("test.cpp -- test_apsidal_motion_constant\n");
 
     int flag = 0;    
-    int N_m=5;
+    int N_m=6;
     int N_st=15;
-    double masses[N_m] = {0.08,0.5,1.0,10.0,100.0};
+    double masses[N_m] = {0.08,0.5,1.0,10.0,20.5,100.0};
     int stellar_types[N_st] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14};
     
     double k_AM;

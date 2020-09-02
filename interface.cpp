@@ -970,7 +970,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, \
+    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, double mstar_output_time_tolerance_, \
     double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_maximum_integration_time_, \
     double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
@@ -999,6 +999,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     mstar_gbs_tolerance_default = mstar_gbs_tolerance_default_;
     mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
     mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
+    mstar_output_time_tolerance = mstar_output_time_tolerance_;
 
     binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
     binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;

@@ -151,7 +151,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, \
+    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, double mstar_output_time_tolerance_, \
     double nbody_analysis_fractional_semimajor_axis_change_parameter, double nbody_analysis_fractional_integration_time, double nbody_analysis_maximum_integration_time, \
     double nbody_dynamical_instability_direct_integration_time_multiplier, double nbody_semisecular_direct_integration_time_multiplier, double nbody_supernovae_direct_integration_time_multiplier, double nbody_other_direct_integration_time_multiplier, \
     double chandrasekhar_mass, double eddington_accretion_factor, double nova_accretion_factor, double alpha_wind_accretion, double beta_wind_accretion, \

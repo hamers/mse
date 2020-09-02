@@ -41,6 +41,7 @@ class MSE(object):
         self.__mstar_gbs_tolerance_default = 1.0e-12
         self.__mstar_gbs_tolerance_kick = 1.0e-8
         self.__mstar_collision_tolerance = 1.0e-10
+        self.__mstar_output_time_tolerance = 1.0e-2
         self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
         self.__nbody_analysis_fractional_integration_time = 0.05
         self.__nbody_analysis_maximum_integration_time = 1.0e5
@@ -211,7 +212,7 @@ class MSE(object):
 
         self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
             ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_int, \
-            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
@@ -359,9 +360,9 @@ class MSE(object):
         
         self.__update_particles_from_code()
         
-        end_time,initial_hamiltonian,state,CVODE_flag,CVODE_error_code = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+        end_time,initial_hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
         evolve_flag = self.lib.evolve_interface(0.0,0.0,ctypes.byref(end_time),ctypes.byref(initial_hamiltonian), \
-            ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code))
+            ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code),ctypes.byref(integration_flag))
 
         self.initial_hamiltonian = initial_hamiltonian.value
         
@@ -692,7 +693,7 @@ class MSE(object):
             self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
             self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, \
-            self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance, \
+            self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance, self.__mstar_output_time_tolerance, \
             self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_maximum_integration_time, \
             self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
             self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
@@ -1080,19 +1081,35 @@ class MSE(object):
 
     ### N-body ###
     @property
-    def mstar_gbs_tolerance(self):
-        return self.__mstar_gbs_tolerance
-    @mstar_gbs_tolerance.setter
-    def mstar_gbs_tolerance(self, value):
-        self.__mstar_gbs_tolerance = value
+    def mstar_gbs_tolerance_default(self):
+        return self.__mstar_gbs_tolerance_default
+    @mstar_gbs_tolerance_default.setter
+    def mstar_gbs_tolerance_default(self, value):
+        self.__mstar_gbs_tolerance_default = value
         self.__set_parameters_in_code()
 
+    @property
+    def mstar_gbs_tolerance_kick(self):
+        return self.__mstar_gbs_tolerance_kick
+    @mstar_gbs_tolerance_kick.setter
+    def mstar_gbs_tolerance_kick(self, value):
+        self.__mstar_gbs_tolerance_kick = value
+        self.__set_parameters_in_code()
+        
     @property
     def mstar_collision_tolerance(self):
         return self.__mstar_collision_tolerance
     @mstar_collision_tolerance.setter
     def mstar_collision_tolerance(self, value):
         self.__mstar_collision_tolerance = value
+        self.__set_parameters_in_code()
+
+    @property
+    def mstar_output_time_tolerance(self):
+        return self.__mstar_output_time_tolerance
+    @mstar_output_time_tolerance.setter
+    def mstar_output_time_tolerance(self, value):
+        self.__mstar_output_time_tolerance = value
         self.__set_parameters_in_code()
 
     @property

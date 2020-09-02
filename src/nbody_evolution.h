@@ -19,8 +19,9 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
 void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, ParticlesMap *new_particlesMap);
 void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max);
 void get_all_semimajor_axes_in_system(ParticlesMap *particlesMap, std::vector<double> *semimajor_axes, std::vector<int> *binary_indices);
-//void analyze_mstar_system2(struct RegularizedRegion *R);
-void extract_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap);
+
+void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct RegularizedRegion *R, ParticlesMap *particlesMap);
+void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap);
 void print_state(struct RegularizedRegion *R);
 double compute_nbody_total_energy(struct RegularizedRegion *R);
 

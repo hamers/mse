@@ -60,7 +60,8 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     }
 
     reset_instantaneous_perturbation_quantities(particlesMap);
-            
+
+
     return 0;
 }
 

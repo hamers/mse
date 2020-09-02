@@ -17,11 +17,23 @@ void compute_EOM_Post_Newtonian_for_particle(ParticlesMap *particlesMap, Particl
     {
         *hamiltonian += compute_EOM_pairwise_25PN(particlesMap,p->index,compute_hamiltonian_only);
     }
+    
+    Particle *child1 = (*particlesMap)[p->child1];
+    Particle *child2 = (*particlesMap)[p->child2];
+    if (child1->include_spin_orbit_1PN_terms == true)
+    {
+        *hamiltonian += compute_EOM_spin_orbit_coupling_1PN(particlesMap,p->index,child1->index,child2->index,false);
+    }
+    if (child2->include_spin_orbit_1PN_terms == true)
+    {
+        *hamiltonian += compute_EOM_spin_orbit_coupling_1PN(particlesMap,p->index,child2->index,child1->index,false);
+    }
+
 }
 
 double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
-//    printf("compute_EOM_pairwise_1PN\n");
+    //printf("compute_EOM_pairwise_1PN\n");
     Particle *binary = (*particlesMap)[binary_index];
     double e = binary->e;
     double a = binary->a;
@@ -98,6 +110,49 @@ double compute_EOM_pairwise_25PN(ParticlesMap *particlesMap, int binary_index, b
     return 0.0; // N/A
 }
 
+double compute_EOM_spin_orbit_coupling_1PN(ParticlesMap *particlesMap, int binary_index, int body_index, int companion_index, bool compute_hamiltonian_only)
+{
+    /* 1PN spin-orbit coupling */
+    /* See, e.g., https://arxiv.org/abs/1711.07142 Eqs. (2) and (3) or https://journals.aps.org/prd/abstract/10.1103/PhysRevD.12.329
+     * NOTE: the equations of motion strictly apply to the spin angular momentum vector S. Here,
+     * we apply the equations of motion for the angular frequency vector \Omega. This should be correct
+     * as long as S and \Omega are parallel. */
+     
+    Particle *binary = (*particlesMap)[binary_index];
+    Particle *body = (*particlesMap)[body_index];
+    Particle *companion = (*particlesMap)[companion_index];
+    
+    double mp = body->mass;
+    double mc = companion->mass;
+    
+    double h = binary->h;
+    double *h_vec = binary->h_vec;
+    double a = binary->a;
+    double j_p3 = binary->j_p3;
+    
+    double constant_factor = (2.0*CONST_G/(CONST_C_LIGHT_P2*a*a*a*j_p3))*(1.0 + c_3div4*mc/mp);
+    //printf("constant_factor %g mp %g mc %g a %g j %g jp3 %g\n",constant_factor,mp,mc,a,binary->e,j_p3);
+    
+    double *spin_vec = body->spin_vec;
+    double h_vec_cross_spin_vec[3];
+    double z_vec[3];
+    cross3(h_vec,spin_vec,h_vec_cross_spin_vec);
+
+    for (int i=0; i<3; i++)
+    {
+        body->dspin_vec_dt[i] += constant_factor*h_vec_cross_spin_vec[i];
+        
+        /* include effect on orbit? */
+        
+    }
+
+    #ifdef DEBUG
+    printf("postnewtonian -- compute_EOM_spin_orbit_coupling_1PN -- bin %d body %d comp %d constant_factor %g body->dspin_vec_dt %g %g %g\n",binary_index,body_index,companion_index,constant_factor,body->dspin_vec_dt[0],body->dspin_vec_dt[1],body->dspin_vec_dt[2]);
+    #endif
+
+    return 0.0;
+
+}
 
 double compute_spin_parameter_from_spin_frequency(double m, double Omega)
 {

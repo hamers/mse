@@ -650,7 +650,7 @@ int get_absolute_position_and_velocity(int index, double *X, double *Y, double *
 /* PN terms *
  ************/
 
-int set_PN_terms(int index, int include_pairwise_1PN_terms, int include_pairwise_25PN_terms)
+int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwise_25PN_terms, bool include_spin_orbit_1PN_terms)
 {
     if (index > particlesMap.size())
     {
@@ -660,10 +660,11 @@ int set_PN_terms(int index, int include_pairwise_1PN_terms, int include_pairwise
     Particle * p = particlesMap[index];
     p->include_pairwise_1PN_terms = include_pairwise_1PN_terms;
     p->include_pairwise_25PN_terms = include_pairwise_25PN_terms;
+    p->include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms;
         
     return 0;
 }
-int get_PN_terms(int index, int *include_pairwise_1PN_terms, int *include_pairwise_25PN_terms)
+int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms)
 {
     if (index > particlesMap.size())
     {
@@ -674,7 +675,8 @@ int get_PN_terms(int index, int *include_pairwise_1PN_terms, int *include_pairwi
     
     *include_pairwise_1PN_terms = p->include_pairwise_1PN_terms;
     *include_pairwise_25PN_terms = p->include_pairwise_25PN_terms;
-        
+    *include_spin_orbit_1PN_terms = p->include_spin_orbit_1PN_terms;
+    
     return 0;
 }
 

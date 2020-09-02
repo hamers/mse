@@ -47,7 +47,7 @@ class test_mse():
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
         #semimajor_axes = [15.5,400.0]
-        semimajor_axes = [15.5,120.0]
+        semimajor_axes = [15.5,150.0]
         eccentricities = [0.1,0.1]
         inclinations = [0.0001,15.0*np.pi/180.0]
         arguments_of_pericentre = [85.0*np.pi/180.0,0.01*np.pi/180.0]
@@ -77,6 +77,26 @@ class test_mse():
         stellar_types = [13,13,13]
         Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types)
         
+    def test100(self,args):
+        print('Triple with stellar evolution')
+        N_bodies = 3
+        configuration="fully nested"
+        masses = [1.0,1.0,20.5]
+        #masses = [2.0,1.0,1.5]
+        metallicities = [0.01,0.03,0.005]
+        #semimajor_axes = [15.5,400.0]
+        semimajor_axes = [15.5,120.0]
+        eccentricities = [0.1,0.1]
+        inclinations = [0.0001,15.0*np.pi/180.0]
+        arguments_of_pericentre = [85.0*np.pi/180.0,0.01*np.pi/180.0]
+        longitudes_of_ascending_node = [0.01,0.01]
+        end_time = 3.0e7
+        #end_time = 1.0e9
+        N_steps = 500
+        stellar_types = [1,1,1]
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types)
+
+
     def test2b(self,args):
         print('Quadruple with stellar evolution')
         

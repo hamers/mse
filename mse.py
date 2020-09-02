@@ -190,7 +190,7 @@ class MSE(object):
         self.lib.set_integration_method.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool)
         self.lib.set_integration_method.restype = ctypes.c_int
 
-        self.lib.set_PN_terms.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int)
+        self.lib.set_PN_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
         self.lib.set_PN_terms.restype = ctypes.c_int
 
         self.lib.set_tides_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_double)
@@ -480,13 +480,14 @@ class MSE(object):
         flag += self.lib.set_binary_evolution_properties(particle.index,particle.dynamical_mass_transfer_low_mass_donor_timescale,particle.dynamical_mass_transfer_WD_donor_timescale,particle.compact_object_disruption_mass_loss_timescale, \
             particle.common_envelope_alpha, particle.common_envelope_lambda, particle.common_envelope_timescale, particle.triple_common_envelope_alpha)
 
+        flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms,particle.include_spin_orbit_1PN_terms)
+        
         if particle.is_external==False:
             
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
                 #flag += self.lib.set_children(particle.index,particle.child1,particle.child2)
                 flag += self.lib.set_orbital_elements(particle.index,particle.a, particle.e, particle.TA, particle.INCL, particle.AP, particle.LAN, particle.sample_orbital_phase_randomly)
-                flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms)
                 flag += self.lib.set_integration_method(particle.index,particle.integration_method,particle.KS_use_perturbing_potential)
             else:
                 flag += self.lib.set_radius(particle.index,particle.radius,particle.radius_dot)
@@ -1276,7 +1277,7 @@ class Particle(object):
             include_mass_transfer_terms=True, \
             kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
-            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, \
+            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=False, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0, convective_envelope_radius=1.0, luminosity=1.0, \
@@ -1323,6 +1324,10 @@ class Particle(object):
         self.tides_viscous_time_scale=tides_viscous_time_scale
         self.tides_viscous_time_scale_prescription=tides_viscous_time_scale_prescription
 
+        self.include_pairwise_1PN_terms = include_pairwise_1PN_terms
+        self.include_pairwise_25PN_terms = include_pairwise_25PN_terms
+        self.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms
+        
         self.include_mass_transfer_terms = include_mass_transfer_terms
 
         self.kick_distribution = kick_distribution
@@ -1436,9 +1441,6 @@ class Particle(object):
                     self.AP = AP
                     self.LAN = LAN
                     
-                    self.include_pairwise_1PN_terms = include_pairwise_1PN_terms
-                    self.include_pairwise_25PN_terms = include_pairwise_25PN_terms
-
                     self.integration_method = integration_method
                     self.KS_use_perturbing_potential = KS_use_perturbing_potential
                     

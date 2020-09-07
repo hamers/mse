@@ -48,6 +48,14 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
 * Note units in SSE/BSE: length in RSUN, time in Myr, luminosity in LSun
 */
 
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = index1;
+    log_info.index2 = index2;
+    update_log_data(particlesMap, t, *integration_flag, 5, log_info);
+    #endif
+
     printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
     int i;
 
@@ -932,11 +940,11 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     print_system(particlesMap,*integration_flag);
 
     #ifdef LOGGING
-    Log_info_type log_info;
+    //Log_info_type log_info;
     log_info.binary_index = binary_index;
     log_info.index1 = index1;
     log_info.index2 = index2;
-    update_log_data(particlesMap, t, *integration_flag, 5, log_info);
+    update_log_data(particlesMap, t, *integration_flag, 6, log_info);
     #endif
 
 

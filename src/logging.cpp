@@ -13,10 +13,12 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 2: SNe
  * 3: onset of mass transfer
  * 4: stop mass transfer
- * 5: CE
- * 6: collision
- * 7: dynamical instability
- * 8: secular breakdown
+ * 5: CE start
+ * 6: CE end
+ * 7: collision start
+ * 8: collision end
+ * 9: dynamical instability
+ * 10: secular breakdown
  */
 {
     Log_type new_entry;

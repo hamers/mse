@@ -1825,12 +1825,16 @@ class Tools(object):
         elif event_flag == 4:
             text = "$\mathrm{RLOF\,end}$"
         elif event_flag == 5:
-            text = "$\mathrm{CE}$"
+            text = "$\mathrm{CE\,start}$"
         elif event_flag == 6:
-            text = "$\mathrm{Collision}$"
+            text = "$\mathrm{CE\,end}$"
         elif event_flag == 7:
-            text = "$\mathrm{Dyn.\,inst.}$"
+            text = "$\mathrm{Collision\,start}$"
         elif event_flag == 8:
+            text = "$\mathrm{Collision\,end}$"
+        elif event_flag == 9:
+            text = "$\mathrm{Dyn.\,inst.}$"
+        elif event_flag == 10:
             text = "$\mathrm{Sec.\,break.}$"
         else:
             text = ""

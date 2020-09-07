@@ -136,6 +136,15 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
 
 void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag)
 {
+    
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = child1_index;
+    log_info.index2 = child2_index;
+    update_log_data(particlesMap, t, *integration_flag, 7, log_info);
+    #endif
+    
     /* TO DO: allow for calling this function without specifying the binary_index, i.e., collision during N-body integration (integration_flag>0) */
     
     printf("CP\n");
@@ -597,6 +606,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             particlesMap->erase(child2->index);
         }
     }
+    
+    #ifdef LOGGING
+    //Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = child1_index;
+    log_info.index2 = child2_index;
+    update_log_data(particlesMap, t, *integration_flag, 8, log_info);
+    #endif
     
 }
 

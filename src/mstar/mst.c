@@ -2079,7 +2079,7 @@ int extrapolate_all_variables(int korder) {
     }
     v = NumDynVariables-1;
     for (int i = 0; i < korder; i++) {
-	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > TScale[i] ) { TScale[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]; }
+	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > TScale[i] ) { TScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
     }
 
     for (int v = loop_start; v < loop_end; v++) {
@@ -2175,6 +2175,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     double dt = 1e-3;
     double Hstep;
     double time;
+    int endtime_iteration_phase=0;
     // Initialize the system to integrate
 
     into_CoM_frame(R);
@@ -2202,7 +2203,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     int i_sc;
 
     int i_print=0;
-    double N_print=100.0;
+    double N_print=10.0;
     double f_time;
     
     do {
@@ -2292,14 +2293,33 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
             if (fabs(time - time_interval) / time_interval <
                 R->output_time_tolerance) {
                 not_finished = 0;
-            } else {
+            } else
+            {
 
                 compute_total_energy(R);
-                if (time > time_interval) {
-                    R->Hstep = -R->U * (time - time_interval);
-                } else if (R->Hstep / R->U + time > time_interval) {
+//                if (time > time_interval) {
+//                    R->Hstep = -R->U * (time - time_interval);
+//                } else if (R->Hstep / R->U + time > time_interval) {
+//                    R->Hstep = R->U * (time_interval - time);
+//                }
+                /* Start Antti's fix for negative times 06.09.2020 */
+                if ( endtime_iteration_phase )
+                {
                     R->Hstep = R->U * (time_interval - time);
                 }
+                else
+                {
+                    if (time > time_interval)
+                    {
+                        endtime_iteration_phase = 1;
+                        R->Hstep = -R->U * (time - time_interval);
+                    }
+                    else if (R->Hstep / R->U + time > time_interval)
+                    {
+                        R->Hstep = R->U * (time_interval - time);
+                    }
+                }
+                /* End Antti's fix for negative times 06.09.2020 */
 
                 /* Some debug printing */
                 if (time < 0.0)

@@ -14,11 +14,11 @@ make and show plots if applicable (required Matplotlib).
 Adrian Hamers, August 2020
 """
 
-try:
-    from matplotlib import pyplot
-    HAS_MATPLOTLIB = True
-except ImportError:
-    HAS_MATPLOTLIB = False
+#try:
+#    from matplotlib import pyplot
+#    HAS_MATPLOTLIB = True
+#except ImportError:
+#    HAS_MATPLOTLIB = False
 
 def add_bool_arg(parser, name, default=False,help=None):
     group = parser.add_mutually_exclusive_group(required=False)

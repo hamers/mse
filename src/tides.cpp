@@ -251,9 +251,15 @@ double compute_t_V_hurley
     }
     else // degenerate damping -- 1984MNRAS.207..433C
     {
-        double seconds_in_year = 365.25*24.0*3600.0;
-        double tau_degenerate = 1.3e7*seconds_in_year;
-        k_AM_div_T = (1.0/(3.0*tau_degenerate))*gyration_radius*gyration_radius*pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
+        //double seconds_in_year = 365.25*24.0*3600.0;
+        //double tau_degenerate = 1.3e7*seconds_in_year;
+        //k_AM_div_T = (1.0/(3.0*tau_degenerate))*gyration_radius*gyration_radius*pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
+
+        /* Change September 09 2020 */
+        //double seconds_in_year = 365.25*24.0*3600.0;
+        //double tau_degenerate = 1.3e7*seconds_in_year;
+        k_AM_div_T = 2.564e-8 * gyration_radius*gyration_radius * pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
+
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
         
         return t_V;

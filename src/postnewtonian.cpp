@@ -20,11 +20,11 @@ void compute_EOM_Post_Newtonian_for_particle(ParticlesMap *particlesMap, Particl
     
     Particle *child1 = (*particlesMap)[p->child1];
     Particle *child2 = (*particlesMap)[p->child2];
-    if (child1->include_spin_orbit_1PN_terms == true)
+    if (child1->is_binary == false && child1->include_spin_orbit_1PN_terms == true)
     {
         *hamiltonian += compute_EOM_spin_orbit_coupling_1PN(particlesMap,p->index,child1->index,child2->index,false);
     }
-    if (child2->include_spin_orbit_1PN_terms == true)
+    if (child2->is_binary == false && child2->include_spin_orbit_1PN_terms == true)
     {
         *hamiltonian += compute_EOM_spin_orbit_coupling_1PN(particlesMap,p->index,child2->index,child1->index,false);
     }

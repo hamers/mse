@@ -1031,7 +1031,7 @@ class Particle
        
         include_pairwise_1PN_terms = true;
         include_pairwise_25PN_terms = true;
-        include_spin_orbit_1PN_terms = false;
+        include_spin_orbit_1PN_terms = true;
         include_tidal_friction_terms = true;
         include_tidal_bulges_precession_terms = true;
         include_rotation_precession_terms = true;

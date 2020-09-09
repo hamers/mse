@@ -961,7 +961,7 @@ class test_mse():
         tend = 1e10
 
         N =1000
-        tend = 1e9
+        tend = 1e7
         #tend = 1e8
 
         i_status = 0
@@ -1005,7 +1005,7 @@ class test_mse():
             #if t > 50: i_status += 1
                 
             print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'as',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
-            print("bound",[x.is_bound for x in bodies])
+            #print("bound",[x.is_bound for x in bodies])
             
             if state != 0:
                 print("Restructuring of system!")

@@ -1560,7 +1560,7 @@ class test_mse():
         vs2 = []
         sigma_km_s = 265.0
         sigma = sigma_km_s*code.CONST_KM_PER_S
-        mu_km_s = 50.0
+        mu_km_s = 40.0
         mu=mu_km_s*code.CONST_KM_PER_S
 
         r_hat_vecs = []

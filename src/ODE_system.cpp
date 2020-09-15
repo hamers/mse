@@ -51,7 +51,7 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     double abs_tol_e_vec = absolute_tolerance_eccentricity_vectors;
     //abs_tol_e_vec = 1.0e-10;
     double abs_tol_h_vec = 1.0e-2;
-    double initial_ODE_timestep = 1.0e-6; /* one year */
+    double initial_ODE_timestep = 1.0e0; /* one year */
     int maximum_number_of_internal_ODE_steps = 5e8;
     int maximum_number_of_convergence_failures = 100;    
     //double maximum_ODE_integration_time = 13.8e10;
@@ -213,11 +213,15 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
     double delta_time = time - start_time;
 
     #ifdef DEBUG
-    printf("ODE_system.cpp -- compute_y_dot t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
+    printf("ODE_system.cpp -- compute_y_dot1 t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
+    print_system(particlesMap,0);
     #endif
     
     extract_ODE_variables(particlesMap, y, delta_time);
     reset_ODE_dots(particlesMap, y, delta_time);
+
+    //printf("ODE_system.cpp -- compute_y_dot2 t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
+    //print_system(particlesMap,0);
     
     /****************************
      * compute right-hand sides *

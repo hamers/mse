@@ -243,6 +243,7 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
     return dt;
 }
 
+#ifdef IGNORE
 int handle_dynamical_instability(ParticlesMap *particlesMap)
 {
     //create_mstar_instance_of_system(particlesMap,R);
@@ -257,6 +258,7 @@ int handle_dynamical_instability(ParticlesMap *particlesMap)
 
     return 0;
 }
+#endif
 
 void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, ParticlesMap *new_particlesMap)
 {
@@ -923,7 +925,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
 {
      
     initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
-    //printf("?%d \n",NumGbsGroup);
+
     struct RegularizedRegion *R;
 
     int i=0;
@@ -931,16 +933,6 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     int N_bodies = determine_number_of_bodies_in_system(particlesMap);
         
     //my_barrier(); // In serial mode, this does nothing (so can be omitted)
-
-    //int N_particles = particlesMap->size();
-    //int N_bodies, N_binaries;
-    //int N_root_finding;
-    //int N_ODE_equations;
-    
-    //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    
-//    int MAXPART = N_bodies; // (Maximum) number of bodies; should be consistent with number of bodies in input file
-    //my_barrier();
 
     allocate_armst_structs(&R, N_bodies); // Initialize the data structure
     
@@ -954,13 +946,14 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
         {
             R_vec = p->R_vec;
             V_vec = p->V_vec;
-            //printf("test1\n");
+
             R->Vertex[i].type = 0;
-            //printf("test2 i %d %d %d %d\n",i,N_bodies,p->index,R->Index[i]);
+
             R->Index[i] = p->index;
-            //printf("test3\n");
+
             R->Mass[i] = p->mass;
-            R->Radius[i] = p->radius;
+            //R->Radius[i] = p->radius;
+            R->Radius[i] = determine_effective_radius_for_collision(p->radius, p->stellar_type, 1);
             for (j=0; j<3; j++)
             {
                 R->Pos[3 * i + j] = R_vec[j];
@@ -1015,11 +1008,9 @@ double compute_nbody_total_energy(struct RegularizedRegion *R)
             
             for (k=0; k<3; k++)
             {
-                R_j[k] = R->Pos[3 * j + k];
-                //V_j[k] = R->Vel[3 * j + k];
                 
+                R_j[k] = R->Pos[3 * j + k];
                 r[k] = R_i[k] - R_j[k];
-                //v[k] = V_i[k] - V_j[k];
             }
                 
             V += - CONST_G * m_i * m_j/norm3(r);

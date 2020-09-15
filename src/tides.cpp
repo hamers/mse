@@ -91,10 +91,9 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
     int tides_viscous_time_scale_prescription = star->tides_viscous_time_scale_prescription;
     double t_V = 1.0e10; /* large value by default, i.e. weak tides if tides_viscous_time_scale_prescription is not given the correct value */
     
-    if (tides_viscous_time_scale_prescription == 0)
+    if (tides_viscous_time_scale_prescription == 0 or star->evolve_as_star == false)
     {
         t_V = star->tides_viscous_time_scale;
-//        printf("compute_t_V 0\n");
     }
     else if (tides_viscous_time_scale_prescription == 1)
     {
@@ -337,12 +336,12 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 //        printf("pre\n");
         k_AM = compute_apsidal_motion_constant(star);
         //k_AM = star->apsidal_motion_constant;
-        //printf("k_AM %g I %g\n",k_AM,I);
     }
 
+    //printf("k_AM %g I %g\n",k_AM,I);
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
-
+    
     //#ifdef DEBUG
     //printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
     //#endif
@@ -451,6 +450,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
                 + 9.0*e_vec[i]*(f_tides1*h - c_11div18*spin_vec_dot_h_vec*f_tides2/n) );
             star->dspin_vec_dt[i] += -dh_vec_dt_star_i/I;
             //printf("test %g %g\n",spin_vec_dot_e_vec*f_tides5*e_vec[i] - spin_vec[i]*f_tides3);
+            
         }
         if (include_rotation_precession_terms == 1 || include_tidal_bulges_precession_terms == 1)
         {
@@ -465,11 +465,27 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 //                printf("ok %d %d\n",include_rotation_precession_terms,include_tidal_bulges_precession_terms);
             }
         }
+        if (binary->dh_vec_dt[i] != binary->dh_vec_dt[i])
+        {
+            printf("tides.cpp -- FATAL ERROR: binary->dh_vec_dt[i] = %g \n",binary->dh_vec_dt[i]);
+            exit(-1);
+        }
+        if (binary->de_vec_dt[i] != binary->de_vec_dt[i])
+        {
+            printf("tides.cpp -- FATAL ERROR: binary->de_vec_dt[i] = %g \n",binary->de_vec_dt[i]);
+            exit(-1);
+        }
+        if (star->dspin_vec_dt[i] != star->dspin_vec_dt[i])
+        {
+            printf("tides.cpp -- FATAL ERROR: star->dspin_vec_dt[i] = %g \n",star->dspin_vec_dt[i]);
+            exit(-1);
+        }
+
     }
 
 //    printf("I %g %g %g %g\n",rg,M,R,Q_prime);
-//    printf("f dh_vec_dt %g %g %g\n",binary->dh_vec_dt[0],binary->dh_vec_dt[1],binary->dh_vec_dt[2]);
-//    printf("f dspin_vec_dt %g %g %g\n",star->dspin_vec_dt[0],star->dspin_vec_dt[1],star->dspin_vec_dt[2]);
+    //printf("f dh_vec_dt %g %g %g\n",binary->dh_vec_dt[0],binary->dh_vec_dt[1],binary->dh_vec_dt[2]);
+    //printf("f dspin_vec_dt %g %g %g\n",star->dspin_vec_dt[0],star->dspin_vec_dt[1],star->dspin_vec_dt[2]);
     return 0;
 }
 

@@ -42,6 +42,9 @@ double secular_integration_exclusion_safety_factor = 1.0e-3;
 
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 
+double effective_radius_multiplication_factor_for_collisions_stars = 3.0;
+double effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e3;
+
 bool include_flybys = true;
 bool flybys_correct_for_gravitational_focussing = true;
 int flybys_velocity_distribution = 0;

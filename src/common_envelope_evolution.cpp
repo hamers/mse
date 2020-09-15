@@ -28,7 +28,7 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
     return 0;
 }
 
-int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
+void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
 {
     /*
      * **
@@ -48,6 +48,8 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
 * Note units in SSE/BSE: length in RSUN, time in Myr, luminosity in LSun
 */
 
+
+
     #ifdef LOGGING
     Log_info_type log_info;
     log_info.binary_index = binary_index;
@@ -61,6 +63,22 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
 
     Particle *star1 = (*particlesMap)[index1];
     Particle *star2 = (*particlesMap)[index2];
+
+    if (star1->evolve_as_star == true and star2->evolve_as_star == false)
+    {
+        collision_product_star_planet(particlesMap, binary_index, index1, index2,t,integration_flag);
+        return;
+    }
+    if (star1->evolve_as_star == false and star2->evolve_as_star == true)
+    {
+        collision_product_star_planet(particlesMap, binary_index, index2, index1,t,integration_flag);
+        return;
+    }
+    if (star1->evolve_as_star == false and star2->evolve_as_star == false)
+    {
+        collision_product_planet_planet(particlesMap, binary_index, index1, index2,t,integration_flag);
+        return;
+    }
     
     double M1_old,M1;
     M1_old = M1 = star1->mass;
@@ -948,11 +966,11 @@ int binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     #endif
 
 
-    return 0;
+    return;
 }
 
 
-int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
+void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
 {
     /* An extremely simplified treatment of triple CE evolution (an inner binary entering a tertiary star's envelope). 
      * Compute the new outer orbit assuming the binding energy of the tertiary star's envelope is converted into 
@@ -984,13 +1002,13 @@ int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     if (c1->is_binary == true or c2->is_binary == true)
     {
         printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- at least of the components in the inner binary is itself a binary -- skipping. \n");
-        return 0;
+        return;
     }
     
     if (*integration_flag != 0)
     {
         printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- integration flag is nonzero; skipping. \n");
-        return 0;
+        return;
     }
 
     /* Define primary (star1) as the most massive star in the inner binary */
@@ -1211,7 +1229,7 @@ int triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_inde
     bool unbound_orbits;
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
-    return 0;
+    return;
 }
 
 int common_envelope_evolution_old(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index)

@@ -431,7 +431,8 @@ void cross_section_function(Particle *p, double *cross_section)
 { 
     if (p->is_binary==false)
     {
-        *cross_section += p->radius;
+        //*cross_section += p->radius;
+        *cross_section += determine_effective_radius_for_collision(p->radius, p->stellar_type, 0);
     }
     else
     {

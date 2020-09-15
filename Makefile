@@ -1,7 +1,7 @@
 CXX = /usr/local/bin/g++-9
 CXX = /usr/local/bin/c++-9
 CXX = c++-9
-CXX = g++-10
+#CXX = g++-10
 CXX = g++
 
 FC = gfortran
@@ -21,7 +21,7 @@ CHEADERS = $(CSRC:.c=.h)
 FHEADERS = src/sse/const_bse.h src/sse/zdata.h 
 
 #CPPFLAGS = -fPIC -shared -O2 -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings
-CPPFLAGS = -fPIC -shared -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings -g 
+CPPFLAGS = -fPIC -shared -lgfortran -Wno-comment -Wno-c++11-compat-deprecated-writable-strings -Wno-write-strings -g
 FFLAGS = -fPIC
 
 ifeq ($(DEBUG),1)

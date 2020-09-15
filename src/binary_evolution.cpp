@@ -124,7 +124,6 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     exit(0);
     #endif
 
-
     std::vector<int> parent_indices,donor_indices,accretor_indices;
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -132,24 +131,32 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     {
         //++next_it;
         Particle *donor = (*it_p).second;
+        
+        //Particle *accretor = (*particlesMap)[donor->sibling];
         //Particle *donor = (*it).second;
 
         //printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
+        //if (donor->is_binary == false and donor->is_bound == true and donor->evolve_as_star == true and accretor->evolve_as_star == true)
         if (donor->is_binary == false and donor->is_bound == true)
         {
-            donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
-            donor->mass_dot_RLOF_triple = 0.0;
-            
-            if (donor->RLOF_flag == 1 and std::count(parent_indices.begin(), parent_indices.end(), donor->parent) == 0)
+            Particle *accretor = (*particlesMap)[donor->sibling];
+            if (donor->evolve_as_star == true and accretor->evolve_as_star == true)
             {
-                parent_indices.push_back(donor->parent);
-                donor_indices.push_back(donor->index);
-                accretor_indices.push_back(donor->sibling);
-                //int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution, it_p);
+                donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
+                donor->mass_dot_RLOF_triple = 0.0;
+                
+                if (donor->RLOF_flag == 1 and std::count(parent_indices.begin(), parent_indices.end(), donor->parent) == 0)
+                {
+                    parent_indices.push_back(donor->parent);
+                    donor_indices.push_back(donor->index);
+                    accretor_indices.push_back(donor->sibling);
+                    //int flag = handle_mass_transfer_cases(particlesMap, donor->parent, donor->index, donor->sibling, integration_flag, t_old, t, dt_binary_evolution, it_p);
+                }
             }
         }
-
     }
+
+    update_structure(particlesMap);
     
     std::vector<int>::iterator it;
     //for (it = parent_indices.begin(); it != parent_indices.end(); it++)
@@ -158,8 +165,9 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         //printf("HMT %d %d %d\n",parent_indices[i], donor_indices[i], accretor_indices[i]);
         int flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
     }
-    
+
     update_structure(particlesMap);
+
     return 0;
     
 }

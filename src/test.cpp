@@ -1455,6 +1455,14 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     
     print_system(&particlesMap,integration_flag);
     
+        ParticlesMapIterator it_p,it_q;
+    for (it_p = particlesMap.begin(); it_p != particlesMap.end(); it_p++)
+    {
+        Particle *P_p = (*it_p).second;
+        printf("i %d\n",P_p->index);
+        //printf("determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
+        P_p->parent = -1;
+    }
     //#ifdef IGNORE
     printf("test_collision_stars -- pre evolve\n");
     evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);

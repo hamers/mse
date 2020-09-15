@@ -49,6 +49,9 @@ extern int random_seed;
 
 extern double secular_integration_exclusion_safety_factor;
 
+extern double effective_radius_multiplication_factor_for_collisions_stars;
+extern double effective_radius_multiplication_factor_for_collisions_compact_objects;
+
 extern bool include_flybys;
 extern bool flybys_correct_for_gravitational_focussing;
 extern int flybys_velocity_distribution;
@@ -1038,6 +1041,7 @@ class Particle
 
         radius = 1.0e-10; /* this must be set (to nonzero), otherwise ODE solver will have invalid ewt values */
         tides_method = 1; /* `full' tides equations of motion including spin-orbit terms for all orientations */
+        tides_viscous_time_scale = 1.0e100;
         tides_viscous_time_scale_prescription = 1; /* 0: constant, user-specified t_V; 1: using Hurley prescription */
         minimum_eccentricity_for_tidal_precession = 1.0e-3;
         spin_vec_x_dot = spin_vec_y_dot = spin_vec_z_dot = 0.0;

@@ -29,8 +29,8 @@ class MSE(object):
         self.__CONST_PER_PC3 = 1.14059e-16
         self.__CONST_PARSEC = 206201.0
 
-        self.__relative_tolerance = 1.0e-12
-        self.__absolute_tolerance_eccentricity_vectors = 1.0e-10
+        self.__relative_tolerance = 1.0e-10
+        self.__absolute_tolerance_eccentricity_vectors = 1.0e-8
         self.__include_quadrupole_order_terms = True
         self.__include_octupole_order_binary_pair_terms = True
         self.__include_octupole_order_binary_triplet_terms = True
@@ -49,6 +49,9 @@ class MSE(object):
         self.__nbody_semisecular_direct_integration_time_multiplier = 1.0e2
         self.__nbody_supernovae_direct_integration_time_multiplier = 1.5
         self.__nbody_other_direct_integration_time_multiplier = 1.5
+        
+        self.__effective_radius_multiplication_factor_for_collisions_stars = 3.0
+        self.__effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e3
         
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 0
@@ -216,7 +219,8 @@ class MSE(object):
             ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
-            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double)
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -698,7 +702,8 @@ class MSE(object):
             self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_maximum_integration_time, \
             self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
             self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
-            self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda)
+            self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda, \
+            self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects)
 
     def reset(self):
         self.__init__()
@@ -1169,6 +1174,21 @@ class MSE(object):
         self.__nbody_other_direct_integration_time_multiplier = value
         self.__set_parameters_in_code()
 
+    @property
+    def effective_radius_multiplication_factor_for_collisions_stars(self):
+        return self.__effective_radius_multiplication_factor_for_collisions_stars
+    @effective_radius_multiplication_factor_for_collisions_stars.setter
+    def effective_radius_multiplication_factor_for_collisions_stars(self, value):
+        self.__effective_radius_multiplication_factor_for_collisions_stars = value
+        self.__set_parameters_in_code()
+
+    @property
+    def effective_radius_multiplication_factor_for_collisions_compact_objects(self):
+        return self.__effective_radius_multiplication_factor_for_collisions_compact_objects
+    @effective_radius_multiplication_factor_for_collisions_compact_objects.setter
+    def effective_radius_multiplication_factor_for_collisions_compact_objects(self, value):
+        self.__effective_radius_multiplication_factor_for_collisions_compact_objects = value
+        self.__set_parameters_in_code()
 
     ### Binary evolution ###
     @property
@@ -1271,15 +1291,15 @@ class MSE(object):
 
 
 class Particle(object):
-    def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
+    def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0e-10, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
             integration_method = 0, KS_use_perturbing_potential = True, \
             stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
             kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
-            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=False, \
+            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
-            minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0, tides_viscous_time_scale_prescription=1, \
+            minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0e100, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0, convective_envelope_radius=1.0, luminosity=1.0, \
             check_for_secular_breakdown=False,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
             check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
@@ -2100,3 +2120,5 @@ class Tools(object):
                 pyplot.show()
     
         code.reset()
+
+        return code.log

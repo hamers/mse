@@ -11,8 +11,7 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
 
 void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt);
 
-int handle_dynamical_instability(ParticlesMap *particlesMap);
-//void create_mstar_instance_of_system(ParticlesMap *particlesMap, struct RegularizedRegion *R);
+//int handle_dynamical_instability(ParticlesMap *particlesMap);
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag);
 
 void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max,double dt);

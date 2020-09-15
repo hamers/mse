@@ -41,6 +41,7 @@ int test_a_P_orb_conversion()
     double an = compute_semimajor_axis_from_orbital_period(m,P);
 
     double tol = 1.0e-15;
+
     int flag = 0;
     if ( !equal_number(a,an,tol) )
     {
@@ -188,6 +189,7 @@ int test_nbody()
     int flag = 0;
     flag += test_nbody_two_body_stopping_conditions();
     flag += test_nbody_two_body_kick();
+    flag += test_nbody_pythagorean();
 
     if (flag == 0)
     {
@@ -578,6 +580,88 @@ int test_nbody_two_body_kick()
 
     return flag;
 }
+
+struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double m3, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance)
+{
+     
+    struct RegularizedRegion *R;
+
+    int i=0;
+    int j;
+   
+    int N = 3;
+
+    allocate_armst_structs(&R, N); // Initialize the data structure
+    
+    double R1_vec[3] = {1.0,3.0,0.0};
+    double R2_vec[3] = {-2.0,-1.0,0.0};
+    double R3_vec[3] = {1.0,-1.0,0.0};
+    double V1_vec[3] = {0.0,0.0,0.0};
+    double V2_vec[3] = {0.0,0.0,0.0};
+    double V3_vec[3] = {0.0,0.0,0.0};
+    
+    for (i=0; i<3; i++)
+    {
+        R->Pos[3 * 0 + i] = R1_vec[i];
+        R->Vel[3 * 0 + i] = V1_vec[i];
+
+        R->Pos[3 * 1 + i] = R2_vec[i];
+        R->Vel[3 * 1 + i] = V2_vec[i];
+
+        R->Pos[3 * 2 + i] = R3_vec[i];
+        R->Vel[3 * 2 + i] = V3_vec[i];
+    }
+
+    R->Mass[0] = m1;
+    R->Mass[1] = m2;
+    R->Mass[2] = m3;
+
+    R->Stopping_Condition_Mode[0] = stopping_condition_mode;
+    R->Stopping_Condition_Mode[1] = stopping_condition_mode;
+    R->gbs_tolerance = gbs_tolerance;
+    R->stopping_condition_tolerance = stopping_condition_tolerance;
+    
+    return R;
+}
+
+int test_nbody_pythagorean()
+{
+    printf("test.cpp -- test_nbody_pythagorean\n");
+
+    int flag = 0;    
+    int stopping_condition_mode = 0;
+    
+    initialize_mpi_or_serial(); 
+    int N_bodies = 2;
+
+    double m1 = 3.0;
+    double m2 = 4.0;
+    double m3 = 5.0;
+
+    double gbs_tolerance = 1.0e-12;
+    double stopping_condition_tolerance = 1.0e-6;
+    struct RegularizedRegion *R = generate_pythagorean_ICs(m1,m2,m3,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+
+    double E_init = compute_nbody_total_energy(R);
+
+    double tend = 20.0;
+    double reached_dt;
+    int stopping_condition_occurred;
+
+    run_integrator(R, tend, &reached_dt, &stopping_condition_occurred);
+    
+    double E_fin = compute_nbody_total_energy(R);
+    
+    double tol = 1.0e-8;
+    if (!equal_number(E_init,E_fin,tol))
+    {
+        printf("test.cpp -- error in test_nbody_pythagorean -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
+        flag = 1;
+    }
+
+    return flag;
+}
+
 
 
 /**********

@@ -827,7 +827,7 @@ double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, d
 bool equal_number(double x1, double x2, double tol)
 {
     bool equal = false;
-    if ( (fabs(x1-x2)/x1) < tol)
+    if ( fabs((x1-x2)/x1) < tol)
     {
         equal = true;
     }

@@ -15,6 +15,8 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
 double test_nbody_compute_time_of_collision(double CONST_G, double M, double r_col, double a, double e);
 int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, double *a, double *e);
 int test_nbody_two_body_kick();
+struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double m3, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
+int test_nbody_pythagorean();
 void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
 
 int test_flybys();

@@ -77,9 +77,11 @@ double nbody_dynamical_instability_direct_integration_time_multiplier = 1.5;
 double nbody_semisecular_direct_integration_time_multiplier = 1.0e2;
 double nbody_supernovae_direct_integration_time_multiplier = 1.5;    
 double nbody_other_direct_integration_time_multiplier = 1.5;
+double nbody_maximum_separation_for_inclusion = 1.0e5;
 
 int binary_evolution_CE_energy_flag = 0;
 int binary_evolution_CE_spin_flag = 1;
+int binary_evolution_CE_mass_loss_Nsteps = 100;
 
 double chandrasekhar_mass = 1.44;
 double eddington_accretion_factor = 10.0;

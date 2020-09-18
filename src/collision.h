@@ -6,7 +6,7 @@ int determine_merger_type(int kw1, int kw2);
 
 void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_flag);
 
-void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle *b);
+//void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle *b);
 void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag);
 void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag);
 void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag);

@@ -362,11 +362,11 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 int event_flag;
                 if (p->RLOF_flag = 1)
                 {
-                    event_flag = 3;
+                    event_flag = LOG_MT_START;
                 }
                 else
                 {
-                    event_flag = 4;
+                    event_flag = LOG_MT_END;
                 }
                 update_log_data(particlesMap, t, integration_flag, event_flag, log_info);
                 #endif

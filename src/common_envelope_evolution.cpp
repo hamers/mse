@@ -55,7 +55,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     log_info.binary_index = binary_index;
     log_info.index1 = index1;
     log_info.index2 = index2;
-    update_log_data(particlesMap, t, *integration_flag, 5, log_info);
+    update_log_data(particlesMap, t, *integration_flag, LOG_CE_START, log_info);
     #endif
 
     printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
@@ -86,42 +86,22 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     M2_old = M2 = star2->mass;
 
     /* Orbital properties */
-    double SEP;
-    double SEPF; // final separation
-    double SEPL;
+    double SEP; // unit: RSun
+    double SEPF; // final separation; unit: RSun
+    double SEPL; // unit: RSun
     double ECC;
 
-    Particle *binary;
-    double h_vec_unit[3],e_vec_unit[3];
-    double initial_momentum[3],initial_R_CM[3];
-    if (*integration_flag == 0) /* secular mode */
-    {
-        set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
-        binary = (*particlesMap)[binary_index];
-        SEP = binary->a/CONST_R_SUN; // initial separation
-        ECC = binary->e;
-        get_unit_vector(binary->h_vec,h_vec_unit);
-        get_unit_vector(binary->e_vec,e_vec_unit);
-    }
-    else /* Direct N-body mode */
-    {
-        double h_vec[3],e_vec[3],r[3],v[3];
-        double true_anomaly;
-        
-        for (i=0; i<3; i++)
-        {
-            r[i] = star1->R_vec[i] - star2->R_vec[i];
-            v[i] = star1->V_vec[i] - star2->V_vec[i];
-            initial_momentum[i] = M1 * star1->V_vec[i] + M2 * star2->V_vec[i];
-            initial_R_CM[i] = (M1 * star1->R_vec[i] + M2 * star2->R_vec[i]) / (M1 + M2);
-        }
-        from_cartesian_to_orbital_vectors(M1,M2,r,v,e_vec,h_vec,&true_anomaly);
-        ECC = norm3(e_vec);
-        SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
-        get_unit_vector(h_vec,h_vec_unit);
-        get_unit_vector(e_vec,e_vec_unit);
-        printf("CE Integration_flag>0 a %g e %g\n",SEP,ECC);
-    }
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+    get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, M1, M2, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+    
+    ECC = norm3(e_vec);
+    SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
+    get_unit_vector(h_vec,h_vec_unit);
+    get_unit_vector(e_vec,e_vec_unit);
+    printf("CE init a/au %g e %g\n",SEP*CONST_R_SUN,ECC);
 
     int CEFLAG = binary_evolution_CE_energy_flag;
     double ALPHA1 = star1->common_envelope_alpha;
@@ -144,7 +124,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double RC1 = star1->core_radius/CONST_R_SUN;
     double L1 = star1->luminosity/CONST_L_SUN;
     double MENV1,RENV1,K21;
-    //double K21;
     
     double AJ1 = star1->age * yr_to_Myr;
     double *ZPARS1 = star1->zpars;    
@@ -174,7 +153,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double RC2 = star2->core_radius/CONST_R_SUN;
     double L2 = star2->luminosity/CONST_L_SUN;
     double MENV2,RENV2,K22;
-    //double K22;
     
     double AJ2 = star2->age * yr_to_Myr;
     double *ZPARS2 = star2->zpars;    
@@ -226,7 +204,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double EBINDF;
     
     /* Generic variables */
-
     double TN;
     double *GB,*TSCLS,*LUMS;
     GB = new double[10];
@@ -234,7 +211,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     LUMS = new double[10];    
     double MENV,RENV;
 
-    
     /* Variables for potentially merged stars */
     int KW;
     double MC3;
@@ -244,7 +220,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double XX,CONST;
     double DELY,DERI,DELMF; // used for the NR iteration procedure
     bool iterate = true;
-
     
     /* By default, do not apply any kicks; can be changed below depending on new stellar types. */
     star1->apply_kick = false;
@@ -623,16 +598,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
          //TB = (SEPF/AURSUN)*SQRT(SEPF/(AURSUN*(M1+M2)))
          TB = TWOPI * (SEPF * CONST_R_SUN) * sqrt( SEPF * CONST_R_SUN / (CONST_G * (M1 + M2) ) );
          OORB = TWOPI/TB;
-         //double JORB = M1 * M2 / (M1 + M2) * sqrt(1.0 - ECC * ECC) * SEPF * SEPF * OORB;
-//*        JSPIN1 = OORB*(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
-//*        JSPIN2 = OORB*(K22*R2*R2*(M2-MC2)+K3*RC2*RC2*MC2)
-
-        /* or, leave the spins of the cores as they were on entry.
-        * Tides will deal with any synchronization later. */
-
-//         JSPIN1 = OSPIN1 * (K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1);
-//         JSPIN2 = OSPIN2 * (K22*R2*R2*(M2-MC2)+K3*RC2*RC2*MC2);
-
     }
 
 
@@ -641,106 +606,93 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     label30:
     {
-    
+
+    *integration_flag = 1;
+            
+    printf("COEL %d\n",COEL);
     bool unbound_orbits = false;
     //double spin_vec_unit[3];
-    printf("COEL %d\n",COEL);
+
+    double final_R_CM[3],final_V_CM[3],final_momentum[3];
+    handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, M1, M1_old, M2, M2_old, star1->common_envelope_timescale, \
+        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+
     if (COEL == false)
     {
         
-        /* Handle effect of mass loss on the rest of the system */
         printf("no coel M1 %g M2 %g kw1 %d kw2 %d SEPF %g ECC %g\n",M1,M2,KW1,KW2,SEPF,ECC);
 
-        /* First, handle effects of possible SNe kicks (apply_kick = true for star1 and/or star2). Mass loss is not yet taken into account */
-        star1->instantaneous_perturbation_delta_mass = 0.0;
-        star2->instantaneous_perturbation_delta_mass = 0.0;
-        
-        int integration_flag_dummy;
-        handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy);
-
-        printf("CE -- post handle_SNe_in_system\n");
-        print_system(particlesMap, *integration_flag);
-
-        /* Next, handle effects of mass loss */
-        double Delta_M1 = M1 - star1->mass;
-        double Delta_M2 = M2 - star2->mass;
-
-        if (*integration_flag == 0) /* Take into account either instantaneous or adiabatic mass loss, depending on the time-scale */
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
         {
-
-            //binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set?
-            //binary->apply_kick = false;
-                
-            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
+            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star1->V_vec[i] += V_kick_vec[i];
+            }
         }
-        else /* Always assume instantaneous mass loss in the N-body case */
+        if (star2->apply_kick == true)
         {
-            star1->instantaneous_perturbation_delta_mass = Delta_M1;
-            star2->instantaneous_perturbation_delta_mass = Delta_M2;;
-            
-            handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy);
+            sample_kick_velocity(star2, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star2->V_vec[i] += V_kick_vec[i];
+            }
         }
-        
-        //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
-        printf("CE -- post mass changes\n");
+
+        printf("CE -- post mass changes and kicks\n");
         print_system(particlesMap,*integration_flag);
-        /* Update the stars and orbit */
+
+        /* Update all properties of the two stars */
         star1->stellar_type = KW1;
-        
-        //star1->mass = M1; // handled by SNe function
+        star1->mass = M1;        
         star1->core_mass = MC1;
         star1->sse_initial_mass = M01;
         star1->convective_envelope_mass = MENV1;
         
         star1->age = AJ1 * Myr_to_yr;
-        //star1->epoch = 0.0; /* is this correct? */
         star1->epoch = t - star1->age;
         
         star1->radius = R1 * CONST_R_SUN;
         star1->core_radius = RC1 * CONST_R_SUN;
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
-        
         star1->luminosity = L1 * CONST_L_SUN;
         
         /* Spins: either assume the spins do not change (binary_evolution_CE_spin_flag=0) */
         /* Alternatively: spins corotate and align with final orbit (binary_evolution_CE_spin_flag=1) */
         if (binary_evolution_CE_spin_flag == 1)
         {
-            //get_unit_vector(star1->spin_vec,spin_vec_unit);
             for (int i=0; i<3; i++)
             {
-                //star1->spin_vec[i] = OORB * spin_vec_unit[i];
                 star1->spin_vec[i] = OORB * h_vec_unit[i];
             }
         }
 
         star2->stellar_type = KW2;
-        
-        //star2->mass = M2; // handled by SNe function
+        star2->mass = M2;
         star2->core_mass = MC2;
         star2->sse_initial_mass = M02;
         star2->convective_envelope_mass = MENV2;
         
-        //star2->epoch = 0.0; /* is this correct? */
         star2->age = AJ2 * Myr_to_yr;
         star2->epoch = t - star2->age;
 
         star2->radius = R2 * CONST_R_SUN;
         star2->core_radius = RC2 * CONST_R_SUN;
         star2->convective_envelope_radius = RENV2 * CONST_R_SUN;
-        
         star2->luminosity = L2 * CONST_L_SUN;
 
         if (binary_evolution_CE_spin_flag == 1)
         {
-            //get_unit_vector(star2->spin_vec,spin_vec_unit);
             for (int i=0; i<3; i++)
             {
-                //star2->spin_vec[i] = OORB * spin_vec_unit[i];
                 star2->spin_vec[i] = OORB * h_vec_unit[i];
             }
         }
 
+        /* Adjust positions and velocities of the two stars to be consistent with the post-CE orbit */
         /* Set new e & h vectors for the binary.
          * Assume they only change in magnitude.
          * Note: this overrides the changes made to the binary's orbit after calling handle_SNe_in_system above */
@@ -749,221 +701,97 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         double e = ECC;
         double h = compute_h_from_a(M1,M2,a,e);
 
-        printf("a %g e %g h %g\n",a,e,h);
+        printf("CE post a %g e %g h %g\n",a,e,h);
         print_system(particlesMap,*integration_flag);
         
-        if (*integration_flag == 0) /* secular */
+        double R1_vec_new[3],R2_vec_new[3],V1_vec_new[3],V2_vec_new[3];
+        compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(M1_old,star1->R_vec,star1->V_vec,M2_old,star2->R_vec,star2->V_vec,M1,R1_vec_new,V1_vec_new,M2,R2_vec_new,V2_vec_new,a,e);
+        for (int i=0; i<3; i++)
         {
-            for (int i=0; i<3; i++)
-            {
-                binary->e_vec[i] = e * binary->e_vec_unit[i];
-                binary->h_vec[i] = h * binary->h_vec_unit[i];
-            }
-
-            /* Below: not strictly neccesary */
-            binary->a = a;
-            binary->e = ECC;
-        
-            /* Assume the binary true anomaly is not affected */
-            
-            set_binary_masses_from_body_masses(particlesMap);
-            set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
-        }        
-        else /* N-body; need to adjust positions and velocities of the two stars corresponding to the new a and e */
-        {
-            double R1_vec_new[3],R2_vec_new[3],V1_vec_new[3],V2_vec_new[3];
-            compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(M1_old,star1->R_vec,star1->V_vec,M2_old,star2->R_vec,star2->V_vec,M1,R1_vec_new,V1_vec_new,M2,R2_vec_new,V2_vec_new,a,e);
-            for (int i=0; i<3; i++)
-            {
-                star1->R_vec[i] = R1_vec_new[i];
-                star1->V_vec[i] = V1_vec_new[i];
-                star2->R_vec[i] = R2_vec_new[i];
-                star2->V_vec[i] = V2_vec_new[i];
-            }
+            star1->R_vec[i] = R1_vec_new[i];
+            star1->V_vec[i] = V1_vec_new[i];
+            star2->R_vec[i] = R2_vec_new[i];
+            star2->V_vec[i] = V2_vec_new[i];
         }
-        
+
         /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
         /* Is this necessary? Done at the end of binary_evolution() */
-        bool unbound_orbits = check_for_unbound_orbits(particlesMap);
-        if (unbound_orbits == true)
-        {
-            *integration_flag = 5;
-            printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
-        }
+//        bool unbound_orbits = check_for_unbound_orbits(particlesMap);
+        //if (unbound_orbits == true)
+        //{
+            //*integration_flag = 5;
+            //printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+        //}
 
+        /* Reset some parameters */
         star1->RLOF_flag = 0;
         star2->RLOF_flag = 0;
         
-        printf("end\n");
+        star1->apply_kick = false;
+        star2->apply_kick = false;
+        
+        printf("CE no coel end\n");
         print_system(particlesMap,*integration_flag);
-   
     }
     else if (COEL == true)
     {
-        if (*integration_flag == 0) /* secular */
+        /* Assign merger remnant to star1; remove star2 */
+        particlesMap->erase(index2);
+        
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
         {
-            #ifdef IGNORE
-            /* Handle effect of mass loss on the rest of the system */
-
-            set_old_parameters_for_adiabatic_mass_loss(particlesMap); /* copy the old masses and h & e vectors for use of adiabatic mass loss below */
-            
-            /* Next, assume instantaneous mass loss for ALL orbits. 
-             * Orbits, for which mass loss is expected to be adiabatic,
-             * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
-
-            binary->mass = star1->mass + star2->mass; // the old mass
-            double Delta_M = M1 - binary->mass;
-            binary->instantaneous_perturbation_delta_mass = M1 - binary->mass;
-
-            int integration_flag_dummy;
-            handle_SNe_in_system(particlesMap, &unbound_orbits, &integration_flag_dummy); /* mass of `binary' will be updated */
-
-            //apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
-            
-            //apply_user_specified_instantaneous_perturbation(particlesMap);
-            //reset_instantaneous_perturbation_quantities(particlesMap);
-            
-            //printf("mold %g mnew %g\n",binary->mass,M1);
-            
-            /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
-             * i.e., time of CE >> t_orb */
-            binary->delta_m_adiabatic_mass_loss = Delta_M;
-            compute_new_orbits_assuming_adiabatic_mass_loss(particlesMap, binary->common_envelope_timescale);
-
-            #endif
-
-            /* Should coelesced objects get a kick? 
-             * For now, assume no kick
-             * Note: mergers between BHs/NSs (implying possible recoil) should never occur here (CE evolution), rather as collisions */
-            star1->apply_kick = false;
-            star2->apply_kick = false;
-            
-            //binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set again here?
-            //binary->apply_kick = false;
-            
-            double Delta_M1 = M1 - binary->mass;
-            double Delta_M2 = 0.0;
-            int integration_flag_dummy;
-            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, star1, star2, Delta_M1, Delta_M2, binary->common_envelope_timescale, &integration_flag_dummy);
-
-            binary->is_binary = false; /* The binary becomes a body */
-            //it_p = particlesMap->erase(particlesMap->find(star1->index));
-            //it_p = particlesMap->erase(particlesMap->find(star2->index));
-
-            particlesMap->erase(star1->index);
-            particlesMap->erase(star2->index);
-
-            //printf("post merge\n");
-            //print_system(particlesMap);
-
-            binary->apply_kick = false;
-            binary->merged = false;
-            //printf("done SNe\n");
-            
-            /* Update the merged star */
-            binary->stellar_type = KW1;
-            
-            //star1->mass = M1; // handled by SNe function
-            binary->core_mass = MC1;
-            binary->sse_initial_mass = M01;
-            binary->convective_envelope_mass = MENV1;
-            
-            //binary->epoch = 0.0; /* is this correct? */
-            binary->age = AJ1 * Myr_to_yr;
-            binary->epoch = t - binary->age;
-
-            binary->radius = R1 * CONST_R_SUN;
-            binary->core_radius = RC1 * CONST_R_SUN;
-            binary->convective_envelope_radius = RENV1 * CONST_R_SUN;
-            
-            binary->luminosity = L1 * CONST_L_SUN;
-            
-            binary->metallicity = z_new;
-            binary->zpars = zpars_new;
-
-            /* Set the spin equal to the orbital frequency just before coalescence (previously calculated as OORB).
-             * Assume the direction is equal to the orbital direction before coalescence. */
-
+            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
             for (int i=0; i<3; i++)
             {
-                binary->spin_vec[i] = OORB * h_vec_unit[i];
-            }
-            printf("OORB %g S %g %g %g\n",OORB,binary->spin_vec[0],binary->spin_vec[1],binary->spin_vec[2]);
-            binary->apply_kick = false;
-            binary->RLOF_flag = 0;
-            
-            /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
-            bool unbound_orbits = check_for_unbound_orbits(particlesMap);
-            if (unbound_orbits == true)
-            {
-                *integration_flag = 3;
-                printf("binary_evolution.cpp -- common_envelope_evolution -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
+                star1->V_vec[i] += V_kick_vec[i];
             }
         }
-        else
+
+        /* Merged star properties */
+        star1->stellar_type = KW1;
+        star1->mass = M1;
+        star1->core_mass = MC1;
+        star1->sse_initial_mass = M01;
+        star1->convective_envelope_mass = MENV1;
+        
+        star1->epoch = t - star1->age;
+        star1->age = AJ1 * Myr_to_yr;
+
+        star1->radius = R1 * CONST_R_SUN;
+        star1->core_radius = RC1 * CONST_R_SUN;
+        star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
+        star1->luminosity = L1 * CONST_L_SUN;
+
+        /* Position/velocity 
+         * New position is CM position of original two stars
+         * Set new velocity according to linear momentum conservation */
+        for (i=0; i<3; i++)
         {
-            /* Assign merger remnant to star1; remove star2 */
-            //it_p = particlesMap->erase(particlesMap->find(star2->index));
-            particlesMap->erase(star2->index);
-            star1->stellar_type = KW1;
-
-            for (i=0; i<3; i++)
-            {
-                star1->R_vec[i] = initial_R_CM[i];
-                star1->V_vec[i] = initial_momentum[i]/M1; /* set new velocity according to linear momentum conservation */
-            }
-
-            star1->mass = M1;
-            star1->core_mass = MC1;
-            star1->sse_initial_mass = M01;
-            star1->convective_envelope_mass = MENV1;
-            
-            star1->epoch = 0.0; /* is this correct? */
-            star1->age = AJ1 * Myr_to_yr;
-
-            star1->radius = R1 * CONST_R_SUN;
-            star1->core_radius = RC1 * CONST_R_SUN;
-            star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
-            
-            star1->luminosity = L1 * CONST_L_SUN;
-            
-            /* Set the spin equal to the orbital frequency just before coalescence (previously calculated as OORB).
-             * Assume the direction is equal to the previous orbital orientation. */
-
-            for (int i=0; i<3; i++)
-            {
-                star1->spin_vec[i] = OORB * h_vec_unit[i];
-            }
-
-            star1->apply_kick = false; 
-            star1->RLOF_flag = 0;
-            //double t = 0.0;
-            //double t_old = 0.0;
-            //double t_out,dt_nbody;
-            //integrate_nbody_system(particlesMap,integration_flag, 0.0, 0.0, &t_out, &dt_nbody);
-            
+            star1->R_vec[i] = final_R_CM[i];
+            star1->V_vec[i] = final_momentum[i]/M1; 
         }
+
+            
+        /* Set the spin equal to the orbital frequency just before coalescence (previously calculated as OORB).
+         * Assume the direction is equal to the previous orbital orientation. */
+
+        for (int i=0; i<3; i++)
+        {
+            star1->spin_vec[i] = OORB * h_vec_unit[i];
+        }
+
+        /* Reset some parameters */
+        star1->RLOF_flag = 0;
+        star1->apply_kick = false; 
+           
     }
-    
-    /* Reset kick parameters if the binary remains */
-//    if (COEL == false)
-//    {
-//        star1->apply_kick = true;
-//        star2->apply_kick = true;
-//    }
 
     } // end of label30
 
     printf("binary_evolution.cpp -- common_envelope_evolution -- end\n");
     print_system(particlesMap,*integration_flag);
-
-    #ifdef LOGGING
-    //Log_info_type log_info;
-    log_info.binary_index = binary_index;
-    log_info.index1 = index1;
-    log_info.index2 = index2;
-    update_log_data(particlesMap, t, *integration_flag, 6, log_info);
-    #endif
 
 
     return;

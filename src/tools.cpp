@@ -707,7 +707,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
     ParticlesMapIterator it_p;    
     if (integration_flag==0)
     {
-        update_structure(particlesMap);
+        update_structure(particlesMap, integration_flag);
         set_up_derived_quantities(particlesMap);
     
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)

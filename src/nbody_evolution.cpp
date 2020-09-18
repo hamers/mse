@@ -104,7 +104,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     //set_binary_masses_from_body_masses(particlesMap);
 
-    update_structure(particlesMap);
+    update_structure(particlesMap, *integration_flag);
 
 
     *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
@@ -116,9 +116,8 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     print_system(particlesMap,*integration_flag);
     free_data(R);
     
-    
-        
-    return; // &new_particlesMap;
+      
+    return;
 }
 
 void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, double t, int *integration_flag)
@@ -1029,6 +1028,85 @@ void print_state(struct RegularizedRegion *R)
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
     }
     printf("=========\n");
+}
+
+void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double>> &R_vecs, std::vector<std::vector<double>> &V_vecs)
+{
+    printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss end_time %g Nsteps %d \n",end_time,Nsteps);
+    
+    /* Used to take into account effect of mass loss during events such as CE.
+     * No collision detection. */
+    
+    initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
+
+    struct RegularizedRegion *R;
+
+    int i=0;
+    int j;
+    int N_bodies = masses.size();
+        
+    //my_barrier(); // In serial mode, this does nothing (so can be omitted)
+
+    allocate_armst_structs(&R, N_bodies); // Initialize the data structure
+
+//    auto it_m = masses.begin();
+//    auto it_dm = delta_masses.begin();
+//    auto it_R = R_vecs.begin();
+//    auto it_V = V_vecs.begin();
+
+    for (auto it_m = masses.begin(); it_m != masses.end(); it_m++)
+    {
+        R->Vertex[i].type = 0;
+        R->Index[i] = i;
+
+        R->Mass[i] = *it_m;
+        R->Radius[i] = 0.0;
+        for (j=0; j<3; j++)
+        {
+            R->Pos[3 * i + j] = R_vecs[i][j];
+            R->Vel[3 * i + j] = V_vecs[i][j];
+        }
+        
+        printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        i++;
+    }
+
+    R->gbs_tolerance = mstar_gbs_tolerance_default;
+    R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
+    R->output_time_tolerance = mstar_output_time_tolerance;
+
+    double t=0;
+    double t_reached;
+    int collision_occurred;
+    double dt = end_time/( (double) Nsteps);
+    while (t <= end_time)
+    {
+        run_integrator(R, dt, &t_reached, &collision_occurred);
+
+        t += t_reached;
+
+        /* Increment the masses */
+        i=0;
+        for (auto it_dm = delta_masses.begin(); it_dm != delta_masses.end(); it_dm++)
+        {
+            R->Mass[i] += *it_dm/ ((double) Nsteps);
+            i++;
+        }
+    }
+    
+    i=0;
+    for (auto it_m = masses.begin(); it_m != masses.end(); it_m++)
+    {
+        for (j=0; j<3; j++)
+        {
+            R_vecs[i][j] = R->Pos[3 * i + j];
+            V_vecs[i][j] = R->Vel[3 * i + j];
+        }
+        printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss -- done m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        i++;
+    }
+
+    return;
 }
 
 }

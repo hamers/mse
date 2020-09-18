@@ -10,15 +10,16 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
 /* Event flags *
  * 0: initial state
  * 1: stellar type change
- * 2: SNe
- * 3: onset of mass transfer
- * 4: stop mass transfer
- * 5: CE start
- * 6: CE end
- * 7: collision start
- * 8: collision end
- * 9: dynamical instability
- * 10: secular breakdown
+ * 2: SNe start
+ * 3: SNe end
+ * 4: onset of mass transfer
+ * 5: stop mass transfer
+ * 6: CE start
+ * 7: CE end
+ * 8: collision start
+ * 9: collision end
+ * 10: dynamical instability
+ * 11: secular breakdown
  */
 {
     Log_type new_entry;

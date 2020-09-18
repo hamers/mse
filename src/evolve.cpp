@@ -11,7 +11,7 @@ int initialize_code(ParticlesMap *particlesMap)
     printf("evolve.cpp -- initialize_code; set_up_flybys and initialize stars\n");
     #endif
 
-    update_structure(particlesMap);
+    update_structure(particlesMap, 0);
 
     srand(random_seed);
     int integration_flag = 0;
@@ -26,7 +26,7 @@ int initialize_code(ParticlesMap *particlesMap)
 
     #ifdef LOGGING
     Log_info_type log_info;
-    update_log_data(particlesMap, 0.0, 0, 0, log_info);
+    update_log_data(particlesMap, 0.0, 0, LOG_INIT, log_info);
     #endif
     
     return 0;
@@ -201,6 +201,38 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             break;
         }
         i+=1;
+        
+        
+        #ifdef LOGGING
+        if (logData.size() > 0)
+        {
+            Log_type last_entry = logData.back();
+            Log_info_type last_entry_info = last_entry.log_info;
+            if (last_entry.event_flag == LOG_SNE_START and *integration_flag == 0) // end of SNe phase
+            {
+                Log_info_type log_info;
+                log_info.index1 = last_entry_info.index1;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_END, log_info);
+            }
+            if (last_entry.event_flag == LOG_CE_START and *integration_flag == 0) // end of CE phase
+            {
+                Log_info_type log_info;
+                log_info.binary_index = last_entry_info.binary_index;
+                log_info.index1 = last_entry_info.index1;
+                log_info.index2 = last_entry_info.index2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
+            }
+            if (last_entry.event_flag == LOG_COL_START and *integration_flag == 0) // end of collision phase
+            {
+                Log_info_type log_info;
+                log_info.binary_index = last_entry_info.binary_index;
+                log_info.index1 = last_entry_info.index1;
+                log_info.index2 = last_entry_info.index2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
+            }
+        }
+        #endif
+        
         //*integration_flag=1;
 
     }

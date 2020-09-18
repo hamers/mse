@@ -21,24 +21,26 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->evolve_as_star == true)
         {
+
+            VX = 0.0;
+            VY = 0.0;
+            VZ = 0.0;
+            if (p->apply_kick == true)
+            {
+                flag = sample_kick_velocity(p,&VX,&VY,&VZ);
+                index+=1;
+            }
+
+            printf("SNe.cpp -- handle_SNe_in_system -- index %d delta_m %g vk %g % g %g p->apply_kick %d\n",p->index,p->instantaneous_perturbation_delta_mass,VX,VY,VZ,p->apply_kick);
+
             /* p's instantaneous_perturbation_delta_mass is assumed to be set before calling handle_SNe_in_system() */
             p->instantaneous_perturbation_delta_X = 0.0;
             p->instantaneous_perturbation_delta_Y = 0.0;
             p->instantaneous_perturbation_delta_Z = 0.0;
-            p->instantaneous_perturbation_delta_VX = 0.0;
-            p->instantaneous_perturbation_delta_VY = 0.0;
-            p->instantaneous_perturbation_delta_VZ = 0.0;
 
-            //if (fabs(p->instantaneous_perturbation_delta_mass) > 0.0)
-            if (p->apply_kick == true)
-            {
-                flag = sample_kick_velocity(p,&VX,&VY,&VZ);
-                p->instantaneous_perturbation_delta_VX = VX;
-                p->instantaneous_perturbation_delta_VY = VY;
-                p->instantaneous_perturbation_delta_VZ = VZ;
-                index+=1;
-            }
-            printf("SNe.cpp -- delta_m %g vk %g % g %g p->apply_kick %d\n",p->instantaneous_perturbation_delta_mass,VX,VY,VZ,p->apply_kick);
+            p->instantaneous_perturbation_delta_VX = VX;
+            p->instantaneous_perturbation_delta_VY = VY;
+            p->instantaneous_perturbation_delta_VZ = VZ;
             
         }
     }

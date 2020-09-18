@@ -73,6 +73,7 @@ extern double flybys_internal_semimajor_axis;
 
 extern int binary_evolution_CE_energy_flag;
 extern int binary_evolution_CE_spin_flag;
+extern int binary_evolution_CE_mass_loss_Nsteps;
 
 extern double chandrasekhar_mass;
 extern double eddington_accretion_factor;
@@ -99,6 +100,7 @@ extern double nbody_dynamical_instability_direct_integration_time_multiplier;
 extern double nbody_semisecular_direct_integration_time_multiplier;
 extern double nbody_supernovae_direct_integration_time_multiplier;
 extern double nbody_other_direct_integration_time_multiplier;
+extern double nbody_maximum_separation_for_inclusion;
 
 
 extern double kroupa_alpha1;
@@ -131,8 +133,19 @@ extern double kroupa_x1;
 extern double kroupa_x2;
 extern double kroupa_x3;
 
-
-
+/* Log states */
+#define LOG_INIT        (int)   0
+#define LOG_ST_CHANGE   (int)   1
+#define LOG_SNE_START   (int)   2
+#define LOG_SNE_END     (int)   3
+#define LOG_MT_START    (int)   4
+#define LOG_MT_END      (int)   5
+#define LOG_CE_START    (int)   6
+#define LOG_CE_END      (int)   7
+#define LOG_COL_START   (int)   8
+#define LOG_COL_END     (int)   9
+#define LOG_DYN_INST    (int)   10
+#define LOG_SEC_BREAK   (int)   11
 
 #ifdef IGNORE
 #define CONST_C_LIGHT		(double)	63239726386.8
@@ -489,6 +502,15 @@ inline double dot3(double a[3], double b[3])
 {
     double result = (a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
     return result;
+}
+inline double separation_between_vectors(double a[3], double b[3])
+{
+    double a_minus_b[3];
+    for (int i=0; i<3; i++)
+    {
+        a_minus_b[i] = a[i] - b[i];
+    }
+    return norm3(a_minus_b);
 }
 inline void matrix_on_vector( int N_x, int N_y, double M[][3], double v[], double result[] )
 {

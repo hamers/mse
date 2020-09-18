@@ -24,6 +24,8 @@ void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap 
 void print_state(struct RegularizedRegion *R);
 double compute_nbody_total_energy(struct RegularizedRegion *R);
 
+void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double>> &R_vecs, std::vector<std::vector<double>> &V_vecs);
+
 /* Functions below are from MSTAR that need to be accessible from MSE */
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart);
 void initialize_mpi_or_serial(void);

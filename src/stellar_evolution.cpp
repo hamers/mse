@@ -200,7 +200,7 @@ int initialize_stars(ParticlesMap *particlesMap)
         }
     }
 
-    update_structure(particlesMap); /* set new binary masses */
+    update_structure(particlesMap, 0); /* set new binary masses */
 
     /* Adjust h vectors such that possible initial stellar evolution would not change the original orbital elements  */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -433,12 +433,12 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     if (kw < 13)
                     {
                         //update_log_data(particlesMap, end_time, -1, 1, p->index, -1);
-                        update_log_data(particlesMap, end_time, -1, 1, log_info);
+                        update_log_data(particlesMap, end_time, -1, LOG_ST_CHANGE, log_info);
                         
                     }
                     else
                     {
-                        update_log_data(particlesMap, end_time, -1, 2, log_info);
+                        update_log_data(particlesMap, end_time, -1, LOG_SNE_START, log_info);
                     }
                 }
                 #endif

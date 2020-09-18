@@ -67,7 +67,7 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
             //collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
         }
         
-        update_structure(particlesMap);
+        update_structure(particlesMap, *integration_flag);
         
         bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
         if (stable == false)
@@ -143,12 +143,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     log_info.binary_index = binary_index;
     log_info.index1 = child1_index;
     log_info.index2 = child2_index;
-    update_log_data(particlesMap, t, *integration_flag, 7, log_info);
+    update_log_data(particlesMap, t, *integration_flag, LOG_COL_START, log_info);
     #endif
     
-    /* TO DO: allow for calling this function without specifying the binary_index, i.e., collision during N-body integration (integration_flag>0) */
-    
-    printf("CP\n");
+    printf("collision.cpp -- CP binary %d child1 %d child2 %d t %g int flag %d\n",binary_index,child1_index,child2_index,t,*integration_flag);
     print_system(particlesMap,*integration_flag);
 
     Particle *child1 = (*particlesMap)[child1_index];
@@ -177,39 +175,17 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
     int i;
 
-    Particle *b;
-    double n_old;
-    double initial_momentum[3],initial_R_CM[3];
-    
-    double h_vec_unit[3],e_vec_unit[3];
-    if (*integration_flag == 0)
-    {
-        set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
-        b = (*particlesMap)[binary_index];
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
 
-        n_old = TWOPI/compute_orbital_period_from_semimajor_axis(m,b->a); /* mean motion just prior to collision */
-        get_unit_vector(b->h_vec,h_vec_unit);
-        get_unit_vector(b->e_vec,e_vec_unit);
-    }
-    else
-    {
-        double h_vec[3],e_vec[3],r[3],v[3];
-        double true_anomaly;
-        
-        for (i=0; i<3; i++)
-        {
-            r[i] = child1->R_vec[i] - child2->R_vec[i];
-            v[i] = child1->V_vec[i] - child2->V_vec[i];
-            initial_R_CM[i] = (m1 * child1->R_vec[i] + m2 * child2->R_vec[i]) / (m1 + m2);
-            initial_momentum[i] = m1 * child1->V_vec[i] + m2 * child2->V_vec[i];
-        }
-        from_cartesian_to_orbital_vectors(m1,m2,r,v,e_vec,h_vec,&true_anomaly);
-        get_unit_vector(h_vec,h_vec_unit);
-        get_unit_vector(e_vec,e_vec_unit);
-        double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
-        double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
-        n_old = TWOPI/P_old;
-    }
+    get_initial_binary_orbital_properties_from_position_and_velocity(child1->R_vec, child1->V_vec, child2->R_vec, child2->V_vec, m1, m2, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+    get_unit_vector(h_vec,h_vec_unit);
+    get_unit_vector(e_vec,e_vec_unit);
+
+    double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+    double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
+    double n_old = TWOPI/P_old;
     
     int kw = determine_merger_type(child1->stellar_type,child2->stellar_type);
 
@@ -256,7 +232,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     int kick_distribution = child1->kick_distribution; /* by default, adopt kick distribution of child1 */
 
 
-    double v_kick_vec[3] = {0.0,0.0,0.0};
+    double V_kick_vec[3] = {0.0,0.0,0.0};
     double spin_vec[3];
     double M_final; /* used for compact objects */
     double alpha_vec_final[3];
@@ -395,7 +371,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         double Omega = compute_spin_frequency_from_spin_parameter(m,chi);
         for (i=0; i<3; i++)
         {
-            v_kick_vec[i] = v_recoil_vec[i];
+            V_kick_vec[i] = v_recoil_vec[i];
             spin_vec[i] = Omega * alpha_vec_final[i] / chi;
         }
         
@@ -426,7 +402,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         double Omega = compute_spin_frequency_from_spin_parameter(m,chi);
         for (i=0; i<3; i++)
         {
-            v_kick_vec[i] = v_recoil_vec[i];
+            V_kick_vec[i] = v_recoil_vec[i];
             spin_vec[i] = Omega * alpha_vec_final[i] / chi;
         }
         
@@ -484,157 +460,72 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         zcnsts_(&z_new,zpars_new);
     }
 
-
-    if (*integration_flag == 0) /* secular mode */
+    *integration_flag = 1;
+    if (destroyed == false)
     {
-        
-        b->is_binary = false; /* The binary becomes a body (or destroyed) */
-//        it_p = particlesMap->erase(particlesMap->find(child1->index));
-//        it_p = particlesMap->erase(particlesMap->find(child2->index));
-
-        particlesMap->erase(child1->index);
+        /* child1 will become the merged object */
         particlesMap->erase(child2->index);
+        //it_p = particlesMap->erase(particlesMap->find(child2->index));
 
-        /* Handle effect of fast mass loss and kicks on orbits in the rest of the system */
-        b->mass = m1 + m2; // the old total mass
-        b->instantaneous_perturbation_delta_mass = m - b->mass; /* new mass minus old one; note: if destroyed, the new mass will be 0 */
-        b->instantaneous_perturbation_delta_VX = v_kick_vec[0];
-        b->instantaneous_perturbation_delta_VY = v_kick_vec[1];
-        b->instantaneous_perturbation_delta_VZ = v_kick_vec[2];
-
-        printf("CP -- delta m %g v_kick_vec %g %g %g\n",b->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
-        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
+        /* Update properties of merged star */
+        child1->stellar_type = kw;
+        child1->mass = m;
+        child1->sse_initial_mass = m0;
         
+        child1->age = age*Myr_to_yr;
+        child1->epoch = t - child1->age;
+        child1->sse_main_sequence_timescale = tm*Myr_to_yr;
 
-        printf("CP -- destroyed %d\n",destroyed);
-        
-        /* Update the merged object */
-        if (destroyed == false)
+        child1->radius = r*CONST_R_SUN;
+        child1->luminosity = lum*CONST_L_SUN;
+        child1->core_mass = mc;
+        child1->core_radius = rc*CONST_R_SUN;
+        child1->convective_envelope_mass = menv;
+        child1->convective_envelope_radius = renv*CONST_R_SUN;
+
+        child1->metallicity = z_new;
+        child1->zpars = zpars_new;
+
+        for (i=0; i<3; i++)
         {
-
-            b->stellar_type = kw;
-            b->mass = m;
-            b->sse_initial_mass = m0;
+            child1->R_vec[i] = initial_R_CM[i];
+            child1->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
             
-            b->age = age*Myr_to_yr;
-            b->epoch = t - b->age;
-            b->sse_main_sequence_timescale = tm*Myr_to_yr;
-
-            b->radius = r*CONST_R_SUN;
-            b->luminosity = lum*CONST_L_SUN;
-            b->core_mass = mc;
-            b->core_radius = rc*CONST_R_SUN;
-            b->convective_envelope_mass = menv;
-            b->convective_envelope_radius = renv*CONST_R_SUN;
-
-            b->metallicity = z_new;
-            b->zpars = zpars_new;
-
-            /* Unless calculated above, set the spin equal to the orbital frequency just before collision
-             * Assume the direction is equal to the previous orbital orientation. */
-            if (reset_spin_vec == true)
-            {
-                for (i=0; i<3; i++)
-                {
-                    b->spin_vec[i] = n_old * h_vec_unit[i];
-                }
-            }
-            else
-            {
-                for (i=0; i<3; i++)
-                {
-                    b->spin_vec[i] = spin_vec[i];
-                }
-            }
-            b->apply_kick = true; /* Default value for (stellar evolution) bodies */
-            b->merged = false;
+            child1->V_vec[i] += V_kick_vec[i]; /* apply possible kick */
         }
-        else
+
+        /* Unless calculated above, set the spin equal to the orbital frequency just before collision
+         * Assume the direction is equal to the previous orbital orientation. */
+        if (reset_spin_vec == true)
         {
-            /* The binary b has been completely destroyed. 
-             * If it has a parent, the latter needs to be replaced
-             * from a binary to a body existing of the sibling of b. */
-
-            //particlesMap->erase(child1->index);
-            //particlesMap->erase(child2->index);
-            
-            handle_destruction_of_binary_in_system(particlesMap,b);
-        }
-    }
-    else /* direct N-body mode */
-    {
-        if (destroyed == false)
-        {
-            /* child1 will become the merged object */
-            //it_p = particlesMap->erase(particlesMap->find(child2->index));
-            particlesMap->erase(child2->index);
-            child1->stellar_type = kw;
-            child1->mass = m;
-            child1->sse_initial_mass = m0;
-            
-//            child1->epoch = epoch*Myr_to_yr;
-            child1->age = age*Myr_to_yr;
-            child1->epoch = t - child1->age;
-            child1->sse_main_sequence_timescale = tm*Myr_to_yr;
-
-            child1->radius = r*CONST_R_SUN;
-            child1->luminosity = lum*CONST_L_SUN;
-            child1->core_mass = mc;
-            child1->core_radius = rc*CONST_R_SUN;
-            child1->convective_envelope_mass = menv;
-            child1->convective_envelope_radius = renv*CONST_R_SUN;
-
-            child1->metallicity = z_new;
-            child1->zpars = zpars_new;
-
             for (i=0; i<3; i++)
             {
-                child1->R_vec[i] = initial_R_CM[i];
-                child1->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
-                
-                child1->V_vec[i] += v_kick_vec[i]; /* apply possible kick */
+                child1->spin_vec[i] = n_old * h_vec_unit[i];
             }
-
-
-            /* Unless calculated above, set the spin equal to the orbital frequency just before collision
-             * Assume the direction is equal to the previous orbital orientation. */
-            if (reset_spin_vec == true)
-            {
-                for (i=0; i<3; i++)
-                {
-                    child1->spin_vec[i] = n_old * h_vec_unit[i];
-                }
-            }
-            else
-            {
-                for (i=0; i<3; i++)
-                {
-                    child1->spin_vec[i] = spin_vec[i];
-                }
-            }
-            child1->apply_kick = false; /* Default value for (stellar evolution) bodies */
-            child1->RLOF_flag = 0;
-            
-            printf("CP N-body not destroyed post\n");
-            print_system(particlesMap,*integration_flag);
         }
         else
         {
-            particlesMap->erase(child1->index);
-            particlesMap->erase(child2->index);
+            for (i=0; i<3; i++)
+            {
+                child1->spin_vec[i] = spin_vec[i];
+            }
         }
+        child1->RLOF_flag = 0;
+        child1->apply_kick = false; /* Default value for (stellar evolution) bodies */
+        
+        printf("CP not destroyed post\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    else
+    {
+        particlesMap->erase(child1->index);
+        particlesMap->erase(child2->index);
     }
     
-    #ifdef LOGGING
-    //Log_info_type log_info;
-    log_info.binary_index = binary_index;
-    log_info.index1 = child1_index;
-    log_info.index2 = child2_index;
-    update_log_data(particlesMap, t, *integration_flag, 8, log_info);
-    #endif
-    
+   return;
 }
 
+#ifdef IGNORE
 void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle *b)
 {
     if (b->parent == -1) /* b was a lone binary; the new system is empty */
@@ -666,7 +557,7 @@ void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle
         }
     }
 }
-
+#endif
 
 int determine_merger_type(int kw1, int kw2)
 {
@@ -679,44 +570,22 @@ void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index,
     Particle *star = (*particlesMap)[star_index];
     Particle *planet = (*particlesMap)[planet_index];
     
-    Particle *b;
-    double n_old;
-    double initial_momentum[3],initial_R_CM[3];
-    
     int i;
     double m1 = star->mass;
     double m2 = planet->mass;
     double m = m1 + m2;
 
-    double h_vec_unit[3],e_vec_unit[3];
-    if (*integration_flag == 0)
-    {
-        set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
-        b = (*particlesMap)[binary_index];
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
 
-        n_old = TWOPI/compute_orbital_period_from_semimajor_axis(m,b->a); /* mean motion just prior to collision */
-        get_unit_vector(b->h_vec,h_vec_unit);
-        get_unit_vector(b->e_vec,e_vec_unit);
-    }
-    else
-    {
-        double h_vec[3],e_vec[3],r[3],v[3];
-        double true_anomaly;
-        
-        for (i=0; i<3; i++)
-        {
-            r[i] = star->R_vec[i] - planet->R_vec[i];
-            v[i] = star->V_vec[i] - planet->V_vec[i];
-            initial_R_CM[i] = (m1 * star->R_vec[i] + m2 * planet->R_vec[i]) / (m1 + m2);
-            initial_momentum[i] = m1 * star->V_vec[i] + m2 * planet->V_vec[i];
-        }
-        from_cartesian_to_orbital_vectors(m1,m2,r,v,e_vec,h_vec,&true_anomaly);
-        get_unit_vector(h_vec,h_vec_unit);
-        get_unit_vector(e_vec,e_vec_unit);
-        double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
-        double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
-        n_old = TWOPI/P_old;
-    }
+    get_initial_binary_orbital_properties_from_position_and_velocity(star->R_vec, star->V_vec, planet->R_vec, planet->V_vec, m1, m2, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+    get_unit_vector(h_vec,h_vec_unit);
+    get_unit_vector(e_vec,e_vec_unit);
+
+    double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+    double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
+    double n_old = TWOPI/P_old;
     
     int stellar_type = star->stellar_type;
     double mass = star->mass;
@@ -738,152 +607,132 @@ void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index,
     bool reset_spin_vec = false;
     double *spin_vec = star->spin_vec;
     
-    if (*integration_flag == 0) /* secular mode */
+    *integration_flag = 1;
+    
+    particlesMap->erase(planet->index);
+    star->stellar_type = stellar_type;
+    star->mass = mass;
+    star->sse_initial_mass = sse_initial_mass;
+    
+    star->age = age;
+    star->epoch = t - star->age;
+    star->sse_main_sequence_timescale = sse_main_sequence_timescale;
+
+    star->radius = radius;
+    star->luminosity = luminosity;
+    star->core_mass = core_mass;
+    star->core_radius = core_radius;
+    star->convective_envelope_mass = convective_envelope_mass;
+    star->convective_envelope_radius = convective_envelope_radius;
+
+    star->metallicity = metallicity;
+    star->zpars = zpars;
+
+    for (i=0; i<3; i++)
     {
+        star->R_vec[i] = initial_R_CM[i];
+        star->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
         
-        b->is_binary = false; /* The binary becomes a body (or destroyed) */
-//        it_p = particlesMap->erase(particlesMap->find(child1->index));
-//        it_p = particlesMap->erase(particlesMap->find(child2->index));
-
-        particlesMap->erase(star->index);
-        particlesMap->erase(planet->index);
-
-        /* Handle effect of fast mass loss and kicks on orbits in the rest of the system */
-        b->mass = m1 + m2; // the old total mass
-        b->instantaneous_perturbation_delta_mass = m - b->mass; /* new mass minus old one; note: if destroyed, the new mass will be 0 */
-        b->instantaneous_perturbation_delta_VX = v_kick_vec[0];
-        b->instantaneous_perturbation_delta_VY = v_kick_vec[1];
-        b->instantaneous_perturbation_delta_VZ = v_kick_vec[2];
-        print_system(particlesMap,0);
-        printf("CP -- delta m %g v_kick_vec %g %g %g\n",b->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
-        apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
-        print_system(particlesMap,0);
-
-        
-        /* Update the merged object */
-        //if (destroyed == false)
-        {
-
-            b->stellar_type = stellar_type;
-            b->mass = mass;
-            b->sse_initial_mass = sse_initial_mass;
-            
-            b->age = age;
-            b->epoch = t - b->age;
-            b->sse_main_sequence_timescale = sse_main_sequence_timescale;
-
-            b->radius = radius;
-            b->luminosity = luminosity;
-            b->core_mass = core_mass;
-            b->core_radius = core_radius;
-            b->convective_envelope_mass = convective_envelope_mass;
-            b->convective_envelope_radius = convective_envelope_radius;
-
-            b->metallicity = metallicity;
-            b->zpars = zpars;
-
-            /* Unless calculated above, set the spin equal to the orbital frequency just before collision
-             * Assume the direction is equal to the previous orbital orientation. */
-            if (reset_spin_vec == true)
-            {
-                for (i=0; i<3; i++)
-                {
-                    b->spin_vec[i] = n_old * h_vec_unit[i];
-                }
-            }
-            else
-            {
-                for (i=0; i<3; i++)
-                {
-                    b->spin_vec[i] = spin_vec[i];
-                }
-            }
-            b->apply_kick = true; /* Default value for (stellar evolution) bodies */
-            b->merged = false;
-        }
-        //else
-        //{
-            /* The binary b has been completely destroyed. 
-             * If it has a parent, the latter needs to be replaced
-             * from a binary to a body existing of the sibling of b. */
-
-            //particlesMap->erase(child1->index);
-            //particlesMap->erase(child2->index);
-            
-            //handle_destruction_of_binary_in_system(particlesMap,b);
-        //}
+        star->V_vec[i] += v_kick_vec[i]; /* apply possible kick */
     }
-    else /* direct N-body mode */
+
+
+    /* Unless calculated above, set the spin equal to the orbital frequency just before collision
+     * Assume the direction is equal to the previous orbital orientation. */
+    if (reset_spin_vec == true)
     {
-        //if (destroyed == false)
+        for (i=0; i<3; i++)
         {
-            /* child1 will become the merged object */
-            //it_p = particlesMap->erase(particlesMap->find(child2->index));
-            particlesMap->erase(planet->index);
-            star->stellar_type = stellar_type;
-            star->mass = mass;
-            star->sse_initial_mass = sse_initial_mass;
-            
-//            child1->epoch = epoch*Myr_to_yr;
-            star->age = age;
-            star->epoch = t - star->age;
-            star->sse_main_sequence_timescale = sse_main_sequence_timescale;
-
-            star->radius = radius;
-            star->luminosity = luminosity;
-            star->core_mass = core_mass;
-            star->core_radius = core_radius;
-            star->convective_envelope_mass = convective_envelope_mass;
-            star->convective_envelope_radius = convective_envelope_radius;
-
-            star->metallicity = metallicity;
-            star->zpars = zpars;
-
-            for (i=0; i<3; i++)
-            {
-                star->R_vec[i] = initial_R_CM[i];
-                star->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
-                
-                star->V_vec[i] += v_kick_vec[i]; /* apply possible kick */
-            }
-
-
-            /* Unless calculated above, set the spin equal to the orbital frequency just before collision
-             * Assume the direction is equal to the previous orbital orientation. */
-            if (reset_spin_vec == true)
-            {
-                for (i=0; i<3; i++)
-                {
-                    star->spin_vec[i] = n_old * h_vec_unit[i];
-                }
-            }
-            else
-            {
-                for (i=0; i<3; i++)
-                {
-                    star->spin_vec[i] = spin_vec[i];
-                }
-            }
-            star->apply_kick = false; /* Default value for (stellar evolution) bodies */
-            star->RLOF_flag = 0;
-            
-            printf("CP N-body not destroyed post\n");
-            print_system(particlesMap,*integration_flag);
+            star->spin_vec[i] = n_old * h_vec_unit[i];
         }
-        //else
-        //{
-            //particlesMap->erase(child1->index);
-            //particlesMap->erase(child2->index);
-        //}
     }
+    else
+    {
+        for (i=0; i<3; i++)
+        {
+            star->spin_vec[i] = spin_vec[i];
+        }
+    }
+    star->apply_kick = false; /* Default value for (stellar evolution) bodies */
+    star->RLOF_flag = 0;
+    
+    printf("collision_product_star_planet not destroyed post\n");
+    print_system(particlesMap,*integration_flag);
+
     return;
 }
 
 void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_index, int planet1_index, int planet2_index, double t, int *integration_flag)
 {
     printf("collision_product_planet_planet  binary_index %d  planet1_index %d  planet2_index %d  t %g integration_flag %d\n",binary_index, planet1_index, planet2_index,t,&integration_flag);
+    
+    
+    Particle *planet1 = (*particlesMap)[planet1_index];
+    Particle *planet2 = (*particlesMap)[planet2_index];
+    
+    int i;
+    double m1 = planet1->mass;
+    double m2 = planet2->mass;
+    double m = m1 + m2;
+
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+    get_initial_binary_orbital_properties_from_position_and_velocity(planet1->R_vec, planet1->V_vec, planet2->R_vec, planet2->V_vec, m1, m2, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+    get_unit_vector(h_vec,h_vec_unit);
+    get_unit_vector(e_vec,e_vec_unit);
+
+    double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+    double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
+    double n_old = TWOPI/P_old;
+    
+    double v_kick_vec[3] = {0.0,0.0,0.0};
+    bool reset_spin_vec = false;
+    double *spin_vec = planet1->spin_vec;
+
+
+    *integration_flag = 1;
+    
+    /* Remove planet2 and merge into planet1 */
+    particlesMap->erase(planet2->index);
+    planet1->mass = m;
+    //planet1->radius = ... /* TO DO: what is radius of merged planet?
+    
+    for (i=0; i<3; i++)
+    {
+        planet1->R_vec[i] = initial_R_CM[i];
+        planet1->V_vec[i] = initial_momentum[i]/m; /* set new velocity according to linear momentum conservation */
+        
+        planet1->V_vec[i] += v_kick_vec[i]; /* apply possible kick */
+    }
+
+
+    /* Unless calculated above, set the spin equal to the orbital frequency just before collision
+     * Assume the direction is equal to the previous orbital orientation. */
+    if (reset_spin_vec == true)
+    {
+        for (i=0; i<3; i++)
+        {
+            planet1->spin_vec[i] = n_old * h_vec_unit[i];
+        }
+    }
+    else
+    {
+        for (i=0; i<3; i++)
+        {
+            planet1->spin_vec[i] = spin_vec[i];
+        }
+    }
+    planet1->apply_kick = false; /* Default value for (stellar evolution) bodies */
+    planet1->RLOF_flag = 0;
+    
+    printf("collision_product_planet_planet post\n");
+    print_system(particlesMap,*integration_flag);
+
     return;
 }
+    
 
 void determine_compact_object_merger_properties(double m1_, double m2_, double chi1_, double chi2_, double spin_vec_1_unit_[3], double spin_vec_2_unit_[3], double h_vec_unit[3], double e_vec_unit[3], double v_recoil_vec[3], double alpha_vec_final[3], double *M_final)
 {

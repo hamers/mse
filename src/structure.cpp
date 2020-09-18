@@ -254,8 +254,13 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
     }
 }
 
-void update_structure(ParticlesMap *particlesMap)
+void update_structure(ParticlesMap *particlesMap, int integration_flag)
 {
+    if (integration_flag != 0)
+    {
+        return;
+    }
+    
     int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     
@@ -611,7 +616,7 @@ int determine_number_of_bodies_in_system(ParticlesMap *particlesMap)
 
 void set_up_derived_quantities(ParticlesMap *particlesMap)
 {
-    update_structure(particlesMap);
+    update_structure(particlesMap, 0);
     
     /* These are derived quantities that are often used in the EOM, so they are calculated here once for speed up */
     int i;
@@ -825,6 +830,8 @@ void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap,
 
 void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(double M1_old, double R1_vec_old[3], double V1_vec_old[3], double M2_old, double R2_vec_old[3], double V2_vec_old[3], double M1, double R1_vec[3], double V1_vec[3], double M2, double R2_vec[3], double V2_vec[3], double a, double e)
 {
+    /* Assumes the directions of the h & e vectors are unchanged. */
+    
     int i;
     double M_old = M1_old + M2_old;
     double M = M1 + M2;
@@ -868,5 +875,111 @@ void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentric
 }
 
 
+void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Particle *star1, Particle *star2, double M1, double M1_old, double M2, double M2_old, double mass_loss_timescale, \
+    double r_vec[3], double v_vec[3], double initial_R_CM[3], double initial_V_CM[3], double final_R_CM[3], double final_V_CM[3], double final_momentum[3])
+{
+    /* Take into account effect of mass loss on the rest of the system */
+    
+    int i;
+    std::vector<double> masses;
+    std::vector<double> delta_masses;
+    std::vector<std::vector<double>> R_vecs;
+    std::vector<std::vector<double>> V_vecs;
+    
+    masses.push_back( M1_old + M2_old );
+    delta_masses.push_back( (M1 + M2) - (M1_old + M2_old) );
+    R_vecs.push_back( {initial_R_CM[0],initial_R_CM[1],initial_R_CM[2]} );
+    V_vecs.push_back( {initial_V_CM[0],initial_V_CM[1],initial_V_CM[2]} );
+    
+    printf("PB m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]);
+    
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->index != star1->index and p->index != star2->index)
+        {
+            
+            if (separation_between_vectors(initial_R_CM, p->R_vec) < nbody_maximum_separation_for_inclusion)
+            {
+                masses.push_back(p->mass);
+                delta_masses.push_back(0.0);
+                R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
+                V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
+                printf("PB %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+            }
+        }
+    }
+    if (masses.size() > 1)
+    {
+        integrate_nbody_system_with_mass_loss(mass_loss_timescale, binary_evolution_CE_mass_loss_Nsteps, masses, delta_masses, R_vecs, V_vecs);
+    }
+    else
+    {
+        return;
+    }
+    
+    auto it_R = R_vecs.begin();
+    auto it_V = V_vecs.begin();
+
+    for (i=0; i<3; i++)
+    {
+        final_R_CM[i] = (*it_R)[i];
+        final_V_CM[i] = (*it_V)[i];
+        final_momentum[i] = final_V_CM[i] * (M1_old + M2_old);
+    }
+    printf("final_R_CM %g %g %g final V_CM %g %g %g\n",final_R_CM[0],final_R_CM[1],final_R_CM[2],final_V_CM[0],final_V_CM[1],final_V_CM[2]);
+
+    /* Take into account movement of barycenter of the two stars during the mass loss phase */
+    for (i=0; i<3; i++)
+    {
+        star1->R_vec[i] = final_R_CM[i] + (M2_old/(M1_old+M2_old))*r_vec[i];
+        star1->V_vec[i] = final_V_CM[i] + (M2_old/(M1_old+M2_old))*v_vec[i];
+
+        star2->R_vec[i] = final_R_CM[i] - (M1_old/(M1_old+M2_old))*r_vec[i];
+        star2->V_vec[i] = final_V_CM[i] - (M1_old/(M1_old+M2_old))*v_vec[i];
+    }
+    
+    /* Update positions and velocities of all other bodies */
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->index != star1->index and p->index != star2->index)
+        {
+            if (separation_between_vectors(initial_R_CM, p->R_vec) < nbody_maximum_separation_for_inclusion)
+            {
+                it_R = std::next(it_R,1);
+                it_V = std::next(it_V,1);
+
+                printf("T %g %g %g\n",(*it_R)[0],(*it_R)[1],(*it_R)[2]);
+                for (i=0; i<3; i++)
+                {
+                    p->R_vec[i] = (*it_R)[i];
+                    p->V_vec[i] = (*it_V)[i];
+                }
+            }
+        }
+    }
+
+    return;
+}
+
+void get_initial_binary_orbital_properties_from_position_and_velocity(double R1_vec[3], double V1_vec[3], double R2_vec[3], double V2_vec[3], double M1, double M2, \
+        double r_vec[3], double v_vec[3], double initial_momentum[3], double initial_R_CM[3], double initial_V_CM[3], double h_vec[3], double e_vec[3])
+{
+
+    for (int i=0; i<3; i++)
+    {
+        r_vec[i] = R1_vec[i] - R2_vec[i];
+        v_vec[i] = V1_vec[i] - V2_vec[i];
+        initial_R_CM[i] = (M1 * R1_vec[i] + M2 * R2_vec[i]) / (M1 + M2);
+        initial_momentum[i] = M1 * V1_vec[i] + M2 * V2_vec[i];
+        initial_V_CM[i] = initial_momentum[i]/(M1 + M2);
+    }
+    double true_anomaly;
+    from_cartesian_to_orbital_vectors(M1,M2,r_vec,v_vec,e_vec,h_vec,&true_anomaly);
+    
+    return ;
+}
 
 }

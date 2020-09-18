@@ -1833,28 +1833,30 @@ class Tools(object):
         plot.set_yticks([])
 
     @staticmethod
-    def get_description_from_event_flag(event_flag):
+    def get_description_for_event_flag(event_flag):
         if event_flag == 0:
             text = "$\mathrm{Initial\,system}$"
         elif event_flag == 1:
             text = "$\mathrm{Stellar\,type\,change}$"
         elif event_flag == 2:
-            text = "$\mathrm{SNe}$"
+            text = "$\mathrm{SNe\,start}$"
         elif event_flag == 3:
-            text = "$\mathrm{RLOF\,start}$"
+            text = "$\mathrm{SNe\,end}$"
         elif event_flag == 4:
-            text = "$\mathrm{RLOF\,end}$"
+            text = "$\mathrm{RLOF\,start}$"
         elif event_flag == 5:
-            text = "$\mathrm{CE\,start}$"
+            text = "$\mathrm{RLOF\,end}$"
         elif event_flag == 6:
-            text = "$\mathrm{CE\,end}$"
+            text = "$\mathrm{CE\,start}$"
         elif event_flag == 7:
-            text = "$\mathrm{Collision\,start}$"
+            text = "$\mathrm{CE\,end}$"
         elif event_flag == 8:
-            text = "$\mathrm{Collision\,end}$"
+            text = "$\mathrm{Collision\,start}$"
         elif event_flag == 9:
-            text = "$\mathrm{Dyn.\,inst.}$"
+            text = "$\mathrm{Collision\,end}$"
         elif event_flag == 10:
+            text = "$\mathrm{Dyn.\,inst.}$"
+        elif event_flag == 11:
             text = "$\mathrm{Sec.\,break.}$"
         else:
             text = ""
@@ -2022,7 +2024,7 @@ class Tools(object):
             previous_event_flag = -1
             for index_log,log in enumerate(code.log):
                 event_flag = log["event_flag"]
-                if previous_event_flag == event_flag and event_flag == 3:
+                if previous_event_flag == event_flag and event_flag == 4:
                     continue
                 plot_log.append(log)
                 previous_event_flag = event_flag
@@ -2039,9 +2041,9 @@ class Tools(object):
                 
                 Tools.generate_mobile_diagram(particles,plot,fontsize=0.5*N_l)
 
-                text = Tools.get_description_from_event_flag(event_flag)
+                text = Tools.get_description_for_event_flag(event_flag)
                 plot.set_title(text,fontsize=fontsize)
-                plot.annotate("$t=%s\,\mathrm{Myr}$"%round(log["time"]*1e-6,1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
+                plot.annotate("$t\simeq %s\,\mathrm{Myr}$"%round(log["time"]*1e-6,2),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
                 #if index_log>0: break
     
             fig.savefig(plot_filename + "_mobile.pdf")
@@ -2097,7 +2099,7 @@ class Tools(object):
 
             fontsize=18
 
-            log_CEs = [x for x in code.log if x["event_flag"] == 5]
+            log_CEs = [x for x in code.log if x["event_flag"] == 6]
             t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
             
             for k,t in enumerate(t_CEs_Myr):

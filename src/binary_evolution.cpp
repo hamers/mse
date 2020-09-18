@@ -14,7 +14,8 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     {
         return 0;
     }
-    update_structure(particlesMap);
+    update_structure(particlesMap, *integration_flag);
+    set_positions_and_velocities(particlesMap);
     handle_wind_accretion(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
     handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
         
@@ -25,9 +26,9 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     {
         *integration_flag = 1;
     }
-
-    //printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
-    //print_system(particlesMap,*integration_flag);
+    
+//    printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
+//    print_system(particlesMap,*integration_flag);
     return 0;
 }
 
@@ -156,7 +157,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         }
     }
 
-    update_structure(particlesMap);
+    update_structure(particlesMap, *integration_flag);
     
     std::vector<int>::iterator it;
     //for (it = parent_indices.begin(); it != parent_indices.end(); it++)
@@ -166,7 +167,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         int flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
     }
 
-    update_structure(particlesMap);
+    update_structure(particlesMap, *integration_flag);
 
     return 0;
     
@@ -459,11 +460,28 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     donor->apply_kick = false;
     accretor->apply_kick = false;
     
-//    binary->mass = star1->mass + star2->mass; // the old mass -- is this necessary to set?
-//    binary->apply_kick = false;
+//    double Delta_m1 = -m_donor;
+//    double Delta_m2 = dm2;
+
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+    get_initial_binary_orbital_properties_from_position_and_velocity(donor->R_vec, donor->V_vec, accretor->R_vec, accretor->V_vec, m_donor, m_accretor, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
     
-    double Delta_m1 = -m_donor;
-    double Delta_m2 = dm2;
+    double final_R_CM[3],final_V_CM[3],final_momentum[3];
+    handle_gradual_mass_loss_event_in_system(particlesMap, donor, accretor, 0.0, m_donor, m_accretor + dm2, m_accretor, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
+        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+    update_stellar_evolution_properties(accretor);
+    accretor->RLOF_flag = 0;
+    particlesMap->erase(donor_index);
+    
+    *integration_flag = 1;
+
+
+    
+    #ifdef IGNORE
     handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, integration_flag);
 
     /* The binary becomes a body with the accretor's properties. */
@@ -487,7 +505,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     printf("binary_evolution -- dynamical_mass_transfer_WD_donor -- delta m %g v_kick_vec %g %g %g\n",parent->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
     apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
     #endif
-    
+    #endif
     
     return 0;
 }
@@ -608,10 +626,38 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         exit(-1);
     }
     
-    double Delta_m1 = -dm1;
-    double Delta_m2 = dm2;
-    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_WD_donor_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+//    double Delta_m1 = -dm1;
+//    double Delta_m2 = dm2;
+//    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_WD_donor_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
 
+    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+    get_initial_binary_orbital_properties_from_position_and_velocity(donor->R_vec, donor->V_vec, accretor->R_vec, accretor->V_vec, m_donor, m_accretor, \
+        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+    
+    double final_R_CM[3],final_V_CM[3],final_momentum[3];
+    handle_gradual_mass_loss_event_in_system(particlesMap, donor, accretor, 0.0, m_donor, m_accretor + dm2, m_accretor, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
+        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+    if (destroyed == false)
+    {
+        update_stellar_evolution_properties(accretor);
+        accretor->RLOF_flag = 0;
+        
+        particlesMap->erase(donor_index);
+    }
+    else
+    {
+        particlesMap->erase(donor_index);
+        particlesMap->erase(accretor_index);
+    }
+
+    *integration_flag = 1;
+
+
+
+    #ifdef IGNORE
     #ifdef IGNORE
    /* Handle effect of mass loss and kicks on orbits in the rest of the system */
       
@@ -640,8 +686,10 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     }
     else
     {
-        handle_destruction_of_binary_in_system(particlesMap,parent);
+//        handle_destruction_of_binary_in_system(particlesMap,parent);
     }
+    #endif
+    
     
     return 0;
     
@@ -923,7 +971,26 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         {
             /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
             double Delta_m1 = dm1 + dms_donor;
-            double Delta_m2 = m_accretor;
+            double Delta_m2 = -m_accretor;
+            
+            double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+            double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+            get_initial_binary_orbital_properties_from_position_and_velocity(donor->R_vec, donor->V_vec, accretor->R_vec, accretor->V_vec, m_donor, m_accretor, \
+                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+            
+            double final_R_CM[3],final_V_CM[3],final_momentum[3];
+            handle_gradual_mass_loss_event_in_system(particlesMap, donor, accretor, m_donor + Delta_m1, m_donor, m_accretor + Delta_m2, m_accretor, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
+                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+            update_stellar_evolution_properties(donor);
+            donor->RLOF_flag = 0;
+                
+            particlesMap->erase(accretor_index);
+
+            *integration_flag = 1;
+
+            #ifdef IGNORE
             handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
 
             /* The binary becomes a body with the donor's properties. */
@@ -933,6 +1000,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
             //particlesMap->erase(donor_index);
             particlesMap->erase(accretor_index);
+            #endif
         }
         else if (kw1 <= 10 and kw2 >= 11)
         {
@@ -948,8 +1016,26 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 if (kw2 == 11)
                 {
                     double Delta_m1 = dm1 + dms_donor;
-                    double Delta_m2 = m_accretor;
-                    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+                    double Delta_m2 = -m_accretor;
+                    
+                    double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+                    double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+                    get_initial_binary_orbital_properties_from_position_and_velocity(donor->R_vec, donor->V_vec, accretor->R_vec, accretor->V_vec, m_donor, m_accretor, \
+                        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                    
+                    double final_R_CM[3],final_V_CM[3],final_momentum[3];
+                    handle_gradual_mass_loss_event_in_system(particlesMap, donor, accretor, m_donor + Delta_m1, m_donor, m_accretor + Delta_m2, m_accretor, parent->compact_object_disruption_mass_loss_timescale, \
+                        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+                    update_stellar_evolution_properties(donor);
+                    donor->RLOF_flag = 0;
+                    particlesMap->erase(accretor_index);
+
+                    *integration_flag = 1;
+
+                    #ifdef IGNORE
+                    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag);
 
                     /* The binary becomes a body with the donor's properties. */
                     update_stellar_evolution_properties(donor);
@@ -958,6 +1044,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
                     particlesMap->erase(donor_index);
                     particlesMap->erase(accretor_index);
+                    #endif
                 }
                 else
                 {
@@ -980,8 +1067,24 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 
                 dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
                 double Delta_m1 = dm1 + dms_donor;
-                double Delta_m2 = m_accretor;
-                handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
+                double Delta_m2 = -m_accretor;
+                
+                double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
+                double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
+
+                get_initial_binary_orbital_properties_from_position_and_velocity(donor->R_vec, donor->V_vec, accretor->R_vec, accretor->V_vec, m_donor, m_accretor, \
+                    r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                
+                double final_R_CM[3],final_V_CM[3],final_momentum[3];
+                handle_gradual_mass_loss_event_in_system(particlesMap, donor, accretor, m_donor + Delta_m1, m_donor, m_accretor + Delta_m2, m_accretor, parent->compact_object_disruption_mass_loss_timescale, \
+                    r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+                update_stellar_evolution_properties(donor);
+                donor->RLOF_flag = 0;
+                particlesMap->erase(accretor_index);
+        
+                #ifdef IGNORE
+                handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag);
 
                 /* The binary becomes a body with the donor's properties. */
                 update_stellar_evolution_properties(donor);
@@ -990,6 +1093,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
                 particlesMap->erase(donor_index);
                 particlesMap->erase(accretor_index);
+                #endif
             }
         }
     }

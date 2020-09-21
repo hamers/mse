@@ -834,6 +834,19 @@ bool equal_number(double x1, double x2, double tol)
     return equal;
 }
 
+void check_for_NaN(double x, char *source, char *description, bool exit_on_error)
+{
+    if (x != x)
+    {
+        printf("%s -- ERROR: quantity %s is NaN\n",source,description);
+        if (exit_on_error == true)
+        {
+            printf("Exiting on fatal error\n");
+            exit(-1);
+        }
+    }
+}
+
 int clear_particles(ParticlesMap *particlesMap)
 {
     //printf("clear_internal_particles\n");

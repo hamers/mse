@@ -61,6 +61,12 @@ int initialize_stars(ParticlesMap *particlesMap)
         if (p->is_binary == false and p->evolve_as_star == true)
         {
             z = p->metallicity;
+            
+            if (z < 0.0001 or z > 0.03)
+            {
+                printf("stellar_evolution.cpp -- ERROR: metallicity (given: z = %g for star with index %d and initial mass %g MSun) should be in the range 0.0001 < z < 0.03; terminating program\n",z,p->index,p->mass);
+                exit(-1);
+            }
 
             double *zpars;
             zpars = new double[20];
@@ -161,7 +167,6 @@ int initialize_stars(ParticlesMap *particlesMap)
             p->age = age*Myr_to_yr;
             p->sse_main_sequence_timescale = tms*Myr_to_yr;
             p->epoch = epoch*Myr_to_yr;
-            //p->epoch = 0.0;
 
             p->luminosity = lum*CONST_L_SUN;
             p->core_mass = mc;
@@ -195,7 +200,25 @@ int initialize_stars(ParticlesMap *particlesMap)
                 p->spin_vec[1] = 0.0;
                 p->spin_vec[2] = ospin;
             }
-                
+
+            check_for_NaN(p->stellar_type,                  "stellar_evolution.cpp -- initialize_stars","stellar_type", true);
+            check_for_NaN(p->sse_initial_mass,              "stellar_evolution.cpp -- initialize_stars","sse_initial_mass", true);
+            check_for_NaN(p->mass,                          "stellar_evolution.cpp -- initialize_stars","mass", true);
+            check_for_NaN(p->radius,                        "stellar_evolution.cpp -- initialize_stars","radius", true);
+            check_for_NaN(p->age,                           "stellar_evolution.cpp -- initialize_stars","age", true);
+            check_for_NaN(p->sse_main_sequence_timescale,   "stellar_evolution.cpp -- initialize_stars","sse_main_sequence_timescale", true);
+            check_for_NaN(p->epoch,                         "stellar_evolution.cpp -- initialize_stars","epoch", true);
+            check_for_NaN(p->luminosity,                    "stellar_evolution.cpp -- initialize_stars","luminosity", true);
+            check_for_NaN(p->core_mass,                     "stellar_evolution.cpp -- initialize_stars","core_mass", true);
+            check_for_NaN(p->core_radius,                   "stellar_evolution.cpp -- initialize_stars","core_radius", true);
+            check_for_NaN(p->convective_envelope_mass,      "stellar_evolution.cpp -- initialize_stars","convective_envelope_mass", true);
+            check_for_NaN(p->convective_envelope_radius,    "stellar_evolution.cpp -- initialize_stars","convective_envelope_radius", true);
+            check_for_NaN(p->sse_k2,                        "stellar_evolution.cpp -- initialize_stars","sse_k2", true);
+            check_for_NaN(p->sse_k3,                        "stellar_evolution.cpp -- initialize_stars","sse_k3", true);
+            check_for_NaN(p->spin_vec[0],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[0]", true);
+            check_for_NaN(p->spin_vec[1],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[1]", true);
+            check_for_NaN(p->spin_vec[2],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[2]", true);
+
             p->check_for_RLOF_at_pericentre = true;
         }
     }

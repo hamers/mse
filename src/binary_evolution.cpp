@@ -72,7 +72,7 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             {
                 printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
                 print_system(particlesMap,*integration_flag);
-                printf("v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
+                printf("p->mass %g parent->mass %g p->radius %g v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",p->mass,parent->mass,p->radius,v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
                 exit(-1);
             }
             //printf("binary_evolution.cpp -- handle_wind_accretion %g\n",companion->mass_dot_wind_accretion);

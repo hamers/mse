@@ -22,7 +22,8 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     check_for_integration_exclusion_orbits(particlesMap);
 
     #ifdef DEBUG
-    printf("evolve.cpp -- evolve -- N_bodies %d N_binaries %d N_particles %d N_root_finding %d N_ODE_equations %d\n",N_bodies,N_binaries,N_particles,N_root_finding,N_ODE_equations);
+    printf("ODE_system.cpp -- evolve -- N_bodies %d N_binaries %d N_particles %d N_root_finding %d N_ODE_equations %d\n",N_bodies,N_binaries,N_particles,N_root_finding,N_ODE_equations);
+    print_system(particlesMap,0);
     #endif
     
     /*********************
@@ -139,6 +140,7 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 	if (check_flag(&flag, "CVodeRootInit", 1)) return 1;	
 
 
+
     /***************************
      * ODE integration         *
      **************************/ 
@@ -147,13 +149,19 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     double user_end_time = end_time;
 	realtype integrator_end_time;
 
-	flag = CVode(cvode_mem, user_end_time, y_out, &integrator_end_time, CV_NORMAL);	
-
     if (check_for_initial_roots(particlesMap) > 0)
     {
         flag = CV_ROOT_RETURN;
+        *output_flag = CV_ROOT_RETURN;
+        *output_time = start_time;
+        
+        return 0;
     }
-
+    else
+    {
+        flag = CVode(cvode_mem, user_end_time, y_out, &integrator_end_time, CV_NORMAL);	
+    }
+    
 	if (flag == CV_SUCCESS)
 	{
 		*output_flag = CV_SUCCESS;
@@ -241,7 +249,6 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
         Particle *p = (*it_p).second;
         if (p->is_binary == true)
         {
-
             /* Newtonian gravitational point mass dynamics (internal system) */
             compute_EOM_Newtonian_for_particle(particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only);
             

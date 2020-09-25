@@ -1040,6 +1040,7 @@ class Particle
         check_for_minimum_periapse_distance = false;
         check_for_RLOF_at_pericentre = true;
         check_for_RLOF_at_pericentre_use_sepinsky_fit = false; /* 0: use Eggleton formula for consistency with emt model */
+        check_for_GW_condition = false;
 
         dynamical_instability_criterion = 0;
 

@@ -333,12 +333,11 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     else
     {
         I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
-//        printf("pre\n");
         k_AM = compute_apsidal_motion_constant(star);
         //k_AM = star->apsidal_motion_constant;
     }
 
-    //printf("k_AM %g I %g\n",k_AM,I);
+    //printf("index %d k_AM %g I %g\n",star->index,k_AM,I);
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
     
@@ -404,6 +403,24 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double mu = m*M/(m+M);
     double C = m*k_AM*R_div_a_p5/(mu*n);
     
+    check_number(spin_vec[0],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[0]", true);
+    check_number(spin_vec[1],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[1]", true);
+    check_number(spin_vec[2],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[2]", true);
+    check_number(h_vec_unit[0],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h_vec_unit[0]", true);
+    check_number(h_vec_unit[1],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h_vec_unit[1]", true);
+    check_number(h_vec_unit[2],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h_vec_unit[2]", true);
+    check_number(e_vec_unit[0],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","e_vec_unit[0]", true);
+    check_number(e_vec_unit[1],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","e_vec_unit[1]", true);
+    check_number(e_vec_unit[2],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","e_vec_unit[2]", true);
+    check_number(q_vec_unit[0],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","q_vec_unit[0]", true);
+    check_number(q_vec_unit[1],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","q_vec_unit[1]", true);
+    check_number(q_vec_unit[2],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","q_vec_unit[2]", true);
+    check_number(spin_vec_dot_e_vec_unit,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec_dot_e_vec_unit", true);
+    check_number(spin_vec_dot_h_vec_unit,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec_dot_h_vec_unit", true);
+    check_number(spin_vec_dot_q_vec_unit,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec_dot_q_vec_unit", true);
+    check_number(C,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","C", true);
+    check_number(j_p4_inv,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","j_p4_inv", true);
+    
     double C_rot;
     double X_rot = 0.0;
     double Y_rot = 0.0;
@@ -420,7 +437,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 //        printf("e %g q %g \n",spin_vec_dot_e_vec_unit/norm3(spin_vec),spin_vec_dot_q_vec_unit/norm3(spin_vec));
 
         Z_rot = C*c_1div2*j_p4_inv*(2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit - spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit - spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
-//        printf("1 %g 2 %g 3 %g\n",2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit ,- spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit ,- spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
+        //printf("1 %g 2 %g 3 %g\n",2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit ,- spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit ,- spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
+        //printf("1 %g 2 %g 3 %g\n",2.0*spin_vec_dot_h_vec_unit ,- spin_vec_dot_q_vec_unit ,- spin_vec_dot_e_vec_unit);
 //        printf("X %g Y %g Z %g\n",X_rot,Y_rot,Z_rot);
     }    
     if (include_tidal_bulges_precession_terms == 1)
@@ -433,6 +451,14 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double Z = Z_rot + Z_TB;
     
     //printf("M %g m %g R %g k_AM %g a %g e %g Z %g Z_rot %g Z_TB %g\n",M,R,k_AM,a,e,Z,Z_rot,Z_TB);
+
+    //printf("log ome %g\n",log10(1.0-e));
+    check_number(X_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","X_rot", true);
+    check_number(Y_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Y_rot", true);
+    check_number(Z_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Z_rot", true);
+    check_number(Z_TB,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Z_TB", true);
+    check_number(h,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h", true);
+    check_number(n,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","n", true);
 
 
     double dh_vec_dt_star_i;
@@ -449,7 +475,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
             binary->de_vec_dt[i] += -(t_f_inv/h)*( spin_vec_dot_e_vec*f_tides2*h_vec[i]/(2.0*n) \
                 + 9.0*e_vec[i]*(f_tides1*h - c_11div18*spin_vec_dot_h_vec*f_tides2/n) );
             star->dspin_vec_dt[i] += -dh_vec_dt_star_i/I;
-            //printf("test %g %g\n",spin_vec_dot_e_vec*f_tides5*e_vec[i] - spin_vec[i]*f_tides3);
+            //printf("star %d bin %d t_f_inv %g binary->dh_vec_dt[i] %g binary->de_vec_dt[i] %g star->dspin_vec_dt[i] %g\n",star->index,binary->index,t_f_inv,binary->dh_vec_dt[i],binary->de_vec_dt[i],star->dspin_vec_dt[i]);
+            
             
         }
         if (include_rotation_precession_terms == 1 || include_tidal_bulges_precession_terms == 1)
@@ -465,22 +492,10 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 //                printf("ok %d %d\n",include_rotation_precession_terms,include_tidal_bulges_precession_terms);
             }
         }
-        if (binary->dh_vec_dt[i] != binary->dh_vec_dt[i])
-        {
-            printf("tides.cpp -- FATAL ERROR: binary->dh_vec_dt[i] = %g \n",binary->dh_vec_dt[i]);
-            exit(-1);
-        }
-        if (binary->de_vec_dt[i] != binary->de_vec_dt[i])
-        {
-            printf("tides.cpp -- FATAL ERROR: binary->de_vec_dt[i] = %g \n",binary->de_vec_dt[i]);
-            exit(-1);
-        }
-        if (star->dspin_vec_dt[i] != star->dspin_vec_dt[i])
-        {
-            printf("tides.cpp -- FATAL ERROR: star->dspin_vec_dt[i] = %g \n",star->dspin_vec_dt[i]);
-            exit(-1);
-        }
-
+        
+        check_number(binary->dh_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","binary->dh_vec_dt[i]", true);
+        check_number(binary->de_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","binary->de_vec_dt[i]", true);
+        check_number(star->dspin_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","star->dspin_vec_dt[i]", true);
     }
 
 //    printf("I %g %g %g %g\n",rg,M,R,Q_prime);

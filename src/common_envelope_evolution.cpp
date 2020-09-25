@@ -609,14 +609,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     *integration_flag = 1;
             
-    printf("COEL %d\n",COEL);
+    printf("COEL %d OORB %g\n",COEL,OORB);
     bool unbound_orbits = false;
     //double spin_vec_unit[3];
 
     double final_R_CM[3],final_V_CM[3],final_momentum[3];
     handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, M1, M1_old, M2, M2_old, star1->common_envelope_timescale, \
         r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-
+    double Omega_crit,Omega;
 
     if (COEL == false)
     {
@@ -662,11 +662,20 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         
         /* Spins: either assume the spins do not change (binary_evolution_CE_spin_flag=0) */
         /* Alternatively: spins corotate and align with final orbit (binary_evolution_CE_spin_flag=1) */
+        /* Limit spins to critical rotation */
         if (binary_evolution_CE_spin_flag == 1)
         {
+            Omega_crit = compute_breakup_angular_frequency(star1->mass,star1->radius);
+            Omega = OORB;
+            if (OORB >= Omega_crit)
+            {
+                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                Omega = Omega_crit;
+            }
+            
             for (int i=0; i<3; i++)
             {
-                star1->spin_vec[i] = OORB * h_vec_unit[i];
+                star1->spin_vec[i] = Omega * h_vec_unit[i];
             }
         }
 
@@ -686,9 +695,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
         if (binary_evolution_CE_spin_flag == 1)
         {
+            Omega_crit = compute_breakup_angular_frequency(star2->mass,star2->radius);
+            Omega = OORB;
+            if (OORB >= Omega_crit)
+            {
+                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star2->index,OORB,Omega_crit);
+                Omega = Omega_crit;
+            }
+
             for (int i=0; i<3; i++)
             {
-                star2->spin_vec[i] = OORB * h_vec_unit[i];
+                star2->spin_vec[i] = Omega * h_vec_unit[i];
             }
         }
 
@@ -725,11 +742,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
         /* Reset some parameters */
         star1->RLOF_flag = 0;
-        star2->RLOF_flag = 0;
-        
         star1->apply_kick = false;
+        star1->mass_dot_wind = 0.0;
+        star1->radius_dot = 0.0;
+        star1->ospin_dot = 0.0;
+
+        star2->RLOF_flag = 0;
         star2->apply_kick = false;
-        
+        star2->mass_dot_wind = 0.0;
+        star2->radius_dot = 0.0;
+        star2->ospin_dot = 0.0;
+
         printf("CE no coel end\n");
         print_system(particlesMap,*integration_flag);
     }
@@ -775,16 +798,31 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
             
         /* Set the spin equal to the orbital frequency just before coalescence (previously calculated as OORB).
-         * Assume the direction is equal to the previous orbital orientation. */
+         * Assume the direction is equal to the previous orbital orientation. 
+         * Limit to breakup rotation */
 
-        for (int i=0; i<3; i++)
+        if (binary_evolution_CE_spin_flag == 1)
         {
-            star1->spin_vec[i] = OORB * h_vec_unit[i];
-        }
+            Omega_crit = compute_breakup_angular_frequency(star1->mass,star1->radius);
+            Omega = OORB;
+            if (OORB >= Omega_crit)
+            {
+                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                Omega = Omega_crit;
+            }
 
+            for (int i=0; i<3; i++)
+            {
+                star1->spin_vec[i] = Omega * h_vec_unit[i];
+            }
+        }
+        
         /* Reset some parameters */
         star1->RLOF_flag = 0;
-        star1->apply_kick = false; 
+        star1->apply_kick = false;
+        star1->mass_dot_wind = 0.0;
+        star1->radius_dot = 0.0;
+        star1->ospin_dot = 0.0;
            
     }
 

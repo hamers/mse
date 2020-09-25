@@ -428,7 +428,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
     
     /* m, m0, age */
-    
+    double Omega_crit,Omega;
     
     if (destroyed == true)
     {
@@ -498,9 +498,17 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
          * Assume the direction is equal to the previous orbital orientation. */
         if (reset_spin_vec == true)
         {
+            Omega_crit = compute_breakup_angular_frequency(child1->mass,child1->radius);
+            Omega = n_old;
+            if (n_old >= Omega_crit)
+            {
+                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",child1->index,n_old,Omega_crit);
+                Omega = Omega_crit;
+            }
+            
             for (i=0; i<3; i++)
             {
-                child1->spin_vec[i] = n_old * h_vec_unit[i];
+                child1->spin_vec[i] = Omega * h_vec_unit[i];
             }
         }
         else
@@ -511,8 +519,11 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             }
         }
         child1->RLOF_flag = 0;
-        child1->apply_kick = false; /* Default value for (stellar evolution) bodies */
-        
+        child1->apply_kick = false;
+        child1->mass_dot_wind = 0.0;
+        child1->radius_dot = 0.0;
+        child1->ospin_dot = 0.0;
+
         printf("CP not destroyed post\n");
         print_system(particlesMap,*integration_flag);
     }
@@ -639,11 +650,21 @@ void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index,
 
     /* Unless calculated above, set the spin equal to the orbital frequency just before collision
      * Assume the direction is equal to the previous orbital orientation. */
+    double Omega_crit, Omega;
     if (reset_spin_vec == true)
     {
+
+        Omega_crit = compute_breakup_angular_frequency(star->mass,star->radius);
+        Omega = n_old;
+        if (n_old >= Omega_crit)
+        {
+            printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star->index,n_old,Omega_crit);
+            Omega = Omega_crit;
+        }
+        
         for (i=0; i<3; i++)
         {
-            star->spin_vec[i] = n_old * h_vec_unit[i];
+            star->spin_vec[i] = Omega * h_vec_unit[i];
         }
     }
     else
@@ -710,11 +731,20 @@ void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_inde
 
     /* Unless calculated above, set the spin equal to the orbital frequency just before collision
      * Assume the direction is equal to the previous orbital orientation. */
+    double Omega_crit, Omega;
     if (reset_spin_vec == true)
     {
+        Omega_crit = compute_breakup_angular_frequency(planet1->mass,planet1->radius);
+        Omega = n_old;
+        if (n_old >= Omega_crit)
+        {
+            printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",planet1->index,n_old,Omega_crit);
+            Omega = Omega_crit;
+        }
+        
         for (i=0; i<3; i++)
         {
-            planet1->spin_vec[i] = n_old * h_vec_unit[i];
+            planet1->spin_vec[i] = Omega * h_vec_unit[i];
         }
     }
     else

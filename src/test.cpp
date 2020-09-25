@@ -1353,7 +1353,7 @@ int test_collisions()
             printf("i %d j %d\n",i,j);
             //if (i!=1 or j!=4)
             //if (i>5 and i<12 or j>5 and j<12)
-            if (j<6)
+            if (i!=2 or j!= 5)
             {
                 //continue;
             }

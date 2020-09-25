@@ -31,6 +31,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("--t",                           type=int,     dest="test",                        default=0,              help="Test number")
+    parser.add_argument("--m",                           type=int,     dest="mode",                        default=0,              help="Mode -- 0: standard; 1: detailed (more extensive tests, but takes more time to run)")
+    
     
     ### boolean arguments ###
     add_bool_arg(parser, 'verbose',                         default=False,         help="verbose terminal output")
@@ -1448,7 +1450,7 @@ class test_mse():
         
         code = MSE()
 
-        flag = code.unit_tests()
+        flag = code.unit_tests(args.mode)
         
         print("flag",flag)
 

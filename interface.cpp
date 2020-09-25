@@ -1054,7 +1054,7 @@ int set_random_seed(int value)
  * Testing *
  * ********/
 
-int unit_tests_interface()
+int unit_tests_interface(int mode)
 {
     int flag=0;
     flag += test_tools();
@@ -1062,10 +1062,14 @@ int unit_tests_interface()
     flag += test_flybys();
     flag += test_stellar_evolution();
     flag += test_binary_evolution();
-    //flag += test_collisions();
-    
+    if (mode > 0)
+    {
+        flag += test_collisions();
+    }
     return flag;
 }
+
+
 
 int determine_compact_object_merger_properties_interface(double m1, double m2, double chi1, double chi2, \
     double spin_vec_1_unit_x, double spin_vec_1_unit_y, double spin_vec_1_unit_z, \

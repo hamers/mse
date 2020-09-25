@@ -38,10 +38,10 @@ class MSE(object):
         self.__include_dotriacontupole_order_binary_pair_terms = True
         self.__include_double_averaging_corrections = False
 
-        self.__mstar_gbs_tolerance_default = 1.0e-12
+        self.__mstar_gbs_tolerance_default = 1.0e-10
         self.__mstar_gbs_tolerance_kick = 1.0e-8
         self.__mstar_collision_tolerance = 1.0e-10
-        self.__mstar_output_time_tolerance = 1.0e-2
+        self.__mstar_output_time_tolerance = 1.0e-4
         self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
         self.__nbody_analysis_fractional_integration_time = 0.05
         self.__nbody_analysis_maximum_integration_time = 1.0e5
@@ -54,7 +54,7 @@ class MSE(object):
         self.__effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e3
         
         self.__binary_evolution_CE_energy_flag = 0
-        self.__binary_evolution_CE_spin_flag = 0
+        self.__binary_evolution_CE_spin_flag = 1
         self.__chandrasekhar_mass = 1.44
         self.__eddington_accretion_factor = 10.0
         self.__nova_accretion_factor = 1.0e-3
@@ -283,7 +283,7 @@ class MSE(object):
 
        
         ### tests ###
-        self.lib.unit_tests_interface.argtypes = ()
+        self.lib.unit_tests_interface.argtypes = (ctypes.c_int,)
         self.lib.unit_tests_interface.restype = ctypes.c_int
 
         self.lib.determine_compact_object_merger_properties_interface.argtypes = ( ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
@@ -787,8 +787,8 @@ class MSE(object):
 
 
     ### Tests ###
-    def unit_tests(self):
-        return self.lib.unit_tests_interface()
+    def unit_tests(self,mode):
+        return self.lib.unit_tests_interface(mode)
 
     def determine_compact_object_merger_properties(self,m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit):
         v_recoil_vec_x,v_recoil_vec_y,v_recoil_vec_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
@@ -1301,7 +1301,7 @@ class Particle(object):
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0e100, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0, convective_envelope_radius=1.0, luminosity=1.0, \
-            check_for_secular_breakdown=False,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
+            check_for_secular_breakdown=True,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
             check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
             secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, \
             is_external=False, external_t_ref=0.0, external_r_p=0.0, \

@@ -718,7 +718,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             {
                 if (p->evolve_as_star == true)
                 {
-                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g Spin_freq %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,norm3(p->spin_vec));
+                    printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g Spin_freq %g Omega_crit %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,norm3(p->spin_vec),compute_breakup_angular_frequency(p->mass,p->radius));
                 }
                 else
                 {
@@ -727,7 +727,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             }
             else
             {
-                printf("index %d -- binary -- parent %d child1 %d child2 %d m %g a %g e %g\n",p->index,p->parent,p->child1,p->child2,p->mass,p->a,p->e);
+                printf("index %d -- binary -- parent %d child1 %d child2 %d m %g a %g e %g rp %g \n",p->index,p->parent,p->child1,p->child2,p->mass,p->a,p->e,p->a*(1.0 - p->e));
             }
         }
     }
@@ -834,16 +834,25 @@ bool equal_number(double x1, double x2, double tol)
     return equal;
 }
 
-void check_for_NaN(double x, char *source, char *description, bool exit_on_error)
+void check_number(double x, char *source, char *description, bool exit_on_error)
 {
-    if (x != x)
+    double y = ((double) x);
+    bool error = false;
+    if (isnan(y))
     {
+        error = true;
         printf("%s -- ERROR: quantity %s is NaN\n",source,description);
-        if (exit_on_error == true)
-        {
-            printf("Exiting on fatal error\n");
-            exit(-1);
-        }
+    }
+    if (isinf(y))
+    {
+        error = true;
+        printf("%s -- ERROR: quantity %s is infinite\n",source,description);
+    }
+
+    if (error == true and exit_on_error == true)
+    {
+        printf("Exiting on fatal error\n");
+        exit(-1);
     }
 }
 

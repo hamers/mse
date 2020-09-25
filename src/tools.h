@@ -47,7 +47,7 @@ double compute_h_from_a(double m1, double m2, double a, double e);
 double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, double a, double a_dot, double e, double e_dot);
 
 bool equal_number(double x1, double x2, double tol);
-void check_for_NaN(double x, char *source, char *description, bool exit_on_error);
+void check_number(double x, char *source, char *description, bool exit_on_error);
 
 int clear_particles(ParticlesMap *particlesMap);
 

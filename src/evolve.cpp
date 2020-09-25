@@ -127,38 +127,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             print_system(particlesMap,*integration_flag);
             
             flag = investigate_roots_in_system(particlesMap, t, *integration_flag);
-            if (flag == 1) // RLOF
-            {
-                printf("RLOF occurred, but continuing dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
-                dt_binary_evolution = dt_stev/10.0;
-                printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",dt_binary_evolution,dt_stev);
-                *CVODE_flag = 0;
-            }
-            else if (flag == 2) // Dynamical instability
-            {
-                printf("Dynamical instability\n");
-                *integration_flag = 1;
-                *CVODE_flag = 0;
-            }
-            else if (flag == 3) // Semisecular
-            {
-                printf("Semisecular\n");
-                
-                *integration_flag = 2;
-                *CVODE_flag = 0;
-            }
-            else if (flag == 4) // Collision/merger
-            {
-                printf("Collision/merger\n");
-                *CVODE_flag = 0;
-                handle_collisions(particlesMap, t, integration_flag);
-            }
-            else
-            {
-                printf("Other\n");
-                break;
-            }
-
+            handle_roots(particlesMap, flag, integration_flag, CVODE_flag, t, &dt_stev, &dt_binary_evolution);
         }
        
         /* Time step (phase 1) */

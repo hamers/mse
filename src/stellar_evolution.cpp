@@ -201,25 +201,26 @@ int initialize_stars(ParticlesMap *particlesMap)
                 p->spin_vec[2] = ospin;
             }
 
-            check_for_NaN(p->stellar_type,                  "stellar_evolution.cpp -- initialize_stars","stellar_type", true);
-            check_for_NaN(p->sse_initial_mass,              "stellar_evolution.cpp -- initialize_stars","sse_initial_mass", true);
-            check_for_NaN(p->mass,                          "stellar_evolution.cpp -- initialize_stars","mass", true);
-            check_for_NaN(p->radius,                        "stellar_evolution.cpp -- initialize_stars","radius", true);
-            check_for_NaN(p->age,                           "stellar_evolution.cpp -- initialize_stars","age", true);
-            check_for_NaN(p->sse_main_sequence_timescale,   "stellar_evolution.cpp -- initialize_stars","sse_main_sequence_timescale", true);
-            check_for_NaN(p->epoch,                         "stellar_evolution.cpp -- initialize_stars","epoch", true);
-            check_for_NaN(p->luminosity,                    "stellar_evolution.cpp -- initialize_stars","luminosity", true);
-            check_for_NaN(p->core_mass,                     "stellar_evolution.cpp -- initialize_stars","core_mass", true);
-            check_for_NaN(p->core_radius,                   "stellar_evolution.cpp -- initialize_stars","core_radius", true);
-            check_for_NaN(p->convective_envelope_mass,      "stellar_evolution.cpp -- initialize_stars","convective_envelope_mass", true);
-            check_for_NaN(p->convective_envelope_radius,    "stellar_evolution.cpp -- initialize_stars","convective_envelope_radius", true);
-            check_for_NaN(p->sse_k2,                        "stellar_evolution.cpp -- initialize_stars","sse_k2", true);
-            check_for_NaN(p->sse_k3,                        "stellar_evolution.cpp -- initialize_stars","sse_k3", true);
-            check_for_NaN(p->spin_vec[0],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[0]", true);
-            check_for_NaN(p->spin_vec[1],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[1]", true);
-            check_for_NaN(p->spin_vec[2],                   "stellar_evolution.cpp -- initialize_stars",">spin_vec[2]", true);
-
             p->check_for_RLOF_at_pericentre = true;
+            
+            check_number(p->stellar_type,                  "stellar_evolution.cpp -- initialize_stars","stellar_type", true);
+            check_number(p->sse_initial_mass,              "stellar_evolution.cpp -- initialize_stars","sse_initial_mass", true);
+            check_number(p->mass,                          "stellar_evolution.cpp -- initialize_stars","mass", true);
+            check_number(p->radius,                        "stellar_evolution.cpp -- initialize_stars","radius", true);
+            check_number(p->age,                           "stellar_evolution.cpp -- initialize_stars","age", true);
+            check_number(p->sse_main_sequence_timescale,   "stellar_evolution.cpp -- initialize_stars","sse_main_sequence_timescale", true);
+            check_number(p->epoch,                         "stellar_evolution.cpp -- initialize_stars","epoch", true);
+            check_number(p->luminosity,                    "stellar_evolution.cpp -- initialize_stars","luminosity", true);
+            check_number(p->core_mass,                     "stellar_evolution.cpp -- initialize_stars","core_mass", true);
+            check_number(p->core_radius,                   "stellar_evolution.cpp -- initialize_stars","core_radius", true);
+            check_number(p->convective_envelope_mass,      "stellar_evolution.cpp -- initialize_stars","convective_envelope_mass", true);
+            check_number(p->convective_envelope_radius,    "stellar_evolution.cpp -- initialize_stars","convective_envelope_radius", true);
+            check_number(p->sse_k2,                        "stellar_evolution.cpp -- initialize_stars","sse_k2", true);
+            check_number(p->sse_k3,                        "stellar_evolution.cpp -- initialize_stars","sse_k3", true);
+            check_number(p->spin_vec[0],                   "stellar_evolution.cpp -- initialize_stars","spin_vec[0]", true);
+            check_number(p->spin_vec[1],                   "stellar_evolution.cpp -- initialize_stars","spin_vec[1]", true);
+            check_number(p->spin_vec[2],                   "stellar_evolution.cpp -- initialize_stars","spin_vec[2]", true);
+
         }
     }
 
@@ -412,21 +413,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 //printf("dots1 % g %g %g %g\n",p->mass_dot,p->radius_dot,r*CONST_R_SUN,p->radius);
                 //printf("dots2 % g %g %g %g\n",p->mass_dot,p->radius_dot,mt,p->mass);
 
-                //p->mass_dot = 0.0;
-                //p->radius_dot = 0.0;
-
-                //p->mass = mt;
                 p->sse_initial_mass = sse_initial_mass;
                 p->stellar_type = kw;
                 p->epoch = epoch*Myr_to_yr;
-                //printf("ospin %g ospin_old %g\n",ospin,ospin_old);
-                //if (ospin_old != 0.0)
-                if (1==0)
-                {
-                    //p->spin_vec_x *= ospin/ospin_old;
-                    //p->spin_vec_y *= ospin/ospin_old;
-                    //p->spin_vec_z *= ospin/ospin_old;
-                }
                 
                 p->age = age*Myr_to_yr;
                 p->sse_main_sequence_timescale = tms*Myr_to_yr;
@@ -445,6 +434,25 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 //menv_fraction = menv/(mt - mc);
                 //p->common_envelope_lambda = celamf_(&kw,&sse_initial_mass,&lum,&r,&rzams,&menv_fraction,&fac);
                 //printf("kw %d lambda %g menv_fraction %g\n",kw,p->common_envelope_lambda,menv_fraction);
+
+
+                check_number(p->stellar_type,                  "stellar_evolution.cpp -- evolve_stars","stellar_type", true);
+                check_number(p->sse_initial_mass,              "stellar_evolution.cpp -- evolve_stars","sse_initial_mass", true);
+                check_number(p->mass,                          "stellar_evolution.cpp -- evolve_stars","mass", true);
+                check_number(p->radius,                        "stellar_evolution.cpp -- evolve_stars","radius", true);
+                check_number(p->age,                           "stellar_evolution.cpp -- evolve_stars","age", true);
+                check_number(p->sse_main_sequence_timescale,   "stellar_evolution.cpp -- evolve_stars","sse_main_sequence_timescale", true);
+                check_number(p->epoch,                         "stellar_evolution.cpp -- evolve_stars","epoch", true);
+                check_number(p->luminosity,                    "stellar_evolution.cpp -- evolve_stars","luminosity", true);
+                check_number(p->core_mass,                     "stellar_evolution.cpp -- evolve_stars","core_mass", true);
+                check_number(p->core_radius,                   "stellar_evolution.cpp -- evolve_stars","core_radius", true);
+                check_number(p->convective_envelope_mass,      "stellar_evolution.cpp -- evolve_stars","convective_envelope_mass", true);
+                check_number(p->convective_envelope_radius,    "stellar_evolution.cpp -- evolve_stars","convective_envelope_radius", true);
+                check_number(p->sse_k2,                        "stellar_evolution.cpp -- evolve_stars","sse_k2", true);
+                check_number(p->sse_k3,                        "stellar_evolution.cpp -- evolve_stars","sse_k3", true);
+                check_number(p->spin_vec[0],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[0]", true);
+                check_number(p->spin_vec[1],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[1]", true);
+                check_number(p->spin_vec[2],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[2]", true);
                 
                 /* Logging */
                 #ifdef LOGGING
@@ -455,7 +463,6 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                     if (kw < 13)
                     {
-                        //update_log_data(particlesMap, end_time, -1, 1, p->index, -1);
                         update_log_data(particlesMap, end_time, -1, LOG_ST_CHANGE, log_info);
                         
                     }

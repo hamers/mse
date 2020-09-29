@@ -2,7 +2,7 @@ CXX = /usr/local/bin/g++-9
 CXX = /usr/local/bin/c++-9
 CXX = c++-9
 CXX = g++-10
-CXX = g++
+#CXX = g++
 
 FC = gfortran
 

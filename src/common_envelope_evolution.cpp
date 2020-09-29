@@ -1063,23 +1063,36 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
         if (binary_evolution_CE_spin_flag == 1)
         {
-            //get_unit_vector(star1->spin_vec,spin_vec_unit);
+            double Omega_crit = compute_breakup_angular_frequency(star1->mass,star1->radius);
+            double Omega = Omega_orb_out_f;
+            if (Omega_orb_out_f >= Omega_crit)
+            {
+                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star3->index,Omega_orb_out_f,Omega_crit);
+                Omega = Omega_crit;
+            }
+            
             for (int i=0; i<3; i++)
             {
-                star3->spin_vec[i] = Omega_orb_out_f * outer_binary->h_vec_unit[i];
+                star3->spin_vec[i] = Omega * outer_binary->h_vec_unit[i];
             }
         }
+
+        double final_R_CM[3], final_V_CM[3], final_momentum[3];
+        handle_gradual_mass_loss_event_in_system_triple_CE(particlesMap, star3, c1, c2, M3_f, M3, star3->common_envelope_timescale, \
+            star3->R_vec,star3->V_vec,final_R_CM, final_V_CM, final_momentum);
 
         /* Ab initio, the new triple subsystem is dynamically stable. */
         /* However, mass loss from the CE might affect orbits exterior to the triple subsystem. 
          * Take this into account depending on the mass loss times-scale. 
          * This could change the integration flag to non-zero. */
-         
+
+        #ifdef IGNORE
         double Delta_M_in = 0.0;
         double Delta_M3 = M3_f - M3;
 
         outer_binary->apply_kick = false;
         handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, inner_binary, star3, Delta_M_in, Delta_M3, outer_binary->common_envelope_timescale, integration_flag); /* Will update mass of tertiary star; inner binary should be unaffected. */
+        #endif
     }
     else
     {

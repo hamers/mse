@@ -28,6 +28,10 @@ void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentric
 void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Particle *star1, Particle *star2, double M1, double M1_old, double M2, double M2_old, double mass_loss_timescale, \
     double r_vec[3], double v_vec[3], double initial_R_CM[3], double initial_V_CM[3], double final_R_CM[3], double final_V_CM[3], double final_momentum[3]);
     
+void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesMap, Particle *star, Particle *companion1, Particle *companion2, double M3, double M3_old, double mass_loss_timescale, \
+    double initial_R_CM[3], double initial_V_CM[3], double final_R_CM[3], double final_V_CM[3], double final_momentum[3]);
+
+
 void get_initial_binary_orbital_properties_from_position_and_velocity(double R1_vec[3], double V1_vec[3], double R2_vec[3], double V2_vec[3], double M1, double M2, \
         double r_vec[3], double v_vec[3], double initial_momentum[3], double initial_R_CM[3], double initial_V_CM[3], double h_vec[3], double e_vec[3]);
 }

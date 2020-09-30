@@ -1865,9 +1865,9 @@ class Tools(object):
     @staticmethod
     def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True):
 
-        if configuration == "fully nested":
+        if configuration == "fully_nested":
             particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
-        elif configuration == "2+2 quadruple":
+        elif configuration == "2+2_quadruple":
             particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
         else:
             print("evolve_system.py: configuration ",configuration," currently not supported!")
@@ -1962,7 +1962,7 @@ class Tools(object):
                 
                 i_status += 1
                 
-            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'as',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
+            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
             
             for index in range(N_orbits):
                 rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)

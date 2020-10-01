@@ -603,4 +603,39 @@ void get_core_masses_by_composition(int kw, double core_mass, double *He_core_ma
     }
 }
 
+double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+{
+    double S;
+    if (stellar_type < 10) // Stars
+    {
+        double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+        S = I * spin_frequency;
+    }
+    else // Compact objects
+    {
+        double chi = compute_spin_parameter_from_spin_frequency(mass, spin_frequency);
+        S = chi * CONST_G * mass * mass / CONST_C_LIGHT;
+    }
+    
+    check_number(S,"stellar_evolution.cpp -- compute_spin_angular_momentum_from_spin_frequency","S", true);
+    return S;
+}
+
+double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_momentum, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+{
+    double Omega;
+    if (stellar_type < 10) // Stars
+    {
+        double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+        Omega = spin_angular_momentum/I;
+    }
+    else // Compact objects
+    {
+        double chi = spin_angular_momentum * CONST_C_LIGHT / ( CONST_G * mass * mass);
+        Omega = compute_spin_frequency_from_spin_parameter(mass, chi);
+    }
+    check_number(Omega,"stellar_evolution.cpp -- compute_spin_frequency_from_spin_angular_momentum","Omega", true);
+    return Omega;
+}
+
 }

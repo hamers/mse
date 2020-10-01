@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <map>
 #include <vector>
+#include "constants.h"
 
 
 extern "C"
@@ -16,24 +17,11 @@ extern "C"
 #define FOUND_ROOT ((roots_found[i_root] == 1) || (roots_found[i_root] == -1))
 #endif 
 
-#ifndef __CONSTANTS
-#define __CONSTANTS
+//#ifndef __CONSTANTS
+//#define __CONSTANTS
 
-// Default constants //
-extern double CONST_G;
-extern double CONST_G_P2;
-extern double CONST_G_P3;
-extern double CONST_C_LIGHT;
-extern double CONST_C_LIGHT_P2;
-extern double CONST_C_LIGHT_P3;
-extern double CONST_C_LIGHT_P4;
-extern double CONST_C_LIGHT_P5;
-extern double CONST_C_LIGHT_P6;
-extern double CONST_MSUN;
-extern double CONST_R_SUN;
-extern double CONST_L_SUN;
-extern double CONST_KM_PER_S;
-extern double CONST_PER_PC3;
+#ifndef __PARAMETERS
+#define __PARAMETERS
 
 // Default parameters //
 extern double relative_tolerance;
@@ -924,6 +912,7 @@ class Particle
     double spin_vec_norm;
     double dmass_dt,dradius_dt;    
     double chi; // GR spin parameter for Kerr BHs
+    double spin_AM_vec[3];
     
     bool merged;
     
@@ -1071,6 +1060,7 @@ class Particle
 
         R_vec[0] = R_vec[1] = R_vec[2] = 0.0;
         V_vec[0] = V_vec[1] = V_vec[2] = 0.0;
+        spin_AM_vec[0] = spin_AM_vec[1] = spin_AM_vec[2] = 0.0;
         
         exclude_for_secular_integration = false;
 

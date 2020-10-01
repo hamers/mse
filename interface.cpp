@@ -960,6 +960,8 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
     CONST_KM_PER_S = CONST_KM_PER_S_;
     CONST_PER_PC3 = CONST_PER_PC3_;
     
+    SPEEDOFLIGHT = CONST_C_LIGHT;
+    GCONST = CONST_G;
     //printf("CONSTS %g %g %g\n",CONST_G,CONST_C_LIGHT,CONST_MSUN);
     
     return 0;

@@ -261,6 +261,7 @@ int handle_dynamical_instability(ParticlesMap *particlesMap)
 
 void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, ParticlesMap *new_particlesMap)
 {
+    //printf("copy_bodies_from_old_to_new_particlesMap %d\n",new_particlesMap->size());
     int index;
     //double *R_vec,V_vec;
     int i;
@@ -272,16 +273,23 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
         
         if (p->is_binary == false)
         {
-
             index = p->index;
 
             Particle *p_old = (*old_particlesMap)[index];
             //R_vec = p->R_vec;
             //V_vec = p->V_vec;
+            double S = norm3(p->spin_AM_vec);
+            if (S < epsilon)
+            {
+                S = epsilon;
+            }
+            double Omega = compute_spin_frequency_from_spin_angular_momentum(S, p_old->stellar_type, p_old->mass, p_old->core_mass, p_old->radius, p_old->core_radius, p_old->sse_k2, p_old->sse_k3);
+ 
             for (i=0; i<3; i++)
             {
                 p_old->R_vec[i] = p->R_vec[i];
                 p_old->V_vec[i] = p->V_vec[i];
+                p_old->spin_vec[i] = Omega * (p->spin_AM_vec[i]/S);
             }
 
             (*new_particlesMap)[index] = p_old;
@@ -402,7 +410,9 @@ void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct Regularized
         {
             p->R_vec[j] = R->Pos[3 * i + j];
             p->V_vec[j] = R->Vel[3 * i + j];
-            //printf("extract %g \n",p->R_vec[j]);
+            p->spin_AM_vec[j] = R->Spin_S[3 * i + j];
+            //printf("extract %g \n",p->spin_AM_vec[i]);
+
         }
         
     }
@@ -429,7 +439,8 @@ void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap 
         {
             p->R_vec[j] = R->Pos[3 * i + j];
             p->V_vec[j] = R->Vel[3 * i + j];
-            //printf("extract %g \n",p->R_vec[j]);
+            p->spin_AM_vec[j] = R->Spin_S[3 * i + j];
+            //printf("extract %g \n",p->spin_AM_vec[i]);
         }
         
     }
@@ -566,7 +577,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
                 
                 if ( a>= 0.0 and e >= 0.0 and e < 1.0 and p1->has_found_parent == false and p2->has_found_parent == false)
                 {
-                    printf("log ome %g\n",log10(1.0-e));
+                    //printf("log ome %g\n",log10(1.0-e));
                     //if ( (binary_child1_indices.count(p1->index) > 0) and (binary_child2_indices.count(p2->index) > 0) )
                     //if already in new particles
                     
@@ -937,6 +948,8 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     allocate_armst_structs(&R, N_bodies); // Initialize the data structure
     
     double *R_vec, *V_vec;
+    double Omega,S; // Spin frequency, spin angular momentum
+    
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -954,13 +967,31 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
             R->Mass[i] = p->mass;
             //R->Radius[i] = p->radius;
             R->Radius[i] = determine_effective_radius_for_collision(p->radius, p->stellar_type, 1);
+            
+            Omega = norm3(p->spin_vec);
+            if (Omega < epsilon)
+            {
+                Omega = epsilon;
+            }
+            S = compute_spin_angular_momentum_from_spin_frequency(Omega, p->stellar_type, p->mass, p->core_mass, p->radius, p->core_radius, p->sse_k2, p->sse_k3);
+            
             for (j=0; j<3; j++)
             {
                 R->Pos[3 * i + j] = R_vec[j];
                 R->Vel[3 * i + j] = V_vec[j];
+                R->Spin_S[3 * i + j] = S * p->spin_vec[j]/Omega;
+                p->spin_AM_vec[i] = R->Spin_S[3 * i + j];
             }
             
             R->Stopping_Condition_Mode[i] = 0;
+
+            #ifdef IGNORE
+            if (norm3(R_vec)> nbody_maximum_separation_for_inclusion)
+            {
+                printf("Excluding %g\n",norm3(R_vec));
+                R->Mass[i] = 1.0e-100;
+            }
+            #endif
             
             i++;
         }    
@@ -1027,11 +1058,12 @@ void print_state(struct RegularizedRegion *R)
         printf("i %d index %d mass %g radius %g stopping condition partner %d\n",i,R->Index[i],R->Mass[i],R->Radius[i],R->Stopping_Condition_Partner[i]);
         printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        printf("i %d spin AM %g %g %g \n",i,R->Spin_S[3 * i + 0], R->Spin_S[3 * i + 1],R->Spin_S[3 * i + 2]);
     }
     printf("=========\n");
 }
 
-void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double>> &R_vecs, std::vector<std::vector<double>> &V_vecs)
+void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double> > &R_vecs, std::vector<std::vector<double> > &V_vecs)
 {
     printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss end_time %g Nsteps %d \n",end_time,Nsteps);
     

@@ -6,13 +6,15 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef PARALLEL
+#include <mpi.h>
+#endif
 #include "regularization.h"
 
 int **indexlist;
 
 double GBSTOL;
 int MAXPART;
-
 
 double *errorbuf;
 double *resultbuf;
@@ -23,6 +25,18 @@ double **extrapolation_error;
 double **result;
 double **gbsS;
 
+//double mst_CoM_R[3];
+//double mst_CoM_V[3];
+
+#ifdef PARALLEL
+#include <mpi.h>
+#endif
+
+#ifdef PARALLEL
+MPI_Comm MPI_COMM_GBS_GROUP;
+#endif
+
+
 int Ntask;
 int ThisTask;
 
@@ -30,14 +44,46 @@ int NumGbsGroup;
 int NumTaskPerGbsGroup;
 int ThisGbsGroup;
 int ThisTask_in_GbsGroup;
+
+int NumTaskPerSortGroup;
+int NumSortGroup;
+int ThisSortGroup;
+int ThisTask_in_SortGroup;
+
 int ok_steps;
 int failed_steps;
+
 struct ToDoList ComputationToDoList;
+struct OctreeNode *OctreeRootNode;
+struct OctreeNode **ParticleInNode;
+
+
+double tprim1, tprim2, tprim3, tprim4, tprim5;
+double time_coord;
+double time_force;
+double time_comm;
+double time_mst;
+double time_gbs;
+double time_gbscomm;
+clock_t wtime1, wtime0;
+clock_t msttime1, msttime0;
+
+// The functions begin here...
+
+void my_barrier(void) {
+#ifdef PARALLEL
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+}
 
 void die(void) {
 
+    my_barrier();
     if (ThisTask == 0)
         printf("The code is dead because 'die()' was called..\n");
+#ifdef PARALLEL
+    MPI_Finalize();
+#endif
     exit(0);
 }
 
@@ -82,20 +128,96 @@ int cmp_int(const void *a, const void *b) {
         return 1;
 }
 
+#ifdef PARALLEL
+void initialize_node_comm(void) {
+
+    MPI_Group WORLD_GROUP, GBS_GROUP;
+    MPI_Comm_group(MPI_COMM_WORLD, &WORLD_GROUP);
+    int *myranks;
+
+    ThisGbsGroup = (int)floor(ThisTask / NumTaskPerGbsGroup);
+    ThisTask_in_GbsGroup = ThisTask % NumTaskPerGbsGroup;
+
+    myranks = calloc(NumTaskPerGbsGroup, sizeof(int));
+
+    for (int i = 0; i < NumTaskPerGbsGroup; i++) {
+        myranks[i] = ThisTask - ThisTask_in_GbsGroup + i;
+    }
+    for (int i = 0; i < NumGbsGroup; i++) {
+        if (i == ThisGbsGroup) {
+            MPI_Group_incl(WORLD_GROUP, NumTaskPerGbsGroup, myranks,
+                           &GBS_GROUP);
+        }
+    }
+
+    MPI_Comm_create(MPI_COMM_WORLD, GBS_GROUP, &MPI_COMM_GBS_GROUP);
+    MPI_Group_free(&GBS_GROUP);
+    free(myranks);
+
+    MPI_Group_free(&WORLD_GROUP);
+    MPI_Comm_size(MPI_COMM_GBS_GROUP, &NumTaskPerGbsGroup);
+    MPI_Comm_rank(MPI_COMM_GBS_GROUP, &ThisTask_in_GbsGroup);
+}
+#endif
 
 void initialize_mpi_or_serial(void) {
 
-#if defined(USE_PN_SPIN) && !defined(USE_PN)
-    printf("PN spin terms enabled.\nPlease enable USE_PN as well. Currently USE_PN not enabled.\n");
+// check for reasonable input
+#if defined(PARALLEL) && defined(SERIAL)
+    printf(
+        "Please select EITHER parallel OR serial. Currently both selected.\n");
+    exit(0);
+#endif
+#if !defined(PARALLEL) && !defined(SERIAL)
+    printf(
+        "Please select EITHER parallel OR serial. Currently none selected.\n");
+    exit(0);
+#endif
+#if defined(PRIM) && defined(PRIM_DIVIDE_CONQUER)
+    printf(
+        "Please select EITHER prim OR prim_divide_conquer. Currently both "
+        "selected.\n");
+    exit(0);
+#endif
+#if !defined(PRIM) && !defined(PRIM_DIVIDE_CONQUER)
+    printf(
+        "Please select EITHER prim OR prim_divide_conquer. Currently none "
+        "selected.\n");
     exit(0);
 #endif
 
+// Init MPI if needed
+#ifdef PARALLEL
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &Ntask);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
+
+    NumGbsGroup = 1;
+    NumTaskPerGbsGroup = (int)Ntask / NumGbsGroup;
+
+    if (NumGbsGroup * NumTaskPerGbsGroup != Ntask) {
+        if (ThisTask == 0) {
+            printf(
+                "NumGbsGroup*NumTaskPerGbsGroup != Ntask.        NumGbsGroup = "
+                "%d, NumTaskPerGbsGroup = %d.\n",
+                NumGbsGroup, NumTaskPerGbsGroup);
+            exit(0);
+        }
+    }
+    if (NumTaskPerGbsGroup > 1) {
+        initialize_node_comm();
+    } else {
+        ThisGbsGroup = ThisTask;
+        ThisTask_in_GbsGroup = 0;
+    }
+#else
     NumGbsGroup = 1;
     Ntask = 1;
     ThisTask = 0;
     ThisGbsGroup = 0;
     ThisTask_in_GbsGroup = 0;
     NumTaskPerGbsGroup = 1;
+#endif
 }
 
 int check_relative_proximity_ND_2(int v1, int v2, struct RegularizedRegion *R,
@@ -152,7 +274,7 @@ int check_relative_proximity(int v1, int v2, const int Nd,
                              int *sign) {
 
     for (int i = 0; i < Nd; i++) {
-        path[i] = -1;
+        path[i] = -666;
         sign[i] = 0;
     }
 
@@ -286,6 +408,286 @@ double get_rmax(struct RegularizedRegion *R) {
     return sqrt(rmax2);
 }
 
+void get_triplet(int index, int *triplet) {
+    if (index >= 100) {
+        triplet[2] = 1;
+        index -= 100;
+        if (index >= 10) {
+            triplet[1] = 1;
+            index -= 10;
+            if (index == 1) {
+                triplet[0] = 1;
+            } else {
+                triplet[0] = -1;
+            }
+        } else {
+            triplet[1] = 0;
+            if (index == 1) {
+                triplet[0] = 1;
+            } else {
+                triplet[0] = -1;
+            }
+        }
+    } else {
+        triplet[2] = 0;
+        if (index >= 10) {
+            triplet[1] = 1;
+            index -= 10;
+            if (index == 1) {
+                triplet[0] = 1;
+            } else {
+                triplet[0] = -1;
+            }
+        } else {
+            triplet[1] = 0;
+            if (index == 1) {
+                triplet[0] = 1;
+            } else {
+                triplet[0] = -1;
+            }
+        }
+    }
+}
+
+int get_triplet_index(int num) {
+    if (num == 1) return 1;
+    return 0;
+}
+
+int get_octant(int triplet[3]) {
+    if (triplet[0] == 1) {
+        if (triplet[1] == 1) {
+            if (triplet[2] == -1) {
+                return 6;
+            } else {
+                return 7;
+            }
+        } else {
+            if (triplet[2] == -1) {
+                return 4;
+            } else {
+                return 5;
+            }
+        }
+    } else {
+        if (triplet[1] == 1) {
+            if (triplet[2] == -1) {
+                return 2;
+            } else {
+                return 3;
+            }
+        } else {
+            if (triplet[2] == -1) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+    }
+    return -1;
+}
+
+void get_triplet_from_octant(int octant, int *triplet) {
+
+    if (octant == 0) {
+        triplet[0] = -1;
+        triplet[1] = -1;
+        triplet[2] = -1;
+        return;
+    }
+    if (octant == 1) {
+        triplet[0] = -1;
+        triplet[1] = -1;
+        triplet[2] = +1;
+        return;
+    }
+    if (octant == 2) {
+        triplet[0] = -1;
+        triplet[1] = +1;
+        triplet[2] = -1;
+        return;
+    }
+    if (octant == 3) {
+        triplet[0] = -1;
+        triplet[1] = +1;
+        triplet[2] = +1;
+        return;
+    }
+    if (octant == 4) {
+        triplet[0] = +1;
+        triplet[1] = -1;
+        triplet[2] = -1;
+        return;
+    }
+    if (octant == 5) {
+        triplet[0] = +1;
+        triplet[1] = -1;
+        triplet[2] = +1;
+        return;
+    }
+    if (octant == 6) {
+        triplet[0] = +1;
+        triplet[1] = +1;
+        triplet[2] = -1;
+        return;
+    }
+    if (octant == 7) {
+        triplet[0] = +1;
+        triplet[1] = +1;
+        triplet[2] = +1;
+        return;
+    }
+    return;
+}
+
+void list_octree_level(struct OctreeNode *Node, int *LeafSizes,
+                       int **LeafParticles, int *Nleafs) {
+
+    if (Node->IsLeaf) {
+        LeafSizes[*Nleafs] = Node->Npart;
+        LeafParticles[*Nleafs] = calloc(Node->Npart, sizeof(int));
+        for (int i = 0; i < Node->Npart; i++) {
+            LeafParticles[*Nleafs][i] = Node->ObjectList[i];
+        }
+        (*Nleafs)++;
+    } else {
+        for (int oct = 0; oct < 8; oct++) {
+            if (Node->Children[oct]->ChildExists) {
+                list_octree_level(Node->Children[oct], LeafSizes, LeafParticles,
+                                  Nleafs);
+            }
+        }
+    }
+}
+
+void GetNumberOfLeafs(struct OctreeNode *Node, int *Nleaf) {
+    if (Node->IsLeaf) {
+        (*Nleaf)++;
+    } else {
+        for (int oct = 0; oct < 8; oct++) {
+            if (Node->Children[oct]->ChildExists) {
+                GetNumberOfLeafs(Node->Children[oct], Nleaf);
+            }
+        }
+    }
+}
+
+void free_octree(struct OctreeNode *Node) {
+    for (int oct = 0; oct < 8; oct++) {
+        if (Node->Children[oct]->ChildExists) {
+            free_octree(Node->Children[oct]);
+        }
+    }
+    free(Node->ObjectList);
+    free(Node);
+}
+
+void allocate_new_octree_node(struct OctreeNode *Node, int oct, int *label) {
+
+    Node->ChildExists[oct] = 1;
+    Node->Children[oct] = calloc(1, sizeof(struct OctreeNode));
+    Node->Children[oct]->Parent = Node;
+    Node->Children[oct]->HalfSize = Node->HalfSize / 2;
+    Node->Children[oct]->Npart = 0;
+    Node->Children[oct]->level = Node->level + 1;
+    Node->Children[oct]->IsLeaf = 0;
+    Node->Children[oct]->ID = *label;
+
+    for (int i = 0; i < 8; i++) {
+        Node->Children[oct]->ChildExists[i] = 0;
+    }
+
+    (*label)++;
+}
+
+void octree(struct RegularizedRegion *R, struct OctreeNode *Node,
+            int MaxLeafSize, int *label) {
+
+    int NpartOctant[8] = {0};
+    int triplet[3];
+    for (int i = 0; i < Node->Npart; i++) {
+        int j = Node->ObjectList[i];
+        for (int k = 0; k < 3; k++) {
+            triplet[k] = sign(R->Pos[3 * j + k] - Node->Center[k]);
+        }
+        int oct = get_octant(triplet);
+
+        if (NpartOctant[oct] == 0) {
+            allocate_new_octree_node(Node, oct, label);
+        }
+
+        indexlist[oct][NpartOctant[oct]] = j;
+
+        NpartOctant[oct]++;
+        Node->Children[oct]->Npart++;
+    }
+
+    for (int oct = 0; oct < 8; oct++) {
+
+        if (NpartOctant[oct] == 0) { continue; }
+
+        Node->Children[oct]->ObjectList =
+            calloc(Node->Children[oct]->Npart, sizeof(int));
+
+        for (int i = 0; i < Node->Children[oct]->Npart; i++) {
+            Node->Children[oct]->ObjectList[i] = indexlist[oct][i];
+        }
+
+        get_triplet_from_octant(oct, triplet);
+
+        for (int k = 0; k < 3; k++) {
+            Node->Children[oct]->Center[k] =
+                Node->Center[k] + triplet[k] * Node->Children[oct]->HalfSize;
+        }
+
+        for (int i = 0; i < Node->Children[oct]->Npart; i++) {
+            ParticleInNode[Node->Children[oct]->ObjectList[i]] =
+                Node->Children[oct];
+        }
+
+        if (Node->Children[oct]->Npart == 1) {
+            Node->Children[oct]->IsLeaf = 1;
+        }
+    }
+
+    for (int oct = 0; oct < 8; oct++) {
+        if (Node->ChildExists[oct]) {
+            if (Node->Children[oct]->Npart > MaxLeafSize) {
+                octree(R, Node->Children[oct], MaxLeafSize, label);
+            } else {
+                Node->Children[oct]->IsLeaf = 1;
+            }
+        }
+    }
+}
+
+void spatialpartition(struct RegularizedRegion *R, int MaxLeafSize) {
+
+    double rmax = get_rmax(R);
+
+    OctreeRootNode = calloc(1, sizeof(struct OctreeNode));
+
+    OctreeRootNode->ID = 0;
+    OctreeRootNode->Parent = NULL;
+    OctreeRootNode->HalfSize = 1.001 * rmax;
+    OctreeRootNode->Npart = R->NumVertex;
+    OctreeRootNode->ObjectList = calloc(R->NumVertex, sizeof(int));
+    OctreeRootNode->level = 0;
+    for (int i = 0; i < 3; i++) {
+        OctreeRootNode->Center[i] = 0.0;
+    }
+    for (int i = 0; i < 8; i++) {
+        OctreeRootNode->ChildExists[i] = 0;
+    }
+
+    for (int i = 0; i < R->NumVertex; i++) {
+        OctreeRootNode->ObjectList[i] = i;
+    }
+
+    int label = 1;
+    octree(R, OctreeRootNode, MaxLeafSize, &label);
+}
+
 int get_longest(double w[3], int id[3]) {
 
     double L = -1;
@@ -316,6 +718,331 @@ int get_edge(int Nleafs, int va, int vb) {
     return index;
 }
 
+void SolveMetaMST(struct RegularizedRegion *R, int Nleafs, int *Npart,
+                  int **Particles, int *NumEdge) {
+
+    int Nedge = Nleafs * (Nleafs - 1) / 2;
+    struct WeightIndex2 *W = calloc(Nedge, sizeof(struct WeightIndex2));
+    int *InMst = calloc(Nleafs, sizeof(int));
+
+    int CumNumEdge = 0, istart = 0;
+#ifdef PARALLEL
+    int ThisBlock, jstart, loop;
+    loop_scheduling_N2(Nleafs, Ntask, &istart, &jstart, &ThisBlock, &CumNumEdge,
+                       ThisTask);
+#endif
+
+    struct OctreeNode *Node_i, *Node_j;
+    int counter = 0, ind1 = -1, ind2 = -1;
+
+    int *ind1s = calloc(Nedge, sizeof(int));
+    int *ind2s = calloc(Nedge, sizeof(int));
+    double *weights = calloc(Nedge, sizeof(double));
+
+    counter = 0;
+    for (int i = istart; i < Nleafs; i++) {
+
+        Node_i = ParticleInNode[Particles[i][0]];
+
+#ifdef PARALLEL
+        if (i > istart) { jstart = i + 1; }
+        for (int j = jstart; j < Nleafs; j++) {
+#else
+        for (int j = i + 1; j < Nleafs; j++) {
+#endif
+
+            Node_j = ParticleInNode[Particles[j][0]];
+
+            double r2 = 0;
+            for (int k = 0; k < 3; k++) {
+                double ds = Node_i->Center[k] - Node_j->Center[k];
+                r2 = ds * ds;
+            }
+            double NodeSeparation = sqrt(r2);
+            double NodeSize =
+                1.01 * sqrt(2) *
+                (Node_i->HalfSize + Node_j->HalfSize); // with safety buffer
+
+            if (NodeSeparation <= NodeSize) {
+
+                double MinWeight = 1e10;
+                for (int q = 0; q < Npart[i]; q++) {
+                    for (int p = 0; p < Npart[j]; p++) {
+                        double r2 = 0;
+                        int i1 = Particles[i][q];
+                        int i2 = Particles[j][p];
+                        for (int k = 0; k < 3; k++) {
+                            double ds = R->Pos[3 * i1 + k] - R->Pos[3 * i2 + k];
+                            r2 += ds * ds;
+                        }
+                        double r = sqrt(r2);
+                        if (r < MinWeight) {
+                            MinWeight = r;
+                            ind1 = i1;
+                            ind2 = i2;
+                        }
+                    }
+                }
+
+            } else {
+
+                double MinWeight = 1e10;
+                for (int q = 0; q < Npart[i]; q++) {
+                    int i1 = Particles[i][q];
+                    double r2 = 0;
+                    for (int k = 0; k < 3; k++) {
+                        double ds = R->Pos[3 * i1 + k] - Node_j->Center[k];
+                        r2 += ds * ds;
+                    }
+                    double r = sqrt(r2);
+                    if (r < MinWeight) {
+                        MinWeight = r;
+                        ind1 = i1;
+                    }
+                }
+                MinWeight = 1e10;
+                for (int p = 0; p < Npart[j]; p++) {
+                    int i2 = Particles[j][p];
+                    double r2 = 0;
+                    for (int k = 0; k < 3; k++) {
+                        double ds = R->Pos[3 * i2 + k] - Node_i->Center[k];
+                        r2 += ds * ds;
+                    }
+                    double r = sqrt(r2);
+                    if (r < MinWeight) {
+                        MinWeight = r;
+                        ind2 = i2;
+                    }
+                }
+            }
+
+            r2 = 0;
+            for (int k = 0; k < 3; k++) {
+                double ds = R->Pos[3 * ind1 + k] - R->Pos[3 * ind2 + k];
+                r2 += ds * ds;
+            }
+            double r = sqrt(r2);
+
+            weights[CumNumEdge + counter] = r;
+            ind1s[CumNumEdge + counter] = ind1;
+            ind2s[CumNumEdge + counter] = ind2;
+            counter++;
+
+#ifdef PARALLEL
+            if (counter == ThisBlock) {
+                loop = 0;
+                break;
+            }
+        }
+        if (loop == 0) { break; }
+#else
+        }
+#endif
+    }
+
+#ifdef PARALLEL
+    MPI_Allreduce(MPI_IN_PLACE, ind1s, Nedge, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, ind2s, Nedge, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, weights, Nedge, MPI_DOUBLE, MPI_SUM,
+                  MPI_COMM_WORLD);
+#endif
+
+    counter = 0;
+    for (int i = 0; i < Nleafs; i++) {
+        for (int j = i + 1; j < Nleafs; j++) {
+            W[counter].weight = weights[counter];
+            W[counter].id1 = ind1s[counter];
+            W[counter].id2 = ind2s[counter];
+            W[counter].index1 = i;
+            W[counter].index2 = j;
+            counter++;
+        }
+    }
+
+    free(weights);
+    free(ind1s);
+    free(ind2s);
+
+    istart = 0;
+    int istop = Nedge;
+#ifdef PARALLEL
+    int block = (int)floor(Nedge / Ntask);
+    istart = ThisTask * block;
+    istop = (ThisTask + 1) * block;
+    if (ThisTask == Ntask - 1) istop = Nedge;
+#endif
+
+    int *flag = calloc(Nedge, sizeof(int));
+
+    int Noff = 0;
+    double w[3];
+    int ind[3];
+    for (int e1 = istart; e1 < istop; e1++) {
+
+        int v1 = W[e1].index1;
+        int v2 = W[e1].index2;
+        ind[0] = e1;
+        w[0] = W[e1].weight;
+
+        if (w[0] < 0) continue;
+
+        for (int v3 = 0; v3 < Nleafs; v3++) {
+
+            if (w[0] < 0) continue;
+
+            if (v3 == v1 || v3 == v2) continue;
+
+            ind[1] = get_edge(Nleafs, v1, v3);
+            ind[2] = get_edge(Nleafs, v2, v3);
+
+            w[1] = W[ind[1]].weight;
+            w[2] = W[ind[2]].weight;
+            if (w[1] < 0 || w[2] < 0) continue;
+            int elong = get_longest(w, ind);
+
+            flag[elong] = 1;
+            W[elong].weight *= -1;
+        }
+    }
+
+#ifdef PARALLEL
+    MPI_Allreduce(MPI_IN_PLACE, flag, Nedge, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+    for (int e1 = 0; e1 < Nedge; e1++) {
+        if (flag[e1] == 0) Noff++;
+    }
+
+    struct WeightIndex2 *Wfilter =
+        calloc(Nedge - Noff, sizeof(struct WeightIndex2));
+
+    counter = 0;
+    for (int e1 = 0; e1 < Nedge; e1++) {
+        if (flag[e1] == 0) {
+            Wfilter[counter].weight = W[e1].weight;
+            Wfilter[counter].id1 = W[e1].id1;
+            Wfilter[counter].id2 = W[e1].id2;
+            Wfilter[counter].index1 = W[e1].index1;
+            Wfilter[counter].index2 = W[e1].index2;
+            counter++;
+        }
+    }
+
+    Nedge -= Noff;
+    free(W);
+    free(flag);
+
+    qsort(Wfilter, Nedge, sizeof(struct WeightIndex2), cmp_weight_index2);
+
+    InMst[0] = 1;
+
+    int remaining = Nleafs - 1;
+    istart = 0;
+    istop = Nedge;
+#ifdef PARALLEL
+    block = (int)floor(Nedge / Ntask);
+    istart = ThisTask * block;
+    istop = (ThisTask + 1) * block;
+    if (ThisTask == Ntask - 1) istop = Nedge;
+#endif
+
+    do {
+        struct WeightIndex wi;
+        wi.weight = 1e10;
+        wi.index = -1;
+
+        for (int i = istart; i < istop; i++) {
+            int i1 = Wfilter[i].index1;
+            int i2 = Wfilter[i].index2;
+            if (InMst[i1] != InMst[i2]) {
+                wi.index = i;
+                wi.weight = Wfilter[i].weight;
+                break;
+            }
+        }
+
+#ifdef PARALLEL
+        MPI_Allreduce(MPI_IN_PLACE, &wi, 1, MPI_DOUBLE_INT, MPI_MINLOC,
+                      MPI_COMM_WORLD);
+#endif
+
+        InMst[Wfilter[wi.index].index1] = 1;
+        InMst[Wfilter[wi.index].index2] = 1;
+
+        R->EdgeInMST[*NumEdge].vertex1 = Wfilter[wi.index].id1;
+        R->EdgeInMST[*NumEdge].vertex2 = Wfilter[wi.index].id2;
+        R->EdgeInMST[*NumEdge].weight = Wfilter[wi.index].weight;
+        (*NumEdge)++;
+
+        remaining--;
+    } while (remaining > 0);
+
+    free(Wfilter);
+    free(InMst);
+}
+
+void SolveSubMST(struct RegularizedRegion *R, int Npart, int *Particles,
+                 int label, int *NumEdge) {
+
+    if (Npart == 1) return;
+
+    int Nedge = Npart * (Npart - 1) / 2;
+    struct WeightIndex2 *W = calloc(Nedge, sizeof(struct WeightIndex2));
+    int *InMst = calloc(Npart, sizeof(int));
+
+    int counter = 0;
+    for (int i = 0; i < Npart; i++) {
+        int ind1 = Particles[i];
+        for (int j = i + 1; j < Npart; j++) {
+            int ind2 = Particles[j];
+            double r2 = 0;
+            for (int k = 0; k < 3; k++) {
+                double ds = R->Pos[3 * ind1 + k] - R->Pos[3 * ind2 + k];
+                r2 += ds * ds;
+            }
+            double r = sqrt(r2);
+            W[counter].weight = r;
+            W[counter].index1 = i;
+            W[counter].index2 = j;
+            W[counter].id1 = ind1;
+            W[counter].id2 = ind2;
+            counter++;
+        }
+    }
+
+    qsort(W, Nedge, sizeof(struct WeightIndex2), cmp_weight_index2);
+
+    InMst[0] = 1;
+
+    int remaining = Npart - 1;
+
+    do {
+
+        for (int i = 0; i < Nedge; i++) {
+            int i1 = W[i].index1;
+            int i2 = W[i].index2;
+            if (InMst[i1] != InMst[i2]) {
+                if (InMst[i1] == 1) {
+                    InMst[i2] = 1;
+                } else {
+                    InMst[i1] = 1;
+                }
+
+                R->EdgeInMST[*NumEdge].vertex1 = W[i].id1;
+                R->EdgeInMST[*NumEdge].vertex2 = W[i].id2;
+                R->EdgeInMST[*NumEdge].weight = W[i].weight;
+                (*NumEdge)++;
+                break;
+            }
+        }
+
+        remaining--;
+    } while (remaining > 0);
+
+    free(W);
+    free(InMst);
+}
+
 void SwapEdge(struct RegularizedRegion *R, int i, int j) {
 
     int v1 = R->EdgeInMST[i].vertex1;
@@ -331,9 +1058,133 @@ void SwapEdge(struct RegularizedRegion *R, int i, int j) {
     R->EdgeInMST[j].weight = w;
 }
 
+void CombineAllMST(struct RegularizedRegion *R, int NumEdge) {
+
+    int next = -1;
+    double rmin = DBL_MAX;
+    for (int i = 0; i < R->NumVertex; i++) {
+        double r2 = 0;
+        for (int k = 0; k < 3; k++) {
+            double ds = R->Pos[3 * i + k];
+            r2 += ds * ds;
+        }
+        if (rmin > sqrt(r2)) {
+            rmin = sqrt(r2);
+            next = i;
+        }
+    }
+
+    int counter = 0;
+    R->Vertex[next].inMST = 1;
+
+    int istop = NumEdge;
+
+    do {
+
+        struct WeightIndex wi;
+        wi.weight = 1e10;
+        wi.index = -1;
+
+        for (int i = counter; i < istop; i++) {
+            int v1 = R->EdgeInMST[i].vertex1;
+            int v2 = R->EdgeInMST[i].vertex2;
+            if (R->Vertex[v1].inMST != R->Vertex[v2].inMST) {
+                if (R->EdgeInMST[i].weight < wi.weight) {
+                    wi.weight = R->EdgeInMST[i].weight;
+                    wi.index = i;
+                }
+            }
+        }
+
+        int new = R->EdgeInMST[wi.index].vertex1;
+        int old = R->EdgeInMST[wi.index].vertex2;
+        if (R->Vertex[new].inMST == 1) {
+            old = R->EdgeInMST[wi.index].vertex1;
+            new = R->EdgeInMST[wi.index].vertex2;
+        }
+
+        R->Vertex[new].inMST = 1;
+        R->Vertex[new].parent = old;
+        R->Vertex[new].level = R->Vertex[old].level + 1;
+        R->Vertex[new].edgetoparent = counter;
+
+        for (int k = 0; k < 3; k++) {
+            R->State[3 * counter + k] =
+                R->Pos[3 * new + k] - R->Pos[3 * old + k];
+            R->State[3 * (R->NumVertex - 1) + 3 * counter + k] =
+                R->Vel[3 * new + k] - R->Vel[3 * old + k];
+        }
+
+        SwapEdge(R, counter, wi.index);
+        counter++;
+
+    } while (counter < NumEdge);
+}
+
+void DivideAndConquerPrim(struct RegularizedRegion *R) {
+
+    my_barrier();
+    clock_t t0 = clock();
+
+    for (int i = 0; i < R->NumVertex; i++) {
+        R->Vertex[i].id = i;
+        R->Vertex[i].degree = 0;
+        R->Vertex[i].edgetoparent = -1;
+        R->Vertex[i].parent = -1;
+        R->Vertex[i].level = 0;
+        R->Vertex[i].inMST = 0;
+    }
+
+    int Nleafs = 0;
+    int MaxLeafSize = (int)floor(3 * sqrt(R->NumVertex));
+
+    clock_t t10 = clock();
+    spatialpartition(&R[0], MaxLeafSize);
+
+    GetNumberOfLeafs(OctreeRootNode, &Nleafs);
+    int *LeafSizes = calloc(Nleafs, sizeof(int));
+    int **LeafParticles = calloc(Nleafs, sizeof(int *));
+    clock_t t11 = clock();
+    tprim1 += (double)(t11 - t10) / CLOCKS_PER_SEC;
+
+    clock_t t20 = clock();
+    Nleafs = 0;
+    list_octree_level(OctreeRootNode, LeafSizes, LeafParticles, &Nleafs);
+    clock_t t21 = clock();
+    tprim2 += (double)(t21 - t20) / CLOCKS_PER_SEC;
+
+    clock_t t30 = clock();
+    int NumEdge = 0;
+    for (int i = 0; i < Nleafs; i++) {
+        SolveSubMST(R, LeafSizes[i], LeafParticles[i], i, &NumEdge);
+    }
+    clock_t t31 = clock();
+    tprim3 += (double)(t31 - t30) / CLOCKS_PER_SEC;
+
+    clock_t t40 = clock();
+    SolveMetaMST(R, Nleafs, LeafSizes, LeafParticles, &NumEdge);
+    clock_t t41 = clock();
+    tprim4 += (double)(t41 - t40) / CLOCKS_PER_SEC;
+
+    clock_t t50 = clock();
+    CombineAllMST(R, NumEdge);
+    clock_t t51 = clock();
+    tprim5 += (double)(t51 - t50) / CLOCKS_PER_SEC;
+
+    free_octree(OctreeRootNode);
+    for (int i = 0; i < Nleafs; i++) {
+        free(LeafParticles[i]);
+    }
+    free(LeafParticles);
+    free(LeafSizes);
+
+    clock_t t1 = clock();
+    time_mst += (double)(t1 - t0) / CLOCKS_PER_SEC;
+}
 
 int EdgeSearchForPrim(struct RegularizedRegion *R, int NumLocalEdges) {
 
+    clock_t edgesearch_time0 = clock();
     struct WeightIndex wi;
 
     wi.weight = 1e10;
@@ -346,6 +1197,18 @@ int EdgeSearchForPrim(struct RegularizedRegion *R, int NumLocalEdges) {
             break;
         }
     }
+
+    clock_t edgesearch_time1 = clock();
+    tprim3 += (double)(edgesearch_time1 - edgesearch_time0) / CLOCKS_PER_SEC;
+
+    edgesearch_time0 = clock();
+#ifdef PARALLEL
+    MPI_Allreduce(MPI_IN_PLACE, &wi, 1, MPI_DOUBLE_INT, MPI_MINLOC,
+                  MPI_COMM_WORLD);
+#endif
+
+    edgesearch_time0 = clock();
+    tprim4 += (double)(edgesearch_time1 - edgesearch_time0) / CLOCKS_PER_SEC;
 
     return wi.index;
 }
@@ -379,10 +1242,18 @@ int get_heaviest(double a[3], int b1, int b2, int b3) {
 
 void PrimMST(struct RegularizedRegion *R) {
 
+    msttime0 = clock();
+
+    int CumNumEdge = 0, istart = 0;
+#ifdef PARALLEL
+    int loop = 1, ThisBlock, jstart;
+    loop_scheduling_N2(R->NumVertex, Ntask, &istart, &jstart, &ThisBlock,
+                       &CumNumEdge, ThisTask);
+#endif
     int NumLocalEdges = 0;
     int c = 0, counter = 0;
 
-    double rmin = 1e5, r2;
+    double rmin = 1e10, r2;
     int last = -1;
 
     for (int i = 0; i < R->NumVertex; i++) {
@@ -397,10 +1268,14 @@ void PrimMST(struct RegularizedRegion *R) {
         }
     }
 
-    for (int i = 0; i < R->NumVertex; i++) {
+    for (int i = istart; i < R->NumVertex; i++) {
 
+#ifdef PARALLEL
+        if (i > istart) { jstart = i + 1; }
+        for (int j = jstart; j < R->NumVertex; j++) {
+#else
         for (int j = i + 1; j < R->NumVertex; j++) {
-
+#endif
             counter++;
             double w = 0;
             for (int k = 0; k < 3; k++) {
@@ -412,12 +1287,21 @@ void PrimMST(struct RegularizedRegion *R) {
             R->LocalEdge[NumLocalEdges].weight = w;
             R->LocalEdge[NumLocalEdges].vertex1 = i;
             R->LocalEdge[NumLocalEdges].vertex2 = j;
-            R->LocalEdge[NumLocalEdges].id = c;
+            R->LocalEdge[NumLocalEdges].id = (int)(CumNumEdge + c);
 
             NumLocalEdges++;
             c++;
 
+#ifdef PARALLEL
+            if (counter == ThisBlock) {
+                loop = 0;
+                break;
+            }
         }
+        if (loop == 0) { break; }
+#else
+        }
+#endif
     }
 
     qsort(R->LocalEdge, NumLocalEdges, sizeof(struct GraphEdge), cmp);
@@ -432,16 +1316,10 @@ void PrimMST(struct RegularizedRegion *R) {
         R->Vertex[i].level = 0;
         R->Vertex[i].inMST = 0;
     }
+
     R->Vertex[last].inMST = 1;
+
     c = 0;
-
-#ifdef USE_PN_SPIN
-    for (int k = 0; k < 3; k++) {
-	    R->SpinState[k]  = R->Spin_S[3*last+k];
-    }
-    R->SpinStateIndex[0] = last;
-#endif
-
     do {
 
         int NextEdge = EdgeSearchForPrim(R, NumLocalEdges);
@@ -456,48 +1334,50 @@ void PrimMST(struct RegularizedRegion *R) {
         R->Vertex[v2].degree++;
 
         if (R->Vertex[v1].inMST == 0) {
+
             R->Vertex[v1].parent = v2;
             R->Vertex[v1].level = R->Vertex[v2].level + 1;
             R->Vertex[v1].inMST = 1;
             R->Vertex[v1].edgetoparent = c;
             for (int k = 0; k < 3; k++) {
-                R->State[3*c+k] = R->Pos[3 * v1 + k] - R->Pos[3 * v2 + k];
-                R->State[3*(R->NumVertex - 1) + 3 * c + k] = R->Vel[3 * v1 + k] - R->Vel[3 * v2 + k];
+                R->State[3 * c + k] = R->Pos[3 * v1 + k] - R->Pos[3 * v2 + k];
+                R->State[3 * (R->NumVertex - 1) + 3 * c + k] =
+                    R->Vel[3 * v1 + k] - R->Vel[3 * v2 + k];
             }
-#ifdef USE_PN_SPIN
-	    for (int k = 0; k < 3; k++) {
-		R->SpinState[3*(c+1)+k] = R->Spin_S[3*v1+k];
-	    }
-	    R->SpinStateIndex[c+1] = v1;
-#endif
         } else {
+
             R->Vertex[v2].parent = v1;
             R->Vertex[v2].level = R->Vertex[v1].level + 1;
             R->Vertex[v2].inMST = 1;
             R->Vertex[v2].edgetoparent = c;
             for (int k = 0; k < 3; k++) {
                 R->State[3 * c + k] = R->Pos[3 * v2 + k] - R->Pos[3 * v1 + k];
-                R->State[3 * (R->NumVertex - 1) + 3 * c + k] = R->Vel[3 * v2 + k] - R->Vel[3 * v1 + k];
+                R->State[3 * (R->NumVertex - 1) + 3 * c + k] =
+                    R->Vel[3 * v2 + k] - R->Vel[3 * v1 + k];
             }
-#ifdef USE_PN_SPIN
-	    for (int k = 0; k < 3; k++) {
-		R->SpinState[3*(c+1)+k] = R->Spin_S[3*v2+k];
-	    }
-	    R->SpinStateIndex[c+1] = v2;
-#endif
-    }
+        }
+        c++;
+        remaining++;
+    } while (remaining < R->NumVertex - 1);
 
-    c++;
-    remaining++;
-    } while (remaining < R->NumVertex-1);
-
+    msttime1 = clock();
+    time_mst += (double)(msttime1 - msttime0) / CLOCKS_PER_SEC;
 }
 
 // computes the force function for logh
 void compute_U(struct RegularizedRegion *R) {
 
+    clock_t thistime0 = clock();
+
     R->U = 0;
     int istart = 0;
+#ifdef PARALLEL
+    int CumNumEdge, ThisBlock, jstart;
+    loop_scheduling_N2(R->NumVertex, NumTaskPerGbsGroup, &istart, &jstart,
+                       &ThisBlock, &CumNumEdge, ThisTask_in_GbsGroup);
+    int loop = 1;
+    int c = 0;
+#endif
 
     const int Nd = GLOBAL_ND;
     int d;
@@ -508,8 +1388,12 @@ void compute_U(struct RegularizedRegion *R) {
 
         double mi = R->Mass[i];
         int Li = R->Vertex[i].level;
-
+#ifdef PARALLEL
+        if (i > istart) { jstart = i + 1; }
+        for (int j = jstart; j < R->NumVertex; j++) {
+#else
         for (int j = i + 1; j < R->NumVertex; j++) {
+#endif
             double mj = R->Mass[j];
             int Lj = R->Vertex[j].level;
             double r2 = 0;
@@ -538,11 +1422,28 @@ void compute_U(struct RegularizedRegion *R) {
 
             const double invr = 1.0 / sqrt(r2);
             R->U += mi * mj * invr;
-
-	    
-
+#ifdef PARALLEL
+            c++;
+            if (c == ThisBlock) {
+                loop = 0;
+                break;
+            }
         }
+        if (loop == 0) break;
+#else
+        }
+#endif
     }
+
+    clock_t ctime0 = clock();
+#ifdef PARALLEL
+    if (NumTaskPerGbsGroup > 1) {
+        MPI_Allreduce(MPI_IN_PLACE, &R->U, 1, MPI_DOUBLE, MPI_SUM,
+                      MPI_COMM_GBS_GROUP);
+    }
+#endif
+    clock_t ctime1 = clock();
+    time_comm += (double)(ctime1 - ctime0) / CLOCKS_PER_SEC;
 
     if (!isfinite(R->U)) {
         printf("U not finite.\n");
@@ -551,13 +1452,25 @@ void compute_U(struct RegularizedRegion *R) {
 
     R->U *= GCONST;
 
+    clock_t thistime1 = clock();
+    time_force += (double)(thistime1 - thistime0) / CLOCKS_PER_SEC;
 }
 
 // computes the force function and newtonian acceleration
 void compute_U_and_Newtonian_Acc(struct RegularizedRegion *R) {
 
+    clock_t thistime0 = clock();
+
     int istart, istop = R->NumVertex, jstop = R->NumVertex;
+#ifdef PARALLEL
+    int ThisBlock, CumNumEdge, jstart;
+    loop_scheduling_N2(R->NumVertex, NumTaskPerGbsGroup, &istart, &jstart,
+                       &ThisBlock, &CumNumEdge, ThisTask_in_GbsGroup);
+    int loop = 1;
+    int c = 0;
+#else
     istart = 0;
+#endif
     const int Nd = GLOBAL_ND;
     int d;
     int path[Nd];
@@ -577,8 +1490,12 @@ void compute_U_and_Newtonian_Acc(struct RegularizedRegion *R) {
     for (int i = istart; i < istop; i++) {
         const double mi = Mass[i];
         const int Li = Vertex[i].level;
-
+#ifdef PARALLEL
+        if (i > istart) jstart = i + 1;
+        for (int j = jstart; j < jstop; j++) {
+#else
         for (int j = i + 1; j < jstop; j++) {
+#endif
             r2 = 0;
             const double mj = Mass[j];
             const int Lj = Vertex[j].level;
@@ -616,8 +1533,30 @@ void compute_U_and_Newtonian_Acc(struct RegularizedRegion *R) {
                 R->Acc[3 * j + k] += -mi * drinvr3;
                 ;
             }
+#ifdef PARALLEL
+            c++;
+            if (c == ThisBlock) {
+                loop = 0;
+                break;
+            }
+#endif
         }
+#ifdef PARALLEL
+        if (loop == 0) break;
+#endif
     }
+
+    clock_t ctime0 = clock();
+#ifdef PARALLEL
+    if (NumTaskPerGbsGroup > 1) {
+        MPI_Allreduce(MPI_IN_PLACE, R->Acc, 3 * R->NumVertex, MPI_DOUBLE,
+                      MPI_SUM, MPI_COMM_GBS_GROUP);
+        MPI_Allreduce(MPI_IN_PLACE, &R->U, 1, MPI_DOUBLE, MPI_SUM,
+                      MPI_COMM_GBS_GROUP);
+    }
+#endif
+    clock_t ctime1 = clock();
+    time_comm += (double)(ctime1 - ctime0) / CLOCKS_PER_SEC;
 
     int hi, lo;
     for (int i = 0; i < R->NumVertex - 1; i++) {
@@ -640,29 +1579,32 @@ void compute_U_and_Newtonian_Acc(struct RegularizedRegion *R) {
 
     R->U *= GCONST;
 
+    clock_t thistime1 = clock();
+    time_force += (double)(thistime1 - thistime0) / CLOCKS_PER_SEC;
 }
-
 
 void into_Cartesian_from_MST(struct RegularizedRegion *R) {
 
-    int v1, v2, first, lo, hi;
+    clock_t timing0 = clock();
 
+    int v1, v2;
     get_v1_v2_fast(R, 0, &v1, &v2);
 
+    int first;
     if (R->Vertex[v1].level == 0) {
         first = v1;
     } else {
         first = v2;
     }
-
     for (int k = 0; k < 3; k++) {
         R->Pos[3 * first + k] = 0.0;
         R->Vel[3 * first + k] = 0.0;
     }
-
     for (int i = 0; i < R->NumVertex - 1; i++) {
+
         get_v1_v2_fast(R, i, &v1, &v2);
 
+        int lo, hi;
         if (R->Vertex[v1].level > R->Vertex[v2].level) {
             lo = v2;
             hi = v1;
@@ -672,7 +1614,8 @@ void into_Cartesian_from_MST(struct RegularizedRegion *R) {
         }
         for (int k = 0; k < 3; k++) {
             R->Pos[3 * hi + k] = R->Pos[3 * lo + k] + R->State[3 * i + k];
-            R->Vel[3 * hi + k] = R->Vel[3 * lo + k] + R->State[3 * (R->NumVertex - 1) + 3 * i + k];
+            R->Vel[3 * hi + k] = R->Vel[3 * lo + k] +
+                                 R->State[3 * (R->NumVertex - 1) + 3 * i + k];
         }
     }
 
@@ -697,9 +1640,13 @@ void into_Cartesian_from_MST(struct RegularizedRegion *R) {
         }
     }
 
+    clock_t timing1 = clock();
+    time_coord += (double)(timing1 - timing0) / CLOCKS_PER_SEC;
 }
 
 void into_CoM_frame(struct RegularizedRegion *R) {
+
+    clock_t timing0 = clock();
 
     for (int k = 0; k < 3; k++) {
         R->CoM_Pos[k] = 0;
@@ -724,6 +1671,16 @@ void into_CoM_frame(struct RegularizedRegion *R) {
         }
     }
 
+    //for (int k = 0; k < 3; k++)
+    //{
+        //mst_CoM_R[k] = R->CoM_Pos[k];
+        //mst_CoM_V[k] = R->CoM_Vel[k];
+        //printf("INIT k %d MST TEST %g %g \n",k,R->CoM_Pos[k],mst_CoM_R[k]);
+    //}
+
+
+    clock_t timing1 = clock();
+    time_coord += (double)(timing1 - timing0) / CLOCKS_PER_SEC;
 }
 
 void compute_T(struct RegularizedRegion *R) {
@@ -739,6 +1696,8 @@ void compute_T(struct RegularizedRegion *R) {
 }
 
 void update_pos(struct RegularizedRegion *R) {
+
+    clock_t timing0 = clock();
 
     int v1, v2;
     get_v1_v2_fast(R, 0, &v1, &v2);
@@ -785,9 +1744,14 @@ void update_pos(struct RegularizedRegion *R) {
         }
     }
 
+    clock_t timing1 = clock();
+    time_coord += (double)(timing1 - timing0) / CLOCKS_PER_SEC;
 }
 
-void update_vel(struct RegularizedRegion *R, double *Vel, enum velocity_type propagated_velocity) {
+void update_vel(struct RegularizedRegion *R, double *Vel,
+                enum velocity_type propagated_velocity) {
+
+    clock_t timing0 = clock();
 
     int v1, v2;
     get_v1_v2_fast(R, 0, &v1, &v2);
@@ -815,7 +1779,8 @@ void update_vel(struct RegularizedRegion *R, double *Vel, enum velocity_type pro
         }
         for (int k = 0; k < 3; k++) {
             if (propagated_velocity == PHYSICAL) {
-                Vel[3 * hi + k] = Vel[3 * lo + k] + R->State[3 * (R->NumVertex - 1) + 3 * i + k];
+                Vel[3 * hi + k] = Vel[3 * lo + k] +
+                                  R->State[3 * (R->NumVertex - 1) + 3 * i + k];
             } else {
                 Vel[3 * hi + k] = Vel[3 * lo + k] + R->AuxEdgeVel[3 * i + k];
             }
@@ -838,6 +1803,8 @@ void update_vel(struct RegularizedRegion *R, double *Vel, enum velocity_type pro
         }
     }
 
+    clock_t timing1 = clock();
+    time_coord += (double)(timing1 - timing0) / CLOCKS_PER_SEC;
 }
 
 void drift(double ds, struct RegularizedRegion *R) {
@@ -859,15 +1826,8 @@ void drift(double ds, struct RegularizedRegion *R) {
 
 void set_auxiliary_variables(struct RegularizedRegion *R) {
 
-#ifdef USE_PN_SPIN
-    from_SpinState_to_Spin_S(R);
-#endif
-
     for (int i = 0; i < 3 * R->NumVertex; i++) {
-        R->AuxVel[i]    = R->Vel[i];
-#ifdef USE_PN_SPIN
-	R->AuxSpin_S[i] = R->Spin_S[i];
-#endif
+        R->AuxVel[i] = R->Vel[i];
     }
     int offset = 3 * (R->NumVertex - 1);
     for (int i = 0; i < 3 * (R->NumVertex - 1); i++) {
@@ -879,12 +1839,7 @@ void physical_kick(double dt, struct RegularizedRegion *R) {
 
     int offset = 3 * (R->NumVertex - 1);
     update_vel(R, R->AuxVel, AUXILIARY);
-
-#ifdef USE_PN_SPIN
-    compute_Post_Newtonian_Acc(R, R->AuxVel, R->AuxSpin_S );
-#else
-    compute_Post_Newtonian_Acc(R, R->AuxVel );
-#endif
+    compute_Post_Newtonian_Acc(R, R->AuxVel);
 
     double dB = 0;
     for (int i = 0; i < R->NumVertex; i++) {
@@ -896,44 +1851,23 @@ void physical_kick(double dt, struct RegularizedRegion *R) {
 
     for (int i = 0; i < R->NumVertex - 1; i++) {
         for (int k = 0; k < 3; k++) {
-            R->State[offset + 3 * i + k] += dt * (R->MSTedgeAcc[3 * i + k] + R->MSTedgeAcc_PN[3 * i + k]);
+            R->State[offset + 3 * i + k] +=
+                dt * (R->MSTedgeAcc[3 * i + k] + R->MSTedgeAcc_PN[3 * i + k]);
         }
     }
-
-#ifdef USE_PN_SPIN
-    for (int i = 0;i< R->NumVertex; i++) {
-	for (int k = 0; k < 3; k++) {
-		R->Spin_S[3*i+k] += dt*R->Spin_dS_PN[3*i+k];
-	}
-   }
-#endif
-
 }
 
 void auxiliary_kick(double dt, struct RegularizedRegion *R) {
 
     update_vel(R, R->Vel, PHYSICAL);
+    compute_Post_Newtonian_Acc(R, R->Vel);
 
-#ifdef USE_PN_SPIN
-    compute_Post_Newtonian_Acc(R, R->Vel, R->Spin_S );
-#else
-    compute_Post_Newtonian_Acc(R, R->Vel );
-#endif
-
-    for (int i = 0;i< R->NumVertex-1; i++) {
+    for (int i = 0; i < R->NumVertex - 1; i++) {
         for (int k = 0; k < 3; k++) {
-            R->AuxEdgeVel[3 * i + k] += dt * (R->MSTedgeAcc[3 * i + k] + R->MSTedgeAcc_PN[3 * i + k]);
+            R->AuxEdgeVel[3 * i + k] +=
+                dt * (R->MSTedgeAcc[3 * i + k] + R->MSTedgeAcc_PN[3 * i + k]);
         }
     }
-
-#ifdef USE_PN_SPIN
-    for (int i = 0;i< R->NumVertex; i++) {
-	for (int k = 0; k < 3; k++) {
-		R->AuxSpin_S[3*i+k] += dt*R->Spin_dS_PN[3*i+k];
-	}
-    }
-#endif
-
 }
 #endif
 
@@ -945,22 +1879,16 @@ void kick(double ds, struct RegularizedRegion *R) {
 #ifndef USE_PN
     for (int i = 0; i < R->NumVertex - 1; i++) {
         for (int k = 0; k < 3; k++) {
-        	R->State[3 * (R->NumVertex - 1) + 3 * i + k] += dt * R->MSTedgeAcc[3 * i + k];
+            R->State[3 * (R->NumVertex - 1) + 3 * i + k] +=
+                dt * R->MSTedgeAcc[3 * i + k];
         }
     }
 #else
-
     auxiliary_kick(dt / 2, R);
     physical_kick(dt, R);
     auxiliary_kick(dt / 2, R);
-
-#ifdef USE_PN_SPIN
-    from_Spin_S_to_SpinState(R);
-#endif
-
 #endif
     update_vel(R, R->Vel, PHYSICAL);
-
 }
 
 double get_n_double(int i) { return (2.0 * (i + 1.0)); }
@@ -1011,13 +1939,15 @@ void compute_total_energy(struct RegularizedRegion *R) {
     R->State[R->BIndex] = R->B;
 }
 
-void mst_leapfrog(struct RegularizedRegion *R, double Hstep, int NumberOfSubsteps) {
+void mst_leapfrog(struct RegularizedRegion *R, double Hstep,
+                  int NumberOfSubsteps) {
 
 #ifdef USE_PN
     set_auxiliary_variables(R);
 #endif
 
     double h = Hstep / NumberOfSubsteps;
+
     drift(h / 2, R);
     for (int step = 0; step < NumberOfSubsteps - 1; step++) {
         kick(h, R);
@@ -1025,28 +1955,7 @@ void mst_leapfrog(struct RegularizedRegion *R, double Hstep, int NumberOfSubstep
     }
     kick(h, R);
     drift(h / 2, R);
-
 }
-
-#ifdef USE_PN_SPIN
-void from_SpinState_to_Spin_S( struct RegularizedRegion *R ){
-	for (int i=0; i < R->NumVertex; i++){
-		int index = R->SpinStateIndex[i];
-		for(int k=0;k<3;k++){
-			R->Spin_S[3*index+k] = R->SpinState[3*i+k];
-		}
-	}
-}
-void from_Spin_S_to_SpinState( struct RegularizedRegion *R ){
-
-	for (int i=0; i < R->NumVertex; i++){
-		int index = R->SpinStateIndex[i];
-		for(int k=0;k<3;k++){
-			R->SpinState[3*i+k] = R->Spin_S[3*index+k];
-		}
-	}
-}
-#endif
 
 void copy_regularized_region(struct RegularizedRegion *Orig,
                              struct RegularizedRegion *Copy) {
@@ -1056,9 +1965,6 @@ void copy_regularized_region(struct RegularizedRegion *Orig,
     Copy->NumVertex = Orig->NumVertex;
     Copy->NumEdge = Orig->NumEdge;
     Copy->NumDynVariables = Orig->NumDynVariables;
-#ifdef USE_PN_SPIN
-    Copy->NumSpinVariables = Orig->NumSpinVariables;
-#endif
     Copy->TimeIndex = Orig->TimeIndex;
     Copy->BIndex = Orig->BIndex;
     Copy->Hstep = Orig->Hstep;
@@ -1077,25 +1983,15 @@ void copy_regularized_region(struct RegularizedRegion *Orig,
         Copy->EdgeInMST[j].vertex2 = Orig->EdgeInMST[j].vertex2;
     }
 
-#ifdef USE_PN_SPIN
-    for (int j = 0; j < Orig->NumVertex; j++) {
-	Copy->SpinStateIndex[j] = Orig->SpinStateIndex[j];
-    }
-#endif
-
     for (int j = 0; j < Orig->NumDynVariables; j++) {
         Copy->State[j] = Orig->State[j];
     }
     for (int j = 0; j < 3 * Orig->NumVertex; j++) {
         Copy->Pos[j] = Orig->Pos[j];
         Copy->Vel[j] = Orig->Vel[j];
-        Copy->Acc[j]    = Orig->Acc[j];
+        Copy->Acc[j] = Orig->Acc[j];
         Copy->AuxVel[j] = Orig->AuxVel[j];
-        Copy->AccPN[j]  = Orig->AccPN[j];
-#ifdef USE_PN_SPIN
-	Copy->Spin_S[j]    = Orig->Spin_S[j];
-	Copy->SpinState[j] = Orig->SpinState[j];
-#endif
+        Copy->AccPN[j] = Orig->AccPN[j];
     }
     for (int j = 0; j < 3 * (Orig->NumVertex - 1); j++) {
         Copy->MSTedgeAcc[j] = Orig->MSTedgeAcc[j];
@@ -1124,11 +2020,7 @@ void extrapolate_single_variable(double *y, const int N, double *result,
     err[N - 2] = fabs(gbsS[0][N - 1] - gbsS[0][N - 1 - 1]) / yscal[N - 1];
 }
 
-double get_gbs_scaling( double *y, int N ){
-
-}
-
-int extrapolate_all_variables(int korder ) {
+int extrapolate_all_variables(int korder) {
 
     int status = -1;
 
@@ -1136,41 +2028,44 @@ int extrapolate_all_variables(int korder ) {
     int *SubStepDivision = calloc(korder, sizeof(int));
 
     int counter = 0;
-    int NumDynVariables = 0, NumSpinVariables=0;
+    int NumDynVariables = 0;
     for (int i = 0; i < korder; i++) {
         ThisR = ComputationToDoList.ComputationalTask[i].ThisR;
-        NumDynVariables  = ThisR->NumDynVariables;
-#ifdef USE_PN_SPIN
-	NumSpinVariables  = ThisR->NumSpinVariables;
-#endif
+        NumDynVariables = ThisR->NumDynVariables;
         SubStepDivision[counter] = i;
         counter++;
     }
 
-    int NumPos  = 3*(ThisR->NumVertex-1);
-    int NumVel  = NumPos;
-#ifdef USE_PN_SPIN
-    int NumSpin = 3*ThisR->NumVertex;
-#endif
+    int block = (int)floor(NumDynVariables / Ntask);
+    int loop_start = block * ThisTask;
+    int loop_end = block * (ThisTask + 1);
+    if (ThisTask == Ntask - 1) { loop_end = NumDynVariables; }
+
+    // Antti debugging: modifications in this function start
+
+    // Antti debugging: modify scaling
+/*   variables in the state vector
+     0           ---> 3*nvertex-1 : positions
+     3*nvertex-1 ---> 6*nvertex-1 : velocities
+     6*nvertex-2 ---> 6*nvertex-1 : binding energy
+     6*nvertex-1 ---> 6*nvertex   : time
+*/
+
+    int NumPos = 3*(ThisR->NumVertex-1);
+    int NumVel = NumPos;
 
     double PosScale[korder], VelScale[korder], BScale[korder], TScale[korder];
-#ifdef USE_PN_SPIN
-    double SpinScale[korder];
-#endif
 
     for (int i = 0; i < korder; i++) {
-	PosScale[i]  = 0.0;
-	VelScale[i]  = 0.0;
-	BScale[i]    = 0.0;
-	TScale[i]    = 0.0;
-#ifdef USE_PN_SPIN
-	SpinScale[i] = 0.0;
-#endif
+	PosScale[i] = 0.0;
+	VelScale[i] = 0.0;
+	BScale[i] = 0.0;
+	TScale[i] = 0.0;
     }
 
     for (int v = 0; v < NumPos; v++) {
 	for (int i = 0; i < korder; i++) {
-		if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > PosScale[i] ) { PosScale[i] = fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
+		if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > PosScale[i] ) { PosScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
 	}
     }
     for (int v = NumPos; v < NumPos+NumVel; v++) {
@@ -1184,17 +2079,10 @@ int extrapolate_all_variables(int korder ) {
     }
     v = NumDynVariables-1;
     for (int i = 0; i < korder; i++) {
-	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > TScale[i] ) { TScale[i] = fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
+	if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v] ) > TScale[i] ) { TScale[i] = fabs(ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v]); }
     }
-#ifdef USE_PN_SPIN
-    for (int v = 0; v < NumSpinVariables; v++) {
-	for (int i = 0; i < korder; i++) {
-		if( fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].SpinState[v] ) > SpinScale[i] ) { SpinScale[i] = fabs( ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].SpinState[v]); }
-        }
-    }
-#endif
 
-    for (int v = 0; v < NumDynVariables; v++) {
+    for (int v = loop_start; v < loop_end; v++) {
         for (int i = 0; i < korder; i++) {
             y[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].State[v];
 	    if( v == NumDynVariables-1 ) { yscal[i] = TScale[i]; }
@@ -1205,39 +2093,40 @@ int extrapolate_all_variables(int korder ) {
         }
         extrapolate_single_variable(y, korder, result[v], extrapolation_error[v], yscal);
     }
-#ifdef USE_PN_SPIN
-    for (int v = NumDynVariables; v < NumDynVariables+NumSpinVariables; v++) {
-	for (int i = 0; i < korder; i++) {
-		y[i] = ComputationToDoList.CopyOfSingleRegion[SubStepDivision[i]].SpinState[v-NumDynVariables];
-		yscal[i] = SpinScale[i];
-	}
-	extrapolate_single_variable(y, korder, result[v], extrapolation_error[v], yscal);
-    }
-#endif
+
+    // Antti debugging: modifications in this function end here
 
     for (int i = 0; i < NumDynVariables; i++) {
-        errorbuf[i]  = extrapolation_error[i][korder - 2];
+        errorbuf[i] = 0;
+        resultbuf[i] = 0;
+    }
+
+    for (int i = loop_start; i < loop_end; i++) {
+        errorbuf[i] = extrapolation_error[i][korder - 2];
         resultbuf[i] = result[i][korder - 2];
     }
-#ifdef USE_PN_SPIN
-    for (int i = NumDynVariables; i < NumDynVariables+NumSpinVariables;i++) {
-	errorbuf[i]  = extrapolation_error[i][korder - 2];
-	resultbuf[i] = result[i][korder - 2];
-    }
+
+#ifdef PARALLEL
+    MPI_Allreduce(MPI_IN_PLACE, errorbuf, NumDynVariables, MPI_DOUBLE, MPI_SUM,
+                  MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, resultbuf, NumDynVariables, MPI_DOUBLE, MPI_SUM,
+                  MPI_COMM_WORLD);
 #endif
 
     double gbs_error = -1;
-    double gbs_tolerance = ComputationToDoList.ComputationalTask[SubStepDivision[0]].ThisR->gbs_tolerance;
+    double gbs_tolerance =
+        ComputationToDoList.ComputationalTask[SubStepDivision[0]]
+            .ThisR->gbs_tolerance;
 
     int max_err_i = -1;
-    for (int j = 0; j < NumDynVariables+NumSpinVariables; j++) {
+    for (int j = 0; j < NumDynVariables; j++) {
         if (errorbuf[j] >= gbs_error) {
             gbs_error = errorbuf[j];
             max_err_i = j;
         }
     }
-
-    double Hnextfac = 0.94 * pow(0.65 / (gbs_error / gbs_tolerance), 1.0 / (2 * korder + 1));
+    double Hnextfac =
+        0.94 * pow(0.65 / (gbs_error / gbs_tolerance), 1.0 / (2 * korder + 1));
 
     if (gbs_error <= gbs_tolerance) {
 
@@ -1246,48 +2135,58 @@ int extrapolate_all_variables(int korder ) {
         for (int v = 0; v < NumDynVariables; v++) {
             ThisR->State[v] = resultbuf[v];
         }
-#ifdef USE_PN_SPIN
-	for (int v = NumDynVariables; v < NumDynVariables+NumSpinVariables; v++) {
-	    ThisR->SpinState[v-NumDynVariables] = resultbuf[v];
-	}
-#endif
         if (Hnextfac > 5.0) { Hnextfac = 5.0; }
 
         ThisR->Hstep *= Hnextfac;
-
         into_Cartesian_from_MST(ThisR);
-#ifdef USE_PN_SPIN
-	from_SpinState_to_Spin_S(ThisR);
-#endif
+
         ok_steps++;
 
     } else {
         status = 0;
         failed_steps++;
+
         if (Hnextfac > 0.7) { Hnextfac = 0.7; }
         ThisR->Hstep *= Hnextfac;
+
     }
     free(SubStepDivision);
 
     return status;
-
-
 }
 
 // Integrate the subsystems using AR-MST for the desired time interval
 void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *stopping_condition_occurred) {
 
+
     failed_steps = 0;
     ok_steps = 0;
+    time_force = 0;
+    time_comm = 0;
+
+    time_mst = 0;
+    time_gbs = 0;
+    time_gbscomm = 0;
+    time_coord = 0;
+    tprim1 = 0, tprim2 = 0, tprim3 = 0, tprim4 = 0, tprim5 = 0;
+
 
     // Needed variables
-    double dt = time_interval/1e6;	// USE_PN_SPIN: Antti: not an ifdef, just to catch attention. This could be changed into P/10 for binaries, for example
+    double dt = 1e-3;
     double Hstep;
     double time;
-
+    int endtime_iteration_phase=0;
     // Initialize the system to integrate
+
     into_CoM_frame(R);
+    
+    
+#ifdef PRIM
     PrimMST(R);
+#else
+    DivideAndConquerPrim(R);
+#endif
+
 
     compute_total_energy(R);
     R->Hstep = dt * R->U;
@@ -1298,16 +2197,15 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
     // Now proceed to integration
     int not_finished = 1;
-    int endtime_iteration_phase = 0;
     int redo = 1;
     int status;
 
     int i_sc;
 
     int i_print=0;
-    double N_print=10;
+    double N_print=10.0;
     double f_time;
-
+    
     do {
 
         do {
@@ -1315,71 +2213,126 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
             redo = 0;
 
             // Divide the systems and substep divisions for tasks
+
             divide_computational_load(R);
 
             // Perform the leapfrog tasks
-            for (int ctask = 0; ctask < ComputationToDoList.NumberOfComputationalTasks; ctask++) {
-                if (ThisGbsGroup == ComputationToDoList.ComputationalTask[ctask].GroupToPerformTask) {
+            for (int ctask = 0;
+                 ctask < ComputationToDoList.NumberOfComputationalTasks;
+                 ctask++) {
+                if (ThisGbsGroup == ComputationToDoList.ComputationalTask[ctask]
+                                        .GroupToPerformTask) {
 
-                    // copy the system in order not to overwrite the original one
-                    struct RegularizedRegion *ThisR = ComputationToDoList.ComputationalTask[ctask].ThisR;
-                    copy_regularized_region( ThisR, &ComputationToDoList.CopyOfSingleRegion[ctask]);
+                    // copy the system in order not to overwrite the original
+                    // one
+                    struct RegularizedRegion *ThisR =
+                        ComputationToDoList.ComputationalTask[ctask].ThisR;
+
+                    copy_regularized_region(
+                        ThisR, &ComputationToDoList.CopyOfSingleRegion[ctask]);
 
                     // leapfrog the substep division
                     Hstep = ComputationToDoList.CopyOfSingleRegion[ctask].Hstep;
-                    mst_leapfrog(&ComputationToDoList.CopyOfSingleRegion[ctask], Hstep, ComputationToDoList.ComputationalTask[ctask].NumberOfSubsteps);
+                    mst_leapfrog(&ComputationToDoList.CopyOfSingleRegion[ctask],
+                                 Hstep,
+                                 ComputationToDoList.ComputationalTask[ctask]
+                                     .NumberOfSubsteps);
+
+                    for (int i=0; i<ThisR->NumVertex; i++)
+                    {
+                        ThisR->Acc[i] = ComputationToDoList.CopyOfSingleRegion[ctask].Acc[i];
+                    }
 
                 }
             }
 
         } while (redo);
 
+        my_barrier();
+        clock_t aika0 = clock(), aika1;
+
+#ifdef PARALLEL
+        // We need to communicate the results
+        for (int ctask = 0;
+             ctask < ComputationToDoList.NumberOfComputationalTasks; ctask++) {
+            int root = ComputationToDoList.ComputationalTask[ctask]
+                           .GroupToPerformTask *
+                       NumTaskPerGbsGroup;
+            double *commbuf =
+                ComputationToDoList.CopyOfSingleRegion[ctask].State;
+
+            int count =
+                ComputationToDoList.CopyOfSingleRegion[ctask].NumDynVariables;
+            if (ThisTask != root) {
+                for (int i = 0; i < count; i++) {
+                    commbuf[i] = 0;
+                }
+            }
+            MPI_Bcast(commbuf, count, MPI_DOUBLE, root, MPI_COMM_WORLD);
+        }
+        aika1 = clock();
+
+        time_gbscomm += (double)(aika1 - aika0) / CLOCKS_PER_SEC;
+#endif
+
         // Now preform the GBS extrapolation, check convergence and obtain next
         // timestep
 
-	status = extrapolate_all_variables(KMAX);
+        my_barrier();
+        aika0 = clock();
+        status = extrapolate_all_variables(KMAX);
+        aika1 = clock();
+        time_gbs += (double)(aika1 - aika0) / CLOCKS_PER_SEC;
 
         if (status == 1) {
 
             // Check whether we are ready
             time = R[0].State[R[0].TimeIndex];
+            //printf("t %g\n",time);
             R[0].time = time;
-            if ( fabs(time - time_interval) / time_interval < R->output_time_tolerance) {
-               not_finished = 0;
-            } else {
+            if (fabs(time - time_interval) / time_interval <
+                R->output_time_tolerance) {
+                not_finished = 0;
+            } else
+            {
 
                 compute_total_energy(R);
-
-		if( endtime_iteration_phase ){
-			R->Hstep = R->U * (time_interval - time);
-		} else {
-                	if (time > time_interval) {
-				endtime_iteration_phase = 1;
-                    		R->Hstep = -R->U * (time - time_interval);
-                	} else if (R->Hstep / R->U + time > time_interval) {
-                    		R->Hstep = R->U * (time_interval - time);
-                	}
-		}
+//                if (time > time_interval) {
+//                    R->Hstep = -R->U * (time - time_interval);
+//                } else if (R->Hstep / R->U + time > time_interval) {
+//                    R->Hstep = R->U * (time_interval - time);
+//                }
+                /* Start Antti's fix for negative times 06.09.2020 */
+                if ( endtime_iteration_phase )
+                {
+                    R->Hstep = R->U * (time_interval - time);
+                }
+                else
+                {
+                    if (time > time_interval)
+                    {
+                        endtime_iteration_phase = 1;
+                        R->Hstep = -R->U * (time - time_interval);
+                    }
+                    else if (R->Hstep / R->U + time > time_interval)
+                    {
+                        R->Hstep = R->U * (time_interval - time);
+                    }
+                }
+                /* End Antti's fix for negative times 06.09.2020 */
 
                 /* Some debug printing */
-
-#ifdef USE_PN_SPIN	// a useful two-body system debug
-#if 0
-		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n", time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
-		R->Vel[0],R->Vel[1],R->Vel[2],R->Vel[3],R->Vel[4],R->Vel[5],R->Spin_S[0],R->Spin_S[1],R->Spin_S[2],R->Spin_S[3],R->Spin_S[4],R->Spin_S[5] );
-#endif
-#else
-#if 0
-		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e\n", time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
-		R->Vel[0],R->Vel[1],R->Vel[2],R->Vel[3],R->Vel[4],R->Vel[5] );
-#endif
-#endif
-                  f_time = time/time_interval;
-                  if ( ((int) (f_time*N_print) ) == i_print)
-                  {
-		  	//printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
-                        i_print+=1;
-                 }
+                if (time < 0.0)
+                {
+                    printf("MSTAR -- WARNING time = %g < 0!\n",time);
+                }
+                f_time = time/time_interval;
+                if ( ((int) (f_time*N_print) ) == i_print)
+                {
+                    printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0);
+                    i_print+=1;
+                }
+                //printf(">>>> %d %g %d\n",i_print,f_time,(int) (f_time*N_print));
 
                 /* Stopping conditions */
                 int possible_stopping_condition;
@@ -1392,16 +2345,17 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     printf("Stopping condition at t=%g \n",time);
                 }
 
+                //#ifdef IGNORE
                 if (possible_stopping_condition == 1)
                 {
                     i_sc++;
-
+                    
                     double sc_Hstep = R->U * Delta_t_stopping_condition;
                     if ( fabs(sc_Hstep) <= fabs(R->Hstep) ) // Make sure stopping condition detection does not interfere with the timestep determined above
                     {
                         R->Hstep = sc_Hstep;
                     }
-
+                    
                     if (i_sc > 100) /* The stopping condition was probably not real; give up */
                     {
                         possible_stopping_condition = 0;
@@ -1419,23 +2373,26 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                         i_sc = 0;
                     }
                 }
-
+                //#endif
+                
                 int old_epoch = epoch;
                 epoch = (int)floor(time / percent);
                 if (epoch != old_epoch) {
+#ifdef PRIM
                     PrimMST(&R[0]);
+#else
+                    DivideAndConquerPrim(&R[0]);
+#endif
                 }
             }
         }
 
     } while (not_finished);
-
+    
+    
     out_of_CoM_frame(R);
-
+    
     *end_time = time;
-
-fflush(stdout);
-
 }
 
 void allocate_regularized_region(struct RegularizedRegion *S, int N) {
@@ -1448,9 +2405,6 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
 
     S->NumEdge = (N * (N - 1)) / 2;
     S->NumDynVariables = 6 * (N - 1) + 2;
-#ifdef USE_PN_SPIN
-    S->NumSpinVariables = 3*N;
-#endif
 
     S->TimeIndex = S->NumDynVariables - 1;
     S->BIndex = S->NumDynVariables - 2;
@@ -1467,14 +2421,6 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->AuxEdgeVel = calloc(3 * (N - 1), sizeof(double));
     S->MSTedgeAcc_PN = calloc(3 * (N - 1), sizeof(double));
 
-#ifdef USE_PN_SPIN
-    S->SpinState     = calloc(3 * N, sizeof(double));
-    S->SpinStateIndex     = calloc(N, sizeof(int));
-    S->Spin_S     = calloc(3 * N, sizeof(double));
-    S->AuxSpin_S     = calloc(3*N, sizeof(double));
-    S->Spin_dS_PN = calloc(3 * N, sizeof(double));
-#endif
-
     S->Vertex = calloc(N, sizeof(struct GraphVertex));
 
     double safetybuf = 1.05;
@@ -1482,7 +2428,7 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->LocalEdge = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->LocalEdgeSubset = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->EdgeInMST = calloc(N - 1, sizeof(struct GraphEdge));
-
+    
     S->Radius = calloc(N, sizeof(double));
     S->Stopping_Condition_Mode = calloc(N, sizeof(int));
     S->Stopping_Condition_Partner = calloc(N, sizeof(int));
@@ -1496,52 +2442,38 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
     int MaxDynamicalVariables = 6 * (MaxNumPart - 1) + 2;
     *R = calloc(1, sizeof(struct RegularizedRegion));
 
+    int NumDynVariables = MaxDynamicalVariables;
+
+    extrapolation_error = calloc(NumDynVariables, sizeof(double *));
+
     allocate_regularized_region(R[0], MaxNumPart);
 
     gbsS = calloc(KMAX, sizeof(double *));
     for (int i = 0; i < KMAX; i++) {
         gbsS[i] = calloc(KMAX, sizeof(double));
     }
+
     int korder = 8;
-    int NumDynVariables = MaxDynamicalVariables;
 
-#ifdef USE_PN_SPIN
-    int NumSpinVariables = 3*MaxNumPart;
-#endif
-
-#ifdef USE_PN_SPIN
-    errorbuf      = calloc(NumDynVariables+NumSpinVariables, sizeof(double));
-    resultbuf     = calloc(NumDynVariables+NumSpinVariables, sizeof(double));
-    extrapolation_error         = calloc(NumDynVariables+NumSpinVariables, sizeof(double *));
-    result        = calloc(NumDynVariables+NumSpinVariables, sizeof(double *));
-#else
-    errorbuf 	  = calloc(NumDynVariables, sizeof(double));
-    resultbuf 	  = calloc(NumDynVariables, sizeof(double));
-    extrapolation_error 	  = calloc(NumDynVariables, sizeof(double *));
-    result 	  = calloc(NumDynVariables, sizeof(double *));
-#endif
-
-    y     = calloc(korder, sizeof(double));
+    errorbuf = calloc(NumDynVariables, sizeof(double));
+    resultbuf = calloc(NumDynVariables, sizeof(double));
+    y = calloc(korder, sizeof(double));
     yscal = calloc(korder, sizeof(double));
+    maxerror = calloc(korder - 1, sizeof(double));
 
-#ifdef USE_PN_SPIN
-    for (int i = 0; i < NumDynVariables+NumSpinVariables; i++) {
+    result = calloc(NumDynVariables, sizeof(double *));
+
+    for (int i = 0; i < NumDynVariables; i++) {
         extrapolation_error[i] = calloc(korder - 1, sizeof(double));
         result[i] = calloc(korder - 1, sizeof(double));
     }
-#else
-    for (int i = 0; i < NumDynVariables; i++) {
-	extrapolation_error[i] = calloc(korder - 1, sizeof(double));
-	result[i] = calloc(korder - 1, sizeof(double));
-    }
-#endif
-
     indexlist = calloc(8, sizeof(int *));
 
     for (int i = 0; i < 8; i++) {
         indexlist[i] = calloc(MaxNumPart, sizeof(int));
     }
 
+    ParticleInNode = calloc(MaxNumPart, sizeof(struct OctreeNode *));
     int NumAlloc = KMAX;
 
     ComputationToDoList.ComputationalTask =
@@ -1556,7 +2488,8 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
         allocate_regularized_region(&ComputationToDoList.CopyOfSingleRegion[i],
                                     MaxNumPart);
     }
-
+    
+   
 }
 
 // free
@@ -1576,13 +2509,6 @@ void free_data(struct RegularizedRegion *R) {
     free(R->State);
     free(R->MSTedgeAcc);
     free(R->EdgeInMST);
-
-#ifdef USE_PN_SPIN
-    free(   R->Spin_dS_PN);
-    free(   R->Spin_S);
-    free(R->AuxSpin_S);
-#endif
-
     free(R);
 
     free(gbsS);
@@ -1592,73 +2518,102 @@ void free_data(struct RegularizedRegion *R) {
 void read_ic_from_file(struct RegularizedRegion *R, char *INPUTFILE) {
     FILE *fp;
     for (int task = 0; task < Ntask; task++) {
+        my_barrier();
         if (ThisTask == task) {
             fp = fopen(INPUTFILE, "r");
             for (int i = 0; i < R->NumVertex; i++) {
-
-#ifdef USE_PN_SPIN
-                int status = fscanf(fp, "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
-		&R->Vertex[i].type, &R->Mass[i],
-		&R->Pos[3 * i + 0], &R->Pos[3 * i + 1],
-		&R->Pos[3 * i + 2], &R->Vel[3 * i + 0],
-		&R->Vel[3 * i + 1], &R->Vel[3 * i + 2],
-		&R->Spin_S[3*i+0],&R->Spin_S[3*i+1],&R->Spin_S[3*i+2] );
-#else
                 int status = fscanf(fp, "%d %lf %lf %lf %lf %lf %lf %lf\n",
-		&R->Vertex[i].type, &R->Mass[i],
-		&R->Pos[3 * i + 0], &R->Pos[3 * i + 1],
-		&R->Pos[3 * i + 2], &R->Vel[3 * i + 0],
-		&R->Vel[3 * i + 1], &R->Vel[3 * i + 2] );
-#endif
+                                    &R->Vertex[i].type, &R->Mass[i],
+                                    &R->Pos[3 * i + 0], &R->Pos[3 * i + 1],
+                                    &R->Pos[3 * i + 2], &R->Vel[3 * i + 0],
+                                    &R->Vel[3 * i + 1], &R->Vel[3 * i + 2]);
                 if (!(status > 0)) { die(); }
             }
             fclose(fp);
         }
+        my_barrier();
     }
+    my_barrier();
 }
 
-#if 1
+// The test main function
+#ifdef IGNORE
 int main(int argc, char *argv[]) {
 
-    // input: file numpart gbstol
     initialize_mpi_or_serial();
 
-    GBSTOL  = atof(argv[3]);
+    my_barrier();
+
+    GBSTOL = atof(argv[3]);
     MAXPART = atoi(argv[2]);
 
     failed_steps = 0;
     ok_steps = 0;
+    time_force = 0;
+    time_comm = 0;
+
+    time_mst = 0;
+    time_gbs = 0;
+    time_gbscomm = 0;
+    time_coord = 0;
+    tprim1 = 0, tprim2 = 0, tprim3 = 0, tprim4 = 0, tprim5 = 0;
+
+    my_barrier();
 
     /////////////////////////////////////////
 
     struct RegularizedRegion *R;
     int MaxNumPart = MAXPART;
-
     allocate_armst_structs(&R, MaxNumPart);
-
     read_ic_from_file(R, argv[1]);
-
-   double IntegrationTime = 2.25e-4 * 1100;	//882.254;
+    double IntegrationTime = 1e-5;
 
     // Integrate for some time interval
 
-// Antti debugging lines
-    int stopping_condition_occurred;
-    double end_time;
-
-    run_integrator(R, IntegrationTime, &end_time, &stopping_condition_occurred );
-
+    wtime0 = clock();
+    run_integrator(R, IntegrationTime);
+    wtime1 = clock();
 
     // Do some output
 
+    double elapsed = (double)(wtime1 - wtime0) / CLOCKS_PER_SEC;
+
     if (ThisTask == 0) {
+        printf("%d %d %d %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", Ntask,
+               MAXPART, ok_steps + failed_steps, time_force - time_comm,
+               time_comm, elapsed, time_mst, time_gbs, time_gbscomm,
+               time_coord);
 
-        printf("\n\nInput dt: %e	Physical time %e. end_time: %e 	stopping_condition:	%d\n", IntegrationTime, R->time, end_time, stopping_condition_occurred );
+        printf("Total time: %.10e\n", elapsed);
+#if 1
+        printf("force:     %lf\n", 100 * (time_force - time_comm) / elapsed);
+        printf("forcecomm: %lf\n", 100 * (time_comm) / elapsed);
+        printf("prim:      %lf\n", 100 * (time_mst) / elapsed);
+        printf("gbs:       %lf\n", 100 * (time_gbs) / elapsed);
+        printf("divcomm:   %lf\n", 100 * (time_gbscomm) / elapsed);
+        printf("coord  :   %lf\n", 100 * (time_coord) / elapsed);
+
+        printf("\n--- prim ---\n");
+#ifdef PRIM
+        printf("%lf %lf %lf %lf %lf\n", 100 * tprim1 / elapsed,
+               100 * tprim2 / elapsed, 100 * (tprim3) / elapsed,
+               100 * tprim4 / elapsed, 100 * tprim5 / elapsed);
+#else
+        printf("octree           %lf\n", 100 * tprim1 / elapsed);
+        printf("octree particles %lf\n", 100 * tprim2 / elapsed);
+        printf("sub-msts         %lf\n", 100 * tprim3 / elapsed);
+        printf("meta-mst         %lf\n", 100 * tprim4 / elapsed);
+        printf("combine msts     %lf\n", 100 * tprim5 / elapsed);
+#endif
+        fflush(stdout);
+#endif
+        printf("Physical time %e\n", R->time);
         int n = MaxNumPart > 10 ? 10 : MaxNumPart;
-
-	// Antti debug line: modified output for plotting
         for (int i = 0; i < n; ++i) {
-            printf("%d %e %e %e %e %e %e\n",
+            printf(
+                "Particle %d\n"
+                " pos = [%e, %e, %e]\n"
+                " vel = [%e, %e, %e]\n",
                 i, R->Pos[3 * i + 0], R->Pos[3 * i + 1], R->Pos[3 * i + 2],
                 R->Vel[3 * i + 0], R->Vel[3 * i + 1], R->Vel[3 * i + 2]);
         }
@@ -1666,7 +2621,9 @@ int main(int argc, char *argv[]) {
 
     // Free stuff and finalize
     free_data(R);
-
+#ifdef PARALLEL
+    MPI_Finalize();
+#endif
     return 0;
 }
 #endif
@@ -1675,8 +2632,15 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
 {
 
     int istart, istop = R->NumVertex, jstop = R->NumVertex;
+//#ifdef PARALLEL
+//    int ThisBlock, CumNumEdge, jstart;
+//    loop_scheduling_N2(R->NumVertex, NumTaskPerGbsGroup, &istart, &jstart,
+//                       &ThisBlock, &CumNumEdge, ThisTask_in_GbsGroup);
+//    int loop = 1;
+//    int c = 0;
+//#else
     istart = 0;
-
+//#endif
     const int Nd = GLOBAL_ND;
     int d;
     int path[Nd];
@@ -1715,8 +2679,17 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
         const double radiusi = Radius[i];
         const int Li = Vertex[i].level;
         const int modei = Stopping_Condition_Mode[i];
+//#ifdef PARALLEL
+//        if (i > istart)
+//        {
+//            jstart = i + 1;
+//        }
+//        for (int j = jstart; j < jstop; j++)
+//        {
+//#else
         for (int j = i + 1; j < jstop; j++)
         {
+//#endif
             r2 = 0;
             const double mj = Mass[j];
             const double radiusj = Radius[j];
@@ -1828,10 +2801,10 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 double c = vdotv + rdota;
                 double d = 2.0 * rdotv;
                 double e = r2 - r_crit_p2;
-
+                
                 double p = (8.0*a*c - 3.0*b*b)/(8.0*a*a);
                 double q = (b*b*b - 4.0*a*b*c + 8.0*a*a*d)/(8.0*a*a*a);
-
+                
                 double Delta_0 = c*c - 3.0*b*d + 12.0*a*e;
                 double Delta_1 = 2.0*c*c*c - 9.0*b*c*d + 27.0*b*b*e + 27.0*a*d*d - 72.0*a*c*e;
                 double Delta = -(1.0/27.0)*( Delta_1*Delta_1 - 4.0*Delta_0*Delta_0*Delta_0 );
@@ -1881,6 +2854,33 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             //printf("col test r %g r_crit %g rdotv %g vdotv %g collision_occurred %d possible_collision %d Delta_t %g Delta_t_min %g stopping_condition_tolerance %g (r-r_crit)/r %g \n",r,r_crit,rdotv,vdotv,*collision_occurred,*possible_collision,Delta_t,*Delta_t_min,R->stopping_condition_tolerance,fabs(r - r_crit)/r);
         }
     }
+        
+//#ifdef PARALLEL
+//            c++;
+//            if (c == ThisBlock) {
+//                loop = 0;
+//                break;
+//            }
+//#endif
+//        }
+//#ifdef PARALLEL
+        //if (loop == 0) break;
+//#endif
+//    }
+
+    //clock_t ctime0 = clock();
+//#ifdef PARALLEL
+//    if (NumTaskPerGbsGroup > 1) {
+//        MPI_Allreduce(MPI_IN_PLACE, R->Acc, 3 * R->NumVertex, MPI_DOUBLE,
+//                      MPI_SUM, MPI_COMM_GBS_GROUP);
+//        MPI_Allreduce(MPI_IN_PLACE, &R->U, 1, MPI_DOUBLE, MPI_SUM,
+//                      MPI_COMM_GBS_GROUP);
+//    }
+//#endif
+
+    
+    //clock_t ctime1 = clock();
+    //time_comm += (double)(ctime1 - ctime0) / CLOCKS_PER_SEC;
 
 }
 
@@ -1895,6 +2895,12 @@ double fq_RLOF_Eggleton(double m1, double m2)
 
 void out_of_CoM_frame(struct RegularizedRegion *R)
 {
+
+//    for (int k = 0; k < 3; k++)
+//    {
+//        printf("FIN k %d MST TEST %g \n",k,R->CoM_Pos[k]);
+//    }
+     
     for (int i = 0; i < R->NumVertex; i++) {
         for (int k = 0; k < 3; k++) {
             R->Pos[3 * i + k] += R->CoM_Pos[k];

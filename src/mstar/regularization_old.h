@@ -1,4 +1,11 @@
-#include "../constants.h"
+//extern "C"
+//{
+    
+#define SERIAL
+//#define PARALLEL
+#define PRIM
+//This appears broken in this version...
+//#define PRIM_DIVIDE_CONQUER
 
 #define GLOBAL_ND 2
 //#define GCONST 43007.1
@@ -9,21 +16,15 @@
 //#define M_PI 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899862803482534211706798214
 //#define SPEEDOFLIGHT 299792.0
 
-// Antti debugging line
-//#define M_PI 3.141592653589793238
-
 /* The two lines below: modification from A.S.H. */
-//#define GCONST (double) 4.0*M_PI*M_PI
-//#define SPEEDOFLIGHT (double) CONST_C_LIGHT
-//#define SPEEDOFLIGHT (double) 63239.72638679138
+#define GCONST (double) 4.0*M_PI*M_PI
+#define SPEEDOFLIGHT (double) 63239.72638679138
 
 // structs
 
 //#undef USE_PN
 #define USE_PN
-//#undef USE_PN_SPIN
 #define USE_PN_SPIN
-
 
 /* End modifications for MSE */
 
@@ -48,6 +49,18 @@ extern int ThisSortGroup;
 extern int ThisTask_in_SortGroup;
 #endif
 
+struct OctreeNode {
+    int ChildExists[8];
+    struct OctreeNode *Children[8];
+    struct OctreeNode *Parent;
+    double      Center[3];
+    double      HalfSize;
+    int *ObjectList;
+    int Npart;
+    int level;
+    int IsLeaf;
+    int ID;
+};
 
 
 struct WeightIndex {
@@ -85,9 +98,7 @@ struct RegularizedRegion {
         int NumVertex;
         int NumEdge;
 	int NumDynVariables;
-#ifdef USE_PN_SPIN
-	int NumSpinVariables;
-#endif
+
         double *Pos;
         double *Vel;
         double *Mass;
@@ -99,14 +110,6 @@ struct RegularizedRegion {
         double *AuxEdgeVel;
 	double *AccPN;
         double *MSTedgeAcc_PN;
-
-#ifdef USE_PN_SPIN
-	double *SpinState;	// a gbs extrapolation array
-	int    *SpinStateIndex; // index mapping particles in spin_s to spinstate
-	double *Spin_S;		// the actual particle spin
-	double *Spin_dS_PN;	// PN torque
-	double *AuxSpin_S;      // aux spin variables
-#endif
 
 	struct GraphEdge *Edge;
         struct GraphEdge *LocalEdge;
@@ -162,8 +165,10 @@ struct ToDoList {
 	struct RegularizedRegion *CopyOfSingleRegion;
 };
 
+//extern double E0;
 
 // functions
+
 
 #ifdef USE_PN_SPIN
 void from_Spin_S_to_SpinState( struct RegularizedRegion *R );
@@ -196,3 +201,4 @@ void out_of_CoM_frame(struct RegularizedRegion *R);
 #ifndef CV_max
     #define CV_max( a, b ) ( ((a) > (b)) ? (a) : (b) )
 #endif
+//}

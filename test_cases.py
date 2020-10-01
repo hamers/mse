@@ -42,7 +42,7 @@ class test_mse():
     def test1(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [30.0,10.0,2.0]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
@@ -61,7 +61,7 @@ class test_mse():
     def test2(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [50.0,40.0,7.5]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
@@ -80,7 +80,7 @@ class test_mse():
     def test100(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [1.0,1.0,20.5]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
@@ -99,7 +99,7 @@ class test_mse():
     def test101(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [1.0,1.0,20.5]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
@@ -118,7 +118,7 @@ class test_mse():
     def test102(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [30.0,28.0,20.0]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]
@@ -137,7 +137,7 @@ class test_mse():
     def test103(self,args):
         print('Triple with stellar evolution')
         N_bodies = 3
-        configuration="fully nested"
+        configuration="fully_nested"
         masses = [7.0,2.0,2.0]
         #masses = [2.0,1.0,1.5]
         metallicities = [0.01,0.03,0.005]

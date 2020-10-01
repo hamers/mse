@@ -17,6 +17,8 @@ int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, 
 int test_nbody_two_body_kick();
 struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double m3, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
 int test_nbody_pythagorean();
+int test_nbody_inspiral();
+int test_nbody_spin_orbit();
 void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
 
 int test_flybys();
@@ -25,6 +27,7 @@ int test_flybys_compute_effects_of_flyby_on_system();
 int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma, double M_int, double *M_per, double *b_vec_x, double *b_vec_y, double *b_vec_z, double *V_vec_x, double *V_vec_y, double *V_vec_z);
 
 int test_stellar_evolution();
+int test_spin_conversion();
 int test_apsidal_motion_constant();
 int test_sse();
 int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final);

@@ -4,6 +4,9 @@
 #include "test.h"
 //#include "mstar/regularization.h"
 
+#include <iostream>
+#include <fstream>
+
 extern "C"
 {
 
@@ -190,6 +193,8 @@ int test_nbody()
     flag += test_nbody_two_body_stopping_conditions();
     flag += test_nbody_two_body_kick();
     flag += test_nbody_pythagorean();
+    flag += test_nbody_inspiral();
+    flag += test_nbody_spin_orbit();
 
     if (flag == 0)
     {
@@ -220,6 +225,7 @@ int test_nbody_two_body_stopping_conditions()
         
         double a_init = a;
         double e_init = e;
+        SPEEDOFLIGHT = 1.0e100;
         double gbs_tolerance = 1.0e-12;
         double stopping_condition_tolerance = 1.0e-12;
         struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -406,9 +412,11 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
 
         R->Pos[3 * 0 + i] = R1_vec[i];
         R->Vel[3 * 0 + i] = V1_vec[i];
+        R->Spin_S[3 * 0 + i] = 0.0;
 
         R->Pos[3 * 1 + i] = R2_vec[i];
         R->Vel[3 * 1 + i] = V2_vec[i];
+        R->Spin_S[3 * 1 + i] = 0.0;
     }
 
     R->Mass[0] = m1;
@@ -472,6 +480,7 @@ int test_nbody_two_body_kick()
     double a = 1.0;
     double e = 0.99;
     
+    SPEEDOFLIGHT = 1.0e100;
     double gbs_tolerance = 1.0e-8;
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -604,12 +613,15 @@ struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double 
     {
         R->Pos[3 * 0 + i] = R1_vec[i];
         R->Vel[3 * 0 + i] = V1_vec[i];
-
+        R->Spin_S[3 * 0 + i] = 0.0;
+        
         R->Pos[3 * 1 + i] = R2_vec[i];
         R->Vel[3 * 1 + i] = V2_vec[i];
+        R->Spin_S[3 * 1 + i] = 0.0;
 
         R->Pos[3 * 2 + i] = R3_vec[i];
         R->Vel[3 * 2 + i] = V3_vec[i];
+        R->Spin_S[3 * 2 + i] = 0.0;
     }
 
     R->Mass[0] = m1;
@@ -638,6 +650,7 @@ int test_nbody_pythagorean()
     double m2 = 4.0;
     double m3 = 5.0;
 
+    SPEEDOFLIGHT = 1.0e100;
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_pythagorean_ICs(m1,m2,m3,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -652,7 +665,8 @@ int test_nbody_pythagorean()
     
     double E_fin = compute_nbody_total_energy(R);
     
-    double tol = 1.0e-8;
+    double tol = 1.0e-10;
+
     if (!equal_number(E_init,E_fin,tol))
     {
         printf("test.cpp -- error in test_nbody_pythagorean -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
@@ -662,6 +676,197 @@ int test_nbody_pythagorean()
     return flag;
 }
 
+int test_nbody_inspiral()
+{
+    printf("test.cpp -- test_nbody_inspiral\n");
+
+    int flag = 0;    
+    int stopping_condition_mode = 0;
+    
+    initialize_mpi_or_serial(); 
+    int N_bodies = 2;
+
+    double m1 = 10.0;
+    double m2 = 10.0;
+    double a = 2.0e-5;
+    double e = 1.0e-12;
+    double R1 = 10.0*CONST_G*m1/CONST_C_LIGHT_P2;
+    double R2 = 10.0*CONST_G*m2/CONST_C_LIGHT_P2;
+    
+    double a_init = a;
+    double e_init = e;
+    //SPEEDOFLIGHT = 63239.72638679138;
+    SPEEDOFLIGHT = CONST_C_LIGHT;
+    
+    double gbs_tolerance = 1.0e-12;
+    double stopping_condition_tolerance = 1.0e-12;
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+    
+    double E_init = compute_nbody_total_energy(R);
+    double P_orb = compute_orbital_period_from_semimajor_axis(m1+m2,a);
+    
+    double M = m1+m2;
+    double mu = m1*m2/M;
+    double L = mu * sqrt(GCONST* M * a);
+    
+    double beta = (64.0/5.0)*GCONST*GCONST*GCONST*m1*m2*(m1+m2)*pow(SPEEDOFLIGHT,-5.0);
+    double t_GW = a*a*a*a/(4.0*beta);
+    
+    double tend = 5*t_GW;
+    printf("t_GW/P %g\n",t_GW/P_orb);
+    printf("tend/P %g\n",tend/P_orb);
+    
+    double reached_dt;
+    int stopping_condition_occurred;
+
+    double t=0;
+    double dt = tend/100.0;
+    double alpha_old;
+
+    std::ofstream myfile;
+    myfile.open ("test_nbody_inspiral.txt");
+
+    double at,et;
+    double r[3],v[3];
+    while (t<tend)
+    {
+        t+=dt;
+        run_integrator(R, dt, &reached_dt, &stopping_condition_occurred);
+        t += reached_dt;
+       
+        for (int j=0; j<3; j++)
+        {
+            r[j] = R->Pos[3 * 0 + j] - R->Pos[3 * 1 + j];
+            v[j] = R->Vel[3 * 0 + j] - R->Vel[3 * 1 + j];
+        }
+        
+        test_nbody_compute_elements(GCONST,M,r,v,&at,&et);
+
+        printf("t/P_orb %g a %g e %g sep %g\n",t/P_orb,at,et,norm3(r));
+        
+        myfile << t/P_orb << "," << norm3(r) << "\n";
+        
+        if (stopping_condition_occurred==1)
+        {
+            break;
+        }
+    }
+
+    myfile.close();    
+        
+    double tol = 1.0e-8;
+//    if (!equal_number(E_init,E_fin,tol))
+//    {
+//        printf("test.cpp -- error in test_nbody_spin_orbit -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
+//        flag = 1;
+//    }
+
+    return flag;
+}
+
+
+int test_nbody_spin_orbit()
+{
+    printf("test.cpp -- test_nbody_spin_orbit\n");
+
+    int flag = 0;    
+    int stopping_condition_mode = 0;
+    
+    initialize_mpi_or_serial(); 
+    int N_bodies = 2;
+
+    double m1 = 10.0;
+    double m2 = 10.0;
+    double R1 = 1.0e-10;
+    double R2 = 1.0e-10;
+    double a = 1.0e-2;
+    double e = 0.99;
+    
+    double a_init = a;
+    double e_init = e;
+    //SPEEDOFLIGHT = 63239.72638679138;
+    SPEEDOFLIGHT = CONST_C_LIGHT;
+    double gbs_tolerance = 1.0e-12;
+    double stopping_condition_tolerance = 1.0e-12;
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+    
+    double eps = 1.0e-3;
+    double spin1[3] = {eps,0.0,eps};
+    double spin2[3] = {eps,0.0,eps};
+    for (int i=0; i<3; i++)
+    {
+        R->Spin_S[3 * 0 + i] = spin1[i];
+        R->Spin_S[3 * 1 + i] = spin2[i];
+    }
+    
+    double E_init = compute_nbody_total_energy(R);
+    double P_orb = compute_orbital_period_from_semimajor_axis(m1+m2,a);
+    
+    double M = m1+m2;
+    double mu = m1*m2/M;
+    double L = mu * sqrt(GCONST* M * a);
+    double P_SO = 2.0*M_PI * SPEEDOFLIGHT*SPEEDOFLIGHT * a*a*a * (1.0 - e*e) * (1.0/(2.0*GCONST)) * (1.0/(1.0 + 0.75*m2/m1)) * (1.0/L);
+    double tend = P_SO;
+    
+    double reached_dt;
+    int stopping_condition_occurred;
+
+    double t=0;
+    double dt = tend/100.0;
+    double precession_angle_old;
+    
+    std::ofstream myfile;
+    myfile.open ("test_nbody_spin_orbit.txt");
+    
+    double at,et;
+    double r[3],v[3];
+    while (t<tend)
+    {
+        t+=dt;
+        run_integrator(R, dt, &reached_dt, &stopping_condition_occurred);
+        t += reached_dt;
+
+        double precession_angle = atan2(R->Spin_S[3 * 0 + 1],R->Spin_S[3 * 0 + 0]);
+        if (precession_angle < 0.0)
+        {
+            precession_angle += 2.0*M_PI;
+        }
+
+        for (int j=0; j<3; j++)
+        {
+            r[j] = R->Pos[3 * 0 + j] - R->Pos[3 * 1 + j];
+            v[j] = R->Vel[3 * 0 + j] - R->Vel[3 * 1 + j];
+        }
+        
+        test_nbody_compute_elements(GCONST,M,r,v,&at,&et);
+
+        printf("t/P_orb %g precession angle/deg %g delta/deg %g a %g e %g sep %g\n",t/P_orb,precession_angle*180.0/M_PI,(precession_angle-precession_angle_old)*180.0/M_PI,at,et,norm3(r));
+        printf("spin 1 %g %g %g\n",R->Spin_S[3 * 0 + 0],R->Spin_S[3 * 0 + 1],R->Spin_S[3 * 0 + 2]);
+        printf("spin 2 %g %g %g\n",R->Spin_S[3 * 1 + 0],R->Spin_S[3 * 1 + 1],R->Spin_S[3 * 1 + 2]);
+        
+        myfile << t/P_orb << "," << precession_angle*(180.0/M_PI) << "\n";
+
+        precession_angle_old = precession_angle;
+        
+        if (stopping_condition_occurred==1)
+        {
+            break;
+        }
+
+    }
+    
+    myfile.close();    
+   
+    double tol = 1.0e-8;
+//    printf("test.cpp -- error in test_nbody_spin_orbit -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
+//    if (!equal_number(E_init,E_fin,tol))
+//    {
+//        printf("test.cpp -- error in test_nbody_spin_orbit -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
+//        flag = 1;
+//    }
+
+    return flag;
+}
 
 
 /**********
@@ -863,12 +1068,48 @@ int test_stellar_evolution()
     printf("test.cpp -- test_stellar_evolution\n");
     
     int flag;
+    flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
     
     if (flag == 0)
     {
         printf("test.cpp -- test_stellar_evolution -- passed\n");
+    }
+    
+    return flag;
+}
+
+int test_spin_conversion()
+{
+    printf("test.cpp -- test_spin_conversion\n");
+    int flag = 0;
+    
+    double stellar_types[2] = {1,10};
+    double Omega = 1.0;
+    double mass = 1.0;
+    double core_mass = 0.5;
+    double radius = 1.0;
+    double core_radius = 0.5;
+    double k2 = 0.02;
+    double k3 = 0.02;
+    
+    double stellar_type;
+    double S;
+    double Omega2;
+    double tol = 1.0e-14;
+    for (int i=0; i<3; i++)
+    {
+        stellar_type = stellar_types[i];
+    
+        S = compute_spin_angular_momentum_from_spin_frequency(Omega, stellar_type, mass, core_mass, radius, core_radius, k2, k3);
+        Omega2 = compute_spin_frequency_from_spin_angular_momentum(S, stellar_type, mass, core_mass, radius, core_radius, k2, k3);
+
+        if (!equal_number(Omega,Omega2,tol))
+        {
+            printf("test.cpp -- test_spin_conversion -- error %g %g\n",Omega,Omega2);
+            flag = 1;
+        }
     }
     
     return flag;

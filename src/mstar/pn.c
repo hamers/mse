@@ -50,7 +50,7 @@ void compute_PN_twobody_Acc(struct RegularizedRegion *R, double *Vel, double *Ac
     const double eta3 = eta2*eta;
     const double G    = GCONST;
     const double gm   = G*m;
-
+    
     // relative separation & velocity & unit separation
     double velvec_i[3], velvec_j[3];
     for(int k=0;k<3;k++){
@@ -151,6 +151,17 @@ void compute_PN_twobody_Acc(struct RegularizedRegion *R, double *Vel, double *Ac
     A3p5=-8./5*eta*gmpr*rdot*(23./14*(43+14*eta)*gmpr2+3./28*(61+70*eta)*v2*v2+70*rdot4+1./42*(519-1267*eta)*gmpr*v2+.25*(147+188*eta)*gmpr*rdot2-15/4.*(19+2*eta)*v2*rdot2);
     B3p5=8./5.*eta*gmpr*(1./42.*(1325+546*eta)*gmpr2+1./28.*(313+42*eta)*v2*v2+75*rdot4-1./42.*(205+777*eta)*gmpr*v2+1./12.*(205+424*eta)*gmpr*rdot2-.75*(113+2*eta)*v2*rdot2);
 
+    A1=0.0;
+    B1=0.0;
+    A2=0.0;
+    B2=0.0;
+    A3=0.0;
+    B3=0.0;
+    //A2p5=0.0;
+    //B2p5=0.0;
+    A3p5=0.0;
+    B3p5=0.0;
+
     // sum all acceleration terms with correct powers of c
     Atot = A1/c2 + A2/c4 + A2p5/c5 + A3/c6 + A3p5/c7;
     Btot = B1/c2 + B2/c4 + B2p5/c5 + B3/c6 + B3p5/c7;
@@ -213,7 +224,7 @@ void compute_PN_twobody_Acc(struct RegularizedRegion *R, double *Vel, double *Ac
 	A_SS[k] = -3.0*G/(mu * c2 * r4) * ( S1_dot_S2 * nv[k] - 5 * n_dot_S1 * n_dot_S2 * nv[k] + n_dot_S1 * S_2[k] + n_dot_S2 * S_1[k] );
 	A_Q[k]  = -3.0/2 * G*m/(r4 * c2) * ( ( 1/(m1*m1) * ( (S1_2 - 5*n_dot_S1*n_dot_S1)*nv[k] + 2*n_dot_S1 * S_1[k]) ) + ( 1/(m2*m2) * ( (S2_2 - 5*n_dot_S2*n_dot_S2)*nv[k] + 2*n_dot_S2 * S_2[k]) ));
     }
-
+    
     for(int k=0;k<3;k++){
     	pn_spin_acc[k] = (G/(c2 * r3)) * ( nv[k] * A_SO_term1 - A_SO_term2[k] + A_SO_term3[k] );
     }
@@ -227,11 +238,17 @@ void compute_PN_twobody_Acc(struct RegularizedRegion *R, double *Vel, double *Ac
 	Omega_SO[k] = 2*G*mu/(c2*r2) * (1 + 3*m2/(4*m1)) * n_cross_v[k];
 	Omega_SS[k] = G/(c2*r3) * ( 3*n_dot_S2 * nv[k] - S_2[k] );
 	Omega_Q[k]  = G*m2/(c2*r3*m1) * ( 3*n_dot_S1 * nv[k] - S_1[k] );
+    Omega_SS[k] = 0.0;
+    Omega_Q[k] = 0.0;
+
 	buffer1[k] = Omega_SO[k] + Omega_SS[k] + Omega_Q[k];
 
 	Omega_SO[k] = 2*G*mu/(c2*r2) * (1 + 3*m1/(4*m2)) * n_cross_v[k];
 	Omega_SS[k] = G/(c2*r3) * ( 3*n_dot_S1 * nv[k] - S_1[k] );
 	Omega_Q[k]  = G*m1/(c2*r3*m2) * ( 3*n_dot_S2 * nv[k] - S_2[k] );
+    Omega_SS[k] = 0.0;
+    Omega_Q[k] = 0.0;
+
 	buffer2[k] = Omega_SO[k] + Omega_SS[k] + Omega_Q[k];
     }
     cross_product( buffer1, S_1, dSpin1 );

@@ -314,7 +314,7 @@ int test_nbody_two_body_stopping_conditions()
             flag = 1;
         }
 
-        if (stopping_condition_mode == 0)
+        if (stopping_condition_mode == 0) // collision
         {
             if (!equal_number(r_norm,R1+R2,tol))
             {
@@ -327,7 +327,7 @@ int test_nbody_two_body_stopping_conditions()
                 flag = 1;
             }
         }
-        else if (stopping_condition_mode == 1)
+        else if (stopping_condition_mode == 1) // RLOF
         {
             if (!equal_number(r_norm,CV_max(r_RLOF1,r_RLOF2),tol))
             {
@@ -686,17 +686,15 @@ int test_nbody_inspiral()
     initialize_mpi_or_serial(); 
     int N_bodies = 2;
 
+    //SPEEDOFLIGHT = 63239.72638679138;
+    SPEEDOFLIGHT = CONST_C_LIGHT;
+
     double m1 = 10.0;
     double m2 = 10.0;
     double a = 2.0e-5;
     double e = 1.0e-12;
-    double R1 = 10.0*CONST_G*m1/CONST_C_LIGHT_P2;
-    double R2 = 10.0*CONST_G*m2/CONST_C_LIGHT_P2;
-    
-    double a_init = a;
-    double e_init = e;
-    //SPEEDOFLIGHT = 63239.72638679138;
-    SPEEDOFLIGHT = CONST_C_LIGHT;
+    double R1 = 10.0*CONST_G*m1/(SPEEDOFLIGHT*SPEEDOFLIGHT);
+    double R2 = 10.0*CONST_G*m2/(SPEEDOFLIGHT*SPEEDOFLIGHT);
     
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-12;
@@ -710,9 +708,9 @@ int test_nbody_inspiral()
     double L = mu * sqrt(GCONST* M * a);
     
     double beta = (64.0/5.0)*GCONST*GCONST*GCONST*m1*m2*(m1+m2)*pow(SPEEDOFLIGHT,-5.0);
-    double t_GW = a*a*a*a/(4.0*beta);
+    double t_GW = a*a*a*a/(4.0*beta); // circular orbits only
     
-    double tend = 5*t_GW;
+    double tend = 2*t_GW;
     printf("t_GW/P %g\n",t_GW/P_orb);
     printf("tend/P %g\n",tend/P_orb);
     
@@ -721,7 +719,6 @@ int test_nbody_inspiral()
 
     double t=0;
     double dt = tend/100.0;
-    double alpha_old;
 
     std::ofstream myfile;
     myfile.open ("test_nbody_inspiral.txt");
@@ -730,7 +727,6 @@ int test_nbody_inspiral()
     double r[3],v[3];
     while (t<tend)
     {
-        t+=dt;
         run_integrator(R, dt, &reached_dt, &stopping_condition_occurred);
         t += reached_dt;
        
@@ -782,8 +778,6 @@ int test_nbody_spin_orbit()
     double a = 1.0e-2;
     double e = 0.99;
     
-    double a_init = a;
-    double e_init = e;
     //SPEEDOFLIGHT = 63239.72638679138;
     SPEEDOFLIGHT = CONST_C_LIGHT;
     double gbs_tolerance = 1.0e-12;
@@ -822,7 +816,6 @@ int test_nbody_spin_orbit()
     double r[3],v[3];
     while (t<tend)
     {
-        t+=dt;
         run_integrator(R, dt, &reached_dt, &stopping_condition_occurred);
         t += reached_dt;
 

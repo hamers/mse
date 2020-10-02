@@ -15,6 +15,12 @@ double compute_apsidal_motion_constant(Particle *star)
     int stellar_type = star->stellar_type;
     double mass = star->mass;
 
+    if (log10(mass) > 2.10)
+    {
+        printf("apsidal_motion_constant.cpp -- WARNING: input mass %g exceeds maximum; setting effective mass to %g; index %d kw %d m %g age %g\n",mass,pow(10.0,2.10),star->index,stellar_type,star->mass,star->age);        
+        mass = pow(10.0,2.10);
+    }
+
     if (stellar_type == 0)
     {
         val = 0.14327923; /* Approximate the star as being fully convective such that n = 3/2 */
@@ -104,11 +110,13 @@ double compute_apsidal_motion_constant(Particle *star)
         val = 0.14327923;
     }
 	
-    if (val!=val)
-    {
-        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
-        exit(0);
-    }
+//    if (val!=val)
+    //{
+//        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
+//        exit(0);
+    //}
+    check_number(val, "apsidal_motion_constant.cpp", "k_AM", true);
+    
     if (val<0)
     {
         printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);

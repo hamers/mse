@@ -17,7 +17,6 @@ double CONST_KM_PER_S = 0.210862;
 double CONST_PER_PC3 = 1.14059e-16;
 
 /* Used in MSTAR only */
-//double SPEEDOFLIGHT = 63239.72638679138;
 double SPEEDOFLIGHT = CONST_C_LIGHT;
 double GCONST = CONST_G;
 

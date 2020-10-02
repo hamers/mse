@@ -1377,7 +1377,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                   f_time = time/time_interval;
                   if ( ((int) (f_time*N_print) ) == i_print)
                   {
-		  	//printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
+		  	printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
                         i_print+=1;
                  }
 

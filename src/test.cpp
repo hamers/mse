@@ -185,7 +185,7 @@ int test_kepler_equation_solver()
  * N-body *
 ***********/
 
-int test_nbody()
+int test_nbody(int mode)
 {
     printf("test.cpp -- test_nbody\n");
     
@@ -193,8 +193,8 @@ int test_nbody()
     flag += test_nbody_two_body_stopping_conditions();
     flag += test_nbody_two_body_kick();
     flag += test_nbody_pythagorean();
-    flag += test_nbody_inspiral();
-    flag += test_nbody_spin_orbit();
+    flag += test_nbody_inspiral(mode);
+    flag += test_nbody_spin_orbit(mode);
 
     if (flag == 0)
     {
@@ -676,7 +676,7 @@ int test_nbody_pythagorean()
     return flag;
 }
 
-int test_nbody_inspiral()
+int test_nbody_inspiral(int mode)
 {
     printf("test.cpp -- test_nbody_inspiral\n");
 
@@ -725,18 +725,21 @@ int test_nbody_inspiral()
     double t_GW = a*a*a*a/(4.0*beta); // circular orbits only
     
     double tend = 2*t_GW;
-    printf("t_GW/P %g\n",t_GW/P_orb);
-    printf("tend/P %g\n",tend/P_orb);
+    //printf("t_GW/P %g\n",t_GW/P_orb);
+    //printf("tend/P %g\n",tend/P_orb);
     
     double reached_dt;
     int stopping_condition_occurred;
 
     double t=0;
     double dt = tend/100.0;
-
+    
     std::ofstream myfile;
-    myfile.open ("test_nbody_inspiral.txt");
-
+    if (mode == 1)
+    {
+        myfile.open ("test_nbody_inspiral.txt");
+    }
+    
     double at,et;
     double r[3],v[3];
     while (t<tend)
@@ -752,9 +755,12 @@ int test_nbody_inspiral()
         
         test_nbody_compute_elements(GCONST,M,r,v,&at,&et);
 
-        printf("t/P_orb %g a %g e %g sep %g\n",t/P_orb,at,et,norm3(r));
+        //printf("t/P_orb %g a %g e %g sep %g\n",t/P_orb,at,et,norm3(r));
         
-        myfile << t/P_orb << "," << norm3(r) << "\n";
+        if (mode == 1)
+        {
+            myfile << t/P_orb << "," << norm3(r) << "\n";
+        }
         
         if (stopping_condition_occurred==1)
         {
@@ -762,8 +768,11 @@ int test_nbody_inspiral()
         }
     }
 
-    myfile.close();    
-        
+    if (mode == 1)
+    {
+        myfile.close();    
+    }
+
     double tol = 1.0e-8;
 //    if (!equal_number(E_init,E_fin,tol))
 //    {
@@ -775,7 +784,7 @@ int test_nbody_inspiral()
 }
 
 
-int test_nbody_spin_orbit()
+int test_nbody_spin_orbit(int mode)
 {
     printf("test.cpp -- test_nbody_spin_orbit\n");
 
@@ -839,7 +848,10 @@ int test_nbody_spin_orbit()
     double precession_angle_old;
     
     std::ofstream myfile;
-    myfile.open ("test_nbody_spin_orbit.txt");
+    if (mode == 1)
+    {
+        myfile.open ("test_nbody_spin_orbit.txt");
+    }
     
     double at,et;
     double r[3],v[3];
@@ -862,11 +874,14 @@ int test_nbody_spin_orbit()
         
         test_nbody_compute_elements(GCONST,M,r,v,&at,&et);
 
-        printf("t/P_orb %g precession angle/deg %g delta/deg %g a %g e %g sep %g\n",t/P_orb,precession_angle*180.0/M_PI,(precession_angle-precession_angle_old)*180.0/M_PI,at,et,norm3(r));
-        printf("spin 1 %g %g %g\n",R->Spin_S[3 * 0 + 0],R->Spin_S[3 * 0 + 1],R->Spin_S[3 * 0 + 2]);
-        printf("spin 2 %g %g %g\n",R->Spin_S[3 * 1 + 0],R->Spin_S[3 * 1 + 1],R->Spin_S[3 * 1 + 2]);
+        //printf("t/P_orb %g precession angle/deg %g delta/deg %g a %g e %g sep %g\n",t/P_orb,precession_angle*180.0/M_PI,(precession_angle-precession_angle_old)*180.0/M_PI,at,et,norm3(r));
+        //printf("spin 1 %g %g %g\n",R->Spin_S[3 * 0 + 0],R->Spin_S[3 * 0 + 1],R->Spin_S[3 * 0 + 2]);
+        //printf("spin 2 %g %g %g\n",R->Spin_S[3 * 1 + 0],R->Spin_S[3 * 1 + 1],R->Spin_S[3 * 1 + 2]);
         
-        myfile << t/P_orb << "," << precession_angle*(180.0/M_PI) << "\n";
+        if (mode == 1)
+        {
+            myfile << t/P_orb << "," << precession_angle*(180.0/M_PI) << "\n";
+        }
 
         precession_angle_old = precession_angle;
         
@@ -877,7 +892,10 @@ int test_nbody_spin_orbit()
 
     }
     
-    myfile.close();    
+    if (mode == 1)
+    {
+        myfile.close();    
+    }
    
     double tol = 1.0e-8;
 //    printf("test.cpp -- error in test_nbody_spin_orbit -- E_init %g E_fin %g err %g\n",E_init,E_fin,fabs( (E_init-E_fin)/E_init));
@@ -1613,6 +1631,11 @@ int test_collisions()
     {
         for (j=1; j<=14; j++)
         {
+            if (j<i)
+            {
+                continue;
+            }
+
             printf("i %d j %d\n",i,j);
             //if (i!=1 or j!=4)
             //if (i>5 and i<12 or j>5 and j<12)

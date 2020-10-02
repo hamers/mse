@@ -9,7 +9,7 @@ int test_orbital_element_conversion();
 int test_kepler_equation_solver();
 int test_orbital_vectors_cartesian_conversion();
 
-int test_nbody();
+int test_nbody(int mode);
 int test_nbody_two_body_stopping_conditions();
 struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
 double test_nbody_compute_time_of_collision(double CONST_G, double M, double r_col, double a, double e);
@@ -17,8 +17,8 @@ int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, 
 int test_nbody_two_body_kick();
 struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double m3, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
 int test_nbody_pythagorean();
-int test_nbody_inspiral();
-int test_nbody_spin_orbit();
+int test_nbody_inspiral(int mode);
+int test_nbody_spin_orbit(int mode);
 void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
 
 int test_flybys();

@@ -8,6 +8,6 @@ C++ compiler and Fortran compilers are required, as well as Python (2/3) for the
 The script `test_mse.py` can be used to test the
 installation. The script `run_system.py` is useful for quickly running a system. 
 
-See the user manual (doc/doc.pdf) for more detailed information. 
+See the user guide (doc/doc.pdf) for more detailed information. 
 
 Adrian Hamers, September 2020

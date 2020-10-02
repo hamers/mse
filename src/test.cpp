@@ -689,6 +689,20 @@ int test_nbody_inspiral()
     //SPEEDOFLIGHT = 63239.72638679138;
     SPEEDOFLIGHT = CONST_C_LIGHT;
 
+    MSTAR_include_PN_acc_10 = false;
+    MSTAR_include_PN_acc_20 = false;
+    MSTAR_include_PN_acc_25 = true;
+    MSTAR_include_PN_acc_30 = false;
+    MSTAR_include_PN_acc_35 = false;
+
+    MSTAR_include_PN_acc_SO = false;
+    MSTAR_include_PN_acc_SS = false;
+    MSTAR_include_PN_acc_Q = false;
+
+    MSTAR_include_PN_spin_SO = false;
+    MSTAR_include_PN_spin_SS = false;
+    MSTAR_include_PN_spin_Q = false;
+
     double m1 = 10.0;
     double m2 = 10.0;
     double a = 2.0e-5;
@@ -780,6 +794,21 @@ int test_nbody_spin_orbit()
     
     //SPEEDOFLIGHT = 63239.72638679138;
     SPEEDOFLIGHT = CONST_C_LIGHT;
+    
+    MSTAR_include_PN_acc_10 = false;
+    MSTAR_include_PN_acc_20 = false;
+    MSTAR_include_PN_acc_25 = false;
+    MSTAR_include_PN_acc_30 = false;
+    MSTAR_include_PN_acc_35 = false;
+
+    MSTAR_include_PN_acc_SO = false;
+    MSTAR_include_PN_acc_SS = false;
+    MSTAR_include_PN_acc_Q = false;
+
+    MSTAR_include_PN_spin_SO = true;
+    MSTAR_include_PN_spin_SS = false;
+    MSTAR_include_PN_spin_Q = false;
+    
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-12;
     struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);

@@ -20,3 +20,17 @@ double CONST_PER_PC3 = 1.14059e-16;
 //double SPEEDOFLIGHT = 63239.72638679138;
 double SPEEDOFLIGHT = CONST_C_LIGHT;
 double GCONST = CONST_G;
+
+bool MSTAR_include_PN_acc_10 = true;
+bool MSTAR_include_PN_acc_20 = true;
+bool MSTAR_include_PN_acc_25 = true;
+bool MSTAR_include_PN_acc_30 = true;
+bool MSTAR_include_PN_acc_35 = true;
+
+bool MSTAR_include_PN_acc_SO = true;
+bool MSTAR_include_PN_acc_SS = true;
+bool MSTAR_include_PN_acc_Q = true;
+
+bool MSTAR_include_PN_spin_SO = true;
+bool MSTAR_include_PN_spin_SS = true;
+bool MSTAR_include_PN_spin_Q = true;

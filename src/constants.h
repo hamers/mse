@@ -19,4 +19,20 @@ extern double CONST_PER_PC3;
 /* Used in MSTAR only */
 extern double SPEEDOFLIGHT;
 extern double GCONST;
+
+#include <stdbool.h>
+extern bool MSTAR_include_PN_acc_10;
+extern bool MSTAR_include_PN_acc_20;
+extern bool MSTAR_include_PN_acc_25;
+extern bool MSTAR_include_PN_acc_30;
+extern bool MSTAR_include_PN_acc_35;
+
+extern bool MSTAR_include_PN_acc_SO;
+extern bool MSTAR_include_PN_acc_SS;
+extern bool MSTAR_include_PN_acc_Q;
+
+extern bool MSTAR_include_PN_spin_SO;
+extern bool MSTAR_include_PN_spin_SS;
+extern bool MSTAR_include_PN_spin_Q;
+
 #endif

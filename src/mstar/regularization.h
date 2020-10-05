@@ -145,7 +145,7 @@ struct RegularizedRegion {
     double *Stopping_Condition_Roche_Lobe_Radius;
     
     /* Identification (for interface with MSE) */
-    int *Index;
+    int *MSEIndex;
     
 };
 

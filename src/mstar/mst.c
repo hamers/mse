@@ -586,7 +586,8 @@ void compute_U_and_Newtonian_Acc(struct RegularizedRegion *R) {
             int proximity = 0;
             if (abs(Li - Lj) <= Nd) {
                 proximity =
-                    check_relative_proximity_ND_2(j, i, R, &d, path, sign);
+                    //check_relative_proximity_ND_2(j, i, R, &d, path, sign);
+                    check_relative_proximity(j, i, Nd, R, &d, path, sign);
             }
 
             if (proximity) {
@@ -1488,7 +1489,7 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->Stopping_Condition_Partner = calloc(N, sizeof(int));
     S->Stopping_Condition_Roche_Lobe_Radius = calloc(N, sizeof(double));
 
-    S->Index = calloc(N, sizeof(int));
+    S->MSEIndex = calloc(N, sizeof(int));
 }
 
 void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
@@ -1583,9 +1584,17 @@ void free_data(struct RegularizedRegion *R) {
     free(R->AuxSpin_S);
 #endif
 
+    free(R->Radius);
+    free(R->Stopping_Condition_Mode);
+    free(R->Stopping_Condition_Partner);
+    free(R->Stopping_Condition_Roche_Lobe_Radius);
+
+    free(R->MSEIndex);
+
     free(R);
 
     free(gbsS);
+   
 }
 
 // Read in the test IC
@@ -1699,6 +1708,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
     double *Acc = R->Acc;
     double *Mass = R->Mass;
     double *Radius = R->Radius;
+    int *MSEIndex = R->MSEIndex;
     int *Stopping_Condition_Mode = R->Stopping_Condition_Mode;
 
     struct GraphVertex *Vertex = R->Vertex;
@@ -1715,6 +1725,7 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
         const double radiusi = Radius[i];
         const int Li = Vertex[i].level;
         const int modei = Stopping_Condition_Mode[i];
+        const int MSEIndexi = MSEIndex[i];
         for (int j = i + 1; j < jstop; j++)
         {
             r2 = 0;
@@ -1722,11 +1733,13 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             const double radiusj = Radius[j];
             const int Lj = Vertex[j].level;
             const int modej = Stopping_Condition_Mode[j];
+            const int MSEIndexj = MSEIndex[j];
 
             int proximity = 0;
             if (abs(Li - Lj) <= Nd) {
                 proximity =
-                    check_relative_proximity_ND_2(j, i, R, &d, path, sign);
+                    //check_relative_proximity_ND_2(j, i, R, &d, path, sign);
+                    check_relative_proximity(j, i, Nd, R, &d, path, sign);
             }
 
             if (proximity) {
@@ -1743,7 +1756,40 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                     r2 += dr[k] * dr[k];
                 }
             }
-            
+
+
+
+
+            #ifdef IGNORE
+            double mj = R->Mass[j];
+            int Lj = R->Vertex[j].level;
+            double r2 = 0;
+            int proximity = 0;
+
+            if (abs(Li - Lj) < Nd) {
+                proximity =
+                    check_relative_proximity(j, i, Nd, R, &d, path, sign);
+            }
+
+            if (proximity == 1) {
+                for (int k = 0; k < 3; k++) {
+                    double dr = 0;
+                    for (int l = 0; l < d; l++) {
+                        int index = path[l];
+                        dr += sign[l] * R->State[3 * index + k];
+                    }
+                    r2 += dr * dr;
+                }
+            } else {
+                for (int k = 0; k < 3; k++) {
+                    double dr = R->Pos[3 * j + k] - R->Pos[3 * i + k];
+                    r2 += dr * dr;
+                }
+            }
+            #endif
+
+
+
             for (int k=0; k<3; k++)
             {
                 dv[k] = Vel[3 * j + k] - Vel[3 * i + k];
@@ -1780,8 +1826,9 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             if ( fabs(r - r_crit)/r < R->stopping_condition_tolerance )
             {
                 *stopping_condition_occurred = 1;
-                R->Stopping_Condition_Partner[i] = j;
-                R->Stopping_Condition_Partner[j] = i;
+                R->Stopping_Condition_Partner[i] = MSEIndexj;
+                R->Stopping_Condition_Partner[j] = MSEIndexi;
+                printf("i %d j %d A %d B %d\n",i,j,MSEIndexi,MSEIndexj);
                 
                 if (modei == 1 && modej == 1)
                 {

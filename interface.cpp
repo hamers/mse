@@ -854,7 +854,7 @@ int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool
 int initialize_code_interface()
 {
     initialize_code(&particlesMap);
-
+    //printf("Init random number %\g \n",generate_random_number_between_zero_and_unity());
     return 0;
 }
 

@@ -62,7 +62,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     }
 
     reset_instantaneous_perturbation_quantities(particlesMap);
-
+    remove_massless_remnants_from_system(particlesMap, integration_flag);
 
     return 0;
 }
@@ -218,7 +218,7 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == 1)
+        if (p->is_binary == true)
         {
             //get_e_and_h_vectors_from_particle(p,e_vec,h_vec);
             e = norm3(p->e_vec);
@@ -232,6 +232,27 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
     }
     
     return unbound_orbits;
+}
+
+void remove_massless_remnants_from_system(ParticlesMap *particlesMap, int *integration_flag)
+{
+    ParticlesMapIterator it_p;
+    
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->evolve_as_star == true)
+        {
+            if (p->stellar_type == 15)
+            {
+                print_system(particlesMap,1);
+                printf("SNe.cpp -- remove_massless_remnants_from_system -- removing particle with index %d\n",p->index);
+                particlesMap->erase(p->index);
+                print_system(particlesMap,1);
+                *integration_flag = 1;
+            }
+        }
+    }
 }
 
 }

@@ -156,6 +156,9 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");
         exit(-1);
     }
+    printf("handle_collisions_nbody\n");
+    print_system(particlesMap,1);
+    printf("col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
 
     (*particlesMap)[col_part_i]->Stopping_Condition_Partner = col_part_i;
     (*particlesMap)[col_part_j]->Stopping_Condition_Partner = col_part_j;
@@ -401,7 +404,7 @@ void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct Regularized
 
         is_binary = false;
         //index = particlesMap->size();
-        index = R->Index[i];
+        index = R->MSEIndex[i];
         Particle *p = new Particle(index, is_binary);
         (*particlesMap)[index] = p;
         
@@ -432,7 +435,7 @@ void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap 
 
         is_binary = false;
         //index = particlesMap->size();
-        index = R->Index[i];
+        index = R->MSEIndex[i];
         Particle *p = (*particlesMap)[index];
         
         for (j=0; j<3; j++)
@@ -962,7 +965,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
 
             R->Vertex[i].type = 0;
 
-            R->Index[i] = p->index;
+            R->MSEIndex[i] = p->index;
 
             R->Mass[i] = p->mass;
             //R->Radius[i] = p->radius;
@@ -1055,7 +1058,7 @@ void print_state(struct RegularizedRegion *R)
 {
     for (int i=0; i<R->NumVertex; i++)
     {
-        printf("i %d index %d mass %g radius %g stopping condition partner %d\n",i,R->Index[i],R->Mass[i],R->Radius[i],R->Stopping_Condition_Partner[i]);
+        printf("i %d MSEIndex %d mass %g radius %g stopping condition partner %d\n",i,R->MSEIndex[i],R->Mass[i],R->Radius[i],R->Stopping_Condition_Partner[i]);
         printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
         printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
         printf("i %d spin AM %g %g %g \n",i,R->Spin_S[3 * i + 0], R->Spin_S[3 * i + 1],R->Spin_S[3 * i + 2]);
@@ -1090,7 +1093,7 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
     for (auto it_m = masses.begin(); it_m != masses.end(); it_m++)
     {
         R->Vertex[i].type = 0;
-        R->Index[i] = i;
+        R->MSEIndex[i] = i;
 
         R->Mass[i] = *it_m;
         R->Radius[i] = 0.0;

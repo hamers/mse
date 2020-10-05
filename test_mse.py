@@ -31,7 +31,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("--t",                           type=int,     dest="test",                        default=0,              help="Test number")
-    parser.add_argument("--m",                           type=int,     dest="mode",                        default=0,              help="Mode -- 0: standard; 1: detailed (more extensive tests, but takes more time to run)")
+    parser.add_argument("--m","--mode",                  type=int,     dest="mode",                        default=0,              help="Mode -- 0: standard; 1: detailed (more extensive tests, but takes more time to run)")
     
     
     ### boolean arguments ###
@@ -1690,6 +1690,8 @@ class test_mse():
         CONST_C = code.CONST_C
         CONST_KM_PER_S = code.CONST_KM_PER_S
         N = 500
+        if args.mode == 1:
+            N = 5000
         
         seed = 0
         #code.random_seed = seed
@@ -1738,7 +1740,7 @@ class test_mse():
             pyplot.rc('text',usetex=True)
             pyplot.rc('legend',fancybox=True)
 
-            fig=pyplot.figure(figsize=(14,9))
+            fig=pyplot.figure(figsize=(16,10))
             
             colors = ['k','tab:red','tab:blue','tab:green','tab:cyan']
             #bins = np.linspace(0.0,3.0,Nb)
@@ -1756,13 +1758,15 @@ class test_mse():
             
                 plot.annotate("$\mathrm{Kick\,distribution\,%s}$"%(index_kick+1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
                 #if index_kick==N_k-1:
-                #plot.set_xlabel("$\mathrm{log}_{10}(v_\mathrm{kick}/(\mathrm{km/s}))$",fontsize=fontsize)
-                plot.set_xlabel("$v_\mathrm{kick}/(\mathrm{km/s})$",fontsize=fontsize)
+                
+                plot.set_xlabel("$V_\mathrm{kick}/(\mathrm{km/s})$",fontsize=fontsize)
+                plot.set_ylabel("$\mathrm{PDF}$",fontsize=fontsize)
                 #else:
                 #    plot.set_xticklabels([])
 
                 
-                #if index_kick==0:
+                    
+                    
                 if 1==1:
                     points=np.linspace(10.0,1500.0,1000)
                     sigma_km_s = 265.0
@@ -1781,6 +1785,11 @@ class test_mse():
             #handles,labels = plot.get_legend_handles_labels()
             plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
             plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+
+            plot.set_xticks([])
+            plot.set_yticks([])
+            plot.set_xticklabels([])
+            plot.set_yticklabels([])
             
             #points=np.linspace(-1.0,2.0,Nb)
             #PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]

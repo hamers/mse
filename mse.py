@@ -41,7 +41,7 @@ class MSE(object):
         self.__mstar_gbs_tolerance_default = 1.0e-10
         self.__mstar_gbs_tolerance_kick = 1.0e-8
         self.__mstar_collision_tolerance = 1.0e-10
-        self.__mstar_output_time_tolerance = 1.0e-4
+        self.__mstar_output_time_tolerance = 1.0e-6
         self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
         self.__nbody_analysis_fractional_integration_time = 0.05
         self.__nbody_analysis_maximum_integration_time = 1.0e5

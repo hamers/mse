@@ -319,8 +319,6 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     /* Low-mass dynamical mass transfer case similar to CE (BSE evolv2.f: lines 1150 - 1233).
      * This type of (fast) evolution is not handled by the ODE integrator. 
      * Always leads to the destruction of the low-mass MS donor; the accretor always survives. 
-     * This may not be conservative; any mass not accreted will be assumed to be lost in an isotropic wind. 
-     * The latter is computed by adjusting the wind mass loss of the accretor (effectively, mass it cannot accrete is lost in the wind). 
      * Do not allow for this case when the accretor is a binary (this would be unlikely in the first place since low-mass  MS stars have small radii). */
 
     Particle *parent = (*particlesMap)[parent_index];
@@ -625,10 +623,6 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor -- unknown case -- parent %d donor %d accretor %d\n",parent_index,donor_index,accretor_index);
         exit(-1);
     }
-    
-//    double Delta_m1 = -dm1;
-//    double Delta_m2 = dm2;
-//    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_WD_donor_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
 
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
     double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
@@ -903,7 +897,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                     mcx = accretor->core_mass;
                 }
         
-                double mt2 = m_accretor + (dm2 - dms_accretor); /* NOTE: think about dms_accretor */
+                double mt2 = m_accretor + (dm2 - dms_accretor);
                 double accretor_age;
                 gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age);
                 
@@ -1102,7 +1096,16 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
      * Also, by definition, dm1 > 0, dm2 > 0 */
     double m_donor_new = m_donor - dm1 + donor->mass_dot_wind * dt;
     double m_accretor_new = m_accretor + dm2 + accretor->mass_dot_wind * dt;
-   
+
+    if (kw1 <= 1 or kw1 == 7)
+    {
+        donor->sse_initial_mass = m_donor_new;
+    }
+    if (kw2 <= 1 or kw2 == 7)
+    {
+        accretor->sse_initial_mass = m_donor_new;
+    }
+    
     /* For a HG star check if the initial mass can be reduced. */    
     if (kw1 == 2 and donor->sse_initial_mass <= donor->zpars[2])
     {
@@ -1131,6 +1134,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     if (kw1 <= 2 or kw1 == 7)
     {
         star_(&kw1,&donor->sse_initial_mass,&m_donor_new,&tms,&tn,tscls,lums,GB,donor->zpars);
+
         if (kw1 == 2)
         {
             double age = tms + (donor->age*yr_to_Myr - tms_donor_old) * (tscls[0] - tms)/(tbgb_donor_old - tms_donor_old);
@@ -1139,6 +1143,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         else
         {
             donor->age *= (tms/tms_donor_old);
+            printf("age %g %g %.15f m_donor_new %g m_donor %g\n",tms,tms_donor_old,tms/tms_donor_old,m_donor_new,m_donor);
         }
         donor->epoch = t - donor->age;
     }
@@ -1355,7 +1360,7 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     else if (kw1 == 10)
     {
         //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
-        dm1 = 1.0e3*dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
+        dm1 = 1.0e3* dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
     }
     
     if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* Limit mass transfer to the thermal rate for giant-like stars */

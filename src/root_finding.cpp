@@ -393,11 +393,9 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
         {
             if (p->RLOF_at_pericentre_has_occurred == true)
             {
-                //#ifdef VERBOSE
                 
                 p->RLOF_at_pericentre_has_occurred = false; /* Reset ODE root found flag */
                 
-                //#endif
                 if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == true) /* Going into RLOF */
                 {
                     p->RLOF_flag = 1;
@@ -751,13 +749,13 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
             {
                 if (P_p->RLOF_at_pericentre_has_occurred == true)
                 {
-                    N_root_found++;
+                    //N_root_found++;
                     //printf("RLOF\n");
                 }
             }
         }
     }
-    //printf("check init roots %d\n",N_root_found);
+    printf("check init roots %d\n",N_root_found);
     
     return N_root_found;
 }

@@ -1962,7 +1962,7 @@ class Tools(object):
                 
                 i_status += 1
                 
-            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],flag,'integration_flag',code.integration_flag,'i_status',i_status)
+            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],flag,'integration_flag',code.integration_flag)
             
             for index in range(N_orbits):
                 rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)

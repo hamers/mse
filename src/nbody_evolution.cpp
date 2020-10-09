@@ -38,9 +38,9 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     }
     
 
-    int collision_occurred;
-
     struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
+
+    int collision_occurred;
 
     double E_init = compute_nbody_total_energy(R);
     
@@ -1140,6 +1140,7 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
     R->output_time_tolerance = MSTAR_output_time_tolerance;
 
     //check_MSTAR_system_for_distant_bodies(R);
+    MSTAR_verbose = false;
 
     double t=0;
     double t_reached;
@@ -1171,6 +1172,8 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
         printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss -- done m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
         i++;
     }
+    
+    MSTAR_verbose = true;
 
     return;
 }

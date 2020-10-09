@@ -1276,7 +1276,16 @@ int extrapolate_all_variables(int korder ) {
 }
 
 // Integrate the subsystems using AR-MST for the desired time interval
-void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *stopping_condition_occurred) {
+void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *stopping_condition_occurred)
+{
+    int initial_collision = check_for_initial_stopping_condition(R);
+    if (initial_collision == 1)
+    {
+        *stopping_condition_occurred = 1;
+        *end_time = 0.0;
+        printf("MSTAR -- initial stopping condition \n");
+        return;
+    }
 
     failed_steps = 0;
     ok_steps = 0;
@@ -1379,14 +1388,14 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 #endif
 #endif
                   f_time = time/time_interval;
-                  if ( ((int) (f_time*N_print) ) == i_print)
+                  if ( ((int) (f_time*N_print) ) == i_print && MSTAR_verbose == 1)
                   {
-		  	printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
+                        printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
                         i_print+=1;
                  }
 
                 /* Stopping conditions */
-                int possible_stopping_condition;
+                int possible_stopping_condition, *topping_condition_occurred;
                 double Delta_t_stopping_condition;
                 stopping_condition_function(R, &possible_stopping_condition, stopping_condition_occurred, &Delta_t_stopping_condition);
 
@@ -1685,7 +1694,6 @@ int main(int argc, char *argv[]) {
 
 void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min)
 {
-
     int istart, istop = R->NumVertex, jstop = R->NumVertex;
     istart = 0;
 
@@ -1798,7 +1806,6 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 *stopping_condition_occurred = 1;
                 R->Stopping_Condition_Partner[i] = MSEIndexj;
                 R->Stopping_Condition_Partner[j] = MSEIndexi;
-                printf("i %d j %d A %d B %d\n",i,j,MSEIndexi,MSEIndexj);
                 
                 if (modei == 1 && modej == 1)
                 {
@@ -1918,7 +1925,94 @@ void out_of_CoM_frame(struct RegularizedRegion *R)
             R->Vel[3 * i + k] += R->CoM_Vel[k];
         }
     }
-
 }
 
- 
+int check_for_initial_stopping_condition(struct RegularizedRegion *R)
+{
+    int istart, istop = R->NumVertex, jstop = R->NumVertex;
+    istart = 0;
+
+    double dr[3], r, r2;
+    double dv[3], da[3];
+    double r_crit,r_crit_p2;
+    double r_criti, r_critj;
+    double rdotv,vdotv;
+    double determinant;
+    double Delta_t;
+    
+    int stopping_condition_occurred = 0;
+    
+    double *Pos = R->Pos;
+    double *Vel = R->Vel;
+    double *Mass = R->Mass;
+    double *Radius = R->Radius;
+    int *MSEIndex = R->MSEIndex;
+    int *Stopping_Condition_Mode = R->Stopping_Condition_Mode;
+
+    for (int i = istart; i < istop; i++) 
+    {
+        R->Stopping_Condition_Partner[i] = -1; /* default: no stopping condition partner */
+        R->Stopping_Condition_Roche_Lobe_Radius[i] = -1;
+    }
+
+    for (int i = istart; i < istop; i++) 
+    {
+        const double mi = Mass[i];
+        const double radiusi = Radius[i];
+        const int modei = Stopping_Condition_Mode[i];
+        const int MSEIndexi = MSEIndex[i];
+        for (int j = i + 1; j < jstop; j++)
+        {
+            r2 = 0;
+            const double mj = Mass[j];
+            const double radiusj = Radius[j];
+            const int modej = Stopping_Condition_Mode[j];
+            const int MSEIndexj = MSEIndex[j];
+
+            for (int k = 0; k < 3; k++) 
+            {
+                dr[k] = Pos[3 * j + k] - Pos[3 * i + k];
+                r2 += dr[k] * dr[k];
+            }
+        
+            if (modei == 0 && modej == 0) // classical collision detection
+            {
+                r_crit = radiusi + radiusj;
+            }
+            else if (modei == 1 && modej == 1) // RLOF
+            {
+                r_criti = radiusi / fq_RLOF_Eggleton(mi,mj);
+                r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
+                r_crit = CV_max( r_criti, r_critj );
+            }
+            else
+            {
+                printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
+                exit(-1);
+            }
+            
+            r_crit_p2 = r_crit * r_crit;
+            r = sqrt(r2);
+            
+            if (r < r_crit)
+            {
+                stopping_condition_occurred = 1;
+                R->Stopping_Condition_Partner[i] = MSEIndexj;
+                R->Stopping_Condition_Partner[j] = MSEIndexi;
+                
+                if (modei == 1 && modej == 1)
+                {
+                    if (r < r_criti)
+                    {
+                        R->Stopping_Condition_Roche_Lobe_Radius[i] = r_criti * fq_RLOF_Eggleton(mi,mj);
+                    }
+                    else if (r < r_critj)
+                    {
+                        R->Stopping_Condition_Roche_Lobe_Radius[j] = r_critj * fq_RLOF_Eggleton(mj,mi);
+                    }
+                }
+            }
+        }
+    }
+    return stopping_condition_occurred;
+}

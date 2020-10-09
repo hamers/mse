@@ -426,6 +426,11 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         return;
     }
 
+    if (age == -1 or m0 == -1)
+    {
+        printf("collision.cpp -- collision_product -- ERROR: age %g and/or m0 %g not set correctly\n",age,m0);
+        exit(-1);
+    }
     
     /* m, m0, age */
     double Omega_crit,Omega;
@@ -452,6 +457,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
         /* stellar properties of merged object */
         star_(&kw, &m0, &m, &tm, &tn, tscls, lums, GB, zpars);
+
         hrdiag_(&m0,&age,&m,&tm,&tn,tscls,lums,GB,zpars, \
             &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
 

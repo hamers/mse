@@ -225,7 +225,21 @@ int test_nbody_two_body_stopping_conditions()
         
         double a_init = a;
         double e_init = e;
-        SPEEDOFLIGHT = 1.0e100;
+
+        MSTAR_include_PN_acc_10 = false;
+        MSTAR_include_PN_acc_20 = false;
+        MSTAR_include_PN_acc_25 = false;
+        MSTAR_include_PN_acc_30 = false;
+        MSTAR_include_PN_acc_35 = false;
+
+        MSTAR_include_PN_acc_SO = false;
+        MSTAR_include_PN_acc_SS = false;
+        MSTAR_include_PN_acc_Q = false;
+
+        MSTAR_include_PN_spin_SO = false;
+        MSTAR_include_PN_spin_SS = false;
+        MSTAR_include_PN_spin_Q = false;
+        
         double gbs_tolerance = 1.0e-12;
         double stopping_condition_tolerance = 1.0e-12;
         struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -450,7 +464,20 @@ int test_nbody_two_body_kick()
     double a = 1.0;
     double e = 0.99;
     
-    SPEEDOFLIGHT = 1.0e100;
+    MSTAR_include_PN_acc_10 = false;
+    MSTAR_include_PN_acc_20 = false;
+    MSTAR_include_PN_acc_25 = false;
+    MSTAR_include_PN_acc_30 = false;
+    MSTAR_include_PN_acc_35 = false;
+
+    MSTAR_include_PN_acc_SO = false;
+    MSTAR_include_PN_acc_SS = false;
+    MSTAR_include_PN_acc_Q = false;
+
+    MSTAR_include_PN_spin_SO = false;
+    MSTAR_include_PN_spin_SS = false;
+    MSTAR_include_PN_spin_Q = false;
+    
     double gbs_tolerance = 1.0e-8;
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -620,7 +647,20 @@ int test_nbody_pythagorean()
     double m2 = 4.0;
     double m3 = 5.0;
 
-    SPEEDOFLIGHT = 1.0e100;
+    MSTAR_include_PN_acc_10 = false;
+    MSTAR_include_PN_acc_20 = false;
+    MSTAR_include_PN_acc_25 = false;
+    MSTAR_include_PN_acc_30 = false;
+    MSTAR_include_PN_acc_35 = false;
+
+    MSTAR_include_PN_acc_SO = false;
+    MSTAR_include_PN_acc_SS = false;
+    MSTAR_include_PN_acc_Q = false;
+
+    MSTAR_include_PN_spin_SO = false;
+    MSTAR_include_PN_spin_SS = false;
+    MSTAR_include_PN_spin_Q = false;
+    
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-6;
     struct RegularizedRegion *R = generate_pythagorean_ICs(m1,m2,m3,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
@@ -635,7 +675,7 @@ int test_nbody_pythagorean()
     
     double E_fin = compute_nbody_total_energy(R);
     
-    double tol = 1.0e-10;
+    double tol = 1.0e-9;
 
     if (!equal_number(E_init,E_fin,tol))
     {

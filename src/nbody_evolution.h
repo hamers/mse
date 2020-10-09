@@ -32,4 +32,8 @@ void initialize_mpi_or_serial(void);
 void run_integrator(struct RegularizedRegion *R, double time_interval, double *end_time, int *collision_occurred);
 void free_data(struct RegularizedRegion *R);
 void into_CoM_frame(struct RegularizedRegion *R);
+
+void check_MSTAR_system_for_distant_bodies(struct RegularizedRegion *R);
+int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap);
+
 }

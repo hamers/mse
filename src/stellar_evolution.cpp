@@ -638,4 +638,9 @@ double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_mom
     return Omega;
 }
 
+double compute_breakup_angular_frequency(double mass, double radius)
+{
+    return sqrt(CONST_G*mass/(radius*radius*radius));
+}
+
 }

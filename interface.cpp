@@ -973,13 +973,14 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, double mstar_output_time_tolerance_, \
+    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, \
+    double MSTAR_gbs_tolerance_default_, double MSTAR_gbs_tolerance_kick_, double MSTAR_stopping_condition_tolerance_, double MSTAR_output_time_tolerance_, \
     double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_maximum_integration_time_, \
     double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
-    double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_)
+    double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
+    double MSTAR_include_PN_acc_10_,double MSTAR_include_PN_acc_20_,double MSTAR_include_PN_acc_25_,double MSTAR_include_PN_acc_30_,double MSTAR_include_PN_acc_35_,double MSTAR_include_PN_acc_SO_,double MSTAR_include_PN_acc_SS_,double MSTAR_include_PN_acc_Q_,double MSTAR_include_PN_spin_SO_,double MSTAR_include_PN_spin_SS_,double MSTAR_include_PN_spin_Q_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1001,13 +1002,14 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     flybys_stellar_density = flybys_stellar_density_;
     flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_;
      
-    mstar_gbs_tolerance_default = mstar_gbs_tolerance_default_;
-    mstar_gbs_tolerance_kick = mstar_gbs_tolerance_kick_;
-    mstar_stopping_condition_tolerance = mstar_stopping_condition_tolerance_;
-    mstar_output_time_tolerance = mstar_output_time_tolerance_;
+    MSTAR_gbs_tolerance_default = MSTAR_gbs_tolerance_default_;
+    MSTAR_gbs_tolerance_kick = MSTAR_gbs_tolerance_kick_;
+    MSTAR_stopping_condition_tolerance = MSTAR_stopping_condition_tolerance_;
+    MSTAR_output_time_tolerance = MSTAR_output_time_tolerance_;
 
     binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
     binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;
+    binary_evolution_mass_transfer_timestep_parameter = binary_evolution_mass_transfer_timestep_parameter_;
 
     nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;
     nbody_analysis_fractional_integration_time = nbody_analysis_fractional_integration_time_;
@@ -1033,10 +1035,24 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     triple_mass_transfer_secondary_star_accretion_efficiency_disk = triple_mass_transfer_secondary_star_accretion_efficiency_disk_;
     triple_mass_transfer_inner_binary_alpha_times_lambda = triple_mass_transfer_inner_binary_alpha_times_lambda_;
 
+    MSTAR_include_PN_acc_10 = MSTAR_include_PN_acc_10_;
+    MSTAR_include_PN_acc_20 = MSTAR_include_PN_acc_20_;
+    MSTAR_include_PN_acc_25 = MSTAR_include_PN_acc_25_;
+    MSTAR_include_PN_acc_30 = MSTAR_include_PN_acc_30_;
+    MSTAR_include_PN_acc_35 = MSTAR_include_PN_acc_35_;
+
+    MSTAR_include_PN_acc_SO = MSTAR_include_PN_acc_SO_;
+    MSTAR_include_PN_acc_SS = MSTAR_include_PN_acc_SS_;
+    MSTAR_include_PN_acc_Q = MSTAR_include_PN_acc_Q_;
+
+    MSTAR_include_PN_spin_SO = MSTAR_include_PN_spin_SO_;
+    MSTAR_include_PN_spin_SS = MSTAR_include_PN_spin_SS_;
+    MSTAR_include_PN_spin_Q = MSTAR_include_PN_spin_Q_;
+
      //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 
-     return 0;
+    return 0;
 }
 
 int get_random_seed(int *value)

@@ -702,8 +702,7 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
 void print_system(ParticlesMap *particlesMap, int integration_flag)
 {
     printf("=============================\n");
-    printf("Printing system; N=%d; integration_flag=%d\n",particlesMap->size(),integration_flag);
-
+    printf("Printing system; N=%d; integration_flag=%d size = %d\n",particlesMap->size(),integration_flag,particlesMap->size());
     ParticlesMapIterator it_p;    
     if (integration_flag==0)
     {
@@ -864,10 +863,119 @@ int clear_particles(ParticlesMap *particlesMap)
     return 0;
 }
 
-double compute_breakup_angular_frequency(double mass, double radius)
+void MSTAR_compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3])
 {
-    return sqrt(CONST_G*mass/(radius*radius*radius));
+    int i,j;
+    
+    for (j=0; j<3; j++)
+    {
+        R_cm[j] = 0.0;
+        V_cm[j] = 0.0;
+    }
+
+    double m;
+    double m_tot=0.0;
+    for (i=0; i<R->NumVertex; i++)
+    {
+        m = R->Mass[i];
+        m_tot += m;
+        for (j=0; j<3; j++)
+        {
+            R_cm[j] += m * R->Pos[3 * i + j];
+            V_cm[j] += m * R->Vel[3 * i + j];
+        }
+    }
+
+    for (j=0; j<3; j++)
+    {
+        R_cm[j] = R_cm[j]/m_tot;
+        V_cm[j] = V_cm[j]/m_tot;
+    }
 }
 
+void compute_center_of_mass_position_and_velocity(ParticlesMap *particlesMap, double R_cm[3], double V_cm[3])
+{
+    int i;
+    double m;
+    double M_tot = 0.0;
+    for (i=0; i<3; i++)
+    {
+        R_cm[i] = 0.0;
+        V_cm[i] = 0.0;
+    }
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *p = (*it).second;
+        
+        if (p->is_binary == false)
+        {
+            m = p->mass;
+            M_tot += m;
+            for (i=0; i<3; i++)
+            {
+                R_cm[i] += m * p->R_vec[i];
+                V_cm[i] += m * p->V_vec[i];
+            }
+        }
+    }
+    for (i=0; i<3; i++)
+    {
+        R_cm[i] /= M_tot;
+        V_cm[i] /= M_tot;
+    }
+    printf("tools.cpp -- compute_center_of_mass_position_and_velocity -- R_CM %g %g %g V_CM %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
+}
+
+double find_nearest_neighbor_separation(ParticlesMap *particlesMap, int primary_index, double primary_R_vec[3])
+{
+    int i;
+    double sep;
+    double min_sep = 1.0e100;
+
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *p = (*it).second;
+        
+        if (p->is_binary == false and p->index != primary_index)
+        {
+            sep = separation_between_vectors(primary_R_vec,p->R_vec);
+            if (sep < min_sep)
+            {
+                min_sep = sep;
+            }
+        }
+    }
+
+    return min_sep;
+}
+
+void remove_binaries_from_system(ParticlesMap *particlesMap)
+{
+    std::vector<int> binary_indices;
+    
+    int i;
+
+    ParticlesMapIterator it;
+    for (it = particlesMap->begin(); it != particlesMap->end(); it++)
+    {
+        Particle *p = (*it).second;
+        if (p->is_binary == true)
+        {
+            binary_indices.push_back(p->index);
+        }
+        else
+        {
+            p->parent = -1;
+            p->is_bound = false;
+        }
+    }
+    
+    for (int i=0; i<binary_indices.size(); i++)
+    {
+        particlesMap->erase(binary_indices[i]);
+    }
+}
 
 }

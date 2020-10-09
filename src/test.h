@@ -19,7 +19,6 @@ struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double 
 int test_nbody_pythagorean();
 int test_nbody_inspiral(int mode);
 int test_nbody_spin_orbit(int mode);
-void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
 
 int test_flybys();
 int test_flybys_integrals();

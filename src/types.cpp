@@ -22,6 +22,7 @@ bool include_double_averaging_corrections = false;
 int random_seed = 0;
 
 double secular_integration_exclusion_safety_factor = 1.0e-3;
+double ODE_min_dt = 1.0;
 
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 
@@ -47,10 +48,10 @@ double flybys_stellar_density_at_R_enc = 0.0; /* density at R_enc */
 double flybys_internal_mass = 0.0;
 double flybys_internal_semimajor_axis = 0.0;
 
-double mstar_gbs_tolerance_default = 1.0e-12;
-double mstar_gbs_tolerance_kick = 1.0e-8;
-double mstar_stopping_condition_tolerance = 1.0e-10;
-double mstar_output_time_tolerance = 1.0e-4;
+double MSTAR_gbs_tolerance_default = 1.0e-12;
+double MSTAR_gbs_tolerance_kick = 1.0e-8;
+double MSTAR_stopping_condition_tolerance = 1.0e-10;
+double MSTAR_output_time_tolerance = 1.0e-4;
 
 double nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01;
 double nbody_analysis_fractional_integration_time = 0.05;
@@ -65,6 +66,7 @@ double nbody_maximum_separation_for_inclusion = 1.0e5;
 int binary_evolution_CE_energy_flag = 0;
 int binary_evolution_CE_spin_flag = 1;
 int binary_evolution_CE_mass_loss_Nsteps = 100;
+double binary_evolution_mass_transfer_timestep_parameter = 0.05;
 
 double chandrasekhar_mass = 1.44;
 double eddington_accretion_factor = 10.0;

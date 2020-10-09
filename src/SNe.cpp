@@ -53,17 +53,19 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
         apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
     }
     
-    *unbound_orbits = check_for_unbound_orbits(particlesMap);
-
-    if (*unbound_orbits == true)
+    if (*integration_flag == 0)
     {
-        printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
-        *integration_flag = 3;
+        *unbound_orbits = check_for_unbound_orbits(particlesMap);
+        if (*unbound_orbits == true)
+        {
+            printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
+            *integration_flag = 3;
+        }
     }
-
+    
     reset_instantaneous_perturbation_quantities(particlesMap);
     remove_massless_remnants_from_system(particlesMap, integration_flag);
-
+    
     return 0;
 }
 

@@ -150,13 +150,15 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, \
-    double mstar_gbs_tolerance_default_, double mstar_gbs_tolerance_kick_, double mstar_stopping_condition_tolerance_, double mstar_output_time_tolerance_, \
+    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, \
+    double MSTAR_gbs_tolerance_default_, double MSTAR_gbs_tolerance_kick_, double MSTAR_stopping_condition_tolerance_, double MSTAR_output_time_tolerance_, \
     double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_maximum_integration_time_, \
     double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
-    double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_);
+    double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
+    double MSTAR_include_PN_acc_10_,double MSTAR_include_PN_acc_20_,double MSTAR_include_PN_acc_25_,double MSTAR_include_PN_acc_30_,double MSTAR_include_PN_acc_35_,double MSTAR_include_PN_acc_SO_,double MSTAR_include_PN_acc_SS_,double MSTAR_include_PN_acc_Q_,double MSTAR_include_PN_spin_SO_,double MSTAR_include_PN_spin_SS_,double MSTAR_include_PN_spin_Q_);
+
 int get_random_seed(int *value);
 int set_random_seed(int value);
 

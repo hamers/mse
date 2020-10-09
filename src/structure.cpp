@@ -879,12 +879,14 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
     double r_vec[3], double v_vec[3], double initial_R_CM[3], double initial_V_CM[3], double final_R_CM[3], double final_V_CM[3], double final_momentum[3])
 {
     /* Take into account effect of mass loss on the rest of the system */
-    
+
     int i;
     std::vector<double> masses;
     std::vector<double> delta_masses;
     std::vector<std::vector<double>> R_vecs;
     std::vector<std::vector<double>> V_vecs;
+
+   
     
     masses.push_back( M1_old + M2_old );
     delta_masses.push_back( (M1 + M2) - (M1_old + M2_old) );
@@ -996,7 +998,7 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
                 delta_masses.push_back(0.0);
                 R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
                 V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
-                printf("PB %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                printf("PB excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
             }
         }
     }

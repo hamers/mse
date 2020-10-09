@@ -38,10 +38,22 @@ class MSE(object):
         self.__include_dotriacontupole_order_binary_pair_terms = True
         self.__include_double_averaging_corrections = False
 
-        self.__mstar_gbs_tolerance_default = 1.0e-10
-        self.__mstar_gbs_tolerance_kick = 1.0e-8
-        self.__mstar_collision_tolerance = 1.0e-10
-        self.__mstar_output_time_tolerance = 1.0e-6
+        self.__MSTAR_gbs_tolerance_default = 1.0e-10
+        self.__MSTAR_gbs_tolerance_kick = 1.0e-8
+        self.__MSTAR_collision_tolerance = 1.0e-10
+        self.__MSTAR_output_time_tolerance = 1.0e-6
+        self.__MSTAR_include_PN_acc_10 = True
+        self.__MSTAR_include_PN_acc_20 = True
+        self.__MSTAR_include_PN_acc_25 = True
+        self.__MSTAR_include_PN_acc_30 = True
+        self.__MSTAR_include_PN_acc_35 = True
+        self.__MSTAR_include_PN_acc_SO = True
+        self.__MSTAR_include_PN_acc_SS = True
+        self.__MSTAR_include_PN_acc_Q = True
+        self.__MSTAR_include_PN_spin_SO = True
+        self.__MSTAR_include_PN_spin_SS = True
+        self.__MSTAR_include_PN_spin_Q = True
+        
         self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
         self.__nbody_analysis_fractional_integration_time = 0.05
         self.__nbody_analysis_maximum_integration_time = 1.0e5
@@ -55,6 +67,7 @@ class MSE(object):
         
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 1
+        self.__binary_evolution_mass_transfer_timestep_parameter = 0.05
         self.__chandrasekhar_mass = 1.44
         self.__eddington_accretion_factor = 10.0
         self.__nova_accretion_factor = 1.0e-3
@@ -213,14 +226,20 @@ class MSE(object):
 
         self.__set_constants_in_code()
 
-        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_bool, \
-            ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int,ctypes.c_int, \
+        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double, \
+            ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
+            ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
+            ctypes.c_bool,ctypes.c_int,ctypes.c_bool, ctypes.c_int,ctypes.c_int, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, \
+            ctypes.c_int, ctypes.c_int, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
-            ctypes.c_double, ctypes.c_double)
+            ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -697,13 +716,14 @@ class MSE(object):
             self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
             self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
-            self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, \
-            self.__mstar_gbs_tolerance_default, self.__mstar_gbs_tolerance_kick, self.__mstar_collision_tolerance, self.__mstar_output_time_tolerance, \
+            self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, self.__binary_evolution_mass_transfer_timestep_parameter, \
+            self.__MSTAR_gbs_tolerance_default, self.__MSTAR_gbs_tolerance_kick, self.__MSTAR_collision_tolerance, self.__MSTAR_output_time_tolerance, \
             self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_maximum_integration_time, \
             self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
             self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
             self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda, \
-            self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects)
+            self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects, \
+            self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q)
 
     def reset(self):
         self.__init__()
@@ -1087,36 +1107,125 @@ class MSE(object):
 
     ### N-body ###
     @property
-    def mstar_gbs_tolerance_default(self):
-        return self.__mstar_gbs_tolerance_default
-    @mstar_gbs_tolerance_default.setter
-    def mstar_gbs_tolerance_default(self, value):
-        self.__mstar_gbs_tolerance_default = value
+    def MSTAR_gbs_tolerance_default(self):
+        return self.__MSTAR_gbs_tolerance_default
+    @MSTAR_gbs_tolerance_default.setter
+    def MSTAR_gbs_tolerance_default(self, value):
+        self.__MSTAR_gbs_tolerance_default = value
         self.__set_parameters_in_code()
 
     @property
-    def mstar_gbs_tolerance_kick(self):
-        return self.__mstar_gbs_tolerance_kick
-    @mstar_gbs_tolerance_kick.setter
-    def mstar_gbs_tolerance_kick(self, value):
-        self.__mstar_gbs_tolerance_kick = value
+    def MSTAR_gbs_tolerance_kick(self):
+        return self.__MSTAR_gbs_tolerance_kick
+    @MSTAR_gbs_tolerance_kick.setter
+    def MSTAR_gbs_tolerance_kick(self, value):
+        self.__MSTAR_gbs_tolerance_kick = value
         self.__set_parameters_in_code()
         
     @property
-    def mstar_collision_tolerance(self):
-        return self.__mstar_collision_tolerance
-    @mstar_collision_tolerance.setter
-    def mstar_collision_tolerance(self, value):
-        self.__mstar_collision_tolerance = value
+    def MSTAR_collision_tolerance(self):
+        return self.__MSTAR_collision_tolerance
+    @MSTAR_collision_tolerance.setter
+    def MSTAR_collision_tolerance(self, value):
+        self.__MSTAR_collision_tolerance = value
         self.__set_parameters_in_code()
 
     @property
-    def mstar_output_time_tolerance(self):
-        return self.__mstar_output_time_tolerance
-    @mstar_output_time_tolerance.setter
-    def mstar_output_time_tolerance(self, value):
-        self.__mstar_output_time_tolerance = value
+    def MSTAR_output_time_tolerance(self):
+        return self.__MSTAR_output_time_tolerance
+    @MSTAR_output_time_tolerance.setter
+    def MSTAR_output_time_tolerance(self, value):
+        self.__MSTAR_output_time_tolerance = value
         self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_10(self):
+        return self.__MSTAR_include_PN_acc_10
+    @MSTAR_include_PN_acc_10.setter
+    def MSTAR_include_PN_acc_10(self, value):
+        self.__MSTAR_include_PN_acc_10 = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_20(self):
+        return self.__MSTAR_include_PN_acc_20
+    @MSTAR_include_PN_acc_20.setter
+    def MSTAR_include_PN_acc_20(self, value):
+        self.__MSTAR_include_PN_acc_20 = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_25(self):
+        return self.__MSTAR_include_PN_acc_25
+    @MSTAR_include_PN_acc_25.setter
+    def MSTAR_include_PN_acc_25(self, value):
+        self.__MSTAR_include_PN_acc_25 = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_30(self):
+        return self.__MSTAR_include_PN_acc_30
+    @MSTAR_include_PN_acc_30.setter
+    def MSTAR_include_PN_acc_30(self, value):
+        self.__MSTAR_include_PN_acc_30 = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_35(self):
+        return self.__MSTAR_include_PN_acc_35
+    @MSTAR_include_PN_acc_35.setter
+    def MSTAR_include_PN_acc_35(self, value):
+        self.__MSTAR_include_PN_acc_35 = value
+        self.__set_parameters_in_code()
+        
+    @property
+    def MSTAR_include_PN_acc_SO(self):
+        return self.__MSTAR_include_PN_acc_SO
+    @MSTAR_include_PN_acc_SO.setter
+    def MSTAR_include_PN_acc_SO(self, value):
+        self.__MSTAR_include_PN_acc_SO = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_SS(self):
+        return self.__MSTAR_include_PN_acc_SS
+    @MSTAR_include_PN_acc_SS.setter
+    def MSTAR_include_PN_acc_SS(self, value):
+        self.__MSTAR_include_PN_acc_SS = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_acc_Q(self):
+        return self.__MSTAR_include_PN_acc_Q
+    @MSTAR_include_PN_acc_Q.setter
+    def MSTAR_include_PN_acc_Q(self, value):
+        self.__MSTAR_include_PN_acc_Q = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_spin_SO(self):
+        return self.__MSTAR_include_PN_spin_SO
+    @MSTAR_include_PN_spin_SO.setter
+    def MSTAR_include_PN_spin_SO(self, value):
+        self.__MSTAR_include_PN_spin_SO = value
+        self.__set_parameters_in_code()
+
+    @property
+    def MSTAR_include_PN_spin_SS(self):
+        return self.__MSTAR_include_PN_spin_SS
+    @MSTAR_include_PN_spin_SS.setter
+    def MSTAR_include_PN_spin_SS(self, value):
+        self.__MSTAR_include_PN_spin_SS = value
+        self.__set_parameters_in_code()
+        
+    @property
+    def MSTAR_include_PN_spin_Q(self):
+        return self.__MSTAR_include_PN_spin_Q
+    @MSTAR_include_PN_spin_Q.setter
+    def MSTAR_include_PN_spin_Q(self, value):
+        self.__MSTAR_include_PN_spin_Q = value
+        self.__set_parameters_in_code()
+        
 
     @property
     def nbody_analysis_fractional_semimajor_axis_change_parameter(self):
@@ -1206,6 +1315,15 @@ class MSE(object):
     def binary_evolution_CE_spin_flag(self, value):
         self.__binary_evolution_CE_spin_flag = value
         self.__set_parameters_in_code()
+
+    @property
+    def binary_evolution_mass_transfer_timestep_parameter(self):
+        return self.__binary_evolution_mass_transfer_timestep_parameter
+    @binary_evolution_mass_transfer_timestep_parameter.setter
+    def binary_evolution_mass_transfer_timestep_parameter(self, value):
+        self.__binary_evolution_mass_transfer_timestep_parameter = value
+        self.__set_parameters_in_code()
+
 
     @property
     def chandrasekhar_mass(self):

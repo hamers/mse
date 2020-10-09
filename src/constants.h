@@ -19,6 +19,7 @@ extern double CONST_PER_PC3;
 /* Used in MSTAR only */
 extern double SPEEDOFLIGHT;
 extern double GCONST;
+extern double MSTAR_maximum_separation_for_inclusion;
 
 #include <stdbool.h>
 extern bool MSTAR_include_PN_acc_10;

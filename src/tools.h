@@ -51,6 +51,9 @@ void check_number(double x, char *source, char *description, bool exit_on_error)
 
 int clear_particles(ParticlesMap *particlesMap);
 
-double compute_breakup_angular_frequency(double mass, double radius);
+void MSTAR_compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3]);
+void compute_center_of_mass_position_and_velocity(ParticlesMap *particlesMap, double R_cm[3], double V_cm[3]);
 
+double find_nearest_neighbor_separation(ParticlesMap *particlesMap, int primary_index, double primary_R_vec[3]);
+void remove_binaries_from_system(ParticlesMap *particlesMap);
 }

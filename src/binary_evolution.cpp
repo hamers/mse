@@ -10,6 +10,8 @@ extern "C"
 
 int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
+    *dt_binary_evolution = 1.0e100;
+    
     if (*integration_flag != 0) /* Only do binary evolution if we can be sure the system is dynamically stable and we have well-defined orbits. */
     {
         return 0;
@@ -19,8 +21,6 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     handle_wind_accretion(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
     handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
         
-    //*dt_binary_evolution = 1.0e4;
-    
     bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
     if (stable == false)
     {
@@ -263,29 +263,33 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
         /* `CE'-like evolution from a low-mass MS star to any secondary. */
         flag = 1;
         dynamical_mass_transfer_low_mass_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+        *dt_binary_evolution = ODE_min_dt;
     }
     else if ( (kw >= 2 and kw <= 9 and kw != 7) and ((t_MT <= t_dyn_donor or q > q_crit) or t_MT < P_orb) ) /* include criterion with donor convective envelope mass? */
     {
         /* `Standard CE evolution. */
         flag = 2;
         common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);//, it_p);
+        *dt_binary_evolution = ODE_min_dt;
     }
     else if (kw >= 10 and kw <= 12 and q > q_crit_WD_donor)
     {
         /* Dynamical transfer from WD */
         flag = 3;
         dynamical_mass_transfer_WD_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+        *dt_binary_evolution = ODE_min_dt;
     }   
     else if (kw == 13 or kw == 14)
     {
         flag = 4;
         mass_transfer_NS_BH_donor(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+        *dt_binary_evolution = ODE_min_dt;
     }
     else
     {
         /* Other cases: stable mass transfer. */
         flag = 5;
-        stable_mass_transfer_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag);
+        stable_mass_transfer_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, t, integration_flag, dt_binary_evolution);
     }
     /* TO DO: contact cases! -- applies if accretor->in_RLOF=1 */
     
@@ -712,7 +716,7 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
 }
 
 
-int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     //Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -721,19 +725,19 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
     if (accretor->is_binary == false)
     {
         /* Both objects are physical stars. Apply the "standard" mass transfer scheme from HTP02. */
-        binary_stable_mass_transfer_evolution(particlesMap, parent_index, donor_index, accretor_index, t_old, t, integration_flag);
+        binary_stable_mass_transfer_evolution(particlesMap, parent_index, donor_index, accretor_index, t_old, t, integration_flag, dt_binary_evolution);
     }
     else
     {
         /* A tertiary star is overflowing onto a companion binary. */
-        triple_stable_mass_transfer_evolution(particlesMap, parent_index, donor_index, accretor_index, t_old, t, integration_flag);
+        triple_stable_mass_transfer_evolution(particlesMap, parent_index, donor_index, accretor_index, t_old, t, integration_flag, dt_binary_evolution);
     }
     
     return 0;
 }
 
 
-int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
     
@@ -1208,15 +1212,29 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     donor->mass_dot_adiabatic_ejection = 0.0;
     accretor->mass_dot_adiabatic_ejection = - (dm1 - dm2)/dt;
 
-    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection);
+    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g dt_binary_evolution old %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection,*dt_binary_evolution);
     //print_system(particlesMap,*integration_flag);
     
+    double fabs_m_dot_donor = fabs(dm1 / dt);
+    double fabs_m_dot_accretor = fabs(dm2 / dt);
+    
+    if (dm1 <= epsilon)
+    {
+        dm1 = epsilon;
+    }
+    if (dm2 <= epsilon)
+    {
+        dm2 = epsilon;
+    }
+    *dt_binary_evolution = dt * binary_evolution_mass_transfer_timestep_parameter * CV_min( (m_donor/dm1), (m_accretor/dm2) );
+    *dt_binary_evolution = CV_max(ODE_min_dt, *dt_binary_evolution);
+    printf("dt_binary_evolution new %g\n",*dt_binary_evolution);
     return 0;
 }
 
 
 
-int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
+int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution\n");
 

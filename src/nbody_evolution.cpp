@@ -19,10 +19,25 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     
     /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
-                    
-
     double dt = t - t_old;
     double dt_reached;
+
+    
+    int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
+    
+    if (N_bodies_eff < 1)
+    {
+        printf("nbody_evolution.cpp -- no bodies to integrate N_bodies_eff %d!\n",N_bodies_eff);
+        print_system(particlesMap,*integration_flag);
+        *dt_nbody = 1.0e100;
+        *t_out = t_old + dt;
+        *integration_flag = 1;
+        update_stellar_evolution_quantities_directly(particlesMap,dt);
+        remove_binaries_from_system(particlesMap);
+        return;
+    }
+    
+
     int collision_occurred;
 
     struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
@@ -62,6 +77,8 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         /* Update orbits */
         update_masses_positions_and_velocities_of_all_binaries(particlesMap);
         update_orbital_vectors_in_binaries_from_positions_and_velocities(particlesMap);        
+        
+        update_stellar_evolution_quantities_directly(particlesMap,dt);
         
         printf("nbody_evolution.cpp -- integrate_nbody_system -- new integration flag %d\n",*integration_flag);
         free_data(R);
@@ -938,17 +955,22 @@ void analyze_mstar_system2(struct RegularizedRegion *R)
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag)
 {
      
+     
     initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
 
     struct RegularizedRegion *R;
 
     int i=0;
     int j;
-    int N_bodies = determine_number_of_bodies_in_system(particlesMap);
+    //int N_bodies = determine_number_of_bodies_in_system(particlesMap);
+    int N_bodies = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
         
     //my_barrier(); // In serial mode, this does nothing (so can be omitted)
 
     allocate_armst_structs(&R, N_bodies); // Initialize the data structure
+    
+    //double R_CM_vec[3], V_CM_vec[3];
+    //compute_center_of_mass_position_and_velocity(particlesMap,R_CM_vec,V_CM_vec);
     
     double *R_vec, *V_vec;
     double Omega,S; // Spin frequency, spin angular momentum
@@ -958,7 +980,7 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     {
         Particle *p = (*it_p).second;
         
-        if (p->is_binary == false)
+        if (p->is_binary == false and p->include_in_MSTAR == true)
         {
             R_vec = p->R_vec;
             V_vec = p->V_vec;
@@ -988,30 +1010,34 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
             
             R->Stopping_Condition_Mode[i] = 0;
 
-            #ifdef IGNORE
-            if (norm3(R_vec)> nbody_maximum_separation_for_inclusion)
-            {
-                printf("Excluding %g\n",norm3(R_vec));
-                R->Mass[i] = 1.0e-100;
-            }
-            #endif
+            //#ifdef IGNORE
+            //if (separation_between_vectors(R_vec,R_CM_vec) > nbody_maximum_separation_for_inclusion)
+            //if (norm3(R_vec)> nbody_maximum_separation_for_inclusion)
+            //if (find_nearest_neighbor_separation(particlesMap, p->index, R_vec) > nbody_maximum_separation_for_inclusion)
+            //{
+                //printf("Excluding body index %d norm3(R_vec) %g sep %g\n",p->index,norm3(R_vec),find_nearest_neighbor_separation(particlesMap, p->index, R_vec));
+                //R->Mass[i] = 1.0e-10;
+            //}
+            //#endif
             
             i++;
         }    
     }   
     
-    double gbs_tolerance = mstar_gbs_tolerance_default;
+    double gbs_tolerance = MSTAR_gbs_tolerance_default;
     if (integration_flag == 3)
     {
-        gbs_tolerance = mstar_gbs_tolerance_kick;
+        gbs_tolerance = MSTAR_gbs_tolerance_kick;
     }
 
     R->gbs_tolerance = gbs_tolerance;
-    R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
-    R->output_time_tolerance = mstar_output_time_tolerance;
+    R->stopping_condition_tolerance = MSTAR_stopping_condition_tolerance;
+    R->output_time_tolerance = MSTAR_output_time_tolerance;
 
     printf("R->gbs_tolerance %g R->stopping_condition_tolerance %g R->output_time_tolerance %g\n",R->gbs_tolerance,R->stopping_condition_tolerance,R->output_time_tolerance);
     //into_CoM_frame(R);
+    
+    //check_MSTAR_system_for_distant_bodies(R);
     
     return R;
     
@@ -1073,6 +1099,8 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
     /* Used to take into account effect of mass loss during events such as CE.
      * No collision detection. */
     
+    
+        
     initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
 
     struct RegularizedRegion *R;
@@ -1107,9 +1135,11 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
         i++;
     }
 
-    R->gbs_tolerance = mstar_gbs_tolerance_default;
-    R->stopping_condition_tolerance = mstar_stopping_condition_tolerance;
-    R->output_time_tolerance = mstar_output_time_tolerance;
+    R->gbs_tolerance = MSTAR_gbs_tolerance_default;
+    R->stopping_condition_tolerance = MSTAR_stopping_condition_tolerance;
+    R->output_time_tolerance = MSTAR_output_time_tolerance;
+
+    //check_MSTAR_system_for_distant_bodies(R);
 
     double t=0;
     double t_reached;
@@ -1143,6 +1173,77 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
     }
 
     return;
+}
+
+
+void check_MSTAR_system_for_distant_bodies(struct RegularizedRegion *R)
+{
+
+    int istart, istop = R->NumVertex, jstop = R->NumVertex;
+    int k;
+    istart = 0;
+
+    double dr,r2;
+    double sep_max;
+    double sep;
+
+    for (int i = 0; i < istop; i++) 
+    {
+        sep_max = 1.0e100;
+        
+        for (int j = 0; j < jstop; j++)
+        {
+            if (i==j)
+            {
+                continue;
+            }
+            r2 = 0.0;
+            for (k=0; k<3; k++)
+            {
+                dr = R->Pos[3 * i + k] - R->Pos[3 * j + k];
+                r2 += dr*dr;
+            }
+            sep = sqrt(r2);
+
+            if (sep < sep_max)
+            {
+                sep_max = sep;
+            }
+        }
+        //printf("i %d Sepmax %g\n",i,sep_max);
+        
+        if (sep_max > MSTAR_maximum_separation_for_inclusion)
+        {
+            R->Mass[i] = 1.0e-10;
+            printf("nbody_evolution.cpp -- check_MSTAR_system_for_distant_bodies -- excluding body %d sep_max %g pos %g %g %g \n",i,sep_max,R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
+        }
+    }
+}
+
+int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap)
+{
+    int N_bodies = 0;
+    
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false)
+        {
+            if (find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec) > nbody_maximum_separation_for_inclusion)
+            {
+                printf("Excluding body index %d norm3(R_vec) %g sep %g\n",p->index,norm3(p->R_vec),find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec));
+                p->include_in_MSTAR = false;
+            }
+            else
+            {
+                p->include_in_MSTAR = true;
+                N_bodies += 1;
+            }
+        }
+    }
+    
+    return N_bodies;
 }
 
 }

@@ -66,7 +66,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     bool unbound_orbits = false;
 
     /* Initial timestep */
-    double min_dt = 1.0e0;
+    double min_dt = ODE_min_dt;
     double max_dt = end_time - start_time;
 
     dt = CV_min(min_dt,max_dt);
@@ -132,12 +132,13 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
        
         /* Time step (phase 1) */
         dt = CV_min(dt_stev,dt_binary_evolution);
+        //printf("t %g dt_stev %g dt_binary_evolution %g\n",t,dt_stev,dt_binary_evolution);
         
         if (*integration_flag > 0)
         {
             dt = CV_min(dt,dt_nbody);
         }
-        
+
         /* Flybys */
         if (include_flybys == true)
         {

@@ -36,6 +36,7 @@ extern double epsilon;
 extern int random_seed;
 
 extern double secular_integration_exclusion_safety_factor;
+extern double ODE_min_dt;
 
 extern double effective_radius_multiplication_factor_for_collisions_stars;
 extern double effective_radius_multiplication_factor_for_collisions_compact_objects;
@@ -62,6 +63,7 @@ extern double flybys_internal_semimajor_axis;
 extern int binary_evolution_CE_energy_flag;
 extern int binary_evolution_CE_spin_flag;
 extern int binary_evolution_CE_mass_loss_Nsteps;
+extern double binary_evolution_mass_transfer_timestep_parameter;
 
 extern double chandrasekhar_mass;
 extern double eddington_accretion_factor;
@@ -69,10 +71,10 @@ extern double nova_accretion_factor;
 extern double alpha_wind_accretion;
 extern double beta_wind_accretion;
 
-extern double mstar_gbs_tolerance_default;
-extern double mstar_gbs_tolerance_kick;
-extern double mstar_stopping_condition_tolerance;
-extern double mstar_output_time_tolerance;
+extern double MSTAR_gbs_tolerance_default;
+extern double MSTAR_gbs_tolerance_kick;
+extern double MSTAR_stopping_condition_tolerance;
+extern double MSTAR_output_time_tolerance;
 
 extern double triple_mass_transfer_primary_star_accretion_efficiency_no_disk;
 extern double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk;
@@ -1014,6 +1016,10 @@ class Particle
     double flybys_internal_mass;
     double flybys_internal_semimajor_axis;
     
+    
+    /* MSTAR */
+    bool include_in_MSTAR;
+    
     Particle(int index, int is_binary) : index(index), is_binary(is_binary)
     {
         parent = -1;
@@ -1176,6 +1182,9 @@ class Particle
         VRR_eta_b_21_final = 0.0;
         
         merged = false;
+        
+        /* MSTAR */
+        include_in_MSTAR = true;
     }
 };
 

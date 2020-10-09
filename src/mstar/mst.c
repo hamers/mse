@@ -1309,6 +1309,9 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     double N_print=10;
     double f_time;
 
+//    check_MSTAR_system_for_distant_bodies(R);
+
+
     do {
 
         do {
@@ -1757,39 +1760,6 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 }
             }
 
-
-
-
-            #ifdef IGNORE
-            double mj = R->Mass[j];
-            int Lj = R->Vertex[j].level;
-            double r2 = 0;
-            int proximity = 0;
-
-            if (abs(Li - Lj) < Nd) {
-                proximity =
-                    check_relative_proximity(j, i, Nd, R, &d, path, sign);
-            }
-
-            if (proximity == 1) {
-                for (int k = 0; k < 3; k++) {
-                    double dr = 0;
-                    for (int l = 0; l < d; l++) {
-                        int index = path[l];
-                        dr += sign[l] * R->State[3 * index + k];
-                    }
-                    r2 += dr * dr;
-                }
-            } else {
-                for (int k = 0; k < 3; k++) {
-                    double dr = R->Pos[3 * j + k] - R->Pos[3 * i + k];
-                    r2 += dr * dr;
-                }
-            }
-            #endif
-
-
-
             for (int k=0; k<3; k++)
             {
                 dv[k] = Vel[3 * j + k] - Vel[3 * i + k];
@@ -1951,3 +1921,4 @@ void out_of_CoM_frame(struct RegularizedRegion *R)
 
 }
 
+ 

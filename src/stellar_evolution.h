@@ -12,4 +12,6 @@ void get_core_masses_by_composition(int kw, double core_mass, double *He_core_ma
 
 double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3);
 double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_momentum, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3);
+
+double compute_breakup_angular_frequency(double mass, double radius);
 }

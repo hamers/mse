@@ -433,36 +433,6 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
     return R;
 }
 
-void compute_center_of_mass_position_and_velocity(struct RegularizedRegion *R, double R_cm[3], double V_cm[3])
-{
-    int i,j;
-    
-    for (j=0; j<3; j++)
-    {
-        R_cm[j] = 0.0;
-        V_cm[j] = 0.0;
-    }
-
-    double m;
-    double m_tot=0.0;
-    for (i=0; i<R->NumVertex; i++)
-    {
-        m = R->Mass[i];
-        m_tot += m;
-        for (j=0; j<3; j++)
-        {
-            R_cm[j] += m * R->Pos[3 * i + j];
-            V_cm[j] += m * R->Vel[3 * i + j];
-        }
-    }
-
-    for (j=0; j<3; j++)
-    {
-        R_cm[j] = R_cm[j]/m_tot;
-        V_cm[j] = V_cm[j]/m_tot;
-    }
-}
-
 int test_nbody_two_body_kick()
 {
     printf("test.cpp -- test_nbody_two_body_kick\n");

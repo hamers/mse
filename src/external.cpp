@@ -35,7 +35,7 @@ void apply_user_specified_instantaneous_perturbation(ParticlesMap *particlesMap)
 void apply_user_specified_instantaneous_perturbation_nbody(ParticlesMap *particlesMap)
 {
     update_masses_positions_and_velocities_of_all_bodies_instantaneous_perturbation(particlesMap);
-    set_binary_masses_from_body_masses(particlesMap);
+    //set_binary_masses_from_body_masses(particlesMap);
 }
 
 

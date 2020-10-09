@@ -755,7 +755,7 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
             }
         }
     }
-    printf("check init roots %d\n",N_root_found);
+    //printf("check init roots %d\n",N_root_found);
     
     return N_root_found;
 }
@@ -765,8 +765,8 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
     if (root_flag == 1) // RLOF
     {
         printf("RLOF occurred \n");//, but continuing dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
-        *dt_binary_evolution = *dt_stev/10.0;
-        printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",*dt_binary_evolution,*dt_stev);
+        //*dt_binary_evolution = *dt_stev;
+        //printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",*dt_binary_evolution,*dt_stev);
         *CVODE_flag = 0;
     }
     else if (root_flag == 2) // Dynamical instability

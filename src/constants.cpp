@@ -20,6 +20,8 @@ double CONST_PER_PC3 = 1.14059e-16;
 double SPEEDOFLIGHT = CONST_C_LIGHT;
 double GCONST = CONST_G;
 
+double MSTAR_maximum_separation_for_inclusion = 1.0e5;
+
 bool MSTAR_include_PN_acc_10 = true;
 bool MSTAR_include_PN_acc_20 = true;
 bool MSTAR_include_PN_acc_25 = true;

@@ -34,7 +34,7 @@ void get_unit_vector(double vec[3], double vec_unit[3]);
 void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
 void copy_all_body_properties(Particle *source, Particle *target);
 
-void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
+void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
 void print_system(ParticlesMap *particlesMap, int integration_flag);
 //void print_bodies(ParticlesMap *particlesMap);
 

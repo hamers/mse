@@ -206,7 +206,7 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->evolve_as_star == true)
+        if (p->is_binary == false and p->object_type == 1)
         {
             p->RLOF_flag = 0;
             
@@ -303,7 +303,18 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
             {
                 S = epsilon;
             }
-            double Omega = compute_spin_frequency_from_spin_angular_momentum(S, p_old->stellar_type, p_old->mass, p_old->core_mass, p_old->radius, p_old->core_radius, p_old->sse_k2, p_old->sse_k3);
+
+            double k2;
+            if (p_old->object_type == 1)
+            {
+                k2 = p_old->sse_k2;
+            }
+            else
+            {
+                k2 = p_old->gyration_radius;
+            }
+            
+            double Omega = compute_spin_frequency_from_spin_angular_momentum(S, p_old->stellar_type, p_old->object_type, p_old->mass, p_old->core_mass, p_old->radius, p_old->core_radius, k2, p_old->sse_k3);
  
             for (i=0; i<3; i++)
             {
@@ -998,8 +1009,18 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
             {
                 Omega = epsilon;
             }
-            S = compute_spin_angular_momentum_from_spin_frequency(Omega, p->stellar_type, p->mass, p->core_mass, p->radius, p->core_radius, p->sse_k2, p->sse_k3);
-            
+
+            double k2;
+            if (p->object_type == 1)
+            {
+                k2 = p->sse_k2;
+            }
+            else
+            {
+                k2 = p->gyration_radius;
+            }
+            S = compute_spin_angular_momentum_from_spin_frequency(Omega, p->stellar_type, p->object_type, p->mass, p->core_mass, p->radius, p->core_radius, k2, p->sse_k3);
+
             for (j=0; j<3; j++)
             {
                 R->Pos[3 * i + j] = R_vec[j];

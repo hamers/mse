@@ -166,10 +166,10 @@ class MSE(object):
         self.lib.get_spin_vector.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_spin_vector.restype = ctypes.c_int
 
-        self.lib.set_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
+        self.lib.set_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
         self.lib.set_stellar_evolution_properties.restype = ctypes.c_int
 
-        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_stellar_evolution_properties.restype = ctypes.c_int
 
 
@@ -517,7 +517,7 @@ class MSE(object):
                 #flag += self.lib.set_mass_dot(particle.index,particle.mass_dot)
                 flag += self.lib.set_mass_transfer_terms(particle.index,particle.include_mass_transfer_terms)
                 flag += self.lib.set_spin_vector(particle.index,particle.spin_vec_x,particle.spin_vec_y,particle.spin_vec_z)
-                flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.evolve_as_star,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
+                flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.object_type,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
                     particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription)
                 flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.kick_distribution_sigma_km_s_NS,particle.kick_distribution_sigma_km_s_BH, \
                     particle.kick_distribution_2_m_NS,particle.kick_distribution_4_m_NS,particle.kick_distribution_4_m_ej,particle.kick_distribution_5_v_km_s_NS,particle.kick_distribution_5_v_km_s_BH,particle.kick_distribution_5_sigma)
@@ -608,12 +608,12 @@ class MSE(object):
                 particle.radius = radius.value
                 particle.radius_dot = radius_dot.value
 
-                stellar_type,evolve_as_star,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter = ctypes.c_int(0),ctypes.c_bool(False), \
+                stellar_type,object_type,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter = ctypes.c_int(0),ctypes.c_int(0), \
                     ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-                flag += self.lib.get_stellar_evolution_properties(particle.index,ctypes.byref(stellar_type),ctypes.byref(evolve_as_star),ctypes.byref(sse_initial_mass),ctypes.byref(metallicity),ctypes.byref(sse_time_step), \
+                flag += self.lib.get_stellar_evolution_properties(particle.index,ctypes.byref(stellar_type),ctypes.byref(object_type),ctypes.byref(sse_initial_mass),ctypes.byref(metallicity),ctypes.byref(sse_time_step), \
                     ctypes.byref(epoch),ctypes.byref(age),ctypes.byref(convective_envelope_mass),ctypes.byref(convective_envelope_radius),ctypes.byref(core_mass),ctypes.byref(core_radius),ctypes.byref(luminosity),ctypes.byref(apsidal_motion_constant),ctypes.byref(gyration_radius),ctypes.byref(tides_viscous_time_scale),ctypes.byref(roche_lobe_radius_pericenter))
                 particle.stellar_type = stellar_type.value
-                particle.evolve_as_star = evolve_as_star.value
+                particle.object_type = object_type.value
                 particle.sse_initial_mass = sse_initial_mass.value
                 particle.metallicity = metallicity.value
                 particle.sse_time_step = sse_time_step.value
@@ -1411,7 +1411,7 @@ class MSE(object):
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0e-10, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
             integration_method = 0, KS_use_perturbing_potential = True, \
-            stellar_type=1, evolve_as_star=True, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
+            stellar_type=1, object_type=1, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
             kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
@@ -1539,7 +1539,7 @@ class Particle(object):
             self.mass = mass
             self.mass_dot = mass_dot
             self.stellar_type = stellar_type
-            self.evolve_as_star = evolve_as_star
+            self.object_type = object_type
             self.sse_initial_mass = mass
             self.metallicity = metallicity
             self.sse_time_step = sse_time_step
@@ -1600,7 +1600,7 @@ class Particle(object):
 class Tools(object):
  
     @staticmethod       
-    def create_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None):
+    def create_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
 
         """
         N is number of bodies
@@ -1610,6 +1610,9 @@ class Tools(object):
 
         N_bodies = N
         N_binaries = N-1
+
+        if object_types == []:
+            object_types = [1 for x in range(N_bodies)]
 
         particles = []
 
@@ -1621,6 +1624,7 @@ class Tools(object):
                 particle.metallicity = metallicities[index]
             if stellar_types is not None:
                 particle.stellar_type = stellar_types[index]
+            particle.object_type = object_types[index]
                 
             particles.append(particle)
         
@@ -1639,7 +1643,7 @@ class Tools(object):
         return particles
 
     @staticmethod
-    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None):
+    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
         
         """
         Create a 2+2 quadruple system.
@@ -1649,6 +1653,9 @@ class Tools(object):
 
         N_bodies = 4
         N_binaries = N_bodies-1
+
+        if object_types == []:
+            object_types = [1 for x in range(N_bodies)]
 
         particles = []
 
@@ -1661,7 +1668,8 @@ class Tools(object):
                 particle.metallicity = metallicities[index]
             if stellar_types is not None:
                 particle.stellar_type = stellar_types[index]
-                
+            particle.object_type = object_types[index]
+            
             particles.append(particle)
 
         ### Add the binaries ###
@@ -1860,7 +1868,7 @@ class Tools(object):
         if child1.is_binary == True:
             x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
         else:
-            color,s = Tools.get_color_and_size_for_star(child1.stellar_type,child1.radius)
+            color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
             plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
@@ -1873,7 +1881,7 @@ class Tools(object):
         if child2.is_binary == True:
             x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
         else:
-            color,s = Tools.get_color_and_size_for_star(child2.stellar_type,child2.radius)
+            color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
             plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
             #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
             #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
@@ -1886,22 +1894,56 @@ class Tools(object):
         return x_min,x_max,y_min,y_max
 
     @staticmethod
-    def get_color_and_size_for_star(stellar_type,radius):
-        if (stellar_type <= 1): color='gold'
-        elif (stellar_type == 2): color='darkorange'
-        elif (stellar_type == 3): color='firebrick'
-        elif (stellar_type == 4): color='darkorange'
-        elif (stellar_type == 5): color='orangered'
-        elif (stellar_type == 6): color='crimson'
-        elif (stellar_type == 7): color='royalblue'
-        elif (stellar_type == 8): color='orangered'
-        elif (stellar_type == 9): color='crimson'
-        elif (stellar_type == 10): color='silver'
-        elif (stellar_type == 11): color='silver'
-        elif (stellar_type == 12): color='silver'
-        elif (stellar_type == 13): color='gainsboro'
-        elif (stellar_type == 14): color='k'
-        else: color = 'k'
+    def get_color_and_size_and_description_for_star(stellar_type,radius):
+        if (stellar_type == 0): 
+            color='gold'
+            description = 'low-mass\,MS'
+        elif (stellar_type == 1): 
+            color='gold'
+            description = 'MS'
+        elif (stellar_type == 2):
+            color='darkorange'
+            description = 'HG'
+        elif (stellar_type == 3):
+            color='firebrick'
+            description = 'RGB'
+        elif (stellar_type == 4):
+            color='darkorange'
+            description = 'CHeB'
+        elif (stellar_type == 5):
+            color='orangered'
+            description = 'EAGB'
+        elif (stellar_type == 6):
+            color='crimson'
+            description = 'TPAGB'
+        elif (stellar_type == 7):
+            color='royalblue'
+            description = 'HeMS'
+        elif (stellar_type == 8):
+            color='orangered'
+            description = 'HeHG'
+        elif (stellar_type == 9):
+            color='crimson'
+            description = 'HeGB'
+        elif (stellar_type == 10):
+            color='silver'
+            description = 'HeWD'
+        elif (stellar_type == 11):
+            color='silver'
+            description = 'COWD'
+        elif (stellar_type == 12):
+            color='silver'
+            description = 'ONeWD'
+        elif (stellar_type == 13):
+            color='gainsboro'
+            description = 'NS'
+        elif (stellar_type == 14):
+            color='k'
+            description = 'BH'
+        else: 
+            color = 'k'
+            description = ''
+        
 
         CONST_R_SUN = 0.004649130343817401
         CONST_KM = 1.0/(1.4966e9)
@@ -1913,14 +1955,14 @@ class Tools(object):
         if (stellar_type >= 10):
             s = 5 + 20*np.log10(radius/CONST_KM)
 
-        return color,s
+        return color,s,description
         
     @staticmethod
     def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
         #dx = 0.5
         #dy = 0.5
         for index,body in enumerate(bodies):
-            color,s = Tools.get_color_and_size_for_star(body.stellar_type,body.radius)
+            color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
             plot.scatter([index],[y_ref],color=color,s=s)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
@@ -1981,23 +2023,25 @@ class Tools(object):
         return text
 
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[]):
 
         if configuration == "fully_nested":
-            particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
+            particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         elif configuration == "2+2_quadruple":
-            particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types)
+            particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         else:
             print("evolve_system.py: configuration ",configuration," currently not supported!")
             exit(-1)
+        
         
         from mse import MSE
 
         orbits = [x for x in particles if x.is_binary==True]
         bodies = [x for x in particles if x.is_binary==False]
 
+        N_bodies = len(bodies)
         N_orbits = len(orbits)
-                
+
         code = MSE()
         code.enable_root_finding = True
         code.add_particles(particles)
@@ -2049,13 +2093,7 @@ class Tools(object):
             N_orbits = len(orbits)
             N_bodies = len(bodies)
     
-            #i_rel = Tools.compute_mutual_inclination(code.log[-1]["particles"][3].INCL,code.log[-1]["particles"][4].INCL,code.log[-1]["particles"][3].LAN,code.log[-1]["particles"][4].LAN)
-            #print("IREL",(180.0/np.pi)*i_rel)
-            #print("LOG a",code.log[0]["particles"][4].a,code.log[-1]["time"],code.log[-1]["event_flag"])
-            #print("LOG",code.log)
-            #if code.log[-1]["event_flag"] != 0:
-            #    print("LOG","event",code.log[-1]["event_flag"],"index1",code.log[-1]["index1"],"index2",code.log[-1]["index2"],"binary index",code.log[-1]["binary_index"],code.log[-1]["particles"])
-            
+           
             if code.structure_change == True:
                 print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
@@ -2127,6 +2165,7 @@ class Tools(object):
             
             try:
                 from matplotlib import pyplot
+                from matplotlib import lines
             except ImportError:
                 print("evolve_system.py -- ERROR: cannot import Matplotlib")
                 exit(-1)
@@ -2150,6 +2189,12 @@ class Tools(object):
             N_l = len(plot_log)
             fontsize=N_l
             fig=pyplot.figure(figsize=(N_l,N_l))
+            
+            legend_elements = []
+            for k in range(15):
+                color,s,description = Tools.get_color_and_size_and_description_for_star(k,1.0)
+                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label=description))#label = "$\mathrm{%s}$"%description) )
+
             N_r = int(np.sqrt(N_l))+1
             N_c = N_r
             for index_log,log in enumerate(plot_log):
@@ -2163,6 +2208,10 @@ class Tools(object):
                 plot.set_title(text,fontsize=fontsize)
                 plot.annotate("$t\simeq %s\,\mathrm{Myr}$"%round(log["time"]*1e-6,2),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
                 #if index_log>0: break
+
+                if index_log == 0:
+                    plot.legend(handles = legend_elements, bbox_to_anchor = (-0.05, 1.70), loc = 'upper left', ncol = 5,fontsize=0.85*fontsize)
+            
     
             fig.savefig(plot_filename + "_mobile.pdf")
         

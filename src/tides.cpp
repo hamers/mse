@@ -91,7 +91,7 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
     int tides_viscous_time_scale_prescription = star->tides_viscous_time_scale_prescription;
     double t_V = 1.0e10; /* large value by default, i.e. weak tides if tides_viscous_time_scale_prescription is not given the correct value */
     
-    if (tides_viscous_time_scale_prescription == 0 or star->evolve_as_star == false)
+    if (tides_viscous_time_scale_prescription == 0 or star->object_type == 2)
     {
         t_V = star->tides_viscous_time_scale;
     }
@@ -325,15 +325,15 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     
     double k_AM;
     double I; // moment of intertia
-    if (star->evolve_as_star == false)
-    {
-        I = star->gyration_radius*M*R*R;
-        k_AM = star->apsidal_motion_constant;
-    }
-    else
+    if (star->object_type == 1) // star 
     {
         I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
         k_AM = compute_apsidal_motion_constant(star);
+    }
+    else
+    {
+        I = star->gyration_radius*M*R*R;
+        k_AM = star->apsidal_motion_constant;
         //k_AM = star->apsidal_motion_constant;
     }
 
@@ -342,9 +342,9 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     star->tides_viscous_time_scale = t_V;
     
     //#ifdef DEBUG
-    //printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g\n",binary_index,star_index,companion_index,t_V);
+    //printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g rg %g kAM %g R %g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius);
     //#endif
-
+    //printf("TS %d %g %g %g\n",star->index,star->spin_vec[0],star->spin_vec[1],star->spin_vec[2]);
     //t_V *= 1.0e-10;
     if (t_V!=t_V)
     {

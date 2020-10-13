@@ -152,17 +152,17 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
     
-    if (child1->evolve_as_star == true and child2->evolve_as_star == false)
+    if (child1->object_type == 1 and child2->object_type == 2)
     {
         collision_product_star_planet(particlesMap, binary_index, child1_index, child2_index,t,integration_flag);
         return;
     }
-    if (child1->evolve_as_star == false and child2->evolve_as_star == true)
+    if (child1->object_type == 2 and child2->object_type == 1)
     {
         collision_product_star_planet(particlesMap, binary_index, child2_index, child1_index,t,integration_flag);
         return;
     }
-    if (child1->evolve_as_star == false and child2->evolve_as_star == false)
+    if (child1->object_type == 2 and child2->object_type == 2)
     {
         collision_product_planet_planet(particlesMap, binary_index, child1_index, child2_index,t,integration_flag);
         return;

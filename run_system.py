@@ -29,6 +29,7 @@ def parse_arguments():
 
     parser.add_argument("--configuration",                            type=str,                   dest="configuration",               default="fully_nested",             help="Configuration: `fully_nested' or `2+2_quadruple'.")
     parser.add_argument("--masses", "--ms",                           type=float,  nargs="+",     dest="masses",                      default=[40.0,10.0,2.0],            help="Masses/MSun")
+    parser.add_argument("--object_types", "--ot",                      type=int,    nargs="+",      dest="object_types",                      default=[1,1,1],            help="Object type (integer): 1: star, 2: planet")
     parser.add_argument("--metallicities", "--zs",                    type=float,  nargs="+",     dest="metallicities",                      default=[0.02,0.02,0.02],           help="Metallicities")
     parser.add_argument("--smas", "--semimajor_axes",                 type=float,  nargs="+",     dest="semimajor_axes",                      default=[15.0,120.0],           help="Semimajor axes (au)")
     parser.add_argument("--es",  "--eccentricities",                  type=float,  nargs="+",     dest="eccentricities",                      default=[0.1,0.1],           help="Eccentricities")
@@ -44,6 +45,7 @@ def parse_arguments():
     ### boolean arguments ###
     add_bool_arg(parser, 'verbose',                         default=False,         help="verbose terminal output")
     add_bool_arg(parser, 'plot',                            default=False,         help="make plots")
+    add_bool_arg(parser, 'fancy_plots',                     default=False,         help="make plots")
     
     args = parser.parse_args()
 
@@ -56,6 +58,7 @@ if __name__ == '__main__':
     N_bodies = len(args.masses)
     print("Configuration: ",args.configuration)
     print("N_bodies: ",N_bodies)
+    print("Object types:",args.object_types)
     print("Masses/MSun: ",args.masses)
     print("Metallicities: ",args.metallicities)
     print("Semimajor axes (au): ",args.semimajor_axes)
@@ -67,4 +70,4 @@ if __name__ == '__main__':
     print("Number of plot output steps: ",args.N_steps)
     
     stellar_types = [1 for x in range(N_bodies)]
-    Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=stellar_types,plot_filename=args.plot_filename)
+    Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots)

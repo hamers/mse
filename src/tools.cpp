@@ -631,7 +631,7 @@ void copy_all_body_properties(Particle *source, Particle *target)
     target->check_for_RLOF_at_pericentre = source->check_for_RLOF_at_pericentre;
 }
 
-void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
+void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
 {
     
     int N_binaries = N_bodies-1;
@@ -646,7 +646,7 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         p->mass = masses[i];
         p->stellar_type = stellar_types[i];
         p->sse_initial_mass = masses[i];
-        p->evolve_as_star = true;
+        p->object_type = object_types[i];
         
         index++;
     }
@@ -715,13 +715,13 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             
             if (p->is_binary == false)
             {
-                if (p->evolve_as_star == true)
+                if (p->object_type == 1)
                 {
                     printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g Spin_freq %g Omega_crit %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,norm3(p->spin_vec),compute_breakup_angular_frequency(p->mass,p->radius));
                 }
                 else
                 {
-                    printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
+                    printf("index %d -- body -- parent %d m %g r %g st %d spin %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2]);
                 }
             }
             else
@@ -738,13 +738,13 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
             
             if (p->is_binary == false)
             {
-                if (p->evolve_as_star == true)
+                if (p->object_type == 1)
                 {
                     printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g Spin_freq %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2],norm3(p->spin_vec));
                 }
                 else
                 {
-                    printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
+                    printf("index %d -- body -- parent %d m %g r %g st %d spin %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2]);
                 }
             }
         }
@@ -767,7 +767,7 @@ void print_bodies(ParticlesMap *particlesMap)
         
         if (p->is_binary == false)
         {
-            if (p->evolve_as_star == true)
+            if (p->object_type == 1)
             {
                 printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
             }

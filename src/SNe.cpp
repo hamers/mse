@@ -19,7 +19,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->evolve_as_star == true)
+        if (p->is_binary == false and p->object_type == 1)
         {
 
             VX = 0.0;
@@ -243,7 +243,7 @@ void remove_massless_remnants_from_system(ParticlesMap *particlesMap, int *integ
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->evolve_as_star == true)
+        if (p->is_binary == false and p->object_type == 1)
         {
             if (p->stellar_type == 15)
             {

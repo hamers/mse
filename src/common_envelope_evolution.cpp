@@ -64,17 +64,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     Particle *star1 = (*particlesMap)[index1];
     Particle *star2 = (*particlesMap)[index2];
 
-    if (star1->evolve_as_star == true and star2->evolve_as_star == false)
+    if (star1->object_type == 1 and star2->object_type == 2)
     {
         collision_product_star_planet(particlesMap, binary_index, index1, index2,t,integration_flag);
         return;
     }
-    if (star1->evolve_as_star == false and star2->evolve_as_star == true)
+    if (star1->object_type == 2 and star2->object_type == 1)
     {
         collision_product_star_planet(particlesMap, binary_index, index2, index1,t,integration_flag);
         return;
     }
-    if (star1->evolve_as_star == false and star2->evolve_as_star == false)
+    if (star1->object_type == 2 and star2->object_type == 2)
     {
         collision_product_planet_planet(particlesMap, binary_index, index1, index2,t,integration_flag);
         return;

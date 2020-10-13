@@ -141,7 +141,7 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
         if (donor->is_binary == false and donor->is_bound == true)
         {
             Particle *accretor = (*particlesMap)[donor->sibling];
-            if (donor->evolve_as_star == true and accretor->evolve_as_star == true)
+            if (donor->object_type == 1 and accretor->object_type == 1)
             {
                 donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
                 donor->mass_dot_RLOF_triple = 0.0;

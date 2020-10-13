@@ -58,7 +58,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->evolve_as_star == true)
+        if (p->is_binary == false and p->object_type == 1)
         {
             z = p->metallicity;
             
@@ -311,7 +311,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->evolve_as_star == true)
+        if (p->is_binary == false and p->object_type == 1)
         {
             /* Extract stellar evolution parameters */
             mt = mt_old = p->mass;
@@ -603,36 +603,54 @@ void get_core_masses_by_composition(int kw, double core_mass, double *He_core_ma
     }
 }
 
-double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, int stellar_type, int object_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
 {
     double S;
-    if (stellar_type < 10) // Stars
+    if (object_type != 1)
     {
-        double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+        printf("ST %d OT %d m %g R %g k2 %g\n",stellar_type,  object_type, mass,radius,k2);
+        double I = k2 * mass * radius * radius;
         S = I * spin_frequency;
     }
-    else // Compact objects
+    else
     {
-        double chi = compute_spin_parameter_from_spin_frequency(mass, spin_frequency);
-        S = chi * CONST_G * mass * mass / CONST_C_LIGHT;
+        if (stellar_type < 10) // Stars
+        {
+            double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+            S = I * spin_frequency;
+        }
+        else // Compact objects
+        {
+            double chi = compute_spin_parameter_from_spin_frequency(mass, spin_frequency);
+            S = chi * CONST_G * mass * mass / CONST_C_LIGHT;
+        }
     }
     
     check_number(S,"stellar_evolution.cpp -- compute_spin_angular_momentum_from_spin_frequency","S", true);
     return S;
 }
 
-double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_momentum, int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_momentum, int stellar_type, int object_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
 {
     double Omega;
-    if (stellar_type < 10) // Stars
+    if (object_type != 1)
     {
-        double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+        double I = k2 * mass * radius * radius;
+        printf("I%g\n",I);
         Omega = spin_angular_momentum/I;
     }
-    else // Compact objects
+    else
     {
-        double chi = spin_angular_momentum * CONST_C_LIGHT / ( CONST_G * mass * mass);
-        Omega = compute_spin_frequency_from_spin_parameter(mass, chi);
+        if (stellar_type < 10) // Stars
+        {
+            double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+            Omega = spin_angular_momentum/I;
+        }
+        else // Compact objects
+        {
+            double chi = spin_angular_momentum * CONST_C_LIGHT / ( CONST_G * mass * mass);
+            Omega = compute_spin_frequency_from_spin_parameter(mass, chi);
+        }
     }
     check_number(Omega,"stellar_evolution.cpp -- compute_spin_frequency_from_spin_angular_momentum","Omega", true);
     return Omega;

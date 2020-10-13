@@ -189,6 +189,8 @@ int test_nbody(int mode)
 {
     printf("test.cpp -- test_nbody\n");
     
+    MSTAR_verbose = 0;
+    
     int flag = 0;
     flag += test_nbody_two_body_stopping_conditions();
     flag += test_nbody_two_body_kick();
@@ -997,6 +999,7 @@ int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma_rel
     int N_bodies = 2;
     double masses[2] = {10.0,12.0};
     int stellar_types[2] = {1,1};
+    int object_types[2] = {1,1};
     double smas[1] = {10.0};
     double es[1] = {0.01};
     double TAs[1] = {0.01};
@@ -1004,7 +1007,7 @@ int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma_rel
     double APs[1] = {0.01};
     double LANs[1] = {0.01};
 
-    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
 
     bool apply_flyby;
     double t_next_encounter;
@@ -1044,6 +1047,7 @@ int test_flybys_compute_effects_of_flyby_on_system()
     
     double masses[2] = {m1,m2};
     int stellar_types[2] = {1,1};
+    int object_types[2] = {1,1};
     double smas[1] = {10.0};
     double es[1] = {0.01};
     double TAs[1] = {0.01};
@@ -1051,7 +1055,7 @@ int test_flybys_compute_effects_of_flyby_on_system()
     double APs[1] = {0.01};
     double LANs[1] = {0.01};
 
-    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
 
     Particle *s1 = particlesMap[0];
     Particle *s2 = particlesMap[1];
@@ -1152,8 +1156,8 @@ int test_spin_conversion()
     {
         stellar_type = stellar_types[i];
     
-        S = compute_spin_angular_momentum_from_spin_frequency(Omega, stellar_type, mass, core_mass, radius, core_radius, k2, k3);
-        Omega2 = compute_spin_frequency_from_spin_angular_momentum(S, stellar_type, mass, core_mass, radius, core_radius, k2, k3);
+        S = compute_spin_angular_momentum_from_spin_frequency(Omega, stellar_type, 1, mass, core_mass, radius, core_radius, k2, k3);
+        Omega2 = compute_spin_frequency_from_spin_angular_momentum(S, stellar_type, 1, mass, core_mass, radius, core_radius, k2, k3);
 
         if (!equal_number(Omega,Omega2,tol))
         {
@@ -1185,7 +1189,7 @@ int test_apsidal_motion_constant()
             Particle *star = new Particle(0, false);
             particlesMap[0] = star;
             
-            star->evolve_as_star = true;
+            star->object_type = 1;
             star->mass = masses[i];
             star->sse_initial_mass = masses[i];
             star->stellar_type = stellar_types[j];
@@ -1310,7 +1314,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
     Particle *star = new Particle(0, false);
     particlesMap[0] = star;
     
-    star->evolve_as_star = true;
+    star->object_type = 1;
     star->mass = m;
     star->sse_initial_mass = m;
     star->metallicity = z;
@@ -1365,7 +1369,7 @@ int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
     Particle *star = new Particle(0, false);
     particlesMap[0] = star;
     
-    star->evolve_as_star = true;
+    star->object_type = 1;
     star->mass = m;
     star->sse_initial_mass = m;
     star->stellar_type = 1;
@@ -1514,6 +1518,7 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
     double a3 = 2000.0;
     double masses[4] = {m1,m2,m3,m4};
     int stellar_types[4] = {1,1,1,1};
+    int object_types[4] = {1,1,1,1};
     double smas[3] = {a1,a2,a3};
     double es[3] = {0.01,0.01,0.01};
     double TAs[3] = {0.01,0.01,0.01};
@@ -1521,7 +1526,7 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit()
     double APs[3] = {0.01,0.01,0.01};
     double LANs[3] = {0.01,0.01,0.01};
     
-    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
     initialize_code(&particlesMap);
     
@@ -1569,7 +1574,8 @@ int test_wind_accretion()
     double e = 0.9;
     
     double masses[2] = {m1,m2};
-    int stellar_types[4] = {1,1};
+    int stellar_types[2] = {1,1};
+    int object_types[2] = {1,1};
     double smas[1] = {a};
     double es[1] = {e};
     double TAs[1] = {0.01};
@@ -1577,7 +1583,7 @@ int test_wind_accretion()
     double APs[1] = {0.01};
     double LANs[1] = {0.01};
     
-    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
 
     //initialize_code(&particlesMap);
     initialize_stars(&particlesMap);
@@ -1691,6 +1697,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     int N_bodies = 4;
     double masses[4] = {m1,m2,95.0,40.0};
     int stellar_types[4] = {kw1,kw2,1,1};
+    int object_types[4] = {1,1,1,1};
     double smas[3] = {10.0,100.0,10000.0};
     double es[3] = {0.01,0.01,0.01};
     double TAs[3] = {0.01,0.01,0.01};
@@ -1699,7 +1706,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     double LANs[3] = {0.01,0.01,0.01};
     random_seed=6;
     
-    create_nested_system(particlesMap,N_bodies,masses,stellar_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
     initialize_code(&particlesMap);
     

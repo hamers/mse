@@ -721,7 +721,7 @@ class Particle
 
     /* stellar evolution */
     int stellar_type;
-    bool evolve_as_star;
+    int object_type;
     double sse_initial_mass,sse_time_step;
     double sse_main_sequence_timescale;
     double mass_dot_wind,radius_dot,radius_ddot,ospin_dot;
@@ -963,7 +963,7 @@ class Particle
 
         /* stellar evolution */
         stellar_type = 1;
-        evolve_as_star = true;
+        object_type = 1;
         sse_initial_mass = 0.0;
         sse_time_step = 1.0;
         metallicity = 0.02;

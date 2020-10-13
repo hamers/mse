@@ -342,7 +342,7 @@ int get_level(int index, int *value)
 }
 
         
-int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as_star, double sse_initial_mass, double metallicity, double sse_time_step, double epoch, double age, 
+int set_stellar_evolution_properties(int index, int stellar_type, int object_type, double sse_initial_mass, double metallicity, double sse_time_step, double epoch, double age, 
     double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription)
 {
     //printf("set_stellar_evolution_properties %g\n",metallicity);
@@ -353,7 +353,7 @@ int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as
 
     Particle * p = particlesMap[index];
     p->stellar_type = stellar_type;
-    p->evolve_as_star = evolve_as_star;
+    p->object_type = object_type;
     p->sse_initial_mass = sse_initial_mass;
     p->metallicity = metallicity;
     p->sse_time_step = sse_time_step;
@@ -371,7 +371,7 @@ int set_stellar_evolution_properties(int index, int stellar_type, bool evolve_as
     
     return 0;
 }
-int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_as_star, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
+int get_stellar_evolution_properties(int index, int *stellar_type, int *object_type, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter)
 
 {
@@ -382,7 +382,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, bool *evolve_
   
     Particle * p = particlesMap[index];
     *stellar_type = p->stellar_type;
-    *evolve_as_star = p->evolve_as_star;
+    *object_type = p->object_type;
     *sse_initial_mass = p->sse_initial_mass;
     *metallicity = p->metallicity;
     *sse_time_step = p->sse_time_step;
@@ -536,7 +536,7 @@ int set_external_particle_properties(int index, double external_t_ref, double e,
     /* e & h vectors for external particles are understood to be unit vectors */
     compute_orbital_vectors_from_orbital_elements_unit(INCL,AP,LAN,&(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) ); 
     
-    p->evolve_as_star = false; // if enabled, can lead to segfaults in stellar_evolution.cpp
+    p->object_type = 2; // if enabled, can lead to segfaults in stellar_evolution.cpp
     
     //printf("set_external_particle_properties inputs %g %g %g %g %g\n",external_t_ref, e, external_r_p, INCL, AP, LAN);
     //printf("set_external_particle_properties OE %g %g %g %g %g %g\n",p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2]);

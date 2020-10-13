@@ -188,7 +188,10 @@ class test_mse():
 
         N_orbits = len(orbits)
         bodies[1].evolve_as_star = False
-        
+        bodies[1].radius = 0.01
+        bodies[1].tides_viscous_time_scale = 2.5514
+        bodies[1].apsidal_motion_constant = 0.3
+        bodies[1].gyration_radius = 0.12
         
        #for orbit in orbits:
        #     orbit.check_for_physical_collision_or_orbit_crossing = True

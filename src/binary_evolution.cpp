@@ -20,7 +20,7 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     set_positions_and_velocities(particlesMap);
     handle_wind_accretion(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
     handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
-        
+
     bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
     if (stable == false)
     {
@@ -1367,9 +1367,15 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     double m_fac = CV_min(m_donor, 5.0);
     m_fac *= m_fac;
 
+    if (R_donor < R_RL_av_donor)
+    {
+        printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- skipping since R_donor < R_RL_av -- R_donor %g RL_av_donor %g\n",R_donor,R_RL_av_donor);
+        return 0.0;
+    }
+    
     double log_fac = log(R_donor/R_RL_av_donor);
     double dm1 = dt * fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
-    
+
     if (kw1 == 2)
     {
         double mew = (m_donor - core_mass_donor)/m_donor;
@@ -1393,6 +1399,7 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     //#ifdef DEBUG
     printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g RL_av_donor %g\n",dm1,R_donor,R_RL_av_donor);
     //#endif
+
     return dm1;
 }
 

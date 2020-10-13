@@ -218,9 +218,10 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
         //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
         x = R_Lc/child1->radius;
+
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
         //printf("1 x %g q %g E_0 %g\n",x,q,E_0);
-        if (in_RLOF == true and flag == 0)
+        if (in_RLOF == true and flag == 0 and x>=0.0)
         {
             compute_RLOF_emt_model(p,child1,child2,x,E_0);
             //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
@@ -238,7 +239,7 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         x = R_Lc/child2->radius;
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
         //printf("2 x %g q %g E_0 %g\n",x,q,E_0);
-        if (in_RLOF == true and flag == 0)
+        if (in_RLOF == true and flag == 0 and x>=0.0)
         {
             compute_RLOF_emt_model(p,child2,child1,x,E_0);
             #ifdef DEBUG
@@ -367,8 +368,8 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     if (fabs(M_d_dot_av) > 1.0)
     {
         printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
-        M_d_dot_av = -1.0;
-        M_a_dot_av = -M_d_dot_av;
+        //M_d_dot_av = -1.0;
+        //M_a_dot_av = -M_d_dot_av;
     }
     
     double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);

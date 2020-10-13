@@ -379,7 +379,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     //printf("SE %.15f \n",p->mass_dot_wind);
                     //p->radius_dot = (r*CONST_R_SUN - p->radius)/dt;
                     p->radius_dot = CONST_R_SUN*(r - r_old)/dt;
-                    //printf("p->radius_dot %g\n",p->radius_dot);
+                    //printf("id %d p->radius_dot %g\n",p->index,p->radius_dot);
                     
                     p->ospin_dot = (ospin - ospin_old)/dt;
                     //printf("p->ospin_dot %g p->radius_dot %g\n",p->ospin_dot,p->radius_dot);
@@ -518,7 +518,37 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     }
     #endif
     
+    check_for_critical_rotation(particlesMap);
+    
     return 0;
+}
+
+void check_for_critical_rotation(ParticlesMap *particlesMap)
+{
+    int i;
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->is_bound == true)
+        {
+            double spin_vec_norm = norm3(p->spin_vec);
+            if (spin_vec_norm < epsilon)
+            {
+                spin_vec_norm = epsilon;
+            }
+            double Omega_crit = compute_breakup_angular_frequency(p->mass,p->radius);
+            if (spin_vec_norm > Omega_crit)
+            {
+                printf("stellar_evolution.cpp -- check_for_critical_rotation -- limiting id %d Omega %g Omega_crit %g\n",p->index,spin_vec_norm,Omega_crit);
+                for (i=0; i<3; i++)
+                {
+                    p->spin_vec[i] *= Omega_crit/spin_vec_norm;
+                }
+            }
+        }
+    }
 }
 
 double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, double *zpars)

@@ -70,6 +70,10 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     {
                         P_p->secular_breakdown_has_occurred == true;
                     }
+                    else
+                    {
+                        P_p->secular_breakdown_has_occurred == false;
+                    }
                 }
                 
                 i_root++;
@@ -193,6 +197,10 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         {
                             P_p->dynamical_instability_has_occurred = true;
                         }
+                        else
+                        {
+                            P_p->dynamical_instability_has_occurred = false;
+                        }
                     }
                         //printf("di P15a %d %d %g %g %g\n",P_p->index,central_particle_index,m1,m2,central_particle_mass);
                         //printf("di P15b %g %g %g \n",a_in,a_out,root_functions[i_root]);
@@ -227,7 +235,11 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         P_p->physical_collision_or_orbit_crossing_has_occurred = true;
                         printf("COL %g %g\n",periapse_distance,cross_section);
 //                    printf("root finding check_for_physical_collision_or_orbit_crossing %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
-                    }                
+                    }  
+                    else
+                    {
+                        P_p->physical_collision_or_orbit_crossing_has_occurred = false;
+                    }
                 }
                 //printf("col %g\n",(double) root_functions[i_root]);
                 
@@ -258,6 +270,10 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         P_p->minimum_periapse_distance_has_occurred = true;
 //                    printf("root finding check_for_minimum_periapse_distance %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
                     }                
+                    else
+                    {
+                        P_p->minimum_periapse_distance_has_occurred = false;
+                    }
                 }
                 //printf("min rp %g\n",(double) root_functions[i_root]);
 
@@ -313,6 +329,10 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         if (f_root >= 0.0)
                         {
                             P_p->GW_condition_has_occurred = true;
+                        }
+                        else
+                        {
+                            P_p->GW_condition_has_occurred = false;
                         }
                     }   
                     

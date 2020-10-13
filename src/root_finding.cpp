@@ -357,7 +357,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     }
                     
                     f_root = 1.0 - P_p->radius/roche_radius_pericenter;
-//                    printf("check_for_RLOF_at_pericentre rp %g roche_radius_pericenter %g R %g\n", rp, roche_radius_pericenter, P_p->radius);
+                    //printf("check_for_RLOF_at_pericentre id %d rp %g roche_radius_pericenter %g R %g\n", P_p->index,rp, roche_radius_pericenter, P_p->radius);
 
                     if (use_root_functions == true)
                     {
@@ -368,6 +368,10 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         if (f_root <= 0.0)
                         {
                             P_p->RLOF_at_pericentre_has_occurred = true;
+                        }
+                        else
+                        {
+                            P_p->RLOF_at_pericentre_has_occurred = false;
                         }
                     }
                     //printf("RLOF %g\n",(double) root_functions[i_root]);
@@ -424,7 +428,7 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 #endif
 
                 
-                printf("mass_changes.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
+                printf("root_finding.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
                 
                 //p->check_for_RLOF_at_pericentre = 0; /* do not subsequently check for RLOF during ODE integration */
                 //printf("test %d\n",p->RLOF_at_pericentre_has_occurred_entering_RLOF);

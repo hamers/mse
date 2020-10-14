@@ -1779,7 +1779,7 @@ class Tools(object):
 
         # convert parsed list [num,others] to basic [[1,...[1,1]],others] containg only ones
         def convert_to_ones(lst):
-            # fullly nested heirachy if input is int
+            # fullly nested hierachy if input is int
             if type(lst) == int:            
                 for i in range(lst):
                     if i == 0:
@@ -1924,9 +1924,9 @@ class Tools(object):
         # lst_tpl : tuple of each of the N_binaries, starting from the rightmost in tree diagram [not used in the program; visual confirmation only]
         # N_subbinaries_tpl : tuple of number of subbinaries in each of the N_binaries (corresponding to lst_tpl) 
         _, lst_tpl, N_subbinary_tpl = nested_iteration(config_list)
-        print("Tuple of each of the",N_binaries,"binaries (starting from rightmost, least heirarchy) :",lst_tpl)
+        print("Tuple of each of the",N_binaries,"binaries (starting from rightmost, least hierarchy) :",lst_tpl)
         print()
-        print("Tuple of number of subbinaries in each of the",N_binaries,"binaries (starting from rightmost, least heirarchy) :",N_subbinary_tpl)
+        print("Tuple of number of subbinaries in each of the",N_binaries,"binaries (starting from rightmost, least hierarchy) :",N_subbinary_tpl)
         print()
 
         for index in range(N_binaries):
@@ -2188,7 +2188,7 @@ class Tools(object):
             previous_event_flag = -1
             for index_log,log in enumerate(code.log):
                 event_flag = log["event_flag"]
-                if previous_event_flag == event_flag and event_flag == 4:
+                if previous_event_flag == event_flag and (event_flag == 4 or event_flag == 10):
                     continue
                 plot_log.append(log)
                 previous_event_flag = event_flag

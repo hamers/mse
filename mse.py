@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import ctypes
+import ast
 
 """
 Multiple Stellar Evolution (`MSE`) -- A Population Synthesis Code for Multiple-Star Systems
@@ -1600,7 +1601,7 @@ class Particle(object):
 class Tools(object):
  
     @staticmethod       
-    def create_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
+    def create_fully_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
 
         """
         N is number of bodies
@@ -1688,6 +1689,293 @@ class Tools(object):
             particles.append(particle)
         
         return particles
+    
+    @staticmethod
+    def parse_config(N_bodies,configuration):
+        # convert input string '{num+[others]}' to the basic '[1,...[1,[others]]...]' list string 
+        # for first encounter of '+' (and corresponding '{' and '}') only => call multiple times
+        def first_plus_to_nested(old_str):
+            err = 0
+            # first occurances of '+' and '{'
+            first_plus = old_str.find('+')
+            first_left = old_str.find('{')
+            # check ordering
+            if first_left < first_plus:                
+                chars = old_str[first_left+1:first_plus]
+                # check if characters between '{' and '+' are int 
+                try:
+                    num = int(chars)                
+                except:
+                    err = 1
+                    return '', err
+                # variable to identify the '}' corresponding to '{'
+                proper_brkt = -1
+                for ind, char in enumerate(configuration):
+                    if ind == first_left:
+                        proper_brkt = 0
+                        continue
+                    # case of further nested '{' and '}'
+                    if char == '{':
+                        proper_brkt += 1
+                    elif char == '}':
+                        # error if '}' is found before '{'
+                        if proper_brkt < 0:
+                            err = 2
+                            return '', err
+                        # first corresponding '}' found
+                        elif proper_brkt == 0:
+                            first_right = ind
+                            break
+                        # case of further nested '{' and '}'
+                        elif proper_brkt > 0:
+                            proper_brkt -= 1
+                # replacing '{num+' and '}' num times and writing in new string
+                replace_left = ''
+                replace_right = ''            
+                for i in range(num):            
+                    replace_left += '[1,'
+                    replace_right += ']'
+                new_str = old_str[:first_left] + replace_left + old_str[first_plus+1:first_right] + replace_right + old_str[first_right+1:] 
+                return new_str, err 
+            # error if placement of '{' and '+' is wrong                
+            else:
+                err = 3
+                return '', err        
+
+        # check if parsed list contains either list or int elements
+        def list_is_int(lst):
+            if type(lst) == int:            
+                is_int = True
+            # children of list need to be tested recursively
+            else:
+                is_int = True
+                for elem in lst:
+                    if type(elem) == list:  
+                        is_int = list_is_int(elem)
+                    elif type(elem) == int:
+                        is_int = True
+                    else:
+                        is_int = False
+                        break   
+            return is_int
+
+        # check if parsed list is a binary tree - each level has either two children (node) or one (body)
+        def list_is_binary(lst):
+            if type(lst) == int:            
+                is_binary = True
+            # children of list need to be tested recursively
+            elif len(lst) == 2:
+                is_binary = True
+                for elem in lst:
+                    if type(elem) == list:
+                        if len(elem) == 2:
+                            is_binary = list_is_binary(elem)
+                        else:
+                            is_binary = False
+                            break
+            else:
+                is_binary = False 
+            return is_binary
+
+        # convert parsed list [num,others] to basic [[1,...[1,1]],others] containg only ones
+        def convert_to_ones(lst):
+            # fullly nested heirachy if input is int
+            if type(lst) == int:            
+                for i in range(lst):
+                    if i == 0:
+                        continue
+                    elif i == 1:
+                        sub_lst = [1,1]
+                    else:
+                        sub_lst = [1]+[sub_lst]
+                lst = sub_lst
+            else:
+                for ind, elem in enumerate(lst):
+                    if type(elem) == list:  
+                        elem = convert_to_ones(elem)
+                    elif elem == 1:
+                        continue
+                    elif type(elem) == int:
+                        for i in range(elem):
+                            if i == 0:
+                                continue
+                            # smallest child element with 2 bodies
+                            elif i == 1:
+                                sub_lst = [1,1]
+                            # adding extra body to previous hierarchy
+                            else:
+                                sub_lst = [1]+[sub_lst]
+                        lst[ind] = sub_lst
+            return lst
+
+        # find total number of bodies in a arbitrary nested list containing only ones
+        def nested_list_size(lst):
+            if type(lst) == int:            
+                count = lst
+            # iterate through children lists if they exist    
+            else:
+                count = 0            
+                for elem in lst:
+                    if type(elem) == list:  
+                        count += nested_list_size(elem)
+                    else:
+                        count += 1    
+            return count  
+
+        # remove all spaces in string
+        configuration = configuration.replace(' ','')
+        # number of '+' should equal number of '{' and '}'
+        num_plus = configuration.count('+')
+        num_curl_left = configuration.count('{')
+        num_curl_right = configuration.count('}')
+        if num_curl_left == num_plus and num_curl_right == num_plus:
+            while num_plus != 0:
+                # convert sting notation with '+','{','}' to list string, and get error if any                    
+                configuration, error = first_plus_to_nested(configuration)
+                if configuration == '' and error == 1:
+                    print("Value between '{' and '+' should be int. Input a valid configuration.")
+                    print("Exiting...")
+                    exit()
+                elif configuration == '' and error == 2:
+                    print("'{' should occur before '}'. Input a valid configuration.")
+                    print("Exiting...")
+                    exit()
+                elif configuration == '' and error == 3:
+                    print("'{' should occur before '+'. Input a valid configuration.")
+                    print("Exiting...")
+                    exit()
+                num_plus -= 1
+        else:
+            print("Wrong number of curly brackets. Input a valid configuration.")
+            print("Exiting...")
+            exit()
+        
+        # check if string can be parsed to a meaningful list
+        try:
+            # function which parses string to Python expression
+            lst = ast.literal_eval(configuration)
+        except:
+            print("String could not be parsed to meaningful list. Input a valid configuration.")
+            print("Exiting...")
+            exit()
+        # required conditions to convert parsed list to contain only ones
+        if list_is_binary(lst):
+            if list_is_int(lst):
+                lst = convert_to_ones(lst)   
+                # check if configuration agrees with given number of bodies   
+                if nested_list_size(lst) == N_bodies:
+                    return lst
+                else:
+                    print("Number of elements incorrect. Input a valid configuration.")
+                    print("Exiting...")
+                    exit()
+            else:
+                print("Data types of elements should be int. Input a valid configuration.")
+                print("Exiting...")
+                exit()
+        else:
+            print("Configuration should be int or binary list. Input a valid configuration.")
+            print("Exiting...")
+            exit()
+
+    @staticmethod
+    def create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
+        config_list = Tools.parse_config(N_bodies, configuration)
+        print("Verbose configuration :",config_list)
+        print()
+
+        if object_types == []:
+            object_types = [1 for x in range(N_bodies)]
+
+        N_binaries = N_bodies-1
+
+        particles = []
+
+        for index in range(N_bodies):
+            particle = Particle(is_binary=False,mass=masses[index])
+            if radii is not None:
+                particle.radius = radii[index]
+            if metallicities is not None:
+                particle.metallicity = metallicities[index]
+            if stellar_types is not None:
+                particle.stellar_type = stellar_types[index]
+            particle.object_type = object_types[index]
+
+            print("Particle id :",index)
+            particles.append(particle)
+        print()
+
+        def nested_iteration(lst): 
+            N_subbinary = 0   
+            lst_tpl = ()
+            N_subbinary_tpl = ()
+            # iterate through binary list backward (rightmost first)
+            for ind,elem in reversed(list(enumerate(lst))):        
+                if type(elem) == list:     
+                    ret_N, ret_lst_tpl, ret_N_tpl = nested_iteration(elem)
+                    N_subbinary += ret_N 
+                    lst_tpl += ret_lst_tpl
+                    N_subbinary_tpl += ret_N_tpl
+            N_subbinary += 1
+            lst_tpl += (lst,)
+            N_subbinary_tpl += (N_subbinary,) 
+            return N_subbinary, lst_tpl, N_subbinary_tpl
+
+        # lst_tpl : tuple of each of the N_binaries, starting from the rightmost in tree diagram [not used in the program; visual confirmation only]
+        # N_subbinaries_tpl : tuple of number of subbinaries in each of the N_binaries (corresponding to lst_tpl) 
+        _, lst_tpl, N_subbinary_tpl = nested_iteration(config_list)
+        print("Tuple of each of the",N_binaries,"binaries (starting from rightmost, least heirarchy) :",lst_tpl)
+        print()
+        print("Tuple of number of subbinaries in each of the",N_binaries,"binaries (starting from rightmost, least heirarchy) :",N_subbinary_tpl)
+        print()
+
+        for index in range(N_binaries):
+            if index == 0:
+                child1 = particles[0]
+                child2 = particles[1]
+                # particle id only for printing; redundant otherwise
+                id1 = 0
+                id2 = 1
+
+                particle_id = 2
+                binary_id = N_bodies
+
+            elif N_subbinary_tpl[index] == 1 and N_subbinary_tpl[index-1] >= 1:
+                child1 = particles[particle_id]
+                child2 = particles[particle_id+1]
+                # particle id only for printing; redundant otherwise
+                id1 = particle_id
+                id2 = particle_id+1
+
+                old_binary_id = binary_id
+                particle_id += 2
+                binary_id += 1
+
+            elif N_subbinary_tpl[index] == N_subbinary_tpl[index-1]+1:
+                child1 = particles[binary_id]
+                child2 = particles[particle_id]
+                # particle id only for printing; redundant otherwise
+                id1 = binary_id
+                id2 = particle_id
+
+                particle_id += 1
+                binary_id += 1
+
+            elif N_subbinary_tpl[index] > N_subbinary_tpl[index-1]+1:
+                child1 = particles[old_binary_id]
+                child2 = particles[binary_id]
+                # particle id only for printing; redundant otherwise
+                id1 = old_binary_id
+                id2 = binary_id
+
+                binary_id += 1
+
+            print("Particle id :",binary_id,"\tChild 1 id :",id1,"\tChild 2 id :",id2)
+            particle = Particle(is_binary=True,child1=child1,child2=child2,a=semimajor_axes[index],e=eccentricities[index],INCL=inclinations[index],AP=arguments_of_pericentre[index],LAN=longitudes_of_ascending_node[index])
+            particles.append(particle)
+
+        return particles         
+
 
     @staticmethod
     def compute_mutual_inclination(INCL_k,INCL_l,LAN_k,LAN_l):
@@ -1739,299 +2027,18 @@ class Tools(object):
                             particle_1.level += 1
                             
                             parent = particle_2.parent
-                            
-    @staticmethod
-    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
-        """
-        Generate a Mobile diagram of a given multiple system.
-        """
-        
-        try:
-            import matplotlib
-        except ImportError:
-            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to generate a Mobile diagram!")
-            exit(0)
-
-        bodies = [x for x in particles if x.is_binary==False]
-        binaries = [x for x in particles if x.is_binary==True]
-
-#        print("N",len(bodies),len(binaries))
-
-        if len(binaries)==0:
-            if len(bodies)==0:
-                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
-                exit(0)
-            else:
-                Tools.draw_bodies(plot,bodies,fontsize)
-                return
-
-        Tools.determine_binary_levels_in_particles(particles)                    
-        unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
-        if len(unbound_bodies)>0:
-            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.4*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
-            
-        top_level_binary = [x for x in binaries if x.level==0][0]
-        
-        if use_default_colors==True:
-            ### Assign some colors from mcolors to the orbits ###
-            import matplotlib.colors as mcolors
-            colors = mcolors.TABLEAU_COLORS
-            color_names = list(colors)
-            
-            for index in range(len(binaries)):
-                color_name = color_names[index]
-                color=colors[color_name]
-            
-                o = binaries[index]
-                o.color = color
-
-        ### Make mobile diagram ###
-        top_level_binary.x = 0.0
-        top_level_binary.y = 0.0
-        x_min = x_max = y_min = 0.0
-        y_max = line_width_vertical
-    
-        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
-        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
-
-        
-        plot.set_xticks([])
-        plot.set_yticks([])
-        #print("minmax",x_min,x_max,y_min,y_max)
-        beta = 0.7
-        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
-        plot.set_ylim([y_min - beta*np.fabs(y_min),1.5*y_max + beta*np.fabs(y_max)])
-        
-        #plot.autoscale(enable=True,axis='both')
-        
-    @staticmethod
-    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
-        x = particle.x
-        y = particle.y
-        
-        child1 = particle.child1
-        child2 = particle.child2
-
-        #from decimal import Decimal
-        #plot.annotate("$a = % \, \mathrm{AU}$"%(particle.semimajor_axis.value_in(units.AU)),xytext=(x,y))
-        #text = "$a = %s \, \mathrm{AU}$"%(round(particle.semimajor_axis.value_in(units.AU),1))
-        #text = "$a = \mathrm{%.1E}$"%(Decimal(particle.a))
-        #text = "$a=\mathrm{%.1E\,au}$"%(Decimal(particle.a))
-        text = "$a=\mathrm{%s\,au}$"%(round(particle.a,1))
-        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color)
-     
-        #text = "$e = %.2f$"%(particle.e)
-        text = "$e = %.2f$"%(particle.e)
-        
-        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
-
-        alpha = 1.0
-        if child1.is_binary == True and child2.is_binary == True:
-            alpha = 3.5
-
-        if child1.is_binary == True and child2.is_binary == False:
-            alpha = 2.5
-        if child1.is_binary == False and child2.is_binary == True:
-            alpha = 2.5
-
-        ### lines to child1 ###
-        plot.plot( [x,x - alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
-        plot.plot( [x - alpha*line_width_horizontal,x - alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
-        
-        ### lines to child2 ###
-        plot.plot( [x,x + alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
-        plot.plot( [x + alpha*line_width_horizontal,x + alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
-
-        ### positions of children ###
-        child1 = particle.child1
-        child2 = particle.child2
-        
-        child1.x = particle.x - alpha*line_width_horizontal
-        child2.x = particle.x + alpha*line_width_horizontal
-
-        child1.y = particle.y - line_width_vertical
-        child2.y = particle.y - line_width_vertical
-
-
-        if (child1.x<x_min): x_min = child1.x
-        if (child1.x>x_max): x_max = child1.x
-        if (child2.x<x_min): x_min = child2.x
-        if (child2.x>x_max): x_max = child2.x
-
-        if (child1.y<y_min): y_min = child1.y
-        if (child1.y>y_max): y_max = child1.y
-        if (child2.y<y_min): y_min = child2.y
-        if (child2.y>y_max): y_max = child2.y
-
-        
-        ### handle children ###
-        if child1.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
-        else:
-            color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
-            plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
-            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
-            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
-            text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
-            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
-
-        if child2.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
-        else:
-            color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
-            plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
-            #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
-            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
-            text = "$%d; \,k=%d$"%(child2.index,child2.stellar_type)
-            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
-
-        return x_min,x_max,y_min,y_max
-
-    @staticmethod
-    def get_color_and_size_and_description_for_star(stellar_type,radius):
-        if (stellar_type == 0): 
-            color='gold'
-            description = 'low-mass\,MS'
-        elif (stellar_type == 1): 
-            color='gold'
-            description = 'MS'
-        elif (stellar_type == 2):
-            color='darkorange'
-            description = 'HG'
-        elif (stellar_type == 3):
-            color='firebrick'
-            description = 'RGB'
-        elif (stellar_type == 4):
-            color='darkorange'
-            description = 'CHeB'
-        elif (stellar_type == 5):
-            color='orangered'
-            description = 'EAGB'
-        elif (stellar_type == 6):
-            color='crimson'
-            description = 'TPAGB'
-        elif (stellar_type == 7):
-            color='royalblue'
-            description = 'HeMS'
-        elif (stellar_type == 8):
-            color='orangered'
-            description = 'HeHG'
-        elif (stellar_type == 9):
-            color='crimson'
-            description = 'HeGB'
-        elif (stellar_type == 10):
-            color='silver'
-            description = 'HeWD'
-        elif (stellar_type == 11):
-            color='silver'
-            description = 'COWD'
-        elif (stellar_type == 12):
-            color='silver'
-            description = 'ONeWD'
-        elif (stellar_type == 13):
-            color='gainsboro'
-            description = 'NS'
-        elif (stellar_type == 14):
-            color='k'
-            description = 'BH'
-        else: 
-            color = 'k'
-            description = ''
-        
-
-        CONST_R_SUN = 0.004649130343817401
-        CONST_KM = 1.0/(1.4966e9)
-
-        s = 5 + 50*np.log10(radius/CONST_R_SUN)
-        if (stellar_type >= 7 and stellar_type <= 9):
-            s = 5 + 5*np.log10(radius/CONST_KM)
-
-        if (stellar_type >= 10):
-            s = 5 + 20*np.log10(radius/CONST_KM)
-
-        return color,s,description
-        
-    @staticmethod
-    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
-        #dx = 0.5
-        #dy = 0.5
-        for index,body in enumerate(bodies):
-            color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
-            plot.scatter([index],[y_ref],color=color,s=s)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
-            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
-            plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
-
-            #text = "$\mathrm{%d}$"%body.index
-            text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
-            plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
-            
-            try:
-                VX = body.VX
-                VY = body.VY
-                VZ = body.VZ
-                V = np.sqrt(VX**2 + VY**2 + VZ**2)
-                x = index
-                y = y_ref
-                Adx = 0.5*dx*VX/V
-                Ady = 0.5*dx*VY/V
-                plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
-            except AttributeError:
-                pass
-
-        plot.set_xlim([-2*dx,len(bodies)])
-        plot.set_ylim([y_ref-2*dy,y_ref+2*dy])
-
-        plot.set_xticks([])
-        plot.set_yticks([])
-
-    @staticmethod
-    def get_description_for_event_flag(event_flag):
-        if event_flag == 0:
-            text = "$\mathrm{Initial\,system}$"
-        elif event_flag == 1:
-            text = "$\mathrm{Stellar\,type\,change}$"
-        elif event_flag == 2:
-            text = "$\mathrm{SNe\,start}$"
-        elif event_flag == 3:
-            text = "$\mathrm{SNe\,end}$"
-        elif event_flag == 4:
-            text = "$\mathrm{RLOF\,start}$"
-        elif event_flag == 5:
-            text = "$\mathrm{RLOF\,end}$"
-        elif event_flag == 6:
-            text = "$\mathrm{CE\,start}$"
-        elif event_flag == 7:
-            text = "$\mathrm{CE\,end}$"
-        elif event_flag == 8:
-            text = "$\mathrm{Collision\,start}$"
-        elif event_flag == 9:
-            text = "$\mathrm{Collision\,end}$"
-        elif event_flag == 10:
-            text = "$\mathrm{Dyn.\,inst.}$"
-        elif event_flag == 11:
-            text = "$\mathrm{Sec.\,break.}$"
-        else:
-            text = ""
-        return text
-
+                     
     @staticmethod
     def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[]):
 
         if configuration == "fully_nested":
-            particles = Tools.create_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
+            particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         elif configuration == "2+2_quadruple":
             particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         else:
-            print("evolve_system.py: configuration ",configuration," currently not supported!")
-            exit(-1)
+            particles = Tools.create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=stellar_types,object_types=object_types)
+            #print("evolve_system.py: configuration ",configuration," currently not supported!")
+            #exit(-1)
         
         
         from mse import MSE
@@ -2291,3 +2298,287 @@ class Tools(object):
         code.reset()
 
         return code.log
+
+       
+    @staticmethod
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+        """
+        Generate a Mobile diagram of a given multiple system.
+        """
+        
+        try:
+            import matplotlib
+        except ImportError:
+            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to generate a Mobile diagram!")
+            exit(0)
+
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+
+#        print("N",len(bodies),len(binaries))
+
+        if len(binaries)==0:
+            if len(bodies)==0:
+                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
+                exit(0)
+            else:
+                Tools.draw_bodies(plot,bodies,fontsize)
+                return
+
+        Tools.determine_binary_levels_in_particles(particles)                    
+        unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
+        if len(unbound_bodies)>0:
+            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.4*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
+            
+        top_level_binary = [x for x in binaries if x.level==0][0]
+        
+        if use_default_colors==True:
+            ### Assign some colors from mcolors to the orbits ###
+            import matplotlib.colors as mcolors
+            colors = mcolors.TABLEAU_COLORS
+            color_names = list(colors)
+            
+            for index in range(len(binaries)):
+                color_name = color_names[index]
+                color=colors[color_name]
+            
+                o = binaries[index]
+                o.color = color
+
+        ### Make mobile diagram ###
+        top_level_binary.x = 0.0
+        top_level_binary.y = 0.0
+        x_min = x_max = y_min = 0.0
+        y_max = line_width_vertical
+    
+        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
+        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+
+        
+        plot.set_xticks([])
+        plot.set_yticks([])
+        #print("minmax",x_min,x_max,y_min,y_max)
+        beta = 0.7
+        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
+        plot.set_ylim([y_min - beta*np.fabs(y_min),1.5*y_max + beta*np.fabs(y_max)])
+        
+        #plot.autoscale(enable=True,axis='both')
+        
+    @staticmethod
+    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
+        x = particle.x
+        y = particle.y
+        
+        child1 = particle.child1
+        child2 = particle.child2
+
+        #from decimal import Decimal
+        #plot.annotate("$a = % \, \mathrm{AU}$"%(particle.semimajor_axis.value_in(units.AU)),xytext=(x,y))
+        #text = "$a = %s \, \mathrm{AU}$"%(round(particle.semimajor_axis.value_in(units.AU),1))
+        #text = "$a = \mathrm{%.1E}$"%(Decimal(particle.a))
+        #text = "$a=\mathrm{%.1E\,au}$"%(Decimal(particle.a))
+        text = "$a=\mathrm{%s\,au}$"%(round(particle.a,1))
+        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color)
+     
+        #text = "$e = %.2f$"%(particle.e)
+        text = "$e = %.2f$"%(particle.e)
+        
+        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
+
+        alpha = 1.0
+        if child1.is_binary == True and child2.is_binary == True:
+            alpha = 3.5
+
+        if child1.is_binary == True and child2.is_binary == False:
+            alpha = 2.5
+        if child1.is_binary == False and child2.is_binary == True:
+            alpha = 2.5
+
+        ### lines to child1 ###
+        plot.plot( [x,x - alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
+        plot.plot( [x - alpha*line_width_horizontal,x - alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
+        
+        ### lines to child2 ###
+        plot.plot( [x,x + alpha*line_width_horizontal],[y,y], color=line_color,linewidth=line_width)
+        plot.plot( [x + alpha*line_width_horizontal,x + alpha*line_width_horizontal], [y,y - line_width_vertical], color=line_color,linewidth=line_width)
+
+        ### positions of children ###
+        child1 = particle.child1
+        child2 = particle.child2
+        
+        child1.x = particle.x - alpha*line_width_horizontal
+        child2.x = particle.x + alpha*line_width_horizontal
+
+        child1.y = particle.y - line_width_vertical
+        child2.y = particle.y - line_width_vertical
+
+
+        if (child1.x<x_min): x_min = child1.x
+        if (child1.x>x_max): x_max = child1.x
+        if (child2.x<x_min): x_min = child2.x
+        if (child2.x>x_max): x_max = child2.x
+
+        if (child1.y<y_min): y_min = child1.y
+        if (child1.y>y_max): y_max = child1.y
+        if (child2.y<y_min): y_min = child2.y
+        if (child2.y>y_max): y_max = child2.y
+
+        
+        ### handle children ###
+        if child1.is_binary == True:
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+        else:
+            color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
+            plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
+            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
+            #plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
+
+        if child2.is_binary == True:
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+        else:
+            color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
+            plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
+            #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
+            text = "$%d; \,k=%d$"%(child2.index,child2.stellar_type)
+            #plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
+
+        return x_min,x_max,y_min,y_max
+
+    @staticmethod
+    def get_color_and_size_and_description_for_star(stellar_type,radius):
+        if (stellar_type == 0): 
+            color='gold'
+            description = 'low-mass\,MS'
+        elif (stellar_type == 1): 
+            color='gold'
+            description = 'MS'
+        elif (stellar_type == 2):
+            color='darkorange'
+            description = 'HG'
+        elif (stellar_type == 3):
+            color='firebrick'
+            description = 'RGB'
+        elif (stellar_type == 4):
+            color='darkorange'
+            description = 'CHeB'
+        elif (stellar_type == 5):
+            color='orangered'
+            description = 'EAGB'
+        elif (stellar_type == 6):
+            color='crimson'
+            description = 'TPAGB'
+        elif (stellar_type == 7):
+            color='royalblue'
+            description = 'HeMS'
+        elif (stellar_type == 8):
+            color='orangered'
+            description = 'HeHG'
+        elif (stellar_type == 9):
+            color='crimson'
+            description = 'HeGB'
+        elif (stellar_type == 10):
+            color='silver'
+            description = 'HeWD'
+        elif (stellar_type == 11):
+            color='silver'
+            description = 'COWD'
+        elif (stellar_type == 12):
+            color='silver'
+            description = 'ONeWD'
+        elif (stellar_type == 13):
+            color='gainsboro'
+            description = 'NS'
+        elif (stellar_type == 14):
+            color='k'
+            description = 'BH'
+        else: 
+            color = 'k'
+            description = ''
+        
+
+        CONST_R_SUN = 0.004649130343817401
+        CONST_KM = 1.0/(1.4966e9)
+
+        s = 5 + 50*np.log10(radius/CONST_R_SUN)
+        if (stellar_type >= 7 and stellar_type <= 9):
+            s = 5 + 5*np.log10(radius/CONST_KM)
+
+        if (stellar_type >= 10):
+            s = 5 + 20*np.log10(radius/CONST_KM)
+
+        return color,s,description
+        
+    @staticmethod
+    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
+        #dx = 0.5
+        #dy = 0.5
+        for index,body in enumerate(bodies):
+            color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
+            plot.scatter([index],[y_ref],color=color,s=s)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
+            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
+            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
+            plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
+
+            #text = "$\mathrm{%d}$"%body.index
+            text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
+            plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
+            
+            try:
+                VX = body.VX
+                VY = body.VY
+                VZ = body.VZ
+                V = np.sqrt(VX**2 + VY**2 + VZ**2)
+                x = index
+                y = y_ref
+                Adx = 0.5*dx*VX/V
+                Ady = 0.5*dx*VY/V
+                plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
+            except AttributeError:
+                pass
+
+        plot.set_xlim([-2*dx,len(bodies)])
+        plot.set_ylim([y_ref-2*dy,y_ref+2*dy])
+
+        plot.set_xticks([])
+        plot.set_yticks([])
+
+    @staticmethod
+    def get_description_for_event_flag(event_flag):
+        if event_flag == 0:
+            text = "$\mathrm{Initial\,system}$"
+        elif event_flag == 1:
+            text = "$\mathrm{Stellar\,type\,change}$"
+        elif event_flag == 2:
+            text = "$\mathrm{SNe\,start}$"
+        elif event_flag == 3:
+            text = "$\mathrm{SNe\,end}$"
+        elif event_flag == 4:
+            text = "$\mathrm{RLOF\,start}$"
+        elif event_flag == 5:
+            text = "$\mathrm{RLOF\,end}$"
+        elif event_flag == 6:
+            text = "$\mathrm{CE\,start}$"
+        elif event_flag == 7:
+            text = "$\mathrm{CE\,end}$"
+        elif event_flag == 8:
+            text = "$\mathrm{Collision\,start}$"
+        elif event_flag == 9:
+            text = "$\mathrm{Collision\,end}$"
+        elif event_flag == 10:
+            text = "$\mathrm{Dyn.\,inst.}$"
+        elif event_flag == 11:
+            text = "$\mathrm{Sec.\,break.}$"
+        else:
+            text = ""
+        return text
+

@@ -283,9 +283,9 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
 {
     //printf("copy_bodies_from_old_to_new_particlesMap %d\n",new_particlesMap->size());
     int index;
-    //double *R_vec,V_vec;
     int i;
     
+    /* Copy particles that were included in the MSTAR integration */
     ParticlesMapIterator it_p;
     for (it_p = new_particlesMap->begin(); it_p != new_particlesMap->end(); it_p++)
     {
@@ -296,8 +296,6 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
             index = p->index;
 
             Particle *p_old = (*old_particlesMap)[index];
-            //R_vec = p->R_vec;
-            //V_vec = p->V_vec;
             double S = norm3(p->spin_AM_vec);
             if (S < epsilon)
             {
@@ -324,9 +322,19 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
             }
 
             (*new_particlesMap)[index] = p_old;
-//            printf("test copy %g\n",(*new_particlesMap)[index]->metallicity);
         }
     }
+    
+    /* Copy particles that were excluded in the MSTAR integration */
+    for (it_p = old_particlesMap->begin(); it_p != old_particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->include_in_MSTAR == false)
+        {
+            (*new_particlesMap)[p->index] = p;
+        }
+    }
+    
 }
 
 
@@ -346,6 +354,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     get_all_semimajor_axes_in_system(particlesMap, &semimajor_axes, &binary_indices);    
     //printf("3\n");
 //    printf("P_orb_max %g\n",P_orb_max);
+
 
     /* Integrate system directly for the longest orbital system and compare the semimajor axes,
      * to check if the system is "dynamically stable". */
@@ -411,6 +420,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     {
         *stable_system = false;
     }
+    
     
     //printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
     //printf("test %g\n",(new_particlesMap)[0]->metallicity);

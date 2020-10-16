@@ -1603,9 +1603,41 @@ class Particle(object):
 
 
 class Tools(object):
- 
+
+    @staticmethod
+    def check_for_default_values(N_bodies,metallicities,stellar_types,object_types,inclinations,longitudes_of_ascending_node,arguments_of_pericentre):
+        if stellar_types == []:
+            for i in range(N_bodies):
+                stellar_types.append(1)
+            print("mse.py -- stellar_types not explicitly given -- setting initial stellar types to",stellar_types)
+
+        if object_types == []:
+            for i in range(N_bodies):
+                object_types.append(1)
+            print("mse.py -- object_types not explicitly given -- setting initial object types to",object_types)
+
+        if metallicities == []:
+            for i in range(N_bodies):
+                metallicities.append(0.02)
+            print("mse.py -- metallicities not explicitly given -- setting initial metallicities to",metallicities)
+     
+        if inclinations == []:
+            for i in range(N_bodies-1):
+                inclinations.append(np.arccos(np.random.random()))
+            print("mse.py -- inclinations not explicitly given -- setting initial inclinations to",inclinations)
+            
+        if longitudes_of_ascending_node == []:
+            for i in range(N_bodies-1):
+                longitudes_of_ascending_node.append(2.0*np.pi * np.random.random())
+            print("mse.py -- longitudes_of_ascending_node not explicitly given -- setting initial longitudes_of_ascending_node to",longitudes_of_ascending_node)
+            
+        if arguments_of_pericentre == []:
+            for i in range(N_bodies-1):
+                arguments_of_pericentre.append(2.0*np.pi * np.random.random())
+            print("mse.py -- arguments_of_pericentre not explicitly given -- setting initial arguments_of_pericentre to",arguments_of_pericentre)
+     
     @staticmethod       
-    def create_fully_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
+    def create_fully_nested_multiple(N,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=[],stellar_types=[],object_types=[]):
 
         """
         N is number of bodies
@@ -1616,8 +1648,7 @@ class Tools(object):
         N_bodies = N
         N_binaries = N-1
 
-        if object_types == []:
-            object_types = [1 for x in range(N_bodies)]
+        Tools.check_for_default_values(N_bodies,metallicities,stellar_types,object_types,inclinations,longitudes_of_ascending_node,arguments_of_pericentre)
 
         particles = []
 
@@ -1625,10 +1656,9 @@ class Tools(object):
             particle = Particle(is_binary=False,mass=masses[index])
             if radii is not None:
                 particle.radius = radii[index]
-            if metallicities is not None:
-                particle.metallicity = metallicities[index]
-            if stellar_types is not None:
-                particle.stellar_type = stellar_types[index]
+
+            particle.metallicity = metallicities[index]
+            particle.stellar_type = stellar_types[index]
             particle.object_type = object_types[index]
                 
             particles.append(particle)
@@ -1648,7 +1678,7 @@ class Tools(object):
         return particles
 
     @staticmethod
-    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
+    def create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=[],stellar_types=[],object_types=[]):
         
         """
         Create a 2+2 quadruple system.
@@ -1659,8 +1689,7 @@ class Tools(object):
         N_bodies = 4
         N_binaries = N_bodies-1
 
-        if object_types == []:
-            object_types = [1 for x in range(N_bodies)]
+        Tools.check_for_default_values(N_bodies,metallicities,stellar_types,object_types,inclinations,longitudes_of_ascending_node,arguments_of_pericentre)
 
         particles = []
 
@@ -1669,10 +1698,9 @@ class Tools(object):
             particle = Particle(is_binary=False,mass=masses[index])
             if radii is not None:
                 particle.radius = radii[index]
-            if metallicities is not None:
-                particle.metallicity = metallicities[index]
-            if stellar_types is not None:
-                particle.stellar_type = stellar_types[index]
+
+            particle.metallicity = metallicities[index]
+            particle.stellar_type = stellar_types[index]
             particle.object_type = object_types[index]
             
             particles.append(particle)
@@ -1693,7 +1721,8 @@ class Tools(object):
             particles.append(particle)
         
         return particles
-    
+
+   
     @staticmethod
     def parse_config(N_bodies,configuration):
         # convert input string '{num+[others]}' to the basic '[1,...[1,[others]]...]' list string 
@@ -1883,13 +1912,16 @@ class Tools(object):
             exit()
 
     @staticmethod
-    def create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=None,object_types=[]):
+    def create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=[],stellar_types=[],object_types=[]):
+
+        Tools.check_for_default_values(N_bodies,metallicities,stellar_types,object_types,inclinations,longitudes_of_ascending_node,arguments_of_pericentre)
+
+        print("="*50)
+        print("mse.py -- parsing given configuration into particles")
+
         config_list = Tools.parse_config(N_bodies, configuration)
         print("Verbose configuration :",config_list)
         print()
-
-        if object_types == []:
-            object_types = [1 for x in range(N_bodies)]
 
         N_binaries = N_bodies-1
 
@@ -1899,10 +1931,9 @@ class Tools(object):
             particle = Particle(is_binary=False,mass=masses[index])
             if radii is not None:
                 particle.radius = radii[index]
-            if metallicities is not None:
-                particle.metallicity = metallicities[index]
-            if stellar_types is not None:
-                particle.stellar_type = stellar_types[index]
+
+            particle.metallicity = metallicities[index]
+            particle.stellar_type = stellar_types[index]
             particle.object_type = object_types[index]
 
             print("Particle id :",index)
@@ -2045,17 +2076,35 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=None,make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[]):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0):
 
+        np.random.seed(random_seed)
+        
         if configuration == "fully_nested":
             particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         elif configuration == "2+2_quadruple":
             particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
         else:
-            particles = Tools.create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=None,stellar_types=stellar_types,object_types=object_types)
-            #print("evolve_system.py: configuration ",configuration," currently not supported!")
-            #exit(-1)
-        
+            particles = Tools.create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
+
+        print("="*50)
+        print("mse.py -- evolve_system() -- running system with parameters:")
+        print("Configuration: ",configuration)
+        print("N_bodies: ",N_bodies)
+        print("Object types:",object_types)
+        print("Stellar types:",stellar_types)
+        print("Masses/MSun: ",masses)
+        print("Metallicities: ",metallicities)
+        print("Semimajor axes (au): ",semimajor_axes)
+        print("Eccentricities: ",eccentricities)
+        print("Inclinations (rad): ",inclinations)
+        print("Longitudes of the ascending node (rad): ",longitudes_of_ascending_node)
+        print("Arguments of periapsis (rad): ",inclinations)
+        print("Integration time (yr): ",tend)
+        print("Number of plot output steps: ",N_steps)
+
+        print("="*50)
+        print("Starting evolution")
         
         from mse import MSE
 
@@ -2100,7 +2149,7 @@ class Tools(object):
 
         i_status = 0
 
-        seed=1
+        code.random_seed = random_seed
         dt = tend/float(N_steps)
         i = 0
         
@@ -2144,7 +2193,7 @@ class Tools(object):
                 
                 i_status += 1
                 
-            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],'integration_flag',code.integration_flag)
+            print( 't/Myr',t*1e-6,'masses/MSun',[b.mass for b in bodies],'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],'integration_flag',code.integration_flag)
             
             for index in range(N_orbits):
                 rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
@@ -2177,8 +2226,8 @@ class Tools(object):
             if state==3:
                 print("unbound")
                 break
-            #code.random_seed = seed
-            seed += 1
+            
+            #seed += 1
             
             i += 1
 

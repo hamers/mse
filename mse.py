@@ -1987,6 +1987,18 @@ class Tools(object):
         return np.arccos(cos_INCL_rel)
 
     @staticmethod
+    def compute_effective_temperature(luminosity, radius, CONST_L_SUN, CONST_R_SUN):
+        """
+        Assumes black body radiation.
+        Luminosity and radius should be in standard code units.
+        Returns T_eff in K
+        """
+        
+        T_Sun = 5770.0 ### (the Sun knows about ATI's product stack)
+        T_eff = T_Sun * pow(luminosity/CONST_L_SUN,0.25) * pow(radius/CONST_R_SUN,-0.5)
+        return T_eff
+    
+    @staticmethod
     def determine_binary_masses(particles):
         ### set binary masses -- to ensure this happens correctly, do this from highest level to lowest level ###
 
@@ -2066,6 +2078,8 @@ class Tools(object):
         internal_indices_print = [[[] for x in range(N_bodies)]]
         k_print = [[[] for x in range(N_bodies)]]
         m_print = [[[] for x in range(N_bodies)]]
+        L_print = [[[] for x in range(N_bodies)]]
+        T_eff_print = [[[] for x in range(N_bodies)]]
         R_print = [[[] for x in range(N_bodies)]]
         X_print = [[[] for x in range(N_bodies)]]
         Y_print = [[[] for x in range(N_bodies)]]
@@ -2103,8 +2117,7 @@ class Tools(object):
             bodies = [x for x in particles if x.is_binary==False]
             N_orbits = len(orbits)
             N_bodies = len(bodies)
-    
-           
+               
             if code.structure_change == True:
                 print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
@@ -2112,6 +2125,8 @@ class Tools(object):
                 internal_indices_print.append([[] for x in range(N_bodies)])
                 k_print.append([[] for x in range(N_bodies)])
                 m_print.append([[] for x in range(N_bodies)])
+                L_print.append([[] for x in range(N_bodies)])
+                T_eff_print.append([[] for x in range(N_bodies)])
                 R_print.append([[] for x in range(N_bodies)])
                 X_print.append([[] for x in range(N_bodies)])
                 Y_print.append([[] for x in range(N_bodies)])
@@ -2129,7 +2144,7 @@ class Tools(object):
                 
                 i_status += 1
                 
-            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],flag,'integration_flag',code.integration_flag)
+            print( 't/Myr',t*1e-6,'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],'integration_flag',code.integration_flag)
             
             for index in range(N_orbits):
                 rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
@@ -2138,6 +2153,7 @@ class Tools(object):
             for index in range(N_bodies):
                 internal_indices_print[i_status][index].append(particles[index].index)
                 m_print[i_status][index].append(particles[index].mass)
+                L_print[i_status][index].append(particles[index].luminosity)
                 k_print[i_status][index].append(particles[index].stellar_type)
                 R_print[i_status][index].append(particles[index].radius)
                 X_print[i_status][index].append(particles[index].X)
@@ -2147,6 +2163,8 @@ class Tools(object):
                 Rc_print[i_status][index].append(particles[index].convective_envelope_radius)
                 R_L_print[i_status][index].append(particles[index].roche_lobe_radius_pericenter)
                 mc_print[i_status][index].append(particles[index].convective_envelope_mass)
+                T_eff = Tools.compute_effective_temperature(particles[index].luminosity, particles[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
+                T_eff_print[i_status][index].append(T_eff)
 
             t_print[i_status].append(t)        
             integration_flags[i_status].append(code.integration_flag)
@@ -2234,6 +2252,9 @@ class Tools(object):
             
             fig_pos=pyplot.figure(figsize=(8,8))
             plot_pos=fig_pos.add_subplot(1,1,1)
+
+            fig_HRD=pyplot.figure(figsize=(8,8))
+            plot_HRD=fig_HRD.add_subplot(1,1,1)
             
             colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
             linewidth=1.0
@@ -2257,6 +2278,8 @@ class Tools(object):
                     
                     parsec_in_AU = code.CONST_PARSEC
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
+                    
+                    plot_HRD.plot(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth)
                     #print("i",index,"Final R",X_print[i_status][index][-1],Y_print[i_status][index][-1])
                     
                     #if index in [0,1]:
@@ -2293,8 +2316,14 @@ class Tools(object):
             plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)
             plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
             
+            plot_HRD.set_xlim(5.0,3.0)
+            plot_HRD.set_ylim(-4.0,6.0)
+            plot_HRD.set_xlabel("$\mathrm{log}_{10}(T_\mathrm{eff}/\mathrm{K})$",fontsize=fontsize)
+            plot_HRD.set_ylabel(r"$\mathrm{log}_{10}(L/L_\odot)$",fontsize=fontsize)
+            
             fig.savefig(plot_filename + ".pdf")
             fig_pos.savefig(plot_filename + "_pos.pdf")
+            fig_HRD.savefig(plot_filename + "_HRD.pdf")
             
             if show_plots == True:
                 pyplot.show()

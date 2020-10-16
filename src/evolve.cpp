@@ -85,7 +85,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Stellar evolution */
         //printf("pre ev\n");
         //print_system(particlesMap,*integration_flag);
-        flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects);
+        flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects,integration_flag);
         //printf("post ev\n");
         //print_system(particlesMap,*integration_flag);
 

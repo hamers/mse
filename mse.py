@@ -278,7 +278,7 @@ class MSE(object):
         self.lib.get_size_of_log_data.argtypes = ()
         self.lib.get_size_of_log_data.restype = ctypes.c_int
         
-        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.get_log_entry_properties.restype = ctypes.c_int
         
         self.lib.get_internal_index_in_particlesMap_log.argtypes = (ctypes.c_int,ctypes.c_int)
@@ -744,15 +744,16 @@ class MSE(object):
             #N_particles = self.lib.get_number_of_particles()
             
             time = ctypes.c_double(0.0)
-            N_particles,event_flag,index1,index2,binary_index = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
-            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index))
-            entry.update({'time':time.value,'event_flag':event_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value})
-            
+            N_particles,event_flag,integration_flag,index1,index2,binary_index = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(integration_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index))
+            entry.update({'time':time.value,'event_flag':event_flag.value,'integration_flag':integration_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value})
+            #print("log i ",index_log,"N",N_log,"integration_flag",integration_flag.value)
             for index_particle in range(N_particles.value):
                 internal_index = self.lib.get_internal_index_in_particlesMap_log(index_log,index_particle)
 
                 is_binary = self.lib.get_is_binary_log(index_log,internal_index)
                 
+                append = False
                 if is_binary == False:
                     parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
                     mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin,X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
@@ -773,7 +774,8 @@ class MSE(object):
                     p.VX = VX.value
                     p.VY = VY.value
                     p.VZ = VZ.value
-                else:
+                    append = True
+                elif integration_flag.value == 0:
                     parent,child1,child2 = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
                     mass,a,e,TA,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                     flag = self.lib.get_binary_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(child1),ctypes.byref(child2), \
@@ -785,8 +787,10 @@ class MSE(object):
                     p.child1_index=child1.value
                     p.child2_index=child2.value
                     p.mass = mass.value
+                    append = True
 
-                particles.append(p)
+                if append==True:
+                    particles.append(p)
 
             for i,p in enumerate(particles):
                 if p.is_binary == True:
@@ -799,7 +803,7 @@ class MSE(object):
 
             entry.update({'particles':particles})
             log.append(entry)
-                
+        #print("log done")
         return log
 
     @property

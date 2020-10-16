@@ -1168,12 +1168,13 @@ int get_size_of_log_data()
     return logData.size();
 }
  
-int get_log_entry_properties(int log_index, double *time, int *event_flag, int *N_particles, int *index1, int *index2, int *binary_index)
+int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index)
 {
     Log_type entry = logData[log_index];
     *time = entry.time;
     *event_flag = entry.event_flag;
-
+    *integration_flag = entry.integration_flag;
+    
     Log_info_type log_info = entry.log_info;
     *index1 = log_info.index1;
     *index2 = log_info.index2;
@@ -1260,9 +1261,13 @@ int get_binary_properties_from_log_entry(int log_index, int particle_index, int 
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN)
 {
 
+    //printf("interface.cpp -- get_binary_properties_from_log_entry -- log_index %d particle_index %d\n",log_index, particle_index);
+
     Log_type entry = logData[log_index];
     ParticlesMap entry_particlesMap = entry.particlesMap;
     Particle *p = entry_particlesMap[particle_index];
+
+    //print_system(&entry_particlesMap,1);
 
     /* determine masses in all binaries */
     int N_bodies, N_binaries, N_root_finding, N_ODE_equations;

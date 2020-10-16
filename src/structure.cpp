@@ -180,7 +180,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
 
     int highest_level = particlesMap->begin()->second->highest_level;
     int level=highest_level;
-
+    //print_system(particlesMap,1);
     while (level > -1)
     {
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -193,8 +193,8 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 Particle *P_p_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_p_child2 = (*particlesMap)[P_p->child2];
                 
-//                printf("parent %d\n",P_p->index);
-                //printf("parent %d C1 %d C2 %d m1 %g m2 %g\n",P_p->index,P_p->child1,P_p->child2,P_p_child1->mass,P_p_child2->mass);
+                //printf("parent %d\n",P_p->index);
+                //printf("parent %d C1 %d C2 %d \n",P_p->index,P_p->child1,P_p->child2);
                 
                 /* these quantities are used in ODE_system.cpp */
                 P_p->child1_mass = P_p_child1->mass;

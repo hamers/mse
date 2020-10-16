@@ -243,7 +243,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     return 0;
 }
 
-int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects)
+int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects, int *integration_flag)
 {
     /* TO DO: apsidal_motion_constant? */
     //double mass = 5.0;
@@ -463,12 +463,12 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                     if (kw < 13)
                     {
-                        update_log_data(particlesMap, end_time, -1, LOG_ST_CHANGE, log_info);
+                        update_log_data(particlesMap, end_time, *integration_flag, LOG_ST_CHANGE, log_info);
                         
                     }
                     else
                     {
-                        update_log_data(particlesMap, end_time, -1, LOG_SNE_START, log_info);
+                        update_log_data(particlesMap, end_time, *integration_flag, LOG_SNE_START, log_info);
                     }
                 }
                 #endif

@@ -136,8 +136,11 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
                         child = P_q->index;
                         parent = P_q->parent;
                         
-                        #ifdef DEBUG
-                        printf("structure.cpp -- determine_binary_parents_and_levels -- p %d q %d %d child %d\n",P_p->index,P_q->index,P_p->level,child);
+                        #ifdef VERBOSE
+                        if (verbose_flag > 1)
+                        {
+                            printf("structure.cpp -- determine_binary_parents_and_levels -- p %d q %d %d child %d\n",P_p->index,P_q->index,P_p->level,child);
+                        }
                         #endif
                         break;
                     }
@@ -224,9 +227,11 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 P_p->delta_m_adiabatic_mass_loss = P_p->delta_child1_mass_adiabatic_mass_loss + P_p->delta_child2_mass_adiabatic_mass_loss;
 
 
-                
-                #ifdef DEBUG
-                printf("structure.cpp -- set_binary_masses_from_body_masses -- level %d m %g highest_level %d\n",level,P_p->mass,highest_level);
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("structure.cpp -- set_binary_masses_from_body_masses -- level %d m %g highest_level %d\n",level,P_p->mass,highest_level);
+                }
                 #endif
             }
         }
@@ -892,9 +897,14 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
     delta_masses.push_back( (M1 + M2) - (M1_old + M2_old) );
     R_vecs.push_back( {initial_R_CM[0],initial_R_CM[1],initial_R_CM[2]} );
     V_vecs.push_back( {initial_V_CM[0],initial_V_CM[1],initial_V_CM[2]} );
-    
-    printf("PB m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]);
-    
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("structure.cpp -- handle_gradual_mass_loss_event_in_system -- m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]);
+    }
+    #endif
+        
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -908,7 +918,7 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
                 delta_masses.push_back(0.0);
                 R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
                 V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
-                printf("PB %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                //printf("PB %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
             }
         }
     }
@@ -930,8 +940,14 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
         final_V_CM[i] = (*it_V)[i];
         final_momentum[i] = final_V_CM[i] * (M1_old + M2_old);
     }
-    printf("final_R_CM %g %g %g final V_CM %g %g %g\n",final_R_CM[0],final_R_CM[1],final_R_CM[2],final_V_CM[0],final_V_CM[1],final_V_CM[2]);
-
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("structure.cpp -- handle_gradual_mass_loss_event_in_system -- final_R_CM %g %g %g final V_CM %g %g %g\n",final_R_CM[0],final_R_CM[1],final_R_CM[2],final_V_CM[0],final_V_CM[1],final_V_CM[2]);
+    }
+    #endif
+    
     /* Take into account movement of barycenter of the two stars during the mass loss phase */
     for (i=0; i<3; i++)
     {
@@ -953,7 +969,6 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
                 it_R = std::next(it_R,1);
                 it_V = std::next(it_V,1);
 
-                printf("T %g %g %g\n",(*it_R)[0],(*it_R)[1],(*it_R)[2]);
                 for (i=0; i<3; i++)
                 {
                     p->R_vec[i] = (*it_R)[i];
@@ -982,8 +997,14 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
     delta_masses.push_back( (M3) - (M3_old) );
     R_vecs.push_back( {initial_R_CM[0],initial_R_CM[1],initial_R_CM[2]} );
     V_vecs.push_back( {initial_V_CM[0],initial_V_CM[1],initial_V_CM[2]} );
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]); 
+    }
+    #endif
     
-    printf("PB m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]);
     
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -998,7 +1019,7 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
                 delta_masses.push_back(0.0);
                 R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
                 V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
-                printf("PB excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                //printf("PB excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
             }
         }
     }
@@ -1020,8 +1041,13 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
         final_V_CM[i] = (*it_V)[i];
         final_momentum[i] = final_V_CM[i] * (M3_old);
     }
-    printf("final_R_CM %g %g %g final V_CM %g %g %g\n",final_R_CM[0],final_R_CM[1],final_R_CM[2],final_V_CM[0],final_V_CM[1],final_V_CM[2]);
-
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- final_R_CM %g %g %g final V_CM %g %g %g\n",final_R_CM[0],final_R_CM[1],final_R_CM[2],final_V_CM[0],final_V_CM[1],final_V_CM[2]);
+    }
+    #endif
    
     /* Update positions and velocities of all other bodies */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -1034,7 +1060,6 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
                 it_R = std::next(it_R,1);
                 it_V = std::next(it_V,1);
 
-                printf("T %g %g %g\n",(*it_R)[0],(*it_R)[1],(*it_R)[2]);
                 for (i=0; i<3; i++)
                 {
                     p->R_vec[i] = (*it_R)[i];

@@ -92,6 +92,8 @@ class MSE(object):
         
         self.__random_seed = 0
         
+        self.__verbose_flag = 1 ### 0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably)
+        
         self.enable_tides = True
         self.enable_root_finding = True
         self.enable_VRR = False
@@ -269,6 +271,9 @@ class MSE(object):
         
         self.lib.set_random_seed.argtypes = (ctypes.c_int,)
         self.lib.set_random_seed.restype = ctypes.c_int
+
+        self.lib.set_verbose_flag.argtypes = (ctypes.c_int,)
+        self.lib.set_verbose_flag.restype = ctypes.c_int
 
         self.lib.initialize_code_interface.argtypes = ()
         self.lib.initialize_code_interface.restype = ctypes.c_int
@@ -733,6 +738,9 @@ class MSE(object):
     def __set_random_seed(self):
         self.lib.set_random_seed(self.random_seed)
 
+    def __set_verbose_flag(self):
+        self.lib.set_verbose_flag(self.verbose_flag)
+
     ### Logging ###
     def __get_log(self):
         N_log = self.lib.get_size_of_log_data()
@@ -1026,7 +1034,14 @@ class MSE(object):
     def random_seed(self, value):
         self.__random_seed = value
         self.__set_random_seed()
-        
+
+    @property
+    def verbose_flag(self):
+        return self.__verbose_flag
+    @verbose_flag.setter
+    def verbose_flag(self, value):
+        self.__verbose_flag = value
+        self.__set_verbose_flag()
 
     ### Flybys ###
     @property
@@ -2076,7 +2091,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0):
 
         np.random.seed(random_seed)
         
@@ -2118,6 +2133,9 @@ class Tools(object):
         code.enable_root_finding = True
         code.add_particles(particles)
         code.orbital_phases_random_seed = 1
+
+        code.random_seed = random_seed
+        code.verbose_flag = verbose_flag
         
         code.include_flybys = True
         code.flybys_stellar_density = 10*0.1*code.CONST_PER_PC3
@@ -2143,13 +2161,11 @@ class Tools(object):
         
         N_orbits_status = [N_orbits]
         N_bodies_status = [N_bodies]
-        
         t = 0.0
         integration_flags = [[]]
 
         i_status = 0
 
-        code.random_seed = random_seed
         dt = tend/float(N_steps)
         i = 0
         
@@ -2168,7 +2184,7 @@ class Tools(object):
             N_bodies = len(bodies)
                
             if code.structure_change == True:
-                print("Python restruct")#,children1,children1_old,children2,children2_old)
+                #print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
                 integration_flags.append([])
                 internal_indices_print.append([[] for x in range(N_bodies)])

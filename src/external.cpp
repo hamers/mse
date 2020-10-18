@@ -112,8 +112,11 @@ void compute_EOM_binary_pairs_external_perturbation(ParticlesMap *particlesMap, 
     Particle *binary = (*particlesMap)[binary_index];
     Particle *perturber = (*particlesMap)[perturber_index];
 
-    #ifdef DEBUG
-    printf("external.cpp -- compute_EOM_binary_pairs_external_perturbation -- binary_index %d perturber_index %d time %g\n",binary_index,perturber_index,time);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("external.cpp -- compute_EOM_binary_pairs_external_perturbation -- binary_index %d perturber_index %d time %g\n",binary_index,perturber_index,time);
+    }
     #endif
     
     double e = binary->e;
@@ -352,18 +355,25 @@ void compute_position_vectors_external_particle(ParticlesMap *particlesMap, Part
     double q_f_hat_vec[3];
     cross3(h_f_hat_vec,e_f_hat_vec,q_f_hat_vec);
 
-    #ifdef DEBUG
-    printf("external.cpp -- compute_position_vectors_external_particle -- r_per %g mean_anomaly %g total_internal_system_mass %g\n",r_per,mean_anomaly,total_internal_system_mass);
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("external.cpp -- compute_position_vectors_external_particle -- r_per %g mean_anomaly %g total_internal_system_mass %g\n",r_per,mean_anomaly,total_internal_system_mass);
+    }
     #endif
 
     for (int i=0; i<3; i++)
     {        
         r_per_vec[i] = *r_per*(cos_true_anomaly*e_f_hat_vec[i] + sin_true_anomaly*q_f_hat_vec[i]);
         perturber->r_vec[i] = r_per_vec[i];
-        
-        #ifdef DEBUG
-        printf("external.cpp -- compute_position_vectors_external_particle -- r_vec %g\n",r_per_vec[i]);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("external.cpp -- compute_position_vectors_external_particle -- r_vec %g\n",r_per_vec[i]);
+        }
         #endif
+       
     }  
 }
 

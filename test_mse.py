@@ -1509,14 +1509,16 @@ class test_mse():
             alphas.append(alpha)
             delta_Ms.append( (M-M_final)/M )
 
-        assert(round(np.mean(np.array(vs)),0) == 306)
-        assert(round(np.mean(np.array(delta_Ms)),3) == 0.036)
-        assert(round(np.mean(np.array(alphas)),3) == 0.631)
-        
+
         if args.verbose==True:
             print("mean vs/(km/s)",np.mean(np.array(vs)),round(np.mean(np.array(vs)),0))
             print("mean delta_Ms",np.mean(np.array(delta_Ms)))
             print("mean alphas",np.mean(np.array(alphas)))
+
+        assert(round(np.mean(np.array(vs))/10.0,0) == 31)
+        assert(round(np.mean(np.array(delta_Ms)),3) == 0.036)
+        assert(round(np.mean(np.array(alphas)),3) == 0.631)
+        
         
         if args.plot == True:
             Nb=50
@@ -1551,7 +1553,7 @@ class test_mse():
         CONST_C = code.CONST_C
         
         N = 60000
-        N2 = 20000
+        N2 = 40000
 
         seed = 0
         #code.random_seed = seed

@@ -37,25 +37,6 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
 
     //printf("handle_next_flyby %d\n",initialize);
 
-    #ifdef IGNORE
-    int N_bound_subsystems = 0;
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == true and p->parent == -1)
-        {
-            N_bound_subsystems++;
-        }
-    }
-
-    if (*integration_flag > 0 or N_bound_subsystems != 1)
-    {
-        printf("flybys.cpp -- handle_next_flyby -- integration_flag %d N_bound_subsystems %d -- not handling flyby \n",*integration_flag,N_bound_subsystems);
-        //return 0;
-    }
-    #endif
-
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
     if (initialize == true)

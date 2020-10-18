@@ -31,7 +31,12 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
                 index+=1;
             }
 
-            printf("SNe.cpp -- handle_SNe_in_system -- index %d delta_m %g vk %g % g %g p->apply_kick %d\n",p->index,p->instantaneous_perturbation_delta_mass,VX,VY,VZ,p->apply_kick);
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("SNe.cpp -- handle_SNe_in_system -- index %d delta_m %g vk %g % g %g p->apply_kick %d\n",p->index,p->instantaneous_perturbation_delta_mass,VX,VY,VZ,p->apply_kick);
+            }
+            #endif
 
             /* p's instantaneous_perturbation_delta_mass is assumed to be set before calling handle_SNe_in_system() */
             p->instantaneous_perturbation_delta_X = 0.0;
@@ -58,7 +63,13 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
         *unbound_orbits = check_for_unbound_orbits(particlesMap);
         if (*unbound_orbits == true)
         {
-            printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
+            }
+            #endif
+
             *integration_flag = 3;
         }
     }
@@ -196,12 +207,14 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         printf("SNe.cpp -- sample_kick_velocity -- ERROR: invalid kick distribution %d \n",kick_distribution);
         exit(-1);
     }
-  //    std::default_random_engine generator (seed);
 
-//  std::normal_distribution<double> distribution (0.0,1.0);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("SNe.cpp -- i %d kw %d apply_kick %d distr %d kick_distribution_sigma_km_s_NS %g vnorm %g m_progenitor %g m_remnant %g\n",p->index,kw,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma_km_s_NS,vnorm,m_progenitor,m_remnant);
+    }
+    #endif
 
-//    vnorm = 0.0;
-    printf("SNe.cpp -- i %d kw %d apply_kick %d distr %d kick_distribution_sigma_km_s_NS %g vnorm %g m_progenitor %g m_remnant %g\n",p->index,kw,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma_km_s_NS,vnorm,m_progenitor,m_remnant);
     *vx *= vnorm;
     *vy *= vnorm;
     *vz *= vnorm;
@@ -248,7 +261,14 @@ void remove_massless_remnants_from_system(ParticlesMap *particlesMap, int *integ
             if (p->stellar_type == 15)
             {
                 print_system(particlesMap,1);
-                printf("SNe.cpp -- remove_massless_remnants_from_system -- removing particle with index %d\n",p->index);
+
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("SNe.cpp -- remove_massless_remnants_from_system -- removing particle with index %d\n",p->index);
+                }
+                #endif
+                
                 particlesMap->erase(p->index);
                 print_system(particlesMap,1);
                 *integration_flag = 1;

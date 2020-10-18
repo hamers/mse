@@ -47,8 +47,12 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
         {
             if (P_p->check_for_secular_breakdown == true)
             {
-                #ifdef DEBUG
-                printf("check_for_secular_breakdown\n");
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_secular_breakdown\n");
+                }
                 #endif
                 
                 double hamiltonian=0.0;
@@ -81,8 +85,11 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             
             if (P_p->check_for_dynamical_instability == true)
             {
-                #ifdef DEBUG
-                printf("check_for_dynamical_instability\n");
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_dynamical_instability\n");
+                }
                 #endif
                 
                 if (P_p->parent != -1)
@@ -210,10 +217,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             }
             if (P_p->check_for_physical_collision_or_orbit_crossing == true)
             {
-                #ifdef DEBUG
-                printf("check_for_physical_collision_or_orbit_crossing\n");
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing\n");
+                }
                 #endif
-                
+
                 Particle *P_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_child2 = (*particlesMap)[P_p->child2];
                 
@@ -233,7 +243,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     if (f_root >= 0.0)
                     {
                         P_p->physical_collision_or_orbit_crossing_has_occurred = true;
-                        printf("COL %g %g\n",periapse_distance,cross_section);
+                        //printf("COL %g %g\n",periapse_distance,cross_section);
 //                    printf("root finding check_for_physical_collision_or_orbit_crossing %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
                     }  
                     else
@@ -247,10 +257,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             }
             if (P_p->check_for_minimum_periapse_distance == true)
             {
-                #ifdef DEBUG
-                printf("check_for_minimum_periapse_distance\n");
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_minimum_periapse_distance\n");
+                }
                 #endif
-                
+
                 Particle *P_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_child2 = (*particlesMap)[P_p->child2];
                 
@@ -281,10 +294,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             }
             if (P_p->check_for_GW_condition == true)
             {
-                #ifdef DEBUG
-                printf("check_for_GW_condition\n");
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_GW_condition\n");
+                }
                 #endif
-                
+
                 if (P_p->parent != -1)
                 {
                     Particle *P_parent = (*particlesMap)[P_p->parent];
@@ -347,8 +363,11 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
 
             if (P_p->check_for_RLOF_at_pericentre == true)
             {
-                #ifdef DEBUG
-                printf("check_for_RLOF_at_pericentre\n");
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_RLOF_at_pericentre\n");
+                }
                 #endif
                 
                 if (P_p->parent != -1)
@@ -409,6 +428,8 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
     /* TO DO/ consideration: could roots happen simultaneously? */
     
     int return_flag = 0;
+    bool RLOF_occurred = false;
+    bool collision_occurred = false;
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -447,12 +468,16 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 update_log_data(particlesMap, t, integration_flag, event_flag, log_info);
                 #endif
 
-                
-                printf("root_finding.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
-                
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("root_finding.cpp -- RLOF true for body %d; p->check_for_RLOF_at_pericentre %d; p->RLOF_flag %d\n",p->index,p->check_for_RLOF_at_pericentre,p->RLOF_flag);
+                }
+                #endif
+
                 //p->check_for_RLOF_at_pericentre = 0; /* do not subsequently check for RLOF during ODE integration */
                 //printf("test %d\n",p->RLOF_at_pericentre_has_occurred_entering_RLOF);
-                
+                RLOF_occurred = true;
                 return_flag = 1;
             }
                 
@@ -492,16 +517,20 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 {
                     p->merged = true;
                     return_flag = 4;
+                    collision_occurred = true;
                 }
             }
         }
         
     }
     
+    if (RLOF_occurred == true and collision_occurred == true) // In case of multiple roots, give preference to collision over RLOF
+    {
+        return_flag = 4;
+    }
+    
     return return_flag;
 }
-
-//void reset_root_finding_state(ParticlesMap *particlesMap)
 
 void cross_section_function(Particle *p, double *cross_section)
 { 
@@ -788,33 +817,63 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
 {
     if (root_flag == 1) // RLOF
     {
-        printf("RLOF occurred \n");//, but continuing dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- RLOF occurred\n");
+        }
+        #endif
+        
         //*dt_binary_evolution = *dt_stev;
         //printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",*dt_binary_evolution,*dt_stev);
         *CVODE_flag = 0;
     }
     else if (root_flag == 2) // Dynamical instability
     {
-        printf("Dynamical instability\n");
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- Dynamical instability\n");
+        }
+        #endif
+
         *integration_flag = 1;
         *CVODE_flag = 0;
     }
     else if (root_flag == 3) // Semisecular
     {
-        printf("Semisecular\n");
-        
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- Semisecular\n");
+        }
+        #endif
+       
         *integration_flag = 2;
         *CVODE_flag = 0;
     }
     else if (root_flag == 4) // Collision/merger
     {
-        printf("Collision/merger\n");
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- Collision/merger\n");
+        }
+        #endif
+
         *CVODE_flag = 0;
         handle_collisions(particlesMap, t, integration_flag);
     }
     else
     {
-        printf("Other\n");
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- Other\n");
+        }
+        #endif
+        exit(-1);
+        //printf("Other\n");
         //break;
     }
 }

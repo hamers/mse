@@ -26,6 +26,7 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
         {
             Particle *p = (*it_p).second;
+            printf("i %d\n",p->index);
             if (p->is_binary == true and p->merged == true)
             {
                 Particle *child1 = (*particlesMap)[p->child1];
@@ -35,38 +36,39 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
                 int kw2 = child2->stellar_type;
                 if (kw1 >= 2 and kw1 <= 9 and kw1 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
-                    //CE_parent_indices.push_back(p->index);
-                    //CE_donor_indices.push_back(child1->index);
-                    //CE_accretor_indices.push_back(child2->index);
+                    //common_envelope_evolution(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
+                    CE_parent_indices.push_back(p->index);
+                    CE_donor_indices.push_back(child1->index);
+                    CE_accretor_indices.push_back(child2->index);
                 }
                 else if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) /* CE in case of collision of giant + any other star */
                 {
-                    common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, t, integration_flag);
-                    //CE_parent_indices.push_back(p->index);
-                    //CE_donor_indices.push_back(child2->index);
-                    //CE_accretor_indices.push_back(child1->index);
+                    //common_envelope_evolution(particlesMap, p->index, child2->index, child1->index, t, integration_flag);
+                    CE_parent_indices.push_back(p->index);
+                    CE_donor_indices.push_back(child2->index);
+                    CE_accretor_indices.push_back(child1->index);
                 }
                 else /* "pure" collision in other cases */
                 {
-                    collision_product(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
-                    //col_parent_indices.push_back(p->index);
-                    //col_C1_indices.push_back(child1->index);
-                    //col_C2_indices.push_back(child2->index);
+                    //collision_product(particlesMap, p->index, child1->index, child2->index, t, integration_flag);
+                    col_parent_indices.push_back(p->index);
+                    col_C1_indices.push_back(child1->index);
+                    col_C2_indices.push_back(child2->index);
                 }
             }
         }
         
         int i;
-        //for (i=0; i<CE_parent_indices.size(); i++)
+        for (i=0; i<CE_parent_indices.size(); i++)
         {
-            //common_envelope_evolution(particlesMap, CE_parent_indices[i], CE_donor_indices[i], CE_accretor_indices[i], t, integration_flag);
+            common_envelope_evolution(particlesMap, CE_parent_indices[i], CE_donor_indices[i], CE_accretor_indices[i], t, integration_flag);
         }
-        //for (i=0; i<col_parent_indices.size(); i++)
+        for (i=0; i<col_parent_indices.size(); i++)
         {
-            //collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
+            collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
         }
         
+        #ifdef IGNORE
         update_structure(particlesMap, *integration_flag);
         
         bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
@@ -74,6 +76,7 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         {
             *integration_flag = 1;
         }
+        #endif
 
     }
     else /* N-body mode */
@@ -145,9 +148,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     log_info.index2 = child2_index;
     update_log_data(particlesMap, t, *integration_flag, LOG_COL_START, log_info);
     #endif
-    
-    printf("collision.cpp -- CP binary %d child1 %d child2 %d t %g int flag %d\n",binary_index,child1_index,child2_index,t,*integration_flag);
-    print_system(particlesMap,*integration_flag);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- CP binary %d child1 %d child2 %d t %g int flag %d\n",binary_index,child1_index,child2_index,t,*integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
@@ -383,12 +391,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             kw = 14;
         }
         
-        printf("kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14 m %g chi %g Omega %g v_k %g %g %g spin %g %g %g\n",m,chi,Omega,v_recoil_vec[0],v_recoil_vec[1],v_recoil_vec[2],spin_vec[0],spin_vec[1],spin_vec[2]);
-        //if (kw1 == 13 and kw2 == 13)
-        //{
-            //apply_kick = true;
-            //kick_distribution = 1; /* TO DO: implement realistic kick distribution for merged NSs */
-        //}
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("collision.cpp -- collision product -- kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14 m %g chi %g Omega %g v_k %g %g %g spin %g %g %g\n",m,chi,Omega,v_recoil_vec[0],v_recoil_vec[1],v_recoil_vec[2],spin_vec[0],spin_vec[1],spin_vec[2]);
+        }
+        #endif
+        
     }
     else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14)
     {
@@ -508,7 +517,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             Omega = n_old;
             if (n_old >= Omega_crit)
             {
-                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",child1->index,n_old,Omega_crit);
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("collision.cpp -- collision product -- Limiting spin frequency of star %d from %g to breakup rate %g\n",child1->index,n_old,Omega_crit);
+                }
+                #endif
+
                 Omega = Omega_crit;
             }
             
@@ -529,52 +544,33 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         child1->mass_dot_wind = 0.0;
         child1->radius_dot = 0.0;
         child1->ospin_dot = 0.0;
-
-        printf("CP not destroyed post\n");
-        print_system(particlesMap,*integration_flag);
     }
     else
     {
         particlesMap->erase(child1->index);
         particlesMap->erase(child2->index);
     }
-    
-   return;
-}
 
-#ifdef IGNORE
-void handle_destruction_of_binary_in_system(ParticlesMap *particlesMap, Particle *b)
-{
-    if (b->parent == -1) /* b was a lone binary; the new system is empty */
+    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+    
+    #ifdef LOGGING
+    //Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = child1_index;
+    log_info.index2 = child2_index;
+    update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
+    #endif
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
     {
-        particlesMap->erase(b->index);
+        printf("collision.cpp -- collision product -- done\n");
+        print_system(particlesMap,*integration_flag);
     }
-    else /* the system survives in some form */
-    {
-        Particle *p = (*particlesMap)[b->parent];
-        Particle *s = (*particlesMap)[b->sibling];
-        p->is_binary = false;
-        
-        if (p->parent == -1) /* the sibling s becomes the top-level binary; p can be safely removed */
-        {
-            particlesMap->erase(p->index);
-        }
-        else /* particle p has become obsolete and needs to be replaced by s */
-        {
-            Particle *pp = (*particlesMap)[p->parent];
-            if (p->index == pp->child1)
-            {
-                pp->child1 = s->index;
-            }
-            else if (p->index == pp->child2)
-            {
-                pp->child2 = s->index;
-            }
-            particlesMap->erase(p->index);
-        }
-    }
+    #endif
+    
+    return;
 }
-#endif
 
 int determine_merger_type(int kw1, int kw2)
 {
@@ -583,7 +579,14 @@ int determine_merger_type(int kw1, int kw2)
 
 void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index, int star_index, int planet_index, double t, int *integration_flag)
 {
-    printf("collision_product_star_planet  binary_index %d  star_index %d  planet_index %d  t %g integration_flag %d\n",binary_index, star_index, planet_index,t,&integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- collision_product_star_planet  binary_index %d  star_index %d  planet_index %d  t %g integration_flag %d\n",binary_index, star_index, planet_index,t,&integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
     Particle *star = (*particlesMap)[star_index];
     Particle *planet = (*particlesMap)[planet_index];
     
@@ -664,7 +667,14 @@ void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index,
         Omega = n_old;
         if (n_old >= Omega_crit)
         {
-            printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star->index,n_old,Omega_crit);
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("collision.cpp -- collision_product_star_planet --  Limiting spin frequency of star %d from %g to breakup rate %g\n",star->index,n_old,Omega_crit);
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
+
             Omega = Omega_crit;
         }
         
@@ -683,15 +693,26 @@ void collision_product_star_planet(ParticlesMap *particlesMap, int binary_index,
     star->apply_kick = false; /* Default value for (stellar evolution) bodies */
     star->RLOF_flag = 0;
     
-    printf("collision_product_star_planet not destroyed post\n");
-    print_system(particlesMap,*integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- collision_product_star_planet post  binary_index %d  star_index %d  planet_index %d  t %g integration_flag %d\n",binary_index, star_index, planet_index,t,&integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 
     return;
 }
 
 void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_index, int planet1_index, int planet2_index, double t, int *integration_flag)
 {
-    printf("collision_product_planet_planet  binary_index %d  planet1_index %d  planet2_index %d  t %g integration_flag %d\n",binary_index, planet1_index, planet2_index,t,&integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- collision_product_planet_planet  binary_index %d  planet1_index %d  planet2_index %d  t %g integration_flag %d\n",binary_index, planet1_index, planet2_index,t,&integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
     
     
     Particle *planet1 = (*particlesMap)[planet1_index];
@@ -744,7 +765,15 @@ void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_inde
         Omega = n_old;
         if (n_old >= Omega_crit)
         {
-            printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",planet1->index,n_old,Omega_crit);
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("collision.cpp -- collision_product_planet_planet -- Limiting spin frequency of star %d from %g to breakup rate %g\n",planet1->index,n_old,Omega_crit);
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
+
+
             Omega = Omega_crit;
         }
         
@@ -763,8 +792,14 @@ void collision_product_planet_planet(ParticlesMap *particlesMap, int binary_inde
     planet1->apply_kick = false; /* Default value for (stellar evolution) bodies */
     planet1->RLOF_flag = 0;
     
-    printf("collision_product_planet_planet post\n");
-    print_system(particlesMap,*integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- collision_product_planet_planet post  binary_index %d  planet1_index %d  planet2_index %d  t %g integration_flag %d\n",binary_index, planet1_index, planet2_index,t,&integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
 
     return;
 }
@@ -957,7 +992,14 @@ double determine_effective_radius_for_collision(double radius, int stellar_type,
     {
         effective_radius = radius * effective_radius_multiplication_factor_for_collisions_compact_objects;
     }
-    //printf("determine_effective_radius_for_collision %g %d %d %g\n",radius, stellar_type,integration_flag,effective_radius);
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("collision.cpp -- /determine_effective_radius_for_collision R %g st %d int flag %d R_eff %g\n",radius, stellar_type,integration_flag,effective_radius);
+    }
+    #endif
+    
     return effective_radius;
 }
 

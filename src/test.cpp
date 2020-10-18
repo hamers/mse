@@ -1333,7 +1333,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
     {
         t+=dt;
 
-        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects,0);
+        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects,&integration_flag);
         if (apply_SNe_effects == true)
         {
             handle_SNe_in_system(&particlesMap,&unbound_orbits,&integration_flag);
@@ -1383,12 +1383,13 @@ int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
     double vx,vy,vz;
     double t_max = 1.37e10;
     
+    int integration_flag = 0;
     bool apply_SNe_effects = false;
     while (apply_SNe_effects == false)
     {
         t+=dt;
         //printf("t %g t_old %g dt %g\n",t,t_old,dt);
-        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects,0);
+        evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects,&integration_flag);
         if (apply_SNe_effects == true)
         {
             sample_kick_velocity(star,&vx,&vy,&vz);

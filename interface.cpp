@@ -1066,7 +1066,16 @@ int set_random_seed(int value)
     return 0;
 }
 
-
+int get_verbose_flag(int *value)
+{
+    *value = verbose_flag;
+    return 0;
+}
+int set_verbose_flag(int value)
+{
+    verbose_flag = value;
+    return 0;
+}
 
 /***********
  * Testing *

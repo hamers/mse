@@ -128,8 +128,13 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
         return 0;
     }
 
-    printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
-    
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
+    }
+    #endif
+   
     double m_C1 = child1->mass;
     double m_C2 = child2->mass;
 
@@ -225,8 +230,12 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         {
             compute_RLOF_emt_model(p,child1,child2,x,E_0);
             //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
-            #ifdef DEBUG
-            printf("mass_changes.cpp -- IN RLOF *1 index %d x %g E_0 %g\n",child1->index,x,E_0);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("mass_changes.cpp -- IN RLOF *1 index %d x %g E_0 %g\n",child1->index,x,E_0);
+            }
             #endif
         }
     }
@@ -242,8 +251,12 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         if (in_RLOF == true and flag == 0 and x>=0.0)
         {
             compute_RLOF_emt_model(p,child2,child1,x,E_0);
-            #ifdef DEBUG
-            printf("mass_changes.cpp -- IN RLOF *2 index %d x %g E_0 %g\n",child2->index,x,E_0);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("mass_changes.cpp -- IN RLOF *2 index %d x %g E_0 %g\n",child2->index,x,E_0);
+            }
             #endif
         }
     }
@@ -365,18 +378,24 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     //double M_d_dot_av = -(M_d/P_orb)*fm;
     //double M_a_dot_av = -M_d_dot_av;
     
-    if (fabs(M_d_dot_av) > 1.0)
-    {
-        printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
+    //if (fabs(M_d_dot_av) > 1.0)
+    //{
+//        printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
         //M_d_dot_av = -1.0;
         //M_a_dot_av = -M_d_dot_av;
-    }
+//    }
     
     double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
     //printf("CF %g\n",common_factor);
     if (x<=0.0)
     {
-        printf("mass_changes.cpp -- ERROR: x<=0 (x=%g)\n",x);
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("mass_changes.cpp -- ERROR: x<=0 (x=%g)\n",x);
+        }
+        #endif
+
         M_d_dot_av=0.0;
         M_a_dot_av=0.0;
     }
@@ -395,12 +414,11 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
     //double factor_h_vec = M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
     double factor_h_vec = compute_h_dot_div_h(M_d, M_d_dot_av, M_a, M_a_dot_av, a, da_dt, e, de_dt);
-    
-    if (da_dt != da_dt || de_dt != de_dt || domega_dt != domega_dt)
-    {
-        printf("mass_changes.cpp -- ERROR: nans in dots of a/e/omega, %g %g %g beta %g M_a_dot_av %g M_a_dot_av %g\n",da_dt,de_dt,domega_dt,beta,M_a_dot_av,M_a_dot_av);
-    }
 
+    check_number(da_dt,                   "mass_changes.cpp -- compute_RLOF_emt_model","da_dt", true);
+    check_number(de_dt,                   "mass_changes.cpp -- compute_RLOF_emt_model","de_dt", true);
+    check_number(domega_dt,               "mass_changes.cpp -- compute_RLOF_emt_model","domega_dt", true);
+    
     /* Compute spin changes due to RLOF */
     double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
     //double I_donor = compute_moment_of_inertia(M_d, donor->core_mass, R_d, donor->core_radius, donor->sse_k2, donor->sse_k3);
@@ -470,7 +488,13 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
     }
     if (*E_0 != *E_0)
     {
-        printf("mass_changes.cpp -- ERROR in determine_E_0; E_0 = %g x  = %g e = %g \n",*E_0,x,e);
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("mass_changes.cpp -- ERROR in determine_E_0; E_0 = %g x  = %g e = %g \n",*E_0,x,e);
+        }
+        #endif
+        
         return -1;
     }
     //printf("x %g e %g E_0... %g\n",x,e,*E_0);

@@ -143,20 +143,7 @@ int initialize_stars(ParticlesMap *particlesMap)
 
     //        hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-            #ifdef IGNORE
-            star_(&kw, &sse_initial_mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
-            printf("pre SS %d age %g sse_initial_mass %g mt %g\n",kw,age,sse_initial_mass,mt);
-            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
-                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
-            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
-                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
-            hrdiag_(&sse_initial_mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
-                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
-            
-            printf("arg hrd %g %g %g %g %g \n",sse_initial_mass,age,mt,tm,tn);
-            printf("post S %d\n",kw);
-            #endif
-            
+
             //printf("stellar_evolution.cpp -- initialize_star -- done evolve; kw %d sse_initial_mass %g mt %g\n",kw,sse_initial_mass,mt);
             p->stellar_type = kw;
 
@@ -342,10 +329,14 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             epoch = tphys - age;
            
             dtp = 0.0;
-            #ifdef DEBUG
-            printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
+            }
             #endif
-            //printf("Sx %g Sy %g Sz %g\n",p->spin_vec_x,p->spin_vec_y,p->spin_vec_z);
+
             if (get_timestep_only == true)
             {
                 //printf("old dt %g kw %d\n",sse_time_step,kw);
@@ -355,9 +346,13 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             }
             else
             {
-                #ifdef DEBUG
-                printf("stellar_evolution.cpp -- INPUT evolv1_ kw %d m0 %.15f mt %.15f epoch %.15f tphys %.15f tphysf %.15f dtp %.15f z %.15f zpars[0] %.15f \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp,z,zpars[0]);
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("stellar_evolution.cpp -- INPUT evolv1_ kw %d m0 %.15f mt %.15f epoch %.15f tphys %.15f tphysf %.15f dtp %.15f z %.15f zpars[0] %.15f \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp,z,zpars[0]);
+                }
                 #endif
+
                 evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
 
                 if (tphysf != desired_tphysf)
@@ -367,8 +362,12 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                 age = tphysf - epoch;
                 sse_time_step = get_new_dt_sse(kw,sse_initial_mass,mt,age,sse_time_step,zpars);
-                #ifdef DEBUG
-                printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
+
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                }
                 #endif
 
                 /* Write new stellar evolution parameters */
@@ -485,38 +484,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
         }
     }
     
-    //printf("sse dt %g\n",dt_min);
     *stellar_evolution_timestep = dt_min;
-    
-    #ifdef IGNORE
-    if (reset_h_vectors == true)
-    {
-        int N_bodies, N_binaries, N_root_finding;
-        determine_binary_parents_and_levels(particlesMap, &N_bodies, &N_binaries, &N_root_finding);
-        set_binary_masses_from_body_masses(particlesMap);
-
-        for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-        {
-            Particle *p = (*it_p).second;
-            if (p->is_binary == 1)
-            {
-
-                double factor_h = ( (p->child1_mass * p->child2_mass) / (p->child1_mass_old * p->child2_mass_old) ) * sqrt( (p->child1_mass_old + p->child2_mass_old) / (p->child1_mass + p->child2_mass) );
-                printf("resetting h vectors f %g\n",factor_h);
-                p->h_vec_x *= factor_h;
-                p->h_vec_y *= factor_h;
-                p->h_vec_z *= factor_h;
-                
-                double h_vec[3];
-                h_vec[0] = p->h_vec_x;
-                h_vec[1] = p->h_vec_y;
-                h_vec[2] = p->h_vec_z;
-                printf("new h %g \n",norm3(h_vec));
-            }
-
-        }
-    }
-    #endif
     
     check_for_critical_rotation(particlesMap);
     
@@ -541,7 +509,14 @@ void check_for_critical_rotation(ParticlesMap *particlesMap)
             double Omega_crit = compute_breakup_angular_frequency(p->mass,p->radius);
             if (spin_vec_norm > Omega_crit)
             {
-                printf("stellar_evolution.cpp -- check_for_critical_rotation -- limiting id %d Omega %g Omega_crit %g\n",p->index,spin_vec_norm,Omega_crit);
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("stellar_evolution.cpp -- check_for_critical_rotation -- limiting id %d Omega %g Omega_crit %g\n",p->index,spin_vec_norm,Omega_crit);
+                }
+                #endif
+                
                 for (i=0; i<3; i++)
                 {
                     p->spin_vec[i] *= Omega_crit/spin_vec_norm;
@@ -638,7 +613,7 @@ double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, 
     double S;
     if (object_type != 1)
     {
-        printf("ST %d OT %d m %g R %g k2 %g\n",stellar_type,  object_type, mass,radius,k2);
+        //printf("ST %d OT %d m %g R %g k2 %g\n",stellar_type,  object_type, mass,radius,k2);
         double I = k2 * mass * radius * radius;
         S = I * spin_frequency;
     }
@@ -666,7 +641,7 @@ double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_mom
     if (object_type != 1)
     {
         double I = k2 * mass * radius * radius;
-        printf("I%g\n",I);
+        //printf("I%g\n",I);
         Omega = spin_angular_momentum/I;
     }
     else

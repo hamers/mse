@@ -16,19 +16,24 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
      * 3: N-body after unbound orbit(s) due to SNe
      * 4: N-body after unbound orbit(s) due to flyby */
      
-    
     /* Here, it is assumed that R_vec and V_vec are already correctly set when integrate_nbody_system() is called */
 
     double dt = t - t_old;
     double dt_reached;
-
     
     int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
     
     if (N_bodies_eff < 1)
     {
-        printf("nbody_evolution.cpp -- no bodies to integrate N_bodies_eff %d!\n",N_bodies_eff);
-        print_system(particlesMap,*integration_flag);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("nbody_evolution.cpp -- no bodies to integrate N_bodies_eff %d!\n",N_bodies_eff);
+            print_system(particlesMap,*integration_flag);
+        }
+        #endif
+
         *dt_nbody = 1.0e100;
         *t_out = t_old + dt;
         *integration_flag = 1;
@@ -37,7 +42,6 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         return;
     }
     
-
     struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,*integration_flag);
 
     int collision_occurred;
@@ -46,22 +50,41 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     
     //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
     
-    printf("nbody_evolution.cpp -- integrate_nbody_system -- starting integration -- t %g dt %g E_init %g\n",t,dt,E_init);
-    print_system(particlesMap,*integration_flag);
+    MSTAR_verbose = false;
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- integrate_nbody_system -- starting integration -- t %g dt %g E_init %g\n",t,dt,E_init);
+        print_system(particlesMap,*integration_flag);
+        print_state(R);
+        MSTAR_verbose = true;
+    }
+    #endif
 
-    print_state(R);
     run_integrator(R, dt, &dt_reached, &collision_occurred);
 
     double E_fin = compute_nbody_total_energy(R);
-    printf("nbody_evolution.cpp -- integrate_nbody_system -- finished integration -- t %g dt_reached %g E_fin %g E_err %g\n",t,dt_reached,E_fin,fabs((E_init-E_fin)/E_init));
-    print_state(R);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- integrate_nbody_system -- finished integration -- t %g dt_reached %g E_fin %g E_err %g\n",t,dt_reached,E_fin,fabs((E_init-E_fin)/E_init));
+        print_state(R);
+    }
+    #endif
 
     *t_out = t_old + dt_reached;
 
     if (collision_occurred == 1)
     {
-        printf("COL\n");
-        
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("nbody_evolution.cpp -- integrate_nbody_system -- finished integration -- COLLISION\n");
+            print_state(R);
+        }
+        #endif
+       
         update_pos_vel_from_mstar_system(R,particlesMap);
         handle_collisions_nbody(R, particlesMap, t, integration_flag);
         *integration_flag = 1; // continue with direct N-body after the collision, at least initially
@@ -80,7 +103,6 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         
         update_stellar_evolution_quantities_directly(particlesMap,dt);
         
-        printf("nbody_evolution.cpp -- integrate_nbody_system -- new integration flag %d\n",*integration_flag);
         free_data(R);
         return;
     }
@@ -88,53 +110,78 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     /* The system is potentially stable.
      * Analyse the system for stability. */
 
+    double P_orb_min,P_orb_max;
+    *integration_flag = determine_new_integration_flag_using_nbody(R,particlesMap,&P_orb_min,&P_orb_max);
+
+    *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- integrate_nbody_system -- done -- new integration flag %d dt_nbody %g\n",*integration_flag,*dt_nbody);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
+    MSTAR_verbose = false;    
+    free_data(R);
+      
+    return;
+}
+
+int determine_orbits_in_system_using_nbody(ParticlesMap *particlesMap)
+{
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- determine_orbits_in_system_using_nbody\n");
+    }
+    #endif
+    
+    int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
+
+    if (N_bodies_eff < 1)
+    {
+        return 1;
+    }
+    int integration_flag = 1;
+    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,integration_flag);
+
+    double P_orb_min,P_orb_max;
+    integration_flag = determine_new_integration_flag_using_nbody(R,particlesMap,&P_orb_min,&P_orb_max);
+    
+    //free_data(R);
+    
+    return integration_flag;
+}
+
+int determine_new_integration_flag_using_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max)
+{
+    
     bool stable_system;
     ParticlesMap new_particlesMap;
 
-    double P_orb_min,P_orb_max;
-    analyze_mstar_system(R,&stable_system,&new_particlesMap,&P_orb_min,&P_orb_max,dt); // Will create new particlesMap with new orbits 
+    analyze_mstar_system(R,&stable_system,&new_particlesMap,P_orb_min,P_orb_max,ODE_min_dt); // Will create new particlesMap with new orbits 
 
-    //printf("done an\n");
-    //printf("test %g\n",(new_particlesMap)[0]->metallicity);
-    //*particlesMap = *new_particlesMap;
     copy_bodies_from_old_to_new_particlesMap(particlesMap,&new_particlesMap); // Copy properties of all bodies from old to new particlesMap
-    //printf("ok test 2 %d\n",new_particlesMap[0]->include_mass_transfer_terms);
-   
+
     copy_particlesMap(&new_particlesMap,particlesMap); /* overwrite everything in the particlesMap that was passed onto integrate_nbody_system so the system is updated */
 
-    /* When doing secular integration, some stellar evolution quantities are updated as parts of the ODE solution. In the N-body case, these quantities need to be updated manually */
-    update_stellar_evolution_quantities_directly(particlesMap,dt); /* the dt here should be consistent with the dt used to compute the time derivatives in stellar_evolution.cpp */
-
+    int integration_flag;
     int dummy = 0;
     bool stable_MA01 = check_system_for_dynamical_stability(particlesMap, &dummy);
 
     if (stable_system == true and stable_MA01 == true)
     {
-        *integration_flag = 0; // Switch back to secular
+        integration_flag = 0; // Switch back to secular
     }
     else
     {
-        *integration_flag = 1; // Continue running direct N-body in "default" mode
+        integration_flag = 1; // Continue running direct N-body in "default" mode
     }
-
-    //int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
-    //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    //set_binary_masses_from_body_masses(particlesMap);
-
-    update_structure(particlesMap, *integration_flag);
-
-
-    *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
-        
-    printf("nbody_evolution.cpp -- integrate_nbody_system -- stable_system %d new integration flag %d dt_nbody %g\n",stable_system,*integration_flag,*dt_nbody);
-
-    //printf("nbody_evolution.cpp -- test %g %g %g\n",(*particlesMap)[0]->R_vec[0],(*particlesMap)[0]->R_vec[1],(*particlesMap)[0]->R_vec[2]);
-
-    print_system(particlesMap,*integration_flag);
-    free_data(R);
     
-      
-    return;
+    return integration_flag;
+    
 }
 
 void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particlesMap, double t, int *integration_flag)
@@ -173,26 +220,18 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
         printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");
         exit(-1);
     }
-    printf("handle_collisions_nbody\n");
-    print_system(particlesMap,1);
-    printf("col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- handle_collisions_nbody -- col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
+        print_system(particlesMap,1);
+    }
+    #endif
 
     (*particlesMap)[col_part_i]->Stopping_Condition_Partner = col_part_i;
     (*particlesMap)[col_part_j]->Stopping_Condition_Partner = col_part_j;
 
-    #ifdef IGNORE
-    /* Positions & velocities are needed for collision handling */
-    for (k=0; k<3; k++)
-    {
-        (*particlesMap)[col_part_i]->R_vec[k] = R->Pos[3 * col_part_i + k];
-        (*particlesMap)[col_part_j]->R_vec[k] = R->Pos[3 * col_part_j + k];
-
-        (*particlesMap)[col_part_i]->V_vec[k] = R->Vel[3 * col_part_i + k];
-        (*particlesMap)[col_part_j]->V_vec[k] = R->Vel[3 * col_part_j + k];
-        
-    }
-    #endif
-    //collision_product(particlesMap, binary_index, col_part_i, col_part_j, integration_flag);
     handle_collisions(particlesMap,t,integration_flag);
     
 }
@@ -232,13 +271,7 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
 double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag, double P_orb_min, double P_orb_max)
 {
     //double P_orb_max = determine_longest_orbital_period_in_system(particlesMap);
-    
-    // TO DO: make adjustable
-    //double nbody_dynamical_instability_direct_integration_time_multiplier = 1.5;
-    //double dynamical_instability_direct_integration_time_multiplier = 0.01;
-    //double nbody_semisecular_direct_integration_time_multiplier = 1.0e2;
-    //double nbody_supernovae_direct_integration_time_multiplier = 1.5;    
-    
+   
     double f;
     if (integration_flag == 1) // dyn. inst.
     {
@@ -261,23 +294,6 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
     
     return dt;
 }
-
-#ifdef IGNORE
-int handle_dynamical_instability(ParticlesMap *particlesMap)
-{
-    //create_mstar_instance_of_system(particlesMap,R);
-    struct RegularizedRegion *R = create_mstar_instance_of_system(particlesMap,1);
-    
-//    double P_orb_max = determine_longest_orbital_period_in_system(particlesMap);
-
-
-//    double tend=P_orb_max;
-    
-    
-
-    return 0;
-}
-#endif
 
 void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, ParticlesMap *new_particlesMap)
 {
@@ -340,27 +356,16 @@ void copy_bodies_from_old_to_new_particlesMap(ParticlesMap *old_particlesMap, Pa
 
 void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max, double dt)
 {
-    //printf("ok..... %d\n",particlesMap->size());
-//    int highest_new_particle_index = 0;
-    //double P_orb_min,P_orb_max;
+    /* Integrate system directly for the longest orbital system and compare the semimajor axes,
+     * to check if the system is "dynamically stable". */
+
     std::vector<double> semimajor_axes, future_semimajor_axes;
     std::vector<int> binary_indices, future_binary_indices;
     
-    //printf("0\n");
     extract_pos_vel_from_mstar_system_and_reset_particlesMap(R, particlesMap);
-    //printf("1\n");
     find_binaries_in_system(particlesMap,P_orb_min,P_orb_max);
-    //printf("2\n");
     get_all_semimajor_axes_in_system(particlesMap, &semimajor_axes, &binary_indices);    
-    //printf("3\n");
-//    printf("P_orb_max %g\n",P_orb_max);
-
-
-    /* Integrate system directly for the longest orbital system and compare the semimajor axes,
-     * to check if the system is "dynamically stable". */
      
-    //double dt_an = *P_orb_min*M_PI*10.0;
-    //double dt_an = *P_orb_max * 0.01;
     double dt_an = dt * nbody_analysis_fractional_integration_time;
     
     double maximum_analysis_time = nbody_analysis_maximum_integration_time;
@@ -369,18 +374,22 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     int collision_occurred;
     
     dt_an = CV_min(dt_an, maximum_analysis_time);
-    //double dt_an = 0.001 * dt;
-    //printf("analyze_mstar_system dt %g\n",dt_an);
+    
+    MSTAR_verbose = false;
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- analyze_mstar_system -- starting integration\n");
+        MSTAR_verbose = true;
+    }
+    #endif
+   
     run_integrator(R, dt_an, &dt_reached, &collision_occurred);
-    //printf("done int\n");
-    //new_particlesMap.clear();
-    //semimajor_axes.clear();
 
     ParticlesMap future_particlesMap;    
     double future_P_orb_min,future_P_orb_max;
     extract_pos_vel_from_mstar_system_and_reset_particlesMap(R, &future_particlesMap);
     find_binaries_in_system(&future_particlesMap,&future_P_orb_min,&future_P_orb_max);
-//    printf("P_orb_max2 %g\n",P_orb_max);
     get_all_semimajor_axes_in_system(&future_particlesMap, &future_semimajor_axes, &future_binary_indices);    
 
     std::vector<double>::iterator it;
@@ -402,7 +411,13 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
 
             
             delta_a = fabs((a - a_fut))/a;
-            printf("AN old %g new %g delta %g\n",a,a_fut,delta_a);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("nbody_evolution.cpp -- analyze_mstar_system -- a old %g a new %g delta %g\n",a,a_fut,delta_a);
+            }
+            #endif
 
             Particle *p = (*particlesMap)[binary_indices[index]];
             
@@ -421,11 +436,12 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
         *stable_system = false;
     }
     
-    
-    //printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
-    //printf("test %g\n",(new_particlesMap)[0]->metallicity);
-    
-    //return &particlesMap;
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- analyze_mstar_system -- stable_system = %d\n",*stable_system);
+    }
+    #endif
 }
 
 void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct RegularizedRegion *R, ParticlesMap *particlesMap)
@@ -705,273 +721,6 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     //print_system(particlesMap,1);
 }
 
-#ifdef IGNORE
-void analyze_mstar_system2(struct RegularizedRegion *R)
-{
-    int i,j;
-    
-    /* Copy data from MSTAR to a new particlesMap */
-    int highest_new_particle_index = 0;
-    ParticlesMap new_particlesMap;
-    bool is_binary;
-
-    //int N_bodies = R->NumVertex;
-    for (i=0; i<R->NumVertex; i++)
-    {
-        printf("i %d mass %g \n",i,R->Mass[i]);
-        printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
-        printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
-
-        is_binary = false;
-        Particle *p = new Particle(highest_new_particle_index, is_binary);
-        new_particlesMap[highest_new_particle_index] = p;
-        highest_new_particle_index++;
-        
-        p->mass = R->Mass[i];
-        for (j=0; j<3; j++)
-        {
-            p->R_vec[j] = R->Pos[3 * i + j];
-            p->V_vec[j] = R->Vel[3 * i + j];
-        }
-        
-    }
-
-    double *R1_vec,*V1_vec;
-    double *R2_vec,*V2_vec;
-    double m1,m2,M;
-    
-    double r_vec[3],v_vec[3];
-    double e_vec[3],h_vec[3];
-    double a,e,true_anomaly;
-   
-    ParticlesMapIterator it,it_p1,it_p2,it_bin;
-    //std::map<int, int> binary_child1_indices;
-    //std::map<int, int> binary_child2_indices;
-    //int binary_child1_indices_i;
-    //int binary_child2_indices_i;
-    //std::vector<int> binary_child1_indices;
-    //std::vector<int> binary_child2_indices;
-    
-    ParticlesMapIterator it_p1_begin,it_p1_end;
-    ParticlesMapIterator it_p2_begin,it_p2_end;
-    
-    ParticlesMap particles_to_be_added;
-    int particles_to_be_added_highest_index;
-
-    //double max_a;
-    //int N_bodies, N_binaries;
-    //int N_root_finding;
-    //int N_ODE_equations;
-    
-    bool binary_already_found;
-    double P_orb,P_orb_max;
-    double delta_a;
-    
-    bool found_new_orbit = true;
-    while (found_new_orbit == true)
-    {
-        //found_new_orbit = false;
-        
-        it_p1_begin = new_particlesMap.begin();
-        it_p1_end = new_particlesMap.end();
-        it_p2_begin = new_particlesMap.begin();
-        it_p2_end = new_particlesMap.end();
-
-        P_orb_max = 0.0;
-        particles_to_be_added.clear();
-        particles_to_be_added_highest_index = 0;
-        for (it_p1 = new_particlesMap.begin(); it_p1 != new_particlesMap.end(); it_p1++)
-        //for (it_p1 = it_p1_begin; it_p1 != it_p1_end; it_p1++)
-        {
-            Particle *p1 = (*it_p1).second;
-            
-            if (p1->has_found_parent == true)
-            {
-                continue;
-            }
-            
-            m1 = p1->mass;
-            R1_vec = p1->R_vec;
-            V1_vec = p1->V_vec;
-            
-            for (it_p2 = new_particlesMap.begin(); it_p2 != new_particlesMap.end(); it_p2++)
-            //for (it_p2 = it_p2_begin; it_p2 != it_p2_end; it_p2++)
-            {
-                Particle *p2 = (*it_p2).second;
-                
-                if (p2->index <= p1->index) // only consider unique pairs
-                {
-                    continue;
-                }
-
-                if (p2->has_found_parent == true)
-                {
-                    continue;
-                }
-
-                m2 = p2->mass;
-                M = m1 + m2;
-                R2_vec = p2->R_vec;
-                V2_vec = p2->V_vec;
-
-                for (j=0; j<3; j++)
-                {
-                    r_vec[j] = R1_vec[j] - R2_vec[j];
-                    v_vec[j] = V1_vec[j] - V2_vec[j];
-                }
-
-                from_cartesian_to_orbital_vectors(m1,m2,r_vec,v_vec,e_vec,h_vec,&true_anomaly);
-                compute_semimajor_axis_and_eccentricity_from_orbital_vectors(m1,m2,e_vec,h_vec,&a,&e);
-                printf("i1 %d i2 %d r %g %g %g a %g e %g\n",p1->index,p2->index,r_vec[0],r_vec[1],r_vec[2],a,e);
-                
-                
-                if ( a>= 0.0 and e >= 0.0 and e < 1.0)
-                {
-                    //if ( (binary_child1_indices.count(p1->index) > 0) and (binary_child2_indices.count(p2->index) > 0) )
-                    //if already in new particles
-                    binary_already_found = false;
-                    #ifdef IGNORE
-                    for (it_bin = new_particlesMap.begin(); it_bin != new_particlesMap.end(); it_bin++)
-                    {
-                        Particle *b = (*it_bin).second;
-                    
-                        if (b->is_binary == true)
-                        {
-                            if ((b->child1 == p1->index) and (b->child2 == p2->index))
-                            {
-                                //found_new_orbit = false;
-                                binary_already_found = true;
-                                printf("Previously found b %d C1 %d C2 %d b->a %g a %g\n",b->index,p1->index,p2->index,b->a,a);
-                                delta_a = fabs((b->a - a)/b->a);
-                                if (delta_a > 0.2)
-                                {
-                                    new_particlesMap.erase(b->index);
-                                    highest_new_particle_index --;
-                                }
-                                else
-                                {
-                                    p1->has_found_parent = true;
-                                    p2->has_found_parent = true;
-                                }
-                            }
-                            //check if sma did not change too much
-                        }
-                    }
-                    #endif
-                    
-                    if (binary_already_found == false)
-                    {
-
-                        //binary_child1_indices[binary_child1_indices_i] = p1->index;
-                        //binary_child2_indices[binary_child2_indices_i] = p2->index;
-                        //add binary
-                        p1->has_found_parent = true;
-                        p2->has_found_parent = true;
-                    
-                        is_binary = true;
-                        Particle *b = new Particle(particles_to_be_added_highest_index, is_binary);
-                        //new_particlesMap[highest_new_particle_index] = b;
-                        //++;
-                        particles_to_be_added[particles_to_be_added_highest_index] = b;
-                        particles_to_be_added_highest_index++;
-                        
-                        for (j=0; j<3; j++)
-                        {
-                            b->e_vec[j] = e_vec[j];
-                            b->h_vec[j] = h_vec[j];
-                            b->R_vec[j] = (m1 * R1_vec[j] + m2 * R2_vec[j])/M;
-                            b->V_vec[j] = (m1 * V1_vec[j] + m2 * V2_vec[j])/M;
-                        }
-                        b->mass = M;
-                        b->a = a;
-                        b->e = e;
-                        b->child1 = p1->index;
-                        b->child2 = p2->index;
-                        
-                        //found_new_orbit = true;
-                        printf("New binary %d C1 %d C2 %d a %g e %g\n",b->index,p1->index,p2->index,a,e);
-                        
-                        b->child1_mass_plus_child2_mass = M;
-                        P_orb = compute_orbital_period_from_semimajor_axis(b->mass,b->a);
-                        if (P_orb > P_orb_max)
-                        {
-                            P_orb_max = P_orb;
-                        }
-                    }
-                }
-            }
-        }
-        
-        if (particles_to_be_added.size() == 0)
-        {
-            found_new_orbit = false;
-        }
-        else
-        {
-            printf("pre add\n");
-            for (it = particles_to_be_added.begin(); it != particles_to_be_added.end(); it++)
-            {
-                Particle *p = (*it).second;
-                p->index = highest_new_particle_index;
-                new_particlesMap[highest_new_particle_index] = p;
-                highest_new_particle_index++;
-                printf("adding particle %d a %g\n",p->index,p->a);
-            }
-            printf("done add\n");
-            
-            //determine_binary_parents_and_levels(&new_particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-            //P_orb_max = determine_longest_orbital_period_in_system(&new_particlesMap);
-            printf("P_orb_max %g\n",P_orb_max);
-            
-            double dt_reached;
-            int collision_occurred;
-            run_integrator(R, 0.5*P_orb_max, &dt_reached, &collision_occurred);
-            printf("done int\n");
-            
-            for (i=0; i<R->NumVertex; i++)
-            {
-                printf("i %d mass %g \n",i,R->Mass[i]);
-                printf("i %d pos %g %g %g \n",i,R->Pos[3 * i + 0], R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
-                printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
-
-                Particle *p = new_particlesMap[i];
-                p->mass = R->Mass[i];
-                for (j=0; j<3; j++)
-                {
-                    p->R_vec[j] = R->Pos[3 * i + j];
-                    p->V_vec[j] = R->Vel[3 * i + j];
-                }
-            }
-            
-            for (it = new_particlesMap.begin(); it != new_particlesMap.end(); it++)
-            {
-                Particle *b = (*it).second;
-                if (b->is_binary == true)
-                {
-                    Particle *child1 = new_particlesMap[b->child1];
-                    Particle *child2 = new_particlesMap[b->child2];
-                    
-                    m1 = child1->mass;
-                    m2 = child2->mass;
-                    M = m1 + m2;
-                    for (j=0; j<3; j++)
-                    {
-                        b->R_vec[j] = (m1 * child1->R_vec[j] + m2 * child2->R_vec[j])/M;
-                        b->V_vec[j] = (m1 * child1->V_vec[j] + m2 * child2->V_vec[j])/M;
-                    }
-                }
-            }
-            
-        }
-    }
-//    printf("test %d\n",new_particlesMap.size());
-//    printf("test %g\n",new_particlesMap[0]->R_vec[0]);
-
-//    printf("%d\n",R->NumVertex);
-    printf("analyse done!\n");
-
-}
-#endif
 
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag)
 {
@@ -1065,7 +814,13 @@ struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particle
     R->stopping_condition_tolerance = MSTAR_stopping_condition_tolerance;
     R->output_time_tolerance = MSTAR_output_time_tolerance;
 
-    printf("R->gbs_tolerance %g R->stopping_condition_tolerance %g R->output_time_tolerance %g\n",R->gbs_tolerance,R->stopping_condition_tolerance,R->output_time_tolerance);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- create_mstar_instance_of_system -- R->gbs_tolerance %g R->stopping_condition_tolerance %g R->output_time_tolerance %g\n",R->gbs_tolerance,R->stopping_condition_tolerance,R->output_time_tolerance);
+    }
+    #endif
+    
     //into_CoM_frame(R);
     
     //check_MSTAR_system_for_distant_bodies(R);
@@ -1125,12 +880,15 @@ void print_state(struct RegularizedRegion *R)
 
 void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double> > &R_vecs, std::vector<std::vector<double> > &V_vecs)
 {
-    printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss end_time %g Nsteps %d \n",end_time,Nsteps);
-    
     /* Used to take into account effect of mass loss during events such as CE.
      * No collision detection. */
-    
-    
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss end_time %g Nsteps %d \n",end_time,Nsteps);
+    }
+    #endif
         
     initialize_mpi_or_serial(); // This needs to be done to initialize MSTAR
 
@@ -1162,7 +920,13 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
             R->Vel[3 * i + j] = V_vecs[i][j];
         }
         
-        printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        }
+        #endif
+
         i++;
     }
 
@@ -1200,7 +964,14 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
             R_vecs[i][j] = R->Pos[3 * i + j];
             V_vecs[i][j] = R->Vel[3 * i + j];
         }
-        printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss -- done m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss -- done m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
+        }
+        #endif
+
         i++;
     }
     
@@ -1249,7 +1020,14 @@ void check_MSTAR_system_for_distant_bodies(struct RegularizedRegion *R)
         if (sep_max > MSTAR_maximum_separation_for_inclusion)
         {
             R->Mass[i] = 1.0e-10;
-            printf("nbody_evolution.cpp -- check_MSTAR_system_for_distant_bodies -- excluding body %d sep_max %g pos %g %g %g \n",i,sep_max,R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("nbody_evolution.cpp -- check_MSTAR_system_for_distant_bodies -- excluding body %d sep_max %g pos %g %g %g \n",i,sep_max,R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2]);
+            }
+            #endif
+            
         }
     }
 }
@@ -1257,7 +1035,7 @@ void check_MSTAR_system_for_distant_bodies(struct RegularizedRegion *R)
 int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap)
 {
     int N_bodies = 0;
-    
+
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -1276,7 +1054,7 @@ int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap)
             }
         }
     }
-    
+
     return N_bodies;
 }
 

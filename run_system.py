@@ -42,11 +42,12 @@ def parse_arguments():
     parser.add_argument("--Nsteps",                         type=int,       dest="N_steps",                     default=2000,              help="Number of plot output steps")
     
     parser.add_argument("--random_seed",                    type=int,       dest="random_seed",                 default=0,                 help="Random seed")
+    parser.add_argument("--verbose_flag",                   type=int,       dest="verbose_flag",                default=1,                 help="0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably) ")
     
     parser.add_argument("--plot_filename",                  type=str,       dest="plot_filename",               default="test1",           help="Plot filename")
     
     ### boolean arguments ###
-    add_bool_arg(parser, 'verbose',                         default=False,         help="Verbose terminal output")
+    add_bool_arg(parser, 'verbose',                         default=False,         help="Verbose terminal output (Python)")
     add_bool_arg(parser, 'plot',                            default=False,         help="Make plots")
     add_bool_arg(parser, 'show_plots',                      default=True,          help="Display plots")
     add_bool_arg(parser, 'fancy_plots',                     default=False,         help="Use LaTeX fonts for plots (slow)")
@@ -78,4 +79,4 @@ if __name__ == '__main__':
 
     print("="*50)
     
-    Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed)
+    Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag)

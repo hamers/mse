@@ -26,6 +26,7 @@ bool include_hexadecupole_order_binary_pair_terms = true;
 bool include_dotriacontupole_order_binary_pair_terms = true;
 bool include_double_averaging_corrections = false;
 int random_seed = 0;
+int verbose_flag = 1;
 
 double secular_integration_exclusion_safety_factor = 1.0e-3;
 double ODE_min_dt = 1.0;

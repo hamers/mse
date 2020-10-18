@@ -21,11 +21,15 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 
     check_for_integration_exclusion_orbits(particlesMap);
 
-    #ifdef DEBUG
-    printf("ODE_system.cpp -- evolve -- N_bodies %d N_binaries %d N_particles %d N_root_finding %d N_ODE_equations %d\n",N_bodies,N_binaries,N_particles,N_root_finding,N_ODE_equations);
-    print_system(particlesMap,0);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_system.cpp -- evolve -- N_bodies %d N_binaries %d N_particles %d N_root_finding %d N_ODE_equations %d\n",N_bodies,N_binaries,N_particles,N_root_finding,N_ODE_equations);
+        print_system(particlesMap,0);
+
+    }
     #endif
-    
+   
     /*********************
      * setup of UserData *
      ********************/
@@ -220,9 +224,13 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
     double start_time = data->start_time;
     double delta_time = time - start_time;
 
-    #ifdef DEBUG
-    printf("ODE_system.cpp -- compute_y_dot1 t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
-    print_system(particlesMap,0);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_system.cpp -- compute_y_dot1 t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
+        print_system(particlesMap,0);
+
+    }
     #endif
     
     extract_ODE_variables(particlesMap, y, delta_time);
@@ -389,10 +397,14 @@ void process_direct_integration_quantities(ParticlesMap *particlesMap, double de
 
                 p->true_anomaly = compute_true_anomaly_from_mean_anomaly(new_MA,norm3(p->e_vec));
                 from_orbital_vectors_to_cartesian(p->child1_mass,p->child2_mass,p->e_vec,p->h_vec,p->true_anomaly,p->r_vec,p->v_vec);
-                
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- process_direct_integration_quantities -- n %g new_MA %g old_MA %g\n",n,new_MA,p->initial_mean_anomaly);
+
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- process_direct_integration_quantities -- n %g new_MA %g old_MA %g\n",n,new_MA,p->initial_mean_anomaly);
+                }
                 #endif
+                
             }
             else if (p->integration_method>0)
             {
@@ -579,9 +591,13 @@ void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
             p->dmass_dt = p->mass_dot_wind + p->mass_dot_wind_accretion;
             p->dradius_dt = p->radius_dot + p->radius_ddot*delta_time;
             
-            #ifdef DEBUG
-            printf("ODE_system.cpp -- reset_ODE_dots -- body i %d dmass_dt %g dradius_dt %g dspin_vec_dt %g %g %g p->ospin_dot %g p->spin_vec %g %g %g\n",p->index,p->dmass_dt,p->dradius_dt,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2],p->ospin_dot,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2]);
+            #ifdef VERBOSE
+            if (verbose_flag > 2)
+            {
+                printf("ODE_system.cpp -- reset_ODE_dots -- body i %d dmass_dt %g dradius_dt %g dspin_vec_dt %g %g %g p->ospin_dot %g p->spin_vec %g %g %g\n",p->index,p->dmass_dt,p->dradius_dt,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2],p->ospin_dot,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2]);
+            }
             #endif
+
         }
         else
         {
@@ -596,8 +612,11 @@ void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
                     p->dh_vec_dt[i] = p->h_vec[i]*factor_h_vec;
                 }
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- reset_ODE_dots -- binary i %d de_vec_dt %g %g %g dh_vec_dt %g %g %g factor_h_vec %g\n",p->index,p->de_vec_dt[0],p->de_vec_dt[1],p->de_vec_dt[2],p->dh_vec_dt[0],p->dh_vec_dt[1],p->dh_vec_dt[2],factor_h_vec);
+               #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- reset_ODE_dots -- binary i %d de_vec_dt %g %g %g dh_vec_dt %g %g %g factor_h_vec %g\n",p->index,p->de_vec_dt[0],p->de_vec_dt[1],p->de_vec_dt[2],p->dh_vec_dt[0],p->dh_vec_dt[1],p->dh_vec_dt[2],factor_h_vec);
+                }
                 #endif
 
             }
@@ -664,9 +683,12 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
             Ith(y_dot,k + 2 + 2) = p->dradius_dt;
             
             k=k+5;
-            
-            #ifdef DEBUG
-            printf("ODE_system.cpp -- write_ODE_variables_dots -- body i %d dspin_vec_dt %g %g %g dmass_dt %g dradius_dt %g\n",p->index,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2],p->dmass_dt,p->dradius_dt);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 2)
+            {
+                printf("ODE_system.cpp -- write_ODE_variables_dots -- body i %d dspin_vec_dt %g %g %g dmass_dt %g dradius_dt %g\n",p->index,p->dspin_vec_dt[0],p->dspin_vec_dt[1],p->dspin_vec_dt[2],p->dmass_dt,p->dradius_dt);
+            }
             #endif
         }
         if (p->is_binary == true) // particle is a binary
@@ -679,8 +701,11 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                     Ith(y_dot,k + k_component + 3)  = p->dh_vec_dt[k_component];
                 }
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d de_vec_dt %g %g %g dh_vec_dt %g %g %g\n",p->index,p->de_vec_dt[0],p->de_vec_dt[1],p->de_vec_dt[2],p->dh_vec_dt[0],p->dh_vec_dt[1],p->dh_vec_dt[2]);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d de_vec_dt %g %g %g dh_vec_dt %g %g %g\n",p->index,p->de_vec_dt[0],p->de_vec_dt[1],p->de_vec_dt[2],p->dh_vec_dt[0],p->dh_vec_dt[1],p->dh_vec_dt[2]);
+                }
                 #endif
                 
                 k=k+6;
@@ -696,9 +721,12 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                 Ith(y_dot,k + 7 + 1)  = p->KS_domega_dt;
                 Ith(y_dot,k + 7 + 2)  = p->KS_dE_dt;
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d KS_dalpha_vec_dt %g %g %g %g p->KS_dbeta_vec_dt %g %g %g %g\n",p->index,p->KS_dalpha_vec_dt[0],p->KS_dalpha_vec_dt[1],p->KS_dalpha_vec_dt[2],p->KS_dalpha_vec_dt[3], p->KS_dbeta_vec_dt[0], p->KS_dbeta_vec_dt[1], p->KS_dbeta_vec_dt[2], p->KS_dbeta_vec_dt[3]);
-                printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d p->KS_domega_dt %g p->KS_dE_dt %g\n",p->index,p->KS_domega_dt,p->KS_dE_dt);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d KS_dalpha_vec_dt %g %g %g %g p->KS_dbeta_vec_dt %g %g %g %g\n",p->index,p->KS_dalpha_vec_dt[0],p->KS_dalpha_vec_dt[1],p->KS_dalpha_vec_dt[2],p->KS_dalpha_vec_dt[3], p->KS_dbeta_vec_dt[0], p->KS_dbeta_vec_dt[1], p->KS_dbeta_vec_dt[2], p->KS_dbeta_vec_dt[3]);
+                    printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d p->KS_domega_dt %g p->KS_dE_dt %g\n",p->index,p->KS_domega_dt,p->KS_dE_dt);
+                }
                 #endif
                 
                 k=k+10;
@@ -711,10 +739,13 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                     Ith(y_dot,k + k_component + 3)  = p->a_vec[k_component];
                 }
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d v_vec %g %g %g a_vec %g %g %g\n",p->index,p->v_vec[0],p->v_vec[1],p->v_vec[2],p->a_vec[0],p->a_vec[1],p->a_vec[2]);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- write_ODE_variables_dots -- binary i %d v_vec %g %g %g a_vec %g %g %g\n",p->index,p->v_vec[0],p->v_vec[1],p->v_vec[2],p->a_vec[0],p->a_vec[1],p->a_vec[2]);
+                }
                 #endif
-
+                
                 k=k+6;
             }
             
@@ -751,9 +782,12 @@ void set_initial_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, N_Vector
 
             k=k+5;
             
-            #ifdef DEBUG
-            printf("ODE_system.cpp -- set_initial_ODE_variables -- body i %d spin_vec %g %g %g mass %g radius %g\n",p->index,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2],p->mass,p->radius);
-            printf("ODE_system.cpp -- set_initial_ODE_variables -- body i %d ABS TOL spin_vec %g %g %g mass %g radius %g\n",p->index,abs_tol_spin_vec,abs_tol_spin_vec,abs_tol_spin_vec,relative_tolerance*p->mass,relative_tolerance*p->radius);
+            #ifdef VERBOSE
+            if (verbose_flag > 2)
+            {
+                printf("ODE_system.cpp -- set_initial_ODE_variables -- body i %d spin_vec %g %g %g mass %g radius %g\n",p->index,p->spin_vec[0],p->spin_vec[1],p->spin_vec[2],p->mass,p->radius);
+                printf("ODE_system.cpp -- set_initial_ODE_variables -- body i %d ABS TOL spin_vec %g %g %g mass %g radius %g\n",p->index,abs_tol_spin_vec,abs_tol_spin_vec,abs_tol_spin_vec,relative_tolerance*p->mass,relative_tolerance*p->radius);
+            }
             #endif
         }
         if (p->is_binary == true) // particle is a binary
@@ -773,15 +807,17 @@ void set_initial_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, N_Vector
                 
                 k=k+6;
                 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d e_vec %g %g %g h_vec %g %g %g\n",p->index,p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2]);
-                printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d ABS TOL e_vec %g %g %g h_vec %g %g %g\n",p->index,abs_tol_e_vec,abs_tol_e_vec,abs_tol_e_vec,relative_tolerance*h,relative_tolerance*h,relative_tolerance*h);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d e_vec %g %g %g h_vec %g %g %g\n",p->index,p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2]);
+                    printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d ABS TOL e_vec %g %g %g h_vec %g %g %g\n",p->index,abs_tol_e_vec,abs_tol_e_vec,abs_tol_e_vec,relative_tolerance*h,relative_tolerance*h,relative_tolerance*h);
+                }
                 #endif
             }
             else if (p->integration_method==1)
             {
 
-                
                 for (k_component=0; k_component<4; k_component++)
                 {
                     Ith(y,k + k_component) = p->KS_alpha_vec[k_component];
@@ -798,10 +834,12 @@ void set_initial_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, N_Vector
                 
                 k=k+10;
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d alpha_vec %g %g %g %g beta_vec %g %g %g %g\n",p->index,p->KS_alpha_vec[0],p->KS_alpha_vec[1],p->KS_alpha_vec[2],p->KS_alpha_vec[3],p->KS_beta_vec[0],p->KS_beta_vec[1],p->KS_beta_vec[2],p->KS_beta_vec[3]);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d alpha_vec %g %g %g %g beta_vec %g %g %g %g\n",p->index,p->KS_alpha_vec[0],p->KS_alpha_vec[1],p->KS_alpha_vec[2],p->KS_alpha_vec[3],p->KS_beta_vec[0],p->KS_beta_vec[1],p->KS_beta_vec[2],p->KS_beta_vec[3]);
+                }
                 #endif
-
             }
             else if (p->integration_method==2)
             {
@@ -815,8 +853,11 @@ void set_initial_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, N_Vector
                 }
                 k=k+6;
 
-                #ifdef DEBUG
-                printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d r %g %g %g v %g %g %g\n",p->index,p->r_vec[0],p->r_vec[1],p->r_vec[2],p->v_vec[0],p->v_vec[1],p->v_vec[2]);
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("ODE_system.cpp -- set_initial_ODE_variables -- binary i %d r %g %g %g v %g %g %g\n",p->index,p->r_vec[0],p->r_vec[1],p->r_vec[2],p->v_vec[0],p->v_vec[1],p->v_vec[2]);
+                }
                 #endif
             }
         }

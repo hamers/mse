@@ -16,10 +16,11 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     {
         return 0;
     }
+
     update_structure(particlesMap, *integration_flag);
     set_positions_and_velocities(particlesMap);
     handle_wind_accretion(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
-    handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
+    int binary_flag = handle_mass_transfer(particlesMap,t_old,t,dt_binary_evolution,integration_flag);
 
     bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
     if (stable == false)
@@ -29,16 +30,14 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
     
 //    printf("binary_evolution.cpp -- handle_binary_evolution -- done; stable %d integration_flag %d dt_binary_evolution %g\n",stable,*integration_flag,*dt_binary_evolution);
 //    print_system(particlesMap,*integration_flag);
-    return 0;
+    return binary_flag;
 }
 
 
 int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
  //   printf("binary_evolution.cpp -- handle_wind_accretion\n");
-    
-    /* TO DO: since wind accretion depends on the orbital properties, move to ODE integration? */
-    
+   
     set_up_derived_quantities(particlesMap); /* for setting a, e, etc. */
     double v_orb_p2,v_wind_p2,factor;
 
@@ -93,37 +92,14 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     double epsilon_MT = 0.01;
     double dt_temp;
 
-    //printf("handle_mass_transfer -- start\n");
-    //print_system(particlesMap,*integration_flag);
-
-    #ifdef IGNORE
-    //for (it = particlesMap->begin(), next_it = it; it != particlesMap->end(); it = next_it)
-    it = particlesMap->begin();
-    while (it != particlesMap->end())
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
     {
-        //++next_it;
-        //Particle *donor = (*it_p).second;
-        Particle *donor = (*it).second;
-        printf("handle_mass_transfer donor %d is_binary %d is_bound %d donor->RLOF_flag %d\n",donor->index,donor->is_binary,donor->is_bound,donor->RLOF_flag);
-        
-        if (donor->index==0)
-        {
-            //it = particlesMap->erase(particlesMap->find(0));
-         //   it = particlesMap->erase(particlesMap->find(1));
-            it = particlesMap->erase(particlesMap->find(3));
-            //(*particlesMap)[1]->is_binary = true;
-            printf("erase\n");
-            //print_system(particlesMap,*integration_flag);
-        }
-        else
-        {
-            it++;
-        }
-
+        printf("binary_evolution.cpp -- handle_mass_transfer -- start\n");
+        print_system(particlesMap,*integration_flag);
     }
-
-    exit(0);
     #endif
+
 
     std::vector<int> parent_indices,donor_indices,accretor_indices;
     ParticlesMapIterator it_p;
@@ -161,15 +137,16 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     
     std::vector<int>::iterator it;
     //for (it = parent_indices.begin(); it != parent_indices.end(); it++)
+    int flag = 0;
     for (int i=0; i<parent_indices.size(); i++)
     {
         //printf("HMT %d %d %d\n",parent_indices[i], donor_indices[i], accretor_indices[i]);
-        int flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
+        flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
     }
 
     update_structure(particlesMap, *integration_flag);
 
-    return 0;
+    return flag;
     
 }
 
@@ -200,13 +177,20 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 
 int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)//, ParticlesMapIterator &it_p)
 {
-    printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+    
     
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
     
-    int flag = -1;
+    int flag = 0;
     
     double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double M_donor = donor->mass;
@@ -256,7 +240,16 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     }
     
     int kw = donor->stellar_type;
-    printf("t_MT %g emt_fm %g\n",t_MT,fm);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- t_MT %g emt_fm %g\n",t_MT,fm);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
+
     /* Different cases */
     if (kw == 0 and q > q_crit_low_mass_donor)
     {
@@ -293,8 +286,15 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     }
     /* TO DO: contact cases! -- applies if accretor->in_RLOF=1 */
     
-    printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
-    print_system(particlesMap,*integration_flag);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
     
     if (flag == -1)
     {
@@ -318,13 +318,19 @@ double compute_stellar_dynamical_timescale(double M, double R)
 
 int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
-    printf("binary_evolution.cpp -- dynamical_mass_transfer_low_mass_donor\n");
-    
     /* Low-mass dynamical mass transfer case similar to CE (BSE evolv2.f: lines 1150 - 1233).
      * This type of (fast) evolution is not handled by the ODE integrator. 
      * Always leads to the destruction of the low-mass MS donor; the accretor always survives. 
      * Do not allow for this case when the accretor is a binary (this would be unlikely in the first place since low-mass  MS stars have small radii). */
 
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- dynamical_mass_transfer_low_mass_donor\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+    
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
@@ -481,34 +487,6 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     
     *integration_flag = 1;
 
-
-    
-    #ifdef IGNORE
-    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, integration_flag);
-
-    /* The binary becomes a body with the accretor's properties. */
-    update_stellar_evolution_properties(accretor);
-    parent->is_binary = false; 
-    copy_all_body_properties(accretor, parent);
-
-    particlesMap->erase(donor_index);
-    particlesMap->erase(accretor_index);
-
-    #ifdef IGNORE
-   /* Handle effect of mass loss and kicks on orbits in the rest of the system */
-      
-    
-    parent->mass = m_old; // the old total mass
-    parent->instantaneous_perturbation_delta_mass = m_new - m_old; /* new mass minus old one; note: if destroyed, the new mass will be 0 */
-    parent->instantaneous_perturbation_delta_VX = v_kick_vec[0];
-    parent->instantaneous_perturbation_delta_VY = v_kick_vec[1];
-    parent->instantaneous_perturbation_delta_VZ = v_kick_vec[2];
-
-    printf("binary_evolution -- dynamical_mass_transfer_WD_donor -- delta m %g v_kick_vec %g %g %g\n",parent->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
-    apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
-    #endif
-    #endif
-    
     return 0;
 }
 
@@ -535,13 +513,19 @@ double compute_Eddington_accretion_rate(double radius, double hydrogen_mass_frac
 
 int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
-    printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor\n");
-    
     /* Dynamical mass transfer case WD donor (BSE evolv2.f: lines 1290 - 1342).
      * This type of (fast) evolution is not handled by the ODE integrator. 
      * Always leads to the destruction of the donor; the accretor might survive. 
      * Take into account mass loss from the system, and assume there is no kick imparted on the accretor if it survives.
      * Do not allow for this case when the accretor is a binary (this would be unlikely in the first place given the size of WDs). */
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -653,52 +637,23 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
 
     *integration_flag = 1;
 
-
-
-    #ifdef IGNORE
-    #ifdef IGNORE
-   /* Handle effect of mass loss and kicks on orbits in the rest of the system */
-      
-    
-    parent->mass = m_old; // the old total mass
-    parent->instantaneous_perturbation_delta_mass = m_new - m_old; /* new mass minus old one; note: if destroyed, the new mass will be 0 */
-    parent->instantaneous_perturbation_delta_VX = v_kick_vec[0];
-    parent->instantaneous_perturbation_delta_VY = v_kick_vec[1];
-    parent->instantaneous_perturbation_delta_VZ = v_kick_vec[2];
-
-    printf("binary_evolution -- dynamical_mass_transfer_WD_donor -- delta m %g v_kick_vec %g %g %g\n",parent->instantaneous_perturbation_delta_mass,v_kick_vec[0],v_kick_vec[1],v_kick_vec[2]);
-    apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag); /* this will update the binary's mass */
-    #endif
-
-    particlesMap->erase(donor_index);
-    
-    if (destroyed == false)
-    {
-        /* The binary becomes a body with the accretor's properties. */
-        update_stellar_evolution_properties(accretor);
-        parent->is_binary = false; 
-        copy_all_body_properties(accretor, parent);
-
-        particlesMap->erase(donor_index);
-        particlesMap->erase(accretor_index);
-    }
-    else
-    {
-//        handle_destruction_of_binary_in_system(particlesMap,parent);
-    }
-    #endif
-    
-    
     return 0;
     
 }
 
 int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag)
 {
-    printf("binary_evolution.cpp -- mass_transfer_NS_BH_donor\n");
     /* "Mass transfer" case NS/BH donor (BSE evolv2.f: lines 1343 - 1365 ).
      * Treat this as a pure collision. 
      * Do not allow for this case when the accretor is a binary (this would be unlikely in the first place given the size of NNS/BHs). */
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- mass_transfer_NS_BH_donor\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -740,9 +695,15 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     /* Stable mass transfer case (BSE evolv2.f: lines 1370 - 1905) */
-    
-    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
-    //print_system(particlesMap,*integration_flag);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
 
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -782,62 +743,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
     double dm1 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
     double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
-
-#ifdef IGNORE
-*
-* Mass transfer in one Kepler orbit.
-*
-         dm1 = 3.0d-06*tb*(LOG(rad(j1)/rol(j1))**3)*
-     &         CV_min(mass(j1),5.d0)**2
-         if(kstar(j1).eq.2)then
-            mew = (mass(j1) - massc(j1))/mass(j1)
-            dm1 = CV_max(mew,0.01d0)*dm1
-         elseif(kstar(j1).ge.10)then
-*           dm1 = dm1*1.0d+03/CV_max(rad(j1),1.0d-04)
-            dm1 = dm1*1.0d+03*mass(j1)/CV_max(rad(j1),1.0d-04)
-         endif
-         kst = kstar(j2)
-*
-* Possibly mass transfer needs to be reduced if primary is rotating 
-* faster than the orbit (not currently implemented). 
-*
-*        spnfac = CV_min(3.d0,CV_max(ospin(j1)/oorb,1.d0))
-*        dm1 = dm1/spnfac**2
-*
-* Limit mass transfer to the thermal rate for remaining giant-like stars
-* and to the dynamical rate for all others.
-*
-         if(kstar(j1).ge.2.and.kstar(j1).le.9.and.kstar(j1).ne.7)then
-***
-* JH_temp ... this may be good for HG RLOF??
-*           if(kstar(j1).eq.2)then
-*              mew = rad(j1)/rol(j1) - 1.d0
-*              mew = 2.d0*mew
-*              dm1 = dm1*10.d0**mew
-*           endif
-***
-            dm1 = CV_min(dm1,mass(j1)*tb/tkh(j1))
-         elseif(rad(j1).gt.10.d0*rol(j1).or.(kstar(j1).le.1.and.
-     &          kstar(j2).le.1.and.q(j1).gt.qc))then
-*
-* Allow the stars to merge with the product in *1.
-*
-            m1ce = mass(j1)
-            m2ce = mass(j2)
-            CALL mix(mass0,mass,aj,kstar,zpars)
-            dm1 = m1ce - mass(j1)
-            dm2 = mass(j2) - m2ce
-*
-* Next step should be made without changing the time.
-*
-            dtm = 0.d0
-            epoch(1) = tphys - aj(1)
-            coel = .true.
-            goto 135
-         else
-            dm1 = CV_min(dm1,mass(j1)*tb/tdyn)
-         endif
-#endif
 
     double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
     double dms_accretor = fabs(accretor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
@@ -1147,7 +1052,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         else
         {
             donor->age *= (tms/tms_donor_old);
-            printf("age %g %g %.15f m_donor_new %g m_donor %g\n",tms,tms_donor_old,tms/tms_donor_old,m_donor_new,m_donor);
+            //printf("age %g %g %.15f m_donor_new %g m_donor %g\n",tms,tms_donor_old,tms/tms_donor_old,m_donor_new,m_donor);
         }
         donor->epoch = t - donor->age;
     }
@@ -1212,8 +1117,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     donor->mass_dot_adiabatic_ejection = 0.0;
     accretor->mass_dot_adiabatic_ejection = - (dm1 - dm2)/dt;
 
-    printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g dt_binary_evolution old %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection,*dt_binary_evolution);
-    //print_system(particlesMap,*integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- donor %d accretor %d donor->mass_dot_RLOF %g accretor->mass_dot_RLOF %g accretor->mass_dot_adiabatic_ejection %g dt_binary_evolution old %g\n",donor->index,accretor->index,donor->mass_dot_RLOF,accretor->mass_dot_RLOF,accretor->mass_dot_adiabatic_ejection,*dt_binary_evolution);
+        //print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
     
     double fabs_m_dot_donor = fabs(dm1 / dt);
     double fabs_m_dot_accretor = fabs(dm2 / dt);
@@ -1228,7 +1139,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     }
     *dt_binary_evolution = dt * binary_evolution_mass_transfer_timestep_parameter * CV_min( (m_donor/dm1), (m_accretor/dm2) );
     *dt_binary_evolution = CV_max(ODE_min_dt, *dt_binary_evolution);
-    printf("dt_binary_evolution new %g\n",*dt_binary_evolution);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- dt_binary_evolution new %g\n",*dt_binary_evolution);
+    }
+    #endif
+
     return 0;
 }
 
@@ -1236,7 +1154,13 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
 int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
-    printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution\n");
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution\n");
+    }
+    #endif
+    
 
     Particle *outer_binary = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
@@ -1369,7 +1293,14 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
 
     if (R_donor < R_RL_av_donor)
     {
-        printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- skipping since R_donor < R_RL_av -- R_donor %g RL_av_donor %g\n",R_donor,R_RL_av_donor);
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- skipping since R_donor < R_RL_av -- R_donor %g RL_av_donor %g\n",R_donor,R_RL_av_donor);
+        }
+        #endif
+        
         return 0.0;
     }
     
@@ -1396,9 +1327,12 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
         dm1 = CV_min(dm1, m_donor * dt/t_dyn_donor);
     }
 
-    //#ifdef DEBUG
-    printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g RL_av_donor %g\n",dm1,R_donor,R_RL_av_donor);
-    //#endif
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g RL_av_donor %g\n",dm1,R_donor,R_RL_av_donor);
+    }
+    #endif
 
     return dm1;
 }

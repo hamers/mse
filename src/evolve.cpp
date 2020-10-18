@@ -7,10 +7,14 @@ extern "C"
 
 int initialize_code(ParticlesMap *particlesMap)
 {
-    #ifdef DEBUG
-    printf("evolve.cpp -- initialize_code; set_up_flybys and initialize stars\n");
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("evolve.cpp -- initialize_code; set_up_flybys and initialize stars\n");
+        print_system(particlesMap,0);
+    }
     #endif
-
+    
     update_structure(particlesMap, 0);
 
     srand(random_seed);
@@ -54,7 +58,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     
     /* Set up integration variables */
-    int flag;
+    int flag,binary_flag;
     double t = start_time;
     double t_old = t;
     double t_end = end_time;
@@ -97,8 +101,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         //printf("post SNe\n");
         
         /* Binary evolution */
-        flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
-        //printf("post bin\n");
+        binary_flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
+        //printf("post bin binary_flag %d integration_flag  %d\n",binary_flag,*integration_flag);
         //print_system(particlesMap,*integration_flag);
 
         /* Dynamical evolution -- will update masses/radii */
@@ -108,23 +112,42 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
         else // Direct N-body
         {
-            integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
+            //if (binary_flag == 0 or binary_flag == 5)
+            {
+                integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
+            }
+            //else
+            {
+              //  update_stellar_evolution_quantities_directly(particlesMap,t - t_old);
+              //  printf("Skipping N-body after CE/quick event\n");
+                //exit(-1);
+            }
+                
         }
 
         //printf("post dyn\n");
         //print_system(particlesMap,*integration_flag);
         
         t = t_out;
-        
-        #ifdef DEBUG
-        printf("ODE dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("evolve.cpp -- evolve -- ODE dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
+        }
         #endif
+       
         
         /* Handle roots */
         if (*CVODE_flag==2)
         {
-            printf("ROOT occurred; setting t = t_out; t %g t_out %g\n",t,t_out);
-            print_system(particlesMap,*integration_flag);
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("evolve.cpp -- evolve -- ROOT occurred; setting t = t_out; t %g t_out %g\n",t,t_out);
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
             
             flag = investigate_roots_in_system(particlesMap, t, *integration_flag);
             handle_roots(particlesMap, flag, integration_flag, CVODE_flag, t, &dt_stev, &dt_binary_evolution);
@@ -184,6 +207,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
                 log_info.index1 = last_entry_info.index1;
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_END, log_info);
             }
+            #ifdef IGNORE
             if (last_entry.event_flag == LOG_CE_START and *integration_flag == 0) // end of CE phase
             {
                 Log_info_type log_info;
@@ -200,6 +224,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
                 log_info.index2 = last_entry_info.index2;
                 update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
             }
+            #endif
         }
         #endif
         

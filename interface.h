@@ -162,7 +162,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
 int get_random_seed(int *value);
 int set_random_seed(int value);
 
-
+int get_verbose_flag(int *value);
+int set_verbose_flag(int value);
 
 /***********
  * Testing *

@@ -1402,7 +1402,10 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                 if (*stopping_condition_occurred == 1)
                 {
                     not_finished = 0;
-                    printf("Stopping condition at t=%g \n",time);
+                    if (MSTAR_verbose == 1)
+                    {
+                        printf("Stopping condition at t=%g \n",time);
+                    }
                 }
 
                 if (possible_stopping_condition == 1)

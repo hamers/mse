@@ -8,8 +8,6 @@ extern "C"
 
 int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
 {
-    //printf("binary_evolution.cpp -- common_envelope_evolution -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
-    //int i;
 
     Particle *star1 = (*particlesMap)[index1];
     Particle *star2 = (*particlesMap)[index2];
@@ -30,25 +28,10 @@ int common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int 
 
 void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_index, int index1, int index2, double t, int *integration_flag)//, ParticlesMapIterator &it_p)
 {
-    /*
-     * **
-      SUBROUTINE COMENV(M01,M1,MC1,AJ1,JSPIN1,KW1,
-     &                  M02,M2,MC2,AJ2,JSPIN2,KW2,
-     &                  ZPARS,ECC,SEP,JORB,COEL)
-*
-* Common Envelope Evolution.
-* Mostly copied from BSE.
-*
-*     Author : C. A. Tout
-*     Date :   18th September 1996
-*
-*     Redone : J. R. Hurley
-*     Date :   7th July 1998
-*
-* Note units in SSE/BSE: length in RSUN, time in Myr, luminosity in LSun
-*/
-
-
+    /*************
+    * Common Envelope Evolution.
+    * Mostly adopted from BSE.
+    * Note units in SSE/BSE: length in RSUN, time in Myr, luminosity in LSun */
 
     #ifdef LOGGING
     Log_info_type log_info;
@@ -58,7 +41,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     update_log_data(particlesMap, t, *integration_flag, LOG_CE_START, log_info);
     #endif
 
-    printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
+    }
+    #endif
+
     int i;
 
     Particle *star1 = (*particlesMap)[index1];
@@ -101,8 +90,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
     get_unit_vector(h_vec,h_vec_unit);
     get_unit_vector(e_vec,e_vec_unit);
-    printf("CE init a/au %g e %g\n",SEP*CONST_R_SUN,ECC);
 
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- init a/au %g e %g\n",SEP*CONST_R_SUN,ECC);
+    }
+    #endif
+    
     int CEFLAG = binary_evolution_CE_energy_flag;
     double ALPHA1 = star1->common_envelope_alpha;
     
@@ -127,14 +122,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     double AJ1 = star1->age * yr_to_Myr;
     double *ZPARS1 = star1->zpars;    
-    //printf("t1 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
+
     star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
-    //printf("t2 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
-    //printf("arg hrd %g %g %g %g %g \n",M01,AJ1,M1,TM1,TN1);
+
+
     hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
         &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
 
-//      OSPIN1 = JSPIN1/(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
     double MENVD1 = MENV1 / (M1 - MC1);
     double RZAMS1 = rzamsf_(&M01);
     double LAMB1 = celamf_(&KW1,&M01,&L1,&R1,&RZAMS1,&MENVD1,&fac);
@@ -156,13 +150,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     double AJ2 = star2->age * yr_to_Myr;
     double *ZPARS2 = star2->zpars;    
-    //printf("t3 %g %d %g %g %g %g\n",ZPARS2[0],KW2,M02,M2,TM2,TN2);
+
     star_(&KW2, &M02, &M2, &TM2, &TN2, TSCLS2, LUMS2, GB2, ZPARS2);
-    //printf("t4 %g %d %g %g %g %g\n",ZPARS2[0],KW2,M02,M2,TM2,TN2);    
+
     
     hrdiag_(&M02,&AJ2,&M2,&TM2,&TN2,TSCLS2,LUMS2,GB2,ZPARS2, \
         &R2,&L2,&KW2,&MC2,&RC2,&MENV2,&RENV2,&K22);
-//      OSPIN1 = JSPIN1/(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
+
     double MENVD2 = MENV2 / (M2 - MC2);
     double RZAMS2 = rzamsf_(&M02);
     double LAMB2 = celamf_(&KW2,&M02,&L2,&R2,&RZAMS2,&MENVD2,&fac);
@@ -289,12 +283,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 //star1->kick_distribution = 1;
                 //star1->instantaneous_perturbation_delta_mass = M1 - MF;
             }
-            
-            // TO DO: include kicks 
-            //IF(KW1.GE.13)THEN
-               //CALL kick(KW1,MF,M1,M2,ECC,SEPF,JORB,VS)
-               //IF(ECC.GT.1.D0) GOTO 30
-            //ENDIF
          }
     }
     else
@@ -608,21 +596,35 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     {
 
     *integration_flag = 1;
-            
-    printf("COEL %d OORB %g\n",COEL,OORB);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- pre handle mass loss -- COEL %d OORB %g\n",COEL,OORB);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
+    
     bool unbound_orbits = false;
-    //double spin_vec_unit[3];
 
     double final_R_CM[3],final_V_CM[3],final_momentum[3];
     handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, M1, M1_old, M2, M2_old, star1->common_envelope_timescale, \
         r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
     double Omega_crit,Omega;
 
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- post handle mass loss -- COEL %d OORB %g\n",COEL,OORB);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
+
     if (COEL == false)
     {
         
-        printf("no coel M1 %g M2 %g kw1 %d kw2 %d SEPF %g ECC %g\n",M1,M2,KW1,KW2,SEPF,ECC);
-
         /* Take into account kicks */
         double V_kick_vec[3];
         if (star1->apply_kick == true)
@@ -641,9 +643,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 star2->V_vec[i] += V_kick_vec[i];
             }
         }
-
-        printf("CE -- post mass changes and kicks\n");
-        print_system(particlesMap,*integration_flag);
 
         /* Update all properties of the two stars */
         star1->stellar_type = KW1;
@@ -669,7 +668,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             Omega = OORB;
             if (OORB >= Omega_crit)
             {
-                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
+                
                 Omega = Omega_crit;
             }
             
@@ -699,7 +705,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             Omega = OORB;
             if (OORB >= Omega_crit)
             {
-                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star2->index,OORB,Omega_crit);
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star2->index,OORB,Omega_crit);
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
+
                 Omega = Omega_crit;
             }
 
@@ -718,27 +731,25 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         double e = ECC;
         double h = compute_h_from_a(M1,M2,a,e);
 
-        printf("CE post a %g e %g h %g\n",a,e,h);
-        print_system(particlesMap,*integration_flag);
-        
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- no COEL post a %g e %g h %g\n",a,e,h);
+            print_system(particlesMap,*integration_flag);
+        }
+        #endif
+
         double R1_vec_new[3],R2_vec_new[3],V1_vec_new[3],V2_vec_new[3];
+        //printf("CE1>.. %g %g %g \n",R1_vec_new[0],R1_vec_new[1],R1_vec_new[2]);
         compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(M1_old,star1->R_vec,star1->V_vec,M2_old,star2->R_vec,star2->V_vec,M1,R1_vec_new,V1_vec_new,M2,R2_vec_new,V2_vec_new,a,e);
         for (int i=0; i<3; i++)
         {
+            //printf("CE2>.. %g \n",R1_vec_new[i]);
             star1->R_vec[i] = R1_vec_new[i];
             star1->V_vec[i] = V1_vec_new[i];
             star2->R_vec[i] = R2_vec_new[i];
             star2->V_vec[i] = V2_vec_new[i];
         }
-
-        /* Override the integration flag (cf. handle_instantaneous_and_adiabatic_mass_changes_in_orbit above) */
-        /* Is this necessary? Done at the end of binary_evolution() */
-//        bool unbound_orbits = check_for_unbound_orbits(particlesMap);
-        //if (unbound_orbits == true)
-        //{
-            //*integration_flag = 5;
-            //printf("binary_evolution.cpp -- CE -- Unbound orbits in system; switching to integration_flag %d\n",*integration_flag);
-        //}
 
         /* Reset some parameters */
         star1->RLOF_flag = 0;
@@ -752,9 +763,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star2->mass_dot_wind = 0.0;
         star2->radius_dot = 0.0;
         star2->ospin_dot = 0.0;
-
-        printf("CE no coel end\n");
-        print_system(particlesMap,*integration_flag);
     }
     else if (COEL == true)
     {
@@ -807,7 +815,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             Omega = OORB;
             if (OORB >= Omega_crit)
             {
-                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
+                
                 Omega = Omega_crit;
             }
 
@@ -828,9 +843,23 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     } // end of label30
 
-    printf("binary_evolution.cpp -- common_envelope_evolution -- end\n");
-    print_system(particlesMap,*integration_flag);
+    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
 
+    #ifdef LOGGING
+    //Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = index1;
+    log_info.index2 = index2;
+    update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
+    #endif
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- end\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 
     return;
 }
@@ -848,8 +877,15 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
      * Otherwise, adjust the outer orbit, and take into account mass changes on the entire system.
      * SNe from the tertiary star (if it becomes a neutron star) might still disrupt the system.
     /* Units used here: length: RSun; time: Myr */
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
     
-    printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- start; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
 
     Particle *star3 = (*particlesMap)[index1];
     Particle *inner_binary = (*particlesMap)[index2];
@@ -1067,7 +1103,14 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             double Omega = Omega_orb_out_f;
             if (Omega_orb_out_f >= Omega_crit)
             {
-                printf("Limiting spin frequency of star %d from %g to breakup rate %g\n",star3->index,Omega_orb_out_f,Omega_crit);
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star3->index,Omega_orb_out_f,Omega_crit);
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
+                
                 Omega = Omega_crit;
             }
             
@@ -1109,38 +1152,6 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
     return;
-}
-
-int common_envelope_evolution_old(ParticlesMap *particlesMap, int binary_index, int donor_index, int accretor_index)
-{
-    /* Old function; can be ignored */
-    Particle *binary = (*particlesMap)[binary_index];
-    Particle *donor = (*particlesMap)[donor_index];
-    Particle *accretor = (*particlesMap)[accretor_index];
-    
-    double M_donor = donor->mass;
-    double M_core_donor = donor->core_mass;
-    double M_envelope_donor = M_donor - M_core_donor; // do not take convective envelope mass
-    double M_accretor = accretor->mass;
-    
-    double alpha = binary->common_envelope_alpha;
-    double lambda = donor->common_envelope_lambda;
-    
-    double a_i = binary->a;
-    double e = binary->e;
-    double rp_i = a_i * (1.0 - e);
-    
-    double q = M_donor / M_accretor;
-    double r_L_d = roche_radius_pericenter_eggleton(rp_i,q) / a_i; // take R_L at periapsis
-    
-    double a_f = a_i * (M_core_donor / M_donor) * M_accretor / ( M_accretor + 2.0 * M_envelope_donor / (alpha * lambda * r_L_d) );
-
-    binary->a = a_f;
-    binary->e = epsilon; // assume circularisation after CE
-    donor->mass = M_core_donor; // what about stellar type?
-    
-    /* calc new e & h vectors; update R&V */
-    return 0; 
 }
 
 }

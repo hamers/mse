@@ -206,10 +206,13 @@ int compute_orbital_vectors_from_orbital_elements_unit(double inclination, doubl
 
 int compute_orbital_elements_from_orbital_vectors(double child1_mass, double child2_mass, double h_tot_vec[3], double e_vec_x, double e_vec_y, double e_vec_z, double h_vec_x, double h_vec_y, double h_vec_z, double *semimajor_axis, double *eccentricity, double *inclination, double *argument_of_pericenter,double *longitude_of_ascending_node)
 {
-    #ifdef DEBUG
-    printf("tools.cpp -- compute_orbital_elements_from_orbital_vectors -- e_vec %g %g %g h_vec %g %g %g\n",e_vec_x,e_vec_y,e_vec_z,h_vec_x,h_vec_y,h_vec_z);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("tools.cpp -- compute_orbital_elements_from_orbital_vectors -- e_vec %g %g %g h_vec %g %g %g\n",e_vec_x,e_vec_y,e_vec_z,h_vec_x,h_vec_y,h_vec_z);
+    }
     #endif
-    
+
     double e_vec[3] = {e_vec_x,e_vec_y,e_vec_z};
     double h_vec[3] = {h_vec_x,h_vec_y,h_vec_z};
     double eccentricity_squared = norm3_squared(e_vec);

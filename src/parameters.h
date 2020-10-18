@@ -28,6 +28,7 @@ extern bool include_dotriacontupole_order_binary_pair_terms;
 extern bool include_double_averaging_corrections;
 extern double epsilon;
 extern int random_seed;
+extern int verbose_flag;
 
 extern double secular_integration_exclusion_safety_factor;
 extern double ODE_min_dt;

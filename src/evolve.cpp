@@ -17,7 +17,8 @@ int initialize_code(ParticlesMap *particlesMap)
     
     update_structure(particlesMap, 0);
 
-    srand(random_seed);
+    random_number_generator.seed(random_seed);
+
     int integration_flag = 0;
 
     initialize_stars(particlesMap);

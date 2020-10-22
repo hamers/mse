@@ -14,7 +14,6 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     //std::vector<int>::iterator it_parent_p,it_parent_q;
 
 //    int seed = orbital_phases_random_seed;
-    int index=0;
     
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -28,7 +27,6 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
             if (p->apply_kick == true)
             {
                 flag = sample_kick_velocity(p,&VX,&VY,&VZ);
-                index+=1;
             }
 
             #ifdef VERBOSE
@@ -84,9 +82,11 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 {
     //srand(seed);
     double x;
-    x = ((double) rand() / (RAND_MAX));
+    //x = ((double) rand() / (RAND_MAX));
+    x = generate_random_number_between_zero_and_unity();
     double theta = 2.0*M_PI*x - M_PI;
-    x = ((double) rand() / (RAND_MAX));
+    //x = ((double) rand() / (RAND_MAX));
+    x = generate_random_number_between_zero_and_unity();
     double phi = 2.0*M_PI*x;
     *vx = sin(theta)*cos(phi);
     *vy = sin(theta)*sin(phi);

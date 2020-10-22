@@ -47,7 +47,7 @@ class test_mse():
     def test1(self,args):
         print("Basic test using reference system of Naoz et al. (2009)")
 
-        particles = Tools.create_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.0],[0.0,0.0])
+        particles = Tools.create_fully_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.0],[0.0,0.0])
         binaries = [x for x in particles if x.is_binary==True]
         inner_binary = binaries[0]
         outer_binary = binaries[1]
@@ -120,7 +120,7 @@ class test_mse():
     def test2(self,args):
         print("Test 1PN precession in 2-body system")
 
-        particles = Tools.create_nested_multiple(2,[1.0, 1.0], [1.0], [0.99], [0.01], [0.01], [0.01])
+        particles = Tools.create_fully_nested_multiple(2,[1.0, 1.0], [1.0], [0.99], [0.01], [0.01], [0.01])
         binaries = [x for x in particles if x.is_binary == True]
         bodies = [x for x in particles if x.is_binary == False]
 
@@ -225,7 +225,7 @@ class test_mse():
         e0 = 0.999
         m1 = 1.0
         m2 = 1.0
-        particles = Tools.create_nested_multiple(2,[m1, m2], [a0], [e0], [0.01], [0.01], [0.01])
+        particles = Tools.create_fully_nested_multiple(2,[m1, m2], [a0], [e0], [0.01], [0.01], [0.01])
         bodies = [x for x in particles if x.is_binary == False]
         binaries = [x for x in particles if x.is_binary == True]
 
@@ -339,7 +339,7 @@ class test_mse():
         aF = a0*(1.0-e0**2)
         nF = np.sqrt( CONST_G*(M+m_per)/(aF**3) )
 
-        particles = Tools.create_nested_multiple(2, [m_per, M], [a0], [e0], [0.01], [0.01], [0.01])
+        particles = Tools.create_fully_nested_multiple(2, [m_per, M], [a0], [e0], [0.01], [0.01], [0.01])
         binaries = [x for x in particles if x.is_binary==True]
         binary = particles[2]
 
@@ -482,7 +482,7 @@ class test_mse():
         P0 = 2.0*np.pi*np.sqrt(a0**3/(CONST_G*(M+m_per)))
         n0 = 2.0*np.pi/P0
 
-        particles = Tools.create_nested_multiple(2, [m_per, M], [a0], [e0], [0.01], [0.01], [0.01])
+        particles = Tools.create_fully_nested_multiple(2, [m_per, M], [a0], [e0], [0.01], [0.01], [0.01])
         binary = particles[2]
         particles[0].radius = 1.0*CONST_R_SUN
         particles[1].radius = R
@@ -587,7 +587,7 @@ class test_mse():
         aF = a0*(1.0-e0**2)
         nF = np.sqrt( CONST_G*(M+m_per)/(aF**3) )
 
-        particles = Tools.create_nested_multiple(2, [m_per, M], [a0], [e0], [1.0e-5], [1.0e-5], [1.0e-5])
+        particles = Tools.create_fully_nested_multiple(2, [m_per, M], [a0], [e0], [1.0e-5], [1.0e-5], [1.0e-5])
         binary = particles[2]
         particles[0].radius = 1.0
         particles[1].radius = R
@@ -683,7 +683,7 @@ class test_mse():
 
         code = MSE()
         
-        particles = Tools.create_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
@@ -751,7 +751,7 @@ class test_mse():
 
         code = MSE()
         
-        particles = Tools.create_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
@@ -823,7 +823,7 @@ class test_mse():
         m3i = 0.9
         a1i = 1.0
         a2i = 100.0
-        particles = Tools.create_nested_multiple(3,[m1i,m2i,m3i], [a1i,a2i], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+        particles = Tools.create_fully_nested_multiple(3,[m1i,m2i,m3i], [a1i,a2i], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
@@ -921,7 +921,7 @@ class test_mse():
         LAN1=0
         LAN2=0
 
-        particles = Tools.create_nested_multiple(3, [m1,m2,m3],[a1,a2],[e1,e2],[i1,i2],[AP1,AP2],[LAN1,LAN2])
+        particles = Tools.create_fully_nested_multiple(3, [m1,m2,m3],[a1,a2],[e1,e2],[i1,i2],[AP1,AP2],[LAN1,LAN2])
         
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
@@ -1061,7 +1061,7 @@ class test_mse():
         LAN1 = 0.3
         f1 = 60.5*np.pi/180.0
 
-        particles = Tools.create_nested_multiple(2, [m1,m2], [a1], [e1], [INCL1], [AP1], [LAN1] )
+        particles = Tools.create_fully_nested_multiple(2, [m1,m2], [a1], [e1], [INCL1], [AP1], [LAN1] )
 
         binary = particles[2]
         binary.sample_orbital_phase_randomly = False
@@ -1147,7 +1147,7 @@ class test_mse():
         APs = [AP1,AP2]
         LANs = [LAN1,LAN2]
         masses = [m1,m2,m3]
-        particles = Tools.create_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs)
+        particles = Tools.create_fully_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs)
         
         inner_binary = particles[3]
         outer_binary = particles[4]
@@ -1263,7 +1263,7 @@ class test_mse():
 
         masses = [m1,m2]
         m = m1 + m2
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
@@ -1383,7 +1383,7 @@ class test_mse():
         
         masses = [m1,m2]
         m = m1 + m2
-        particles = Tools.create_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
         binary = particles[2]
@@ -1552,8 +1552,8 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         
-        N = 60000
-        N2 = 40000
+        N = 40000
+        N2 = 20000
 
         seed = 0
         #code.random_seed = seed
@@ -1564,7 +1564,7 @@ class test_mse():
         vs2 = []
         sigma_km_s = 265.0
         sigma = sigma_km_s*code.CONST_KM_PER_S
-        mu_km_s = 30.0
+        mu_km_s = 20.0
         mu=mu_km_s*code.CONST_KM_PER_S
 
         r_hat_vecs = []
@@ -1807,7 +1807,7 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         CONST_KM_PER_S = code.CONST_KM_PER_S
-        N = 10000
+        N = 20000
         
         seed = 0
         #code.random_seed = seed

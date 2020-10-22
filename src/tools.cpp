@@ -19,7 +19,9 @@ double compute_semimajor_axis_from_orbital_period(double M, double P)
 
 double generate_random_number_between_zero_and_unity()
 {
-    return ((double) rand() / (RAND_MAX));
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+
+    return dis(random_number_generator);
 }
 
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3])

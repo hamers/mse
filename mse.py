@@ -2094,6 +2094,7 @@ class Tools(object):
     def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0):
 
         np.random.seed(random_seed)
+        print("Python rand",np.random.random())
         
         if configuration == "fully_nested":
             particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)

@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 #include "parameters.h"
-
+#include <random>
 
 extern "C"
 {
@@ -17,6 +17,12 @@ extern "C"
 #define FOUND_ROOT ((roots_found[i_root] == 1) || (roots_found[i_root] == -1))
 #endif 
 
+
+#ifndef __RANDOM
+#define __RANDOM
+extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine seeded with rd()
+//    std::uniform_real_distribution<> dis(0.0, 1.0);
+#endif
 
 #ifndef __LOG_STATES
 #define __LOG_STATES

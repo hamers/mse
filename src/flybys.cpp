@@ -35,7 +35,7 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
    
     //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
 
-    //printf("handle_next_flyby %d\n",initialize);
+    //printf("handle_next_flyby %d %g\n",initialize,generate_random_number_between_zero_and_unity());
 
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
@@ -131,7 +131,8 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         angular_speed_ratio = theta_dot_peri/n_internal;
         
         /* Compute time of next encounter */
-        u = ((double) rand() / (RAND_MAX));
+        //u = ((double) rand() / (RAND_MAX));
+        u = generate_random_number_between_zero_and_unity();
         delta_time_encounter = -log(u) / flybys_total_encounter_rate_at_R_enc;
         
         //printf("delta_time_encounter %g\n",delta_time_encounter);
@@ -149,6 +150,15 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
             //printf("flybys.cpp -- sample_next_flyby -- not impulsive; angular_speed_ratio = %g; i=%d\n",angular_speed_ratio,i);
             break;
         }
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- sample_next_flyby -- V %g M_per %g Q %g t_next_encounter %g\n",V,*M_per,Q,*t_next_encounter);
+            print_system(particlesMap,0);
+        }
+        #endif
+        
 
         *apply_flyby = true;
        
@@ -399,7 +409,8 @@ bool correct_mass_function(double M)
     double W = W_function(x);
     bool resample;
     
-    double u = ((double) rand() / (RAND_MAX));
+    //double u = ((double) rand() / (RAND_MAX));
+    double u = generate_random_number_between_zero_and_unity();
     if (u <= (W/flybys_W_max) )
     {
         resample = false;

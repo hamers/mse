@@ -34,7 +34,8 @@ def parse_arguments():
     add_bool_arg(parser, 'plot',                            default=False,         help="Make plots")
     add_bool_arg(parser, 'show_plots',                      default=False,          help="Display plots")
     add_bool_arg(parser, 'fancy_plots',                     default=False,         help="Use LaTeX fonts for plots (slow)")
-    
+    parser.add_argument("--verbose_flag",                   type=int,       dest="verbose_flag",                default=1,                 help="0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably) ")
+
     
     args = parser.parse_args()
 
@@ -56,7 +57,7 @@ class test_mse():
         end_time = 5.0e7
         N_steps = 5000
         stellar_types = [1,1,1]
-        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test1")
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test1",verbose_flag=args.verbose_flag)
 
     def test2(self,args):
         print('Compact object merger (initial compact objects)')
@@ -72,7 +73,7 @@ class test_mse():
         end_time = 5.0e7
         N_steps = 1000
         stellar_types = [13,13,13]
-        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test2")
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test2",verbose_flag=args.verbose_flag)
 
     def test3(self,args):
         print('3+1 quadruple dynamically unstable due to secular evolution')
@@ -89,7 +90,7 @@ class test_mse():
         end_time = 5.0e7
         N_steps = 5000
         stellar_types = [1,1,1,1]
-        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test3")
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test3",verbose_flag=args.verbose_flag)
         
     def test4(self,args):
         print('Initially dynamically unstable triple')
@@ -105,7 +106,7 @@ class test_mse():
         end_time = 3.0e7
         N_steps = 500
         stellar_types = [1,1,1]
-        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test4")
+        Tools.evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,end_time,N_steps,stellar_types=stellar_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,plot_filename="test4",verbose_flag=args.verbose_flag)
 
   
 if __name__ == '__main__':

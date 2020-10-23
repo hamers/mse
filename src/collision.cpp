@@ -26,7 +26,7 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
         {
             Particle *p = (*it_p).second;
-            printf("i %d\n",p->index);
+
             if (p->is_binary == true and p->merged == true)
             {
                 Particle *child1 = (*particlesMap)[p->child1];

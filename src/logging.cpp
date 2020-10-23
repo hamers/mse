@@ -82,6 +82,8 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
         {
             q->radius = p->radius;
             q->stellar_type = p->stellar_type;
+            q->object_type = p->object_type;
+
             q->core_mass = p->core_mass;
             q->sse_initial_mass = p->sse_initial_mass;
             q->convective_envelope_mass = p->convective_envelope_mass;

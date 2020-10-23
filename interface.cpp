@@ -942,7 +942,7 @@ int get_de_dt(int index, double *de_dt)
  ************************/
  
  
-int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_)
+int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_, double CONST_MJUP_)
 {
     CONST_G = CONST_G_;
     CONST_G_P2 = CONST_G*CONST_G;
@@ -962,6 +962,8 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
     
     SPEEDOFLIGHT = CONST_C_LIGHT;
     GCONST = CONST_G;
+    
+    CONST_MJUP = CONST_MJUP_;
     //printf("CONSTS %g %g %g\n",CONST_G,CONST_C_LIGHT,CONST_MSUN);
     
     return 0;
@@ -1232,7 +1234,7 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index)
 }
  
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
-    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ)
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type)
 {
     Log_type entry = logData[log_index];
     ParticlesMap entry_particlesMap = entry.particlesMap;
@@ -1262,7 +1264,8 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     *VX = p->V_vec[0];
     *VY = p->V_vec[1];
     *VZ = p->V_vec[2];
-    
+    *object_type = p->object_type;
+
     return 0;
 }
 

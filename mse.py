@@ -29,6 +29,7 @@ class MSE(object):
         self.__CONST_KM_PER_S = 0.210862
         self.__CONST_PER_PC3 = 1.14059e-16
         self.__CONST_PARSEC = 206201.0
+        self.__CONST_MJUP = 0.000954248
 
         self.__relative_tolerance = 1.0e-10
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-8
@@ -224,7 +225,7 @@ class MSE(object):
         self.lib.get_root_finding_state.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool))
         self.lib.get_root_finding_state.restype = ctypes.c_int
 
-        self.lib.set_constants.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
+        self.lib.set_constants.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_constants.restype = ctypes.c_int
 
         self.__set_constants_in_code()
@@ -298,7 +299,8 @@ class MSE(object):
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
                     ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
-                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+                    ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double), \
+                    ctypes.POINTER(ctypes.c_int))
         self.lib.get_body_properties_from_log_entry.restype = ctypes.c_int
         
         self.lib.get_binary_properties_from_log_entry.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int), \
@@ -712,7 +714,7 @@ class MSE(object):
                 p.child2 = self.particles[i2]
 
     def __set_constants_in_code(self):
-        self.lib.set_constants(self.__CONST_G,self.__CONST_C,self.__CONST_M_SUN,self.__CONST_R_SUN,self.__CONST_L_SUN,self.__CONST_KM_PER_S,self.__CONST_PER_PC3)
+        self.lib.set_constants(self.__CONST_G,self.__CONST_C,self.__CONST_M_SUN,self.__CONST_R_SUN,self.__CONST_L_SUN,self.__CONST_KM_PER_S,self.__CONST_PER_PC3,self.__CONST_MJUP)
 
 
     def __set_parameters_in_code(self):
@@ -763,19 +765,22 @@ class MSE(object):
                 
                 append = False
                 if is_binary == False:
-                    parent,stellar_type = ctypes.c_int(0),ctypes.c_int(0)
+                    parent,stellar_type,object_type = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
                     mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin,X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                     flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
                         ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
                         ctypes.byref(epoch),ctypes.byref(age), \
                         ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin), \
-                        ctypes.byref(X), ctypes.byref(Y), ctypes.byref(Z), ctypes.byref(VX), ctypes.byref(VY), ctypes.byref(VZ))
+                        ctypes.byref(X), ctypes.byref(Y), ctypes.byref(Z), ctypes.byref(VX), ctypes.byref(VY), ctypes.byref(VZ), \
+                        ctypes.byref(object_type))
 
                     p = Particle(is_binary=is_binary,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
                         convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value)
                     p.index = internal_index
                     p.parent = parent.value
                     p.ospin = ospin.value
+                    p.object_type = object_type.value
+
                     p.X = X.value
                     p.Y = Y.value
                     p.Z = Z.value
@@ -949,6 +954,14 @@ class MSE(object):
         self.__CONST_PARSEC = value
         self.__set_constants_in_code()
 
+    @property
+    def CONST_MJUP(self):
+        return self.__CONST_MJUP
+
+    @CONST_MJUP.setter
+    def CONST_MJUP(self, value):
+        self.__CONST_MJUP = value
+        self.__set_constants_in_code()
 
     ##################
     ### Parameters ###
@@ -1438,7 +1451,7 @@ class Particle(object):
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0e100, tides_viscous_time_scale_prescription=1, \
-            convective_envelope_mass=1.0, convective_envelope_radius=1.0, luminosity=1.0, \
+            convective_envelope_mass=1.0e-10, convective_envelope_radius=1.0e-10, luminosity=1.0e-10, \
             check_for_secular_breakdown=True,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
             check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
             secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, \
@@ -2270,7 +2283,7 @@ class Tools(object):
                 pyplot.rc('text',usetex=True)
                 pyplot.rc('legend',fancybox=True)  
         
-            print("log",len(code.log))
+            print("Number of log entries:",len(code.log))
             
             plot_log = []
             previous_event_flag = -1
@@ -2282,22 +2295,25 @@ class Tools(object):
                 previous_event_flag = event_flag
                             
             N_l = len(plot_log)
-            fontsize=N_l
-            fig=pyplot.figure(figsize=(N_l,N_l))
+            N_r = np.ceil(np.sqrt(N_l))#+1
+            N_c = N_r
+            panel_length = 3
+            #fontsize=N_l
+            fontsize=10
+            fig=pyplot.figure(figsize=(N_r*panel_length,N_r*panel_length))
             
             legend_elements = []
             for k in range(15):
                 color,s,description = Tools.get_color_and_size_and_description_for_star(k,1.0)
                 legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label=description))#label = "$\mathrm{%s}$"%description) )
 
-            N_r = int(np.sqrt(N_l))+1
-            N_c = N_r
             for index_log,log in enumerate(plot_log):
                 plot=fig.add_subplot(N_r,N_c,index_log+1)
                 particles = log["particles"]
                 event_flag = log["event_flag"]
                 
-                Tools.generate_mobile_diagram(particles,plot,fontsize=0.5*N_l)
+                #Tools.generate_mobile_diagram(particles,plot,fontsize=N_c)
+                Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize)
 
                 text = Tools.get_description_for_event_flag(event_flag)
                 plot.set_title(text,fontsize=fontsize)
@@ -2305,12 +2321,12 @@ class Tools(object):
                 #if index_log>0: break
 
                 if index_log == 0:
-                    plot.legend(handles = legend_elements, bbox_to_anchor = (-0.05, 1.70), loc = 'upper left', ncol = 5,fontsize=0.85*fontsize)
+                    plot.legend(handles = legend_elements, bbox_to_anchor = (-0.05, 1.50), loc = 'upper left', ncol = 5,fontsize=0.85*fontsize)
             
     
             fig.savefig(plot_filename + "_mobile.pdf")
         
-            fig=pyplot.figure(figsize=(8,8))
+            fig=pyplot.figure(figsize=(8,10))
             Np=3
             plot1=fig.add_subplot(Np,1,1)
             plot2=fig.add_subplot(Np,1,2,yscale="log")
@@ -2362,16 +2378,21 @@ class Tools(object):
                     plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
                     #plot3.plot(1.0e-6*t_print,(180.0/np.pi)*rel_INCL_print[index],color='k',linestyle='solid',linewidth=linewidth)
                 
-                linewidth+=0.8
+                linewidth+=0.4
 
             fontsize=18
+            labelsize=12
+
+            plots = [plot1,plot2,plot3]
+            for plot in plots:
+                plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
 
             log_CEs = [x for x in code.log if x["event_flag"] == 6]
             t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
             
             for k,t in enumerate(t_CEs_Myr):
-                plot2.axvline(x=t,linestyle='dashed',color='tab:red')
-                plot2.annotate("$\mathrm{CE}$",xy=(t,1.0e3),fontsize=fontsize)
+                plot2.axvline(x=t,linestyle='dotted',color='tab:red',linewidth=0.5)
+                plot2.annotate("$\mathrm{CE}$",xy=(1.02*t,1.0e3),fontsize=0.8*fontsize)
             
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
             plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
@@ -2381,11 +2402,14 @@ class Tools(object):
             
             plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)
             plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
+            plot_pos.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            
             
             plot_HRD.set_xlim(5.0,3.0)
             plot_HRD.set_ylim(-4.0,6.0)
             plot_HRD.set_xlabel("$\mathrm{log}_{10}(T_\mathrm{eff}/\mathrm{K})$",fontsize=fontsize)
             plot_HRD.set_ylabel(r"$\mathrm{log}_{10}(L/L_\odot)$",fontsize=fontsize)
+            plot_HRD.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
             
             fig.savefig(plot_filename + ".pdf")
             fig_pos.savefig(plot_filename + "_pos.pdf")
@@ -2427,9 +2451,12 @@ class Tools(object):
         Tools.determine_binary_levels_in_particles(particles)                    
         unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
         if len(unbound_bodies)>0:
-            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.4*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
+            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.5*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
             
         top_level_binary = [x for x in binaries if x.level==0][0]
+        
+        for p in particles:
+            p.color = 'k'
         
         if use_default_colors==True:
             ### Assign some colors from mcolors to the orbits ###
@@ -2476,13 +2503,20 @@ class Tools(object):
         #text = "$a = %s \, \mathrm{AU}$"%(round(particle.semimajor_axis.value_in(units.AU),1))
         #text = "$a = \mathrm{%.1E}$"%(Decimal(particle.a))
         #text = "$a=\mathrm{%.1E\,au}$"%(Decimal(particle.a))
-        text = "$a=\mathrm{%s\,au}$"%(round(particle.a,1))
-        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color)
+        text = "$a=\mathrm{%s\,au}$\n $e= %.2f$"%(round(particle.a,1),particle.e)
+        x_plot = x - 0*0.8*line_width_horizontal
+        y_plot = y - 0.3*line_width_vertical
+        #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color,facecolor='w')
+        bbox_props = dict(boxstyle="round", pad=0.1, fc=particle.color, ec="k", lw=0.5,alpha=0.9)
+        plot.text(x_plot, y_plot, text, ha="center", va="center", rotation=0,
+            size=0.7*fontsize,
+            bbox=bbox_props)
+        
      
         #text = "$e = %.2f$"%(particle.e)
         text = "$e = %.2f$"%(particle.e)
         
-        plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
+        #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
 
         alpha = 1.0
         if child1.is_binary == True and child2.is_binary == True:
@@ -2522,6 +2556,7 @@ class Tools(object):
         if (child2.y<y_min): y_min = child2.y
         if (child2.y>y_max): y_max = child2.y
 
+        CONST_MJUP = 0.000954248
         
         ### handle children ###
         if child1.is_binary == True:
@@ -2531,10 +2566,16 @@ class Tools(object):
             plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
             #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
             #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
+            if child1.object_type == 2:
+                text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child1.mass/CONST_MJUP,1)))    
+            else:
+                text = "$\mathrm{%s}$"%(str(round(child1.mass,1)))
+                
             #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
-            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
-            text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
+            plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
+            
+            #text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
             #plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
 
         if child2.is_binary == True:
@@ -2542,21 +2583,65 @@ class Tools(object):
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
             plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child2.mass.value_in(units.MJupiter)))
+
             #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
+
+            if child2.object_type == 2:
+                text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child2.mass/CONST_MJUP,1)))    
+            else:
+                text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
+
+
+#            text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
             #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
-            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize)
+            plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
             text = "$%d; \,k=%d$"%(child2.index,child2.stellar_type)
             #plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
 
         return x_min,x_max,y_min,y_max
 
     @staticmethod
+    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
+        #dx = 0.5
+        #dy = 0.5
+        for index,body in enumerate(bodies):
+            color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
+            plot.scatter([index],[y_ref],color=color,s=s)
+            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
+            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
+            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
+            text = "$\mathrm{%s}$"%(str(round(body.mass,1)))
+            plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
+
+            #text = "$\mathrm{%d}$"%body.index
+            #text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
+            #plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
+            
+            try:
+                VX = body.VX
+                VY = body.VY
+                VZ = body.VZ
+                V = np.sqrt(VX**2 + VY**2 + VZ**2)
+                x = index
+                y = y_ref
+                Adx = 0.5*dx*VX/V
+                Ady = 0.5*dx*VY/V
+                plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
+            except AttributeError:
+                pass
+
+        plot.set_xlim([-2*dx,len(bodies)])
+        plot.set_ylim([y_ref-2*dy,y_ref+2*dy])
+
+        plot.set_xticks([])
+        plot.set_yticks([])
+        
+    @staticmethod
     def get_color_and_size_and_description_for_star(stellar_type,radius):
         if (stellar_type == 0): 
             color='gold'
-            description = 'low-mass\,MS'
+            description = 'low-mass ' + 'MS'
         elif (stellar_type == 1): 
             color='gold'
             description = 'MS'
@@ -2616,41 +2701,6 @@ class Tools(object):
 
         return color,s,description
         
-    @staticmethod
-    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
-        #dx = 0.5
-        #dy = 0.5
-        for index,body in enumerate(bodies):
-            color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
-            plot.scatter([index],[y_ref],color=color,s=s)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
-            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
-            plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
-
-            #text = "$\mathrm{%d}$"%body.index
-            text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
-            plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
-            
-            try:
-                VX = body.VX
-                VY = body.VY
-                VZ = body.VZ
-                V = np.sqrt(VX**2 + VY**2 + VZ**2)
-                x = index
-                y = y_ref
-                Adx = 0.5*dx*VX/V
-                Ady = 0.5*dx*VY/V
-                plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
-            except AttributeError:
-                pass
-
-        plot.set_xlim([-2*dx,len(bodies)])
-        plot.set_ylim([y_ref-2*dy,y_ref+2*dy])
-
-        plot.set_xticks([])
-        plot.set_yticks([])
-
     @staticmethod
     def get_description_for_event_flag(event_flag):
         if event_flag == 0:

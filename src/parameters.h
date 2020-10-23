@@ -16,6 +16,7 @@ extern double CONST_R_SUN;
 extern double CONST_L_SUN;
 extern double CONST_KM_PER_S;
 extern double CONST_PER_PC3;
+extern double CONST_MJUP;
 
 // Default parameters //
 extern double relative_tolerance;

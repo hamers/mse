@@ -143,7 +143,7 @@ int get_de_dt(int index, double *de_dt);
 /* parameters *
  ************************/
 
-int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_);
+int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_, double CONST_MJUP_);
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
@@ -199,7 +199,7 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index);
 bool get_is_binary_log(int log_index, int particle_index);
 int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index);
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
-    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ);
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type);
 int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN);
 

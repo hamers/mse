@@ -15,6 +15,7 @@ double CONST_R_SUN = 0.004649130343817401;
 double CONST_L_SUN = 0.0002710404109745588;
 double CONST_KM_PER_S = 0.210862;
 double CONST_PER_PC3 = 1.14059e-16;
+double CONST_MJUP = 0.000954248;
 
 // Default parameters //
 double relative_tolerance = 1.0e-12;

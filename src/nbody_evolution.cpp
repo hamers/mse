@@ -1044,7 +1044,12 @@ int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap)
         {
             if (find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec) > nbody_maximum_separation_for_inclusion)
             {
-                printf("Excluding body index %d norm3(R_vec) %g sep %g\n",p->index,norm3(p->R_vec),find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec));
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("nbody_evolution.cpp -- check_particlesMap_for_inclusion_in_MSTAR -- Excluding body index %d norm3(R_vec) %g sep %g\n",p->index,norm3(p->R_vec),find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec));
+                }
+                #endif
                 p->include_in_MSTAR = false;
             }
             else

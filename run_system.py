@@ -73,7 +73,7 @@ if __name__ == '__main__':
     print("Eccentricities: ",args.eccentricities)
     print("Inclinations (rad): ",args.inclinations)
     print("Longitudes of the ascending node (rad): ",args.longitudes_of_ascending_node)
-    print("Arguments of periapsis (rad): ",args.inclinations)
+    print("Arguments of periapsis (rad): ",args.arguments_of_pericentre)
     print("Integration time (yr): ",args.end_time)
     print("Number of plot output steps: ",args.N_steps)
 

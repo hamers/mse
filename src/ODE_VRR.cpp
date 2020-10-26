@@ -1,7 +1,7 @@
 /* MSE */
 
 #include "types.h"
-#include "VRR.h"
+#include "ODE_VRR.h"
 #include "../interface.h" /* for parameters */
 #include "structure.h" /* for determine_binary_parents_and_levels */
 #include <stdio.h>

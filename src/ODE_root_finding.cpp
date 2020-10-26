@@ -2,7 +2,7 @@
 
 #include "types.h"
 #include "evolve.h"
-#include "root_finding.h"
+#include "ODE_root_finding.h"
 #include <stdio.h>
 
 extern "C"

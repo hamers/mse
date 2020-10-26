@@ -1,7 +1,7 @@
 /* MSE */
 
 #include "evolve.h"
-#include "mass_changes.h"
+#include "ODE_mass_changes.h"
 
 extern "C"
 {

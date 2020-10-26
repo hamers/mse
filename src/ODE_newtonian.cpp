@@ -1,7 +1,7 @@
 /* MSE */
 
 #include "types.h"
-#include "newtonian.h"
+#include "ODE_newtonian.h"
 #include "../interface.h" /* for parameters */
 #include "evolve.h"
 //#include <stdio.h>

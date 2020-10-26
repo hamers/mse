@@ -1,7 +1,7 @@
 /* MSE */
 
 #include "evolve.h"
-#include "tides.h"
+#include "ODE_tides.h"
 #include "tools.h" /* for orbital_period */
 #include <stdio.h>
 

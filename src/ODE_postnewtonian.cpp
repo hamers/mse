@@ -1,7 +1,7 @@
 /* MSE */
 
 #include "types.h"
-#include "postnewtonian.h"
+#include "ODE_postnewtonian.h"
 #include "evolve.h"
 //#include <stdio.h>
 extern "C"

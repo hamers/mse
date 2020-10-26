@@ -17,7 +17,14 @@ double compute_apsidal_motion_constant(Particle *star)
 
     if (log10(mass) > 2.10)
     {
-        printf("apsidal_motion_constant.cpp -- WARNING: input mass %g exceeds maximum; setting effective mass to %g; index %d kw %d m %g age %g\n",mass,pow(10.0,2.10),star->index,stellar_type,star->mass,star->age);        
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("apsidal_motion_constant.cpp -- WARNING: input mass %g exceeds maximum; setting effective mass to %g; index %d kw %d m %g age %g\n",mass,pow(10.0,2.10),star->index,stellar_type,star->mass,star->age);
+        }
+        #endif
+        
         mass = pow(10.0,2.10);
     }
 
@@ -126,6 +133,20 @@ double compute_apsidal_motion_constant(Particle *star)
     return val;
 }
 
+void limit_tau(double *tau)
+{
+    if (*tau >= 1.0)
+    {
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("apsidal_motion_constant.cpp -- limit_tau -- limiting tau from %g to 1.0\n",*tau);
+        }
+        #endif
+        
+        *tau = 1.0;
+    }
+}
 
 double AMC_data_function(double log_m, Particle *star)
 {
@@ -149,7 +170,12 @@ double AMC_data_function(double log_m, Particle *star)
 
     if (stellar_type_old != stellar_type)
     {
-        printf("apsidal_motion_constant.cpp -- WARNING: stellar type has changed from %d to %d!\n",stellar_type_old,stellar_type);
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("apsidal_motion_constant.cpp -- WARNING: stellar type has changed from %d to %d!\n",stellar_type_old,stellar_type);
+        }
+        #endif
     }
 //	double *tms=&(stardata->common.tm);			/* Main sequence timescale */
 //	double *tn=&(stardata->common.tn);			/* Nuclear timescale */
@@ -176,11 +202,13 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 			return d_m_m1[0] + d_m_m1[1]*tau;		
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 			if (tau < d_m_m1[4])
 			{
 				return d_m_m1[2] + d_m_m1[3]*tau;
@@ -197,6 +225,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age - timescales[T_BGB])/(timescales[T_HE_IGNITION] - timescales[T_BGB]);
+            limit_tau(&tau);
 			return d_m_m1[10] + d_m_m1[11]*tau;
 		}
 		else if (stellar_type == 4) /* He MS */
@@ -214,12 +243,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/ tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0000[0] + d_m_0000[1]*tau;		
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0000[4])
 			{
@@ -237,6 +268,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age - timescales[T_BGB])/(timescales[T_HE_IGNITION] - timescales[T_BGB]);
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0000[12])
 			{
@@ -261,12 +293,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0050[0] + d_m_0050[1]*tau;		
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0050[4])
 			{
@@ -284,6 +318,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0050[12])
 			{
@@ -308,12 +343,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0075[0] + d_m_0075[1]*tau;		
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0075[4])
 			{
@@ -331,6 +368,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0075[12])
 			{
@@ -355,12 +393,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0100[0] + d_m_0100[1]*tau;		
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0100[4])
 			{
@@ -386,6 +426,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0100[18])
 			{
@@ -410,12 +451,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0125[0] + d_m_0125[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0125[4])
 			{
@@ -441,6 +484,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0125[18])
 			{
@@ -465,6 +509,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_0150[2])
 			{
@@ -478,6 +523,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0150[7])
 			{
@@ -503,6 +549,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0150[21])
 			{
@@ -527,6 +574,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_0173[2])
 			{
@@ -540,6 +588,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0173[7])
 			{
@@ -561,6 +610,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0173[18])
 			{
@@ -585,6 +635,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_0200[2])
 			{
@@ -598,6 +649,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0200[7])
 			{
@@ -619,6 +671,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0200[18])
 			{
@@ -643,6 +696,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_0250[2])
 			{
@@ -656,6 +710,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0250[7])
 			{
@@ -677,6 +732,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0250[18])
 			{
@@ -701,6 +757,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0300[0] + d_m_0300[1]*tau;
 		}
@@ -724,6 +781,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0300[12])
 			{
@@ -752,12 +810,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0400[0] + d_m_0400[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0400[4])
 			{
@@ -771,6 +831,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0400[9])
 			{
@@ -788,6 +849,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 //			printf("tau CHeB %g age %g\n",tau,age);
 			if (tau < d_m_0400[17])
 			{
@@ -813,12 +875,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0500[0] + d_m_0500[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0500[4])
 			{
@@ -832,6 +896,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0500[9])
 			{
@@ -845,6 +910,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_0500[14])
 			{
 				return d_m_0500[12] + d_m_0500[13]*tau;
@@ -874,12 +940,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0600[0] + d_m_0600[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0600[4])
 			{
@@ -893,6 +961,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0600[9])
 			{
@@ -906,6 +975,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_0600[14])
 			{
 				return d_m_0600[12] + d_m_0600[13]*tau;
@@ -935,12 +1005,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0700[0] + d_m_0700[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0700[4])
 			{
@@ -954,6 +1026,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0700[9])
 			{
@@ -967,6 +1040,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_0700[14])
 			{
 				return d_m_0700[12] + d_m_0700[13]*tau;
@@ -1000,12 +1074,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0800[0] + d_m_0800[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0800[4])
 			{
@@ -1019,6 +1095,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0800[9])
 			{
@@ -1032,6 +1109,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_0800[14])
 			{
 				return d_m_0800[12] + d_m_0800[13]*tau;
@@ -1065,12 +1143,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_0900[0] + d_m_0900[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_0900[4])
 			{
@@ -1084,6 +1164,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_0900[9])
 			{
@@ -1097,6 +1178,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_0900[14])
 			{
 				return d_m_0900[12] + d_m_0900[13]*tau;
@@ -1130,12 +1212,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1000[0] + d_m_1000[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_1000[4])
 			{
@@ -1149,6 +1233,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 			//printf("tau RG %g age %g timescales[T_BGB] %g\n",tau,age,timescales[T_BGB]);
 			if (tau < d_m_1000[9])
 			{
@@ -1162,6 +1247,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_1000[14])
 			{
 				return d_m_1000[12] + d_m_1000[13]*tau;
@@ -1195,12 +1281,14 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1100[0] + d_m_1100[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
+            limit_tau(&tau);
 //			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_1100[4])
 			{
@@ -1214,6 +1302,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_1100[9])
 			{
@@ -1227,6 +1316,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 			if (tau < d_m_1100[14])
 			{
 				return d_m_1100[12] + d_m_1100[13]*tau;
@@ -1260,13 +1350,15 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1200[0] + d_m_1200[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
 		{
 			tau = (age - tms)/(timescales[T_BGB] - tms);
-//			printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
+            limit_tau(&tau);
+			//printf("tau HG %g tms %g age %g T_BGB %g\n",tau,*tms,age,timescales[T_BGB]);
 			if (tau < d_m_1200[4])
 			{
 				return d_m_1200[2] + d_m_1200[3]*tau;
@@ -1279,6 +1371,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 3) /* RED GIANT */
 		{
 			tau = (age-timescales[T_BGB])/(timescales[T_HE_IGNITION]-timescales[T_BGB]);	/* See hrdiag & hrdiag_RG */
+            limit_tau(&tau);
 //			printf("tau RG %g age %g\n",tau,age);
 			if (tau < d_m_1200[9])
 			{
@@ -1292,6 +1385,7 @@ double AMC_data_function(double log_m, Particle *star)
 		else if (stellar_type == 4) /* CHeB */
 		{
 			tau = (age - timescales[T_HE_IGNITION])/timescales[T_HE_BURNING];
+            limit_tau(&tau);
 //			printf("tau CHeB %g \n",tau);
 			if (tau < d_m_1200[14])
 			{
@@ -1318,6 +1412,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1300[0] + d_m_1300[1]*tau;
 		}
@@ -1335,6 +1430,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1400[0] + d_m_1400[1]*tau;
 		}
@@ -1352,7 +1448,8 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
-//			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
+            limit_tau(&tau);
+			//printf("log_m 1.50 tau MS %g age %g tms %g %g %g\n",tau,age,tms,d_m_1500[0] , d_m_1500[1]);
 			return d_m_1500[0] + d_m_1500[1]*tau;
 		}
 		else if (stellar_type == 2)	/* HERTZSPRUNG GAP */
@@ -1369,7 +1466,8 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
-//			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
+            limit_tau(&tau);
+			//printf("log_m 1.60 tau MS %g age %g tms %g %g %g\n",tau,age,tms,d_m_1600[0],d_m_1600[1]);
 			return d_m_1600[0] + d_m_1600[1]*tau;
 		}
 		else if (stellar_type == 3)	/* Giant */
@@ -1386,6 +1484,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			return d_m_1700[0] + d_m_1700[1]*tau;
 		}
@@ -1403,6 +1502,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_1800[2])
 			{
@@ -1427,6 +1527,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_1900[2])
 			{
@@ -1451,6 +1552,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_2000[2])
 			{
@@ -1475,6 +1577,7 @@ double AMC_data_function(double log_m, Particle *star)
 		if (stellar_type == 1)	/* MAIN SEQUENCE */
 		{
 			tau = age/tms;
+            limit_tau(&tau);
 //			printf("tau MS %g age %g tms %g\n",tau,age,*tms);
 			if (tau < d_m_2100[2])
 			{

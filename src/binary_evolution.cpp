@@ -544,7 +544,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         /* Assume the energy released by ignition of the triple-alpha reaction is enough to destroy both stars. */
         destroyed = true;
     }
-    else if (kw2 >= 10 and kw2 <= 11 and m_accretor > chandrasekhar_mass)
+    else if (kw2 >= 10 and kw2 <= 11 and (m_accretor + dm2) > chandrasekhar_mass)
     {
         /* Potentially SNe Ia that destroys the system. */
         destroyed = true;

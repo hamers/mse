@@ -9,7 +9,6 @@ extern "C"
 
 int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodies, int *N_binaries, int *N_root_finding, int *N_ODE_equations)
 {
-    //printf("N %d\n",particlesMap->size());
     *N_bodies = 0;
     *N_binaries = 0;
     *N_root_finding = 0;
@@ -20,7 +19,13 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
-        //printf("determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("structure.cpp -- determine_binary_parents_and_levels -- determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
+        }
+        #endif
         P_p->parent = -1;
     }
 
@@ -99,7 +104,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             
         }
     }
-    //printf("done 1 %d %d %d %d\n",*N_bodies, *N_binaries,*N_root_finding,*N_ODE_equations);
+
     /* determine levels and set of parents for each particle */
     int highest_level = 0;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -150,7 +155,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         highest_level = CV_max(P_p->level,highest_level);
         
     }
-    //printf("done 2\n");
+
     /* write highest level to all particles -- needed for function set_binary_masses_from_body_masses */
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -158,19 +163,15 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         
         p->highest_level = highest_level;
         
-        //if (p->is_binary == false)
+        if (p->parent == -1)
         {
-            if (p->parent == -1)
-            {
-                p->is_bound = false;
-            }
-            else
-            {
-                p->is_bound = true;
-            }
+            p->is_bound = false;
+        }
+        else
+        {
+            p->is_bound = true;
         }
     }
-    //printf("done 3\n");
 
     return 0;
 }
@@ -183,7 +184,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
 
     int highest_level = particlesMap->begin()->second->highest_level;
     int level=highest_level;
-    //print_system(particlesMap,1);
+
     while (level > -1)
     {
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
@@ -196,9 +197,13 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 Particle *P_p_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_p_child2 = (*particlesMap)[P_p->child2];
                 
-                //printf("parent %d\n",P_p->index);
-                //printf("parent %d C1 %d C2 %d \n",P_p->index,P_p->child1,P_p->child2);
-                
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("structure.cpp -- set_binary_masses_from_body_masses -- parent %d C1 %d C2 %d \n",P_p->index,P_p->child1,P_p->child2);
+                }
+                #endif
+                        
                 /* these quantities are used in ODE_system.cpp */
                 P_p->child1_mass = P_p_child1->mass;
                 P_p->child2_mass = P_p_child2->mass;
@@ -243,7 +248,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
-        //printf("determine total system mass -- level %d\n",P_p->level);
+
         if (P_p->level==0) /* lowest-level binary */
         {
             total_system_mass = P_p->child1_mass + P_p->child2_mass;
@@ -278,7 +283,6 @@ void update_structure(ParticlesMap *particlesMap, int integration_flag)
 
 void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to name of function: "_of_all_bodies" */
 {
-    //printf("set_positions_and_velocities\n");
     /* Compute and set the positions and velocities of all bodies */
     /* By default, sample orbital phases randomly 
      * if particle.sample_orbital_phases_randomly == False: look for particle.true_anomaly */
@@ -298,7 +302,7 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
     /*/ Go from the top of the system (level=0) downwards */
     
     ParticlesMapIterator it;
-    //int highest_level = (*particlesMap)[0]->highest_level;
+
     int highest_level = particlesMap->begin()->second->highest_level;
     int level = 0;
     while (level < highest_level)
@@ -328,14 +332,9 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 else
                 {
                     true_anomaly = sample_random_true_anomaly(e);
-                    //printf("parent->sample_orbital_phases_randomly  %d %g \n",parent->sample_orbital_phases_randomly,true_anomaly);
                 }
                 
-                if (true_anomaly != true_anomaly)
-                {
-                    printf("structure.cpp -- set_positions_and_velocities -- ERROR: true_anomaly = %g \n",true_anomaly);
-                    exit(-1);
-                }
+                check_number(true_anomaly,    "structure.cpp -- set_positions_and_velocities","true_anomaly", true);
                 
                 from_orbital_vectors_to_cartesian(
                     child1_mass,child2_mass,
@@ -345,14 +344,10 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 
                 if (parent->level == 0)
                 {
-                     /* without loss of generality, set the initial CM of the system to the origin */
                     for (i=0; i<3; i++)
                     {
                         r_parent[i] = parent->R_vec[i];
                         v_parent[i] = parent->V_vec[i];
-                        
-                        //parent->R_vec[i] = r_parent[i];
-                        //parent->V_vec[i] = v_parent[i];
                     }
                 }
                 else
@@ -413,7 +408,14 @@ void update_positions_unbound_bodies(ParticlesMap *particlesMap, double time_ste
                 
                 factor_V = 1.0/(1.0 + m_dot_div_m0 * time_step);
                 factor_R = log(1.0 + m_dot_div_m0 * time_step)/m_dot_div_m0;
-                //printf("id %d mdot %g T %g %g %g %g \n",p->index,p->mass_dot_wind,m_dot_div_m,factor_V,factor_R,time_step);
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("structure.cpp -- update_positions_unbound_bodies -- id %d mdot %g T %g %g %g %g \n",p->index,p->mass_dot_wind,m_dot_div_m0,factor_V,factor_R,time_step);
+                }
+                #endif
+                
                 for (i=0; i<3; i++)
                 {
                     p->R_vec[i] += p->V_vec[i]*factor_R; // V_vec is still the old value here (at the beginning of the timestep)
@@ -439,7 +441,7 @@ void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *partic
     double r_child2[3],v_child2[3];
     
     ParticlesMapIterator it_p;
-    //int highest_level = (*particlesMap)[0]->highest_level;
+    
     int highest_level = particlesMap->begin()->second->highest_level;
     int level=highest_level;
     while (level > -1)
@@ -456,8 +458,6 @@ void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *partic
                 get_position_and_velocity_vectors_from_particle(child1,r_child1,v_child1);
                 get_position_and_velocity_vectors_from_particle(child2,r_child2,v_child2);
                 
-                //printf("level %d %d %d\n",p->level,child1->is_binary,child2->is_binary);
-
                 child1_mass = child1->mass;
                 child2_mass = child2->mass;
 
@@ -465,14 +465,9 @@ void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *partic
                 {
                     r[i] = (r_child1[i]*child1_mass + r_child2[i]*child2_mass)/(child1_mass+child2_mass);
                     v[i] = (v_child1[i]*child1_mass + v_child2[i]*child2_mass)/(child1_mass+child2_mass);
-
-                    //printf("r_child1[i] %g r[i] %g\n",r_child1[i],r[i]);
-                    //printf("r_child2[i] %g r[i] %g\n",r_child2[i],r[i]);
-
                 }
             
                 set_position_and_velocity_vectors_in_particle(p,r,v);
-//                printf("level %d m %g hl %d\n",level,P_p->mass,highest_level);
             }
         }
         level--;
@@ -482,8 +477,13 @@ void update_masses_positions_and_velocities_of_all_binaries(ParticlesMap *partic
 
 void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesMap *particlesMap)
 {
-    //printf("update_orbital_vectors_in_binaries_from_positions_and_velocities\n");
-
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("structure.cpp -- update_orbital_vectors_in_binaries_from_positions_and_velocities\n");
+    }
+    #endif
+                
     int index = 0;
     int i;
     
@@ -494,7 +494,7 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
     /*/ Go from the top of the system (level=0) downwards */
     
     ParticlesMapIterator it;
-    //int highest_level = (*particlesMap)[0]->highest_level;
+
     int highest_level = particlesMap->begin()->second->highest_level;
     int level = 0;
     while (level < highest_level)
@@ -510,16 +510,13 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
                 child1_mass = child1->mass;
                 child2_mass = child2->mass;
                 
-                //get_position_and_velocity_vectors_from_particle(parent,r,v);
                 get_position_and_velocity_vectors_from_particle(child1,r_child1,v_child1);
                 get_position_and_velocity_vectors_from_particle(child2,r_child2,v_child2);
-                //printf("level %d\n",parent->level);
+
                 for (i=0; i<3; i++)
                 {
                     r[i] = r_child1[i] - r_child2[i];
                     v[i] = v_child1[i] - v_child2[i];
-                    //printf("r_child1[i] %g r[i] %g %g\n",r_child1[i],r[i],parent->x);
-                    //printf("r_child2[i] %g r[i] %g\n",r_child2[i],r[i]);
                 }
                 
                 from_cartesian_to_orbital_vectors(
@@ -534,12 +531,17 @@ void update_orbital_vectors_in_binaries_from_positions_and_velocities(ParticlesM
 
 void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
 {
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("structure.cpp -- determine_internal_mass_and_semimajor_axis\n");
+    }
+    #endif
+
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    //printf("determine_internal_mass_and_semimajor_axis 0\n");
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-    //printf("determine_internal_mass_and_semimajor_axis 1\n");
     set_binary_masses_from_body_masses(particlesMap);
-    //printf("determine_internal_mass_and_semimajor_axis 2\n");
+
     double h_tot_vec[3];
     double semimajor_axis,eccentricity,inclination,argument_of_pericenter,longitude_of_ascending_node;
     
@@ -559,7 +561,13 @@ void determine_internal_mass_and_semimajor_axis(ParticlesMap *particlesMap)
                 p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
                 &semimajor_axis, &eccentricity, &inclination, &argument_of_pericenter, &longitude_of_ascending_node); 
             flybys_internal_semimajor_axis = semimajor_axis;
-            //printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- flybys_reference_binary %d M_int %g a_int %g\n",flybys_reference_binary,flybys_internal_mass,flybys_internal_semimajor_axis);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("structure.cpp -- determine_internal_mass_and_semimajor_axis -- flybys_reference_binary %d M_int %g a_int %g\n",flybys_reference_binary,flybys_internal_mass,flybys_internal_semimajor_axis);
+            }
+            #endif
         }
     }
 }
@@ -726,7 +734,14 @@ bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integ
                 {
                     stable = false;
                 }
-                //printf("test %g %g %g %g %g q_out %g rel_INCL %g\n",rp_out,rp_out_crit,a_in,e_in,M_p,q_out,rel_INCL);
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("structure.cpp -- check_system_for_dynamical_stability -- %g %g %g %g %g q_out %g rel_INCL %g\n",rp_out,rp_out_crit,a_in,e_in,M_p,q_out,rel_INCL);
+                }
+                #endif
+                
             }
             else
             {
@@ -749,15 +764,10 @@ void handle_instantaneous_and_adiabatic_mass_changes_in_orbit(ParticlesMap *part
      * Note: `binary' will be overwritten at the very end below. 
      * Other orbits, for which mass loss is expected to be adiabatic,
      * are adjusted below in compute_new_orbits_assuming_adiabatic_mass_loss. */
-    //star1->apply_kick = false; /* The kicks were already taken into account above */
-    //star2->apply_kick = false; /* The kicks were already taken into account above */
 
-    //double Delta_M1 = M1 - star1->mass;
-    //double Delta_M2 = M2 - star2->mass;
     star1->instantaneous_perturbation_delta_mass = Delta_m1; // final minus initial mass
     star2->instantaneous_perturbation_delta_mass = Delta_m2; // final minus initial mass        
 
-    //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag); /* this will update the masses of stars 1 and 2 */
     apply_instantaneous_mass_changes_and_kicks(particlesMap, integration_flag);
     
     /* Lastly, `correct' the orbits (h & e vectors) for which the effect of mass loss was actually expected to be adiabatic,
@@ -800,7 +810,12 @@ void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap,
         Particle *b = (*it).second;
         if (b->is_binary == true)
         {
-            //printf("Adiabatic b %d %g %g\n",b->index,b->P_orb_adiabatic_mass_loss , mass_loss_timescale);
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("structure.cpp -- compute_new_orbits_assuming_adiabatic_mass_loss -- %d %g %g\n",b->index,b->P_orb_adiabatic_mass_loss , mass_loss_timescale);
+            }
+            #endif
             
             if (b->P_orb_adiabatic_mass_loss < mass_loss_timescale) // criterion for adiabatic mass loss
             {
@@ -809,18 +824,17 @@ void compute_new_orbits_assuming_adiabatic_mass_loss(ParticlesMap *particlesMap,
                 double m2_old = b->child2_mass_adiabatic_mass_loss;
                 double delta_m1 = b->delta_child1_mass_adiabatic_mass_loss;
                 double delta_m2 = b->delta_child2_mass_adiabatic_mass_loss;
-                //double a_old = compute_a_from_h(m1_old,m2_old, norm3(b->h_vec_old_adiabatic_mass_loss), norm3(b->e_vec_old_adiabatic_mass_loss));
-                //double delta_a = - (b->delta_m_adiabatic_mass_loss/(m1_old + m2_old)) * a_old;
-                //double a = a_old + delta_a;
-                //double h_old = compute_h_from_a(m1_old,m2_old,a,e);
                 double h_old = norm3(b->h_vec_old_adiabatic_mass_loss);
-                //double Delta_h = h_old * ( (delta_m1/m1_old) + (delta_m2/m2_old) - (delta_m1 + delta_m2)/(m1_old + m2_old) );
-                //double h_new = h_old + Delta_h;
                 double m1_new = m1_old + delta_m1;
                 double m2_new = m2_old + delta_m2;
                 double h_new = h_old * ((m1_old + m2_old)/(m1_new + m2_new)) * (m1_new/m1_old) * (m2_new/m2_old);
                 
-                //printf("Adiabatic %g %g h_old %g h_new %g delta m1 %g delta m2 %g m1_old %g m2_old %g Delta_h/h_old %g\n",b->P_orb_adiabatic_mass_loss , mass_loss_timescale,h_old,h_new,delta_m1,delta_m2,m1_old,m2_old,Delta_h/h_old);
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("structure.cpp -- compute_new_orbits_assuming_adiabatic_mass_loss -- adiabatic %g %g h_old %g h_new %g delta m1 %g delta m2 %g m1_old %g m2_old %g\n",b->P_orb_adiabatic_mass_loss , mass_loss_timescale,h_old,h_new,delta_m1,delta_m2,m1_old,m2_old);
+                }
+                #endif
                 
                 for (i=0; i<3; i++)
                 {
@@ -918,7 +932,13 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
                 delta_masses.push_back(0.0);
                 R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
                 V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
-                //printf("PB %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("structure.cpp -- handle_gradual_mass_loss_event_in_system -- %g %g %g %g %g %g %g\n",p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                }
+                #endif
             }
         }
     }
@@ -1019,7 +1039,13 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
                 delta_masses.push_back(0.0);
                 R_vecs.push_back( {p->R_vec[0],p->R_vec[1],p->R_vec[2]} );
                 V_vecs.push_back( {p->V_vec[0],p->V_vec[1],p->V_vec[2]} );
-                //printf("PB excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                }
+                #endif
             }
         }
     }

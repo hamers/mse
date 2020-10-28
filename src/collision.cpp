@@ -68,16 +68,6 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
             collision_product(particlesMap, col_parent_indices[i], col_C1_indices[i], col_C2_indices[i], t, integration_flag);
         }
         
-        #ifdef IGNORE
-        update_structure(particlesMap, *integration_flag);
-        
-        bool stable = check_system_for_dynamical_stability(particlesMap, integration_flag);
-        if (stable == false)
-        {
-            *integration_flag = 1;
-        }
-        #endif
-
     }
     else /* N-body mode */
     {
@@ -133,8 +123,14 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
             collision_product(particlesMap, binary_index, pi->index, pj->index, t, integration_flag);
         }
     }
-    //printf("done col \n");
-    //print_system(particlesMap,*integration_flag);
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("collision.cpp -- handle_collisions -- done\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
 }
 
 
@@ -234,7 +230,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     zpars = child1->zpars; /* for now: take metallicity of star 1; should think of Z-mixing in future */
   
     bool destroyed = false;
-    //bool apply_kick = false;
     bool reset_spin_vec = true;
     
     int kick_distribution = child1->kick_distribution; /* by default, adopt kick distribution of child1 */
@@ -372,8 +367,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
         m = M_final;
-        //apply_kick = true;
-                
+
         reset_spin_vec = false;
         double chi = norm3(alpha_vec_final);
         double Omega = compute_spin_frequency_from_spin_parameter(m,chi);
@@ -404,8 +398,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
         m = M_final;
-        //apply_kick = true;
-                
+
         reset_spin_vec = false;
         double chi = norm3(alpha_vec_final);
         double Omega = compute_spin_frequency_from_spin_parameter(m,chi);
@@ -447,13 +440,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     if (destroyed == true)
     {
         m = 0.0; /* need to set for instantaneous_perturbation_delta_mass below */
-        //b->apply_kick = false; /* assume no kicks following destruction events */
     }
-
-    //b->apply_kick = apply_kick;
-    //b->kick_distribution = kick_distribution;
-    //bool unbound_orbits;
-    //handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
 
     double r,lum,rc,menv,renv,k2;

@@ -3,7 +3,6 @@
 #include "types.h"
 #include "external.h"
 #include "evolve.h"
-//#include "../interface.h" /* for parameters */
 #include "structure.h" /* for determine_binary_parents_and_levels */
 #include <stdio.h>
 

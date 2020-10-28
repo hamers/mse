@@ -83,7 +83,8 @@ bool check_for_convective_damping(int stellar_type)
 
 double from_k_AM_div_T_to_t_V(double k_AM_div_T, double apsidal_motion_constant)
 {
-    return c_3div2*(2.0*apsidal_motion_constant + 1.0)/k_AM_div_T;
+    double f = 2.0*apsidal_motion_constant + 1.0;
+    return 3.0 * f * f / k_AM_div_T;
 }
 
 double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
@@ -334,7 +335,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     {
         I = star->gyration_radius*M*R*R;
         k_AM = star->apsidal_motion_constant;
-        //k_AM = star->apsidal_motion_constant;
     }
 
     //printf("index %d k_AM %g I %g\n",star->index,k_AM,I);
@@ -379,11 +379,12 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     }
 
 
-    double tau = 3.0*(1.0 + 1.0/(2.0*k_AM))*R*R*R/(CONST_G*M*t_V);
-
     double R_div_a = R/a;
 	double R_div_a_p5 = pow(R_div_a,5.0);
-    double t_f_inv = 3.0*k_AM*tau*n*n*(m/M)*R_div_a_p5;
+    double R_div_a_p8 = pow(R_div_a,8.0);
+
+    double f = 2.0 * k_AM + 1.0;
+    double t_f_inv = (9.0 / t_V) * R_div_a_p8 * (m * (m + M) / (M * M)) * f * f;
 
     double f_tides1 = f_tides1_function_BO(e_p2,j_p10_inv,j_p13_inv);
     double f_tides2 = f_tides2_function_BO(e_p2,j_p10_inv,j_p13_inv);
@@ -576,7 +577,18 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
     double rg = star->gyration_radius;
-    double I = rg*M*R*R; // moment of intertia
+    double I;
+    if (star->object_type == 1) // star 
+    {
+        I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
+        k_AM = compute_apsidal_motion_constant(star);
+    }
+    else
+    {
+        I = star->gyration_radius*M*R*R;
+        k_AM = star->apsidal_motion_constant;
+    }
+
     
     double R_div_a = R/a;
 	double R_div_a_p5 = pow(R_div_a,5.0);

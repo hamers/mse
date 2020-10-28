@@ -11,9 +11,6 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     int flag;
     double VX,VY,VZ;
     ParticlesMapIterator it_p;
-    //std::vector<int>::iterator it_parent_p,it_parent_q;
-
-//    int seed = orbital_phases_random_seed;
     
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -80,12 +77,9 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
 
 int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 {
-    //srand(seed);
     double x;
-    //x = ((double) rand() / (RAND_MAX));
     x = generate_random_number_between_zero_and_unity();
     double theta = 2.0*M_PI*x - M_PI;
-    //x = ((double) rand() / (RAND_MAX));
     x = generate_random_number_between_zero_and_unity();
     double phi = 2.0*M_PI*x;
     *vx = sin(theta)*cos(phi);
@@ -165,14 +159,28 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
             {
                 f_fallback = 1.0;
             }
-            //printf("kw %d f_fallback %g\n",kw,f_fallback);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("SNe.cpp -- sample_kick_velocity -- distr. 3 -- kw %d f_fallback %g\n",kw,f_fallback);
+            }
+            #endif
+
             vnorm = vnorm_NS * (1.0 - f_fallback);
         }
         
         if (kick_distribution == 4) // Giacobbo & Mapelli prescription
         {
             vnorm = vnorm_NS * (((m_progenitor - m_remnant)/m_remnant) * (p->kick_distribution_4_m_NS/p->kick_distribution_4_m_ej)); // <m_NS=1.2>; <m_ej>=9.0
-            //printf("kw %d f %g\n",kw,((m_progenitor - m_remnant)/m_remnant));
+
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("SNe.cpp -- sample_kick_velocity -- distr. 4 -- kw %d f %g\n",kw,((m_progenitor - m_remnant)/m_remnant));
+            }
+            #endif
+
         }
     }
     else if (kick_distribution == 5) 
@@ -225,7 +233,6 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 bool check_for_unbound_orbits(ParticlesMap *particlesMap)
 {
     ParticlesMapIterator it_p;
-//    double h_vec[3],e_vec[3];
     double e;
     
     bool unbound_orbits = false;
@@ -235,14 +242,19 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
         Particle *p = (*it_p).second;
         if (p->is_binary == true)
         {
-            //get_e_and_h_vectors_from_particle(p,e_vec,h_vec);
             e = norm3(p->e_vec);
 
             if (e<0 or e >= 1.0)
             {
                 unbound_orbits = true;
             }
-            //printf("test e %.15f unbound_orbits %d\n",e,unbound_orbits);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("SNe.cpp -- check_for_unbound_orbits -- e %.15f unbound_orbits %d\n",e,unbound_orbits);
+            }
+            #endif
         }
     }
     

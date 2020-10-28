@@ -594,7 +594,6 @@ extern "C" void hrdiag_(double *mass, double *aj, double *mt, double *tm, double
 extern "C" double vrotf_(double mt);    
 extern "C" double rzamsf_(double *m);
 extern "C" double celamf_(int *kw, double *m, double *lum, double *rad, double *rzams, double *menv, double *fac);
-//extern "C" int ktype_(int *kw1, int *kw2);
 extern "C" void dgcore_(int *kw1, int *kw2, int *kw3, double *m1, double *m2, double *m3, double *ebinde);
 extern "C" void gntage_(double *mc, double *mt, int *kw, double *zpars, double *m0, double *aj);
 
@@ -718,7 +717,6 @@ class Particle
 
     /* general */
     double radius;
-    //double spin_vec_x,spin_vec_y,spin_vec_z;
     double spin_vec_x_dot,spin_vec_y_dot,spin_vec_z_dot;
     
     /* Absolute position/velocities (relative to an arbitrary inertial reference frame) */
@@ -815,22 +813,13 @@ class Particle
     
     bool merged;
     
-    //void set_ODE_quantities(double delta_time);
-    //void reset_ODE_quantities();
-    
+
     /*********************
     /* binary properties *
      * ******************/
 
     /* general */
-    //double e_vec_x,e_vec_y,e_vec_z;
-    //double h_vec_x,h_vec_y,h_vec_z;
 
-    //double e_vec_x_dot,e_vec_y_dot,e_vec_z_dot;
-    //double h_vec_x_dot,h_vec_y_dot,h_vec_z_dot;
-   
-    //double true_anomaly;
-    
     /* PN terms */
     bool include_pairwise_1PN_terms,include_pairwise_25PN_terms,include_spin_orbit_1PN_terms;
         
@@ -864,8 +853,6 @@ class Particle
     double h,a;
     bool exclude_for_secular_integration;
     
-//    Particle(int index, int is_binary, int child1, int child2, double mass, double radius, double spin_vec_x, double spin_vec_y, double spin_vec_z, double e_vec_x, double e_vec_y, double e_vec_z, double h_vec_x, double h_vec_y, double h_vec_z, int include_pairwise_1PN_terms, int include_pairwise_25PN_terms, int include_tides_terms, double tides_Q_prime, double tides_gyration_radius, int check_for_secular_breakdown, int secular_breakdown_has_occurred, int check_for_dynamical_instability, int dynamical_instability_has_occurred, int dynamical_instability_criterion, int check_for_physical_collision, int physical_collision_has_occurred) : index(index), is_binary(is_binary), child1(child1), child2(child2), mass(mass), radius(radius), spin_vec_x(spin_vec_x), spin_vec_y(spin_vec_y), spin_vec_z(spin_vec_z), e_vec_x(e_vec_x), e_vec_y(e_vec_y), e_vec_z(e_vec_z), h_vec_x(h_vec_x), h_vec_y(h_vec_y), h_vec_z(h_vec_z), include_pairwise_1PN_terms(include_pairwise_1PN_terms), include_pairwise_25PN_terms(include_pairwise_25PN_terms), include_tides_terms(include_tides_terms), tides_Q_prime(tides_Q_prime), tides_gyration_radius(tides_gyration_radius), 
-
     /* user-specified instantaneous perturbations */
     bool sample_orbital_phase_randomly;
     double instantaneous_perturbation_delta_mass;
@@ -877,9 +864,7 @@ class Particle
 
     /* VRR */
     int VRR_model;
-    //int VRR_include_GR_precession;
     int VRR_include_mass_precession;
-    //int VRR_include_frame_dragging;
     double VRR_mass_precession_rate;
     double VRR_initial_time, VRR_final_time;
     
@@ -912,7 +897,6 @@ class Particle
     /* flybys */
     double flybys_internal_mass;
     double flybys_internal_semimajor_axis;
-    
     
     /* MSTAR */
     bool include_in_MSTAR;
@@ -1033,13 +1017,6 @@ class Particle
         instantaneous_perturbation_delta_X = instantaneous_perturbation_delta_Y = instantaneous_perturbation_delta_Z = 0.0;
         instantaneous_perturbation_delta_VX = instantaneous_perturbation_delta_VY = instantaneous_perturbation_delta_VZ = 0.0;
         
-        //spin_vec_x = 0.0;
-        //spin_vec_y = 0.0;
-        //spin_vec_z = 1.0e-10;
-        
-        //e_vec_x_dot = e_vec_y_dot = e_vec_z_dot = 0.0;
-        //h_vec_x_dot = h_vec_y_dot = h_vec_z_dot = 0.0;
-     
         is_external = false;
         external_t_ref = 0.0;
         external_r_p = 1.0;
@@ -1122,8 +1099,6 @@ class Log_type
     
     ParticlesMap particlesMap;
     
-    //int N_particles,N_bodies,N_binaries;
-  
     Log_type()
     {
         index = 0;

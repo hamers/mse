@@ -28,34 +28,13 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
     new_entry.event_flag = event_flag;
     new_entry.integration_flag = integration_flag;
     
-    //ParticlesMap log_particlesMap;
-    //copy_particlesMap(particlesMap,&log_particlesMap);
-    
-    //log_particlesMap.insert(particlesMap->begin(), particlesMap->end());
-    
     ParticlesMap log_particlesMap = copy_particlesMap_for_logging(particlesMap);
     new_entry.particlesMap = log_particlesMap;
 
     new_entry.log_info = log_info;
     
-    //printf("TEST %g\n",log_particlesMap[0]->mass);
-    //if (event_flag == 1)
-    //{
-     //   printf("ST CHANGE %d\n",log_info.index1);
-    //}
-    //new_entry.N_particles = particlesMap->size();
-    //if (integration_flag == 0)
-    //{
-        //int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-        //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-        //new_entry.N_bodies = N_bodies;
-        //new_entry.N_binaries = N_binaries;
-        //printf("T %d %d\n",N_bodies,N_binaries);
-    //}
-    
     logData.push_back(new_entry);
     
-    //printf("logging.cpp -- event_flag %d\n",event_flag,logData.size());
 }
 
 
@@ -70,11 +49,8 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        //Particle *q;
         Particle *q = new Particle(p->index, p->is_binary);
-        //printf("? %d\n",p->index);
-        //q->index = p->index;
-        //q->is_binary = p->is_binary;
+
         q->mass = p->mass;
         q->parent = p->parent;
         

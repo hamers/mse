@@ -233,12 +233,11 @@ int compute_orbital_elements_from_orbital_vectors(double child1_mass, double chi
     double h_tot = norm3(h_tot_vec);
 //    printf("h_tot %g x %g y %g z %g\n",h_tot,h_tot_vec[0],h_tot_vec[1],h_tot_vec[2]);
     double x_vec[3], y_vec[3], z_vec[3];
-    for (int i=0; i<3; i++)
-    {
-        z_vec[i] = h_tot_vec[i]/h_tot;
-    }
+//    for (int i=0; i<3; i++)
+//    {
+//        z_vec[i] = h_tot_vec[i]/h_tot;
+//    }
 
-//    printf("test %g %g %g\n",z_vec[0],z_vec[1],z_vec[2]);
     z_vec[0] = 0.0;
     z_vec[1] = 0.0;
     z_vec[2] = 1.0;
@@ -486,8 +485,11 @@ void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, d
         r[i] = r_norm*( cos_f*e_vec_unit[i] + sin_f*q_vec_unit[i]);
         v[i] = v_norm*( -sin_f*e_vec_unit[i] + (e + cos_f)*q_vec_unit[i] );
             
-        #ifdef DEBUG
-        printf("tools.cpp -- from_orbital_vectors_to_cartesian -- i %d r[i] %g v[i] %g\n",i,r[i],v[i]);
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("tools.cpp -- from_orbital_vectors_to_cartesian -- i %d r[i] %g v[i] %g\n",i,r[i],v[i]);
+        }
         #endif
     }
 }
@@ -528,9 +530,12 @@ void from_cartesian_to_orbital_vectors(double child1_mass, double child2_mass, d
     double cos_TA = dot3(r,e_vec_unit)/r_norm;
     double sin_TA = dot3(r,q_vec_unit)/r_norm;
     *true_anomaly = atan2( sin_TA, cos_TA );
-    
-    #ifdef DEBUG
-    printf("tools.cpp -- from_cartesian_to_orbital_vectors -- e_vec %g %g %g h_vec %g %g %g TA %g\n",e_vec[0],e_vec[1],e_vec[2],h_vec[0],h_vec[1],h_vec[2],*true_anomaly);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("tools.cpp -- from_cartesian_to_orbital_vectors -- e_vec %g %g %g h_vec %g %g %g TA %g\n",e_vec[0],e_vec[1],e_vec[2],h_vec[0],h_vec[1],h_vec[2],*true_anomaly);
+    }
     #endif
 }
 
@@ -588,19 +593,13 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
     for (it_p = source->begin(); it_p != source->end(); it_p++)
     {
         Particle *p = (*it_p).second;
-        //is_binary = p->is_binary;
+
         index = p->index;
-        //printf("copy_particles index %d j %d\n",index,j);
+
         (*target)[index] = p;
         j++;
-        //p->parent = -1;
+
     }
-    //printf("old\n");
-    //print_system(source);
-    //printf("new\n");
-    //print_system(target);
-    
-    //printf("copy_particlesMap N_s %d N_t %d \n",source->size(),target->size());    
 }
 
 void copy_all_body_properties(Particle *source, Particle *target)
@@ -673,18 +672,12 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
             p->child1 = particlesMap[previous_binary]->index;
             p->child2 = particlesMap[i+1]->index;
         }
-        //printf("%d %d %d %d %d\n",i,index,previous_binary,p->child1,p->child2);
         previous_binary = index;
         index++;
     }
     
-    /* determine masses in all binaries */
     int N_root_finding,N_ODE_equations;
-    //printf("ok\n");
-    /* determine masses in all binaries */
-
     determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
-    
     set_binary_masses_from_body_masses(&particlesMap);
     
     index=N_bodies;
@@ -692,8 +685,6 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
     {
         Particle *p = particlesMap[index];
         p->true_anomaly = TAs[i];
-        //printf("DD %g %g  %g %g %g %g %g %g\n",p->child1_mass, p->child2_mass, smas[i], es[i], \
-            INCLs[i], APs[i], LANs[i]);
         compute_orbital_vectors_from_orbital_elements(p->child1_mass, p->child2_mass, smas[i], es[i], \
             INCLs[i], APs[i], LANs[i], \
             &(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) );
@@ -701,7 +692,6 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
         
         index++;
     }
-    //initialize_stars(&particlesMap);
 }
 
 void print_system(ParticlesMap *particlesMap, int integration_flag)
@@ -756,35 +746,6 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
     }
 }
 
-#ifdef IGNORE
-void print_bodies(ParticlesMap *particlesMap)
-{
-    printf("=============================\n");
-    printf("Printing bodies; N=%d\n",particlesMap->size());
-    
-    //update_structure(particlesMap);
-    //set_up_derived_quantities(particlesMap);
-
-    ParticlesMapIterator it_p;
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        
-        if (p->is_binary == false)
-        {
-            if (p->object_type == 1)
-            {
-                printf("index %d -- body -- parent %d m %.15f r %g st %d mc %g minit %g menv %g epoch %g age %g rc %g renv %g lum %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->parent,p->mass,p->radius,p->stellar_type,p->core_mass,p->sse_initial_mass,p->convective_envelope_mass,p->epoch,p->age,p->core_radius,p->convective_envelope_radius,p->luminosity,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
-            }
-            else
-            {
-                printf("index %d -- body -- parent %d m %g r %g st %d \n",p->index,p->parent,p->mass,p->radius,p->stellar_type);
-            }
-        }
-    }
-}
-#endif
-
 void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3])
 {
     *a_par = dot3(a_vec,h_vec);
@@ -823,7 +784,6 @@ double compute_h_from_a(double m1, double m2, double a, double e)
 double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, double a, double a_dot, double e, double e_dot)
 {
     return m1_dot/m1 + m2_dot/m2 - c_1div2*(m1_dot + m2_dot)/(m1+m2) + c_1div2*(a_dot/a) - e*e_dot/(1.0 - e*e);
-    //M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
 }
 
 
@@ -862,9 +822,9 @@ void check_number(double x, char *source, char *description, bool exit_on_error)
 
 int clear_particles(ParticlesMap *particlesMap)
 {
-    //printf("clear_internal_particles\n");
+
     (*particlesMap).clear();
-	//highest_particle_index = 0;
+
     return 0;
 }
 

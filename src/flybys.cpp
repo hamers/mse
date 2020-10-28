@@ -23,7 +23,13 @@ bool flyby_criterion(ParticlesMap *particlesMap, int *integration_flag)
 
     if (*integration_flag > 0 or N_bound_subsystems != 1)
     {
-        //printf("flybys.cpp -- flyby_criterion -- integration_flag %d N_bound_subsystems %d -- not handling flyby \n",*integration_flag,N_bound_subsystems);
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- flyby_criterion -- integration_flag %d N_bound_subsystems %d -- not handling flyby \n",*integration_flag,N_bound_subsystems);
+        }
+        #endif
+        
         enable_flybys = false;
     }
     
@@ -32,10 +38,13 @@ bool flyby_criterion(ParticlesMap *particlesMap, int *integration_flag)
 
 int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integration_flag)
 {
-   
-    //printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("flybys.cpp -- sample_next_flyby -- include_flybys %d flybys_correct_for_gravitational_focussing %d flybys_velocity_distribution %d flybys_mass_distribution %d flybys_mass_distribution_lower_value %g flybys_mass_distribution_upper_value %g flybys_encounter_sphere_radius %g flybys_stellar_density %g flybys_stellar_relative_velocity_dispersion %g\n",include_flybys,flybys_correct_for_gravitational_focussing,flybys_velocity_distribution,flybys_mass_distribution,flybys_mass_distribution_lower_value,flybys_mass_distribution_upper_value,flybys_encounter_sphere_radius,flybys_stellar_density,flybys_stellar_relative_velocity_dispersion);
+    }
+    #endif
 
-    //printf("handle_next_flyby %d %g\n",initialize,generate_random_number_between_zero_and_unity());
 
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
@@ -50,25 +59,22 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
     bool apply_flyby;
     
     sample_next_flyby(particlesMap, &apply_flyby, &flybys_t_next_encounter, &flybys_N_enc, &flybys_N_not_impulsive, &M_per, b_vec, V_vec);
-    //printf("flybys.cpp -- sample_next_flyby -- apply_flyby %d N_enc %d N_non_im %d flybys_t_next_encounter %g\n",apply_flyby,flybys_N_enc,flybys_N_not_impulsive,flybys_t_next_encounter);
-
-    //if (N_bound_subsystems < 1 or N_bound_subsystems > 1)
-    //{
-        //printf("flybys.cpp -- handle_next_flyby -- N_bound_subsystems = %d;; not applying flyby\n",N_bound_subsystems);
-        //apply_flyby = false;
-    //}
-    //printf("FLYBY %g %g %g %g %g %g %g\n",M_per,b_vec[0],b_vec[1],b_vec[2],V_vec[0],V_vec[1],V_vec[2]);
     
     bool unbound_orbits = false;
     if (initialize == false and apply_flyby == true)
     {
         compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, &unbound_orbits, true, integration_flag);
-        //printf("flybys.cpp -- compute_effects_of_flyby_on_system\n");
     }
 
     if (unbound_orbits == true)
     {
-        printf("flybys.cpp -- handle_next_flyby -- unbound orbits in system due to flyby!\n");
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("flybys.cpp -- handle_next_flyby -- unbound orbits in system due to flyby!\n");
+        }
+        #endif
+
         *integration_flag = 4;
     }
 
@@ -98,13 +104,26 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         
         /* Sample perturber mass at R_enc */
         *M_per = sample_flyby_mass_at_R_enc();
-        //printf("sample_next_flyby.cpp -- M_per %g S %d\n",*M_per,random_seed);
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- sample_next_flyby.cpp -- M_per %g S %d\n",*M_per,random_seed);
+        }
+        #endif
+        
         M_tot = flybys_internal_mass + *M_per;
         mu = CONST_G*M_tot;
         
         /* Sample perturber velocity at R_enc */
         sample_flyby_position_and_velocity_at_R_enc(particlesMap,R_vec,V_vec);
-        //printf("sample_next_flyby.cpp -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- sample_next_flyby.cpp -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
+        }
+        #endif
         
         /* Compute impact parameter for perturber orbit */
         V = norm3(V_vec);
@@ -131,7 +150,6 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         angular_speed_ratio = theta_dot_peri/n_internal;
         
         /* Compute time of next encounter */
-        //u = ((double) rand() / (RAND_MAX));
         u = generate_random_number_between_zero_and_unity();
         delta_time_encounter = -log(u) / flybys_total_encounter_rate_at_R_enc;
         
@@ -147,7 +165,14 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         {
             *N_not_impulsive += 1;
             *apply_flyby = false;
-            //printf("flybys.cpp -- sample_next_flyby -- not impulsive; angular_speed_ratio = %g; i=%d\n",angular_speed_ratio,i);
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("flybys.cpp -- sample_next_flyby -- not impulsive; angular_speed_ratio = %g; i=%d\n",angular_speed_ratio,i);
+            }
+            #endif            
+            
             break;
         }
 
@@ -191,26 +216,6 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
             V_vec[k] = v_prime[0]*theta_hat_vec[k] + v_prime[1]*phi_hat_vec[k] - fabs(v_prime[2])*r_hat_vec[k];
         }
 
-        //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 1 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
-        /* */
-        #ifdef IGNORE
-        if (flybys_reference_binary != -1) /* Default value -1: use center of mass (center R_vec and V_vec around origin) */
-        {
-            
-            Particle *p = (*particlesMap)[flybys_reference_binary];
-            double *R_ref = p->R_vec;
-            double *V_ref = p->V_vec;
-
-            //printf("flybys_reference_binary != -1 %d R_ref %g %g %g V_ref %g %g %g \n",flybys_reference_binary,R_ref[0],R_ref[1],R_ref[2],V_ref[0],V_ref[1],V_ref[2]);
-            for (k=0; k<3; k++)
-            {
-                R_vec[k] -= R_ref[k];
-                V_vec[k] -= V_ref[k];
-            }
-            
-        }
-        #endif
-        //printf("sample_flyby_position_and_velocity_at_R_enc.cpp -- 2 -- R %g %g %g V %g %g %g\n",R_vec[0],R_vec[1],R_vec[2],V_vec[0],V_vec[1],V_vec[2]);
     }
     else
     {
@@ -249,14 +254,20 @@ int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per,
             
         }
     }
-    //printf("R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("flybys.cpp -- compute_effects_of_flyby_on_system -- R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
+        print_system(particlesMap,0);
+    }
+    #endif
     
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->is_bound == true)
         {
-            /* Careful: is it OK to set these to zero here? */
             p->instantaneous_perturbation_delta_mass = 0.0;
             p->instantaneous_perturbation_delta_X = 0.0;
             p->instantaneous_perturbation_delta_Y = 0.0;
@@ -372,12 +383,17 @@ int compute_total_encounter_rate_and_density_at_R_enc(double *total_encounter_ra
             integral_density += mass_fraction*W;
             integral_rate += mass_fraction*V;
         }
-        //printf("flybys.cpp -- compute_total_encounter_rate_and_density_at_R_enc -- integral_density %g integral_rate %g \n",integral_density,integral_rate);
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- compute_total_encounter_rate_and_density_at_R_enc -- integral_density %g integral_rate %g \n",integral_density,integral_rate);
+        }
+        #endif
+        
         *total_encounter_rate = Gamma_0*integral_rate;
         *stellar_density = integral_density*flybys_stellar_density;
     }
-
-    //print 'compute_total_encounter_rate_function -- integral: ',integral,' N_enc,est',total_rate*simulation_parameters_particle.tend
 
     return 0;
 }
@@ -409,7 +425,6 @@ bool correct_mass_function(double M)
     double W = W_function(x);
     bool resample;
     
-    //double u = ((double) rand() / (RAND_MAX));
     double u = generate_random_number_between_zero_and_unity();
     if (u <= (W/flybys_W_max) )
     {
@@ -420,7 +435,13 @@ bool correct_mass_function(double M)
         resample = true;
     }
 
-    //#print 'W/W_max',W/W_max,random_number,resample
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("flybys.cpp -- correct_mass_function -- W %g resample %d\n",W,resample);
+    }
+    #endif
+
     return resample;
 }
 
@@ -468,7 +489,6 @@ double sample_flyby_mass_at_infinity()
         printf("flybys.cpp -- flybys_mass_distribution = %d is not supported; exiting\n",flybys_mass_distribution);
         exit(-1);
     }
-    //printf("SI %d %g\n",flybys_mass_distribution,M);
     
     return M;
 }

@@ -2,7 +2,6 @@
 
 #include "evolve.h"
 #include "test.h"
-//#include "mstar/regularization.h"
 
 #include <iostream>
 #include <fstream>
@@ -249,8 +248,6 @@ int test_nbody_two_body_stopping_conditions()
 
         double E_init = compute_nbody_total_energy(R);
 
-        //print_state(R);
-
         int split_integration = 0;
         
         double tend = 1.0;
@@ -274,7 +271,6 @@ int test_nbody_two_body_stopping_conditions()
 
                 t+=reached_dt;
                 
-                //printf("t %g reached dt %g stopping_condition_occurred %d\n",t,reached_dt,stopping_condition_occurred);
                 print_state(R);
                 
                 if (stopping_condition_occurred == 1)
@@ -284,6 +280,7 @@ int test_nbody_two_body_stopping_conditions()
             }
         }
         double E_fin = compute_nbody_total_energy(R);
+
 
         //printf("Integration done reached t %g stopping_condition_occurred %d; t_end_an (collisions only) %g\n",t,stopping_condition_occurred,test_nbody_compute_time_of_collision(GCONST,m1+m2,R1+R2,a,e));
                 

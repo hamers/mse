@@ -1687,7 +1687,8 @@ class test_mse():
         print('Test kick velocity recipes')
         
         code = MSE()
-
+        code.verbose_flag = 0
+        
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         CONST_KM_PER_S = code.CONST_KM_PER_S
@@ -1715,7 +1716,9 @@ class test_mse():
                 m = pow( x*(pow(m2,1.0-alpha) - pow(m1,1.0-alpha)) + pow(m1,1.0-alpha), 1.0/(1.0-alpha) )
                 #print("m",m)
                 kw,v = code.test_kick_velocity(kick_distribution,m)
-                print("index_kick",index_kick,"m",m,"kw",kw,"v/(km/s)",v/CONST_KM_PER_S)
+                
+                if args.verbose == True:
+                    print("index_kick",index_kick,"m",m,"kw",kw,"v/(km/s)",v/CONST_KM_PER_S)
                 
                 vs[index_kick].append(v/CONST_KM_PER_S)
                 if kw==13:
@@ -1761,7 +1764,7 @@ class test_mse():
                 plot.annotate("$\mathrm{Kick\,distribution\,%s}$"%(index_kick+1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
                 #if index_kick==N_k-1:
                 
-                plot.set_xlabel("$V_\mathrm{kick}/(\mathrm{km/s})$",fontsize=fontsize)
+                plot.set_xlabel("$V_\mathrm{kick}/(\mathrm{km\,s^{-1}})$",fontsize=fontsize)
                 plot.set_ylabel("$\mathrm{PDF}$",fontsize=fontsize)
                 #else:
                 #    plot.set_xticklabels([])
@@ -1785,8 +1788,9 @@ class test_mse():
                 
             plot=fig.add_subplot(2,3,6,yscale="log")
             #handles,labels = plot.get_legend_handles_labels()
-            plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
+            plot.legend(handles,labels,loc="upper left",fontsize=0.85*fontsize)
             plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            plot.axis('off')
 
             plot.set_xticks([])
             plot.set_yticks([])

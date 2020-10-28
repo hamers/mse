@@ -258,7 +258,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
         if (COEL == true) /* Coalescence - calculate final binding energy. */
         {
-            //KW = KTYPE(KW1,KW2) - 100
             KW = determine_merger_type(KW1,KW2);
             MC3 = MC1;
             if (KW2 == 7 and KW == 4)
@@ -318,7 +317,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         if (COEL == true)
         {
             
-            SEPF = 0.0; // ASH: redundant?
             if(KW2 >= 13)
             {
             /* If the secondary was a neutron star or black hole the outcome
@@ -331,14 +329,11 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                KW1 = KW2;
                KW2 = 15;
                AJ1 = 0.0;
-        //* The envelope mass is not required in this case.
-        //*
+            //* The envelope mass is not required in this case.
+            //*
                goto label30;
             }
-            //ENDIF
-            //else // secondary was NOT an NS/BH
                 
-            //KW = KTYPE(KW1,KW2) - 100
             KW = determine_merger_type(KW1,KW2);
             MC3 = MC1 + MC2;
 
@@ -398,7 +393,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
-                //star1->kick_distribution = 1;
             }
             
             MF = M2;
@@ -410,7 +404,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             if(KW2 >= 13 and KW < 13) /* secondary became an NS */
             {
                 star2->apply_kick = true;
-                //star2->kick_distribution = 1;
             }
             
         }
@@ -458,11 +451,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                FAGE2 = (AJ2 - TSCLS2[1])/(TSCLS2[12] - TSCLS2[1]);
             }
         }
-        //printf("COEL True FAGE1 %g FAGE 2 %g\n",FAGE1,FAGE2);
     }
 
     /* Now calculate the final mass following coelescence.  This requires a Newton-Raphson iteration. 
-    * Note ASH: as a temporary measure, taking metallicity of star2 for the coelesced object */
+    * Note ASH: for now, take metallicity of star2 for the coelesced object */
 
     double z_new;
     double *zpars_new;
@@ -474,7 +466,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         zcnsts_(&z_new,zpars_new);
 
         /* Calculate the orbital spin just before coalescence. */
-         //TB = (SEPL/AURSUN)*SQRT(SEPL/(AURSUN*(MC1+MC2)))
+
         TB = TWOPI * (SEPL * CONST_R_SUN) * sqrt( SEPL * CONST_R_SUN / (CONST_G * (MC1 + MC2) ) );
         OORB = TWOPI/TB;
 
@@ -560,7 +552,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
          
          hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
             &R1,&L1,&KW,&MC1,&RC1,&MENV1,&RENV1,&K21);
-         //JSPIN1 = OORB*(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
+
          KW1 = KW;
          ECC = 0.0;
     }
@@ -578,16 +570,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
          else
          {
             ECC = epsilon;
-            //ECC = 1.0e-8;
          }
 
          /* Set both cores in co-rotation with the orbit on exit of CE */
 
-         //TB = (SEPF/AURSUN)*SQRT(SEPF/(AURSUN*(M1+M2)))
          TB = TWOPI * (SEPF * CONST_R_SUN) * sqrt( SEPF * CONST_R_SUN / (CONST_G * (M1 + M2) ) );
          OORB = TWOPI/TB;
     }
-
 
 
     /* Handle orbital changes / merge binaries in case of coalescence */
@@ -740,11 +729,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         #endif
 
         double R1_vec_new[3],R2_vec_new[3],V1_vec_new[3],V2_vec_new[3];
-        //printf("CE1>.. %g %g %g \n",R1_vec_new[0],R1_vec_new[1],R1_vec_new[2]);
+
         compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentricity(M1_old,star1->R_vec,star1->V_vec,M2_old,star2->R_vec,star2->V_vec,M1,R1_vec_new,V1_vec_new,M2,R2_vec_new,V2_vec_new,a,e);
         for (int i=0; i<3; i++)
         {
-            //printf("CE2>.. %g \n",R1_vec_new[i]);
             star1->R_vec[i] = R1_vec_new[i];
             star1->V_vec[i] = V1_vec_new[i];
             star2->R_vec[i] = R2_vec_new[i];
@@ -947,27 +935,20 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     double age3 = star3->age * yr_to_Myr;
     double *zpars3 = star3->zpars;    
-    //printf("t1 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
     star_(&kw3, &M3_sse_init, &M3, &tm3, &tn3, tscls3, lums3, GB3, zpars3);
-    //printf("t2 %g %d %g %g %g %g\n",ZPARS1[0],KW1,M01,M1,TM1,TN1);
-    //printf("arg hrd %g %g %g %g %g \n",M01,AJ1,M1,TM1,TN1);
     hrdiag_(&M3_sse_init,&age3,&M3,&tm3,&tm3,tscls3,lums3,GB3,zpars3, \
         &R3,&L3,&kw3,&MC3,&RC3,&M_env3,&R_env3,&k2_3);
-
-//      OSPIN1 = JSPIN1/(K21*R1*R1*(M1-MC1)+K3*RC1*RC1*MC1)
 
     double fac = 1.0;
     double M_envd3 = M_env3 / (M3 - MC3);
     double R_ZAMS3 = rzamsf_(&M3_sse_init);
     double lambda3 = celamf_(&kw3,&M3_sse_init,&L3,&R3,&R_ZAMS3,&M_envd3,&fac);
-    //double alpha3 = star3->common_envelope_alpha;
     double alpha3 = star3->triple_common_envelope_alpha;
     
     double M_inner_binary = inner_binary->mass;
     double a_in_i = inner_binary->a/CONST_R_SUN;
     double a_out_i = outer_binary->a/CONST_R_SUN;
         
-    //double e_in = inner_binary->e;
     double e_out_i = outer_binary->e;
 
 
@@ -1032,7 +1013,6 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (kw3_f >= 13)
     {
         star3->apply_kick = true;
-        //star3->kick_distribution = 1;
     }
 
     /* Update the tertiary star. 
@@ -1147,7 +1127,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     star1->apply_kick = false;
     star2->apply_kick = false;
     star3->instantaneous_perturbation_delta_mass = 0.0;
-//    int integration_flag_dummy;
+
     bool unbound_orbits;
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 

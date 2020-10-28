@@ -48,8 +48,6 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     double E_init = compute_nbody_total_energy(R);
     
-    //double tend = determine_nbody_timestep(particlesMap,*integration_flag);
-    
     MSTAR_verbose = false;
     #ifdef VERBOSE
     if (verbose_flag > 0)
@@ -251,18 +249,22 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
             
             p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
             p->radius += p->radius_dot * dt;
-            //printf("dm %.15f %.15f %.15f %.15f\n",p->mass_dot_wind,dt,p->mass_dot_wind * dt,p->mass_dot_wind_accretion);
-            //printf("update_stellar_evolution_quantities_directly m %g r %g\n",p->mass,p->radius);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("nbody_evolution.cpp -- update_stellar_evolution_quantities_directly m %g r %g\n",p->mass,p->radius);
+            }
+            #endif
+
             spin_vec_norm = norm3(p->spin_vec);
             if (spin_vec_norm == 0.0)
             {
                 spin_vec_norm = epsilon;
             }
-            //printf("spin_vec_norm %g\n",spin_vec_norm);
             for (i=0; i<3; i++)
             {
                 p->spin_vec[i] += p->ospin_dot * (p->spin_vec[i]/spin_vec_norm) * dt;
-                //printf("T p->ospin_dot %g p->spin_vec %g\n",p->ospin_dot,p->spin_vec[i]);
             }
         }
     }
@@ -409,7 +411,6 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
             a = semimajor_axes[index];
             a_fut = future_semimajor_axes[index];
 
-            
             delta_a = fabs((a - a_fut))/a;
 
             #ifdef VERBOSE
@@ -457,7 +458,6 @@ void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct Regularized
         //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
 
         is_binary = false;
-        //index = particlesMap->size();
         index = R->MSEIndex[i];
         Particle *p = new Particle(index, is_binary);
         (*particlesMap)[index] = p;
@@ -468,8 +468,6 @@ void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct Regularized
             p->R_vec[j] = R->Pos[3 * i + j];
             p->V_vec[j] = R->Vel[3 * i + j];
             p->spin_AM_vec[j] = R->Spin_S[3 * i + j];
-            //printf("extract %g \n",p->spin_AM_vec[i]);
-
         }
         
     }
@@ -488,7 +486,6 @@ void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap 
         //printf("i %d vel %g %g %g \n",i,R->Vel[3 * i + 0], R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
 
         is_binary = false;
-        //index = particlesMap->size();
         index = R->MSEIndex[i];
         Particle *p = (*particlesMap)[index];
         
@@ -497,7 +494,6 @@ void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap 
             p->R_vec[j] = R->Pos[3 * i + j];
             p->V_vec[j] = R->Vel[3 * i + j];
             p->spin_AM_vec[j] = R->Spin_S[3 * i + j];
-            //printf("extract %g \n",p->spin_AM_vec[i]);
         }
         
     }
@@ -513,7 +509,6 @@ void get_all_semimajor_axes_in_system(ParticlesMap *particlesMap, std::vector<do
         {
             (*binary_indices).push_back(p->index);
             (*semimajor_axes).push_back(p->a);
-            //printf("i %d a %g\n",p->index,p->a);
         }
     }
 }
@@ -531,25 +526,10 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     double a,e,true_anomaly;
    
     ParticlesMapIterator it,it_p1,it_p2,it_bin;
-    //std::map<int, int> binary_child1_indices;
-    //std::map<int, int> binary_child2_indices;
-    //int binary_child1_indices_i;
-    //int binary_child2_indices_i;
-    //std::vector<int> binary_child1_indices;
-    //std::vector<int> binary_child2_indices;
-    
-//    ParticlesMapIterator it_p1_begin,it_p1_end;
-    //ParticlesMapIterator it_p2_begin,it_p2_end;
-    
+
     ParticlesMap particles_to_be_added;
-    //int particles_to_be_added_highest_index;
     int index;
 
-    //double max_a;
-    //int N_bodies, N_binaries;
-    //int N_root_finding;
-    //int N_ODE_equations;
-    
     int particles_to_be_added_lower_index = 1 + (*particlesMap->end()).first;
     
     bool binary_already_found;
@@ -557,12 +537,9 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
     double delta_a;
     *P_orb_min = 1.0e100;
     *P_orb_max = 0.0;    
-    //bool stable_system = false;    
-    //int highest_new_particle_index = particlesMap->size();
     
     int new_index=-1;
     for (it = particlesMap->begin(); it != particlesMap->end(); it++)
-        //for (it_p1 = it_p1_begin; it_p1 != it_p1_end; it_p1++)
     {
         Particle *p = (*it).second;
         if (p->index > new_index)
@@ -572,8 +549,6 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
         p->has_found_parent = false;
     }
     new_index += 1;
-    //int new_index = (*particlesMap->end()).first;
-    //printf("new_index %d\n",new_index);
     
     bool found_new_orbit = true;
     while (found_new_orbit == true)

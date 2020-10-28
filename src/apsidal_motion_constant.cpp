@@ -62,7 +62,7 @@ double compute_apsidal_motion_constant(Particle *star)
     {
 
         /*--------------------------------------------------------------------------------------------------------------------------*/
-        /* Stripped helium star: determine from fitted function from data of Villa (1977) (no age information used, just mass)
+        /* Stripped helium star: determine from fitted function from data of Vila (1977; https://ui.adsabs.harvard.edu/abs/1977ApJ...213..464V) (no age information used, just mass)
         /*--------------------------------------------------------------------------------------------------------------------------*/
     
         val = d_HeMS[0] + d_HeMS[1]*atan(d_HeMS[2]*pow(mass - d_HeMS[3],4.0));
@@ -71,9 +71,9 @@ double compute_apsidal_motion_constant(Particle *star)
     else if ((stellar_type >= 10) and (stellar_type <= 12))
     {
 
-    /*--------------------------------------------------------------------------------------------------------------------------*/
-    /* White dwarf: determine from fitted function from data of Villa (1977) (no age information used, just mass)
-    /*--------------------------------------------------------------------------------------------------------------------------*/
+        /*--------------------------------------------------------------------------------------------------------------------------*/
+        /* White dwarf: determine from fitted function from data of Vila (1977; https://ui.adsabs.harvard.edu/abs/1977ApJ...213..464V) (no age information used, just mass)
+        /*--------------------------------------------------------------------------------------------------------------------------*/
     
         val = d_WD[0] + d_WD[1]*(mass - d_WD[2]) + d_WD[3]*pow(mass - d_WD[4],2.0);
     }
@@ -88,7 +88,7 @@ double compute_apsidal_motion_constant(Particle *star)
         //double compactness = stardata->star[ksn].mass/(stardata->star[ksn].radius*R_SUN*1e-5); /* M/R; units: M_SUN/km */
         //val = 1.5*(-0.41+0.56/1.00)*pow(compactness,-0.003);
         
-        /* June 2020: simplify and just take canonical constant value for an n=1 polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
+        /* June 2020: simplify and take canonical constant value for an n=1 polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
         val = 0.25990728;
 
     }
@@ -117,11 +117,6 @@ double compute_apsidal_motion_constant(Particle *star)
         val = 0.14327923;
     }
 	
-//    if (val!=val)
-    //{
-//        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
-//        exit(0);
-    //}
     check_number(val, "apsidal_motion_constant.cpp", "k_AM", true);
     
     if (val<0)
@@ -152,9 +147,6 @@ double AMC_data_function(double log_m, Particle *star)
 {
 	int stellar_type = star->stellar_type;
 	double age = yr_to_Myr*star->age; /* age in Myr since the timescales below are in Myr */
-//	double timescales = stardata->star[ksn].tscls;		/* Array containing various timescales */
-//	double tms = stardata->star[ksn].tm;			/* Main sequence timescale */
-//	double tbgb = stardata->star[ksn].tbgb;			/* Giant branch timescale */
 	double tau = 0.0;						/* Fractional age at specific evolutionary stage */
 
     double tms,tn;
@@ -163,8 +155,6 @@ double AMC_data_function(double log_m, Particle *star)
     timescales = new double[20];
     lums = new double[10];  
     
-//    double age = p->age*yr_to_Myr;
-//    double r,rc,lum,menv,renv,k2;
     int stellar_type_old = stellar_type;
     star_(&stellar_type, &star->sse_initial_mass, &star->mass, &tms, &tn, timescales, lums, GB, star->zpars);
 
@@ -177,25 +167,17 @@ double AMC_data_function(double log_m, Particle *star)
         }
         #endif
     }
-//	double *tms=&(stardata->common.tm);			/* Main sequence timescale */
-//	double *tn=&(stardata->common.tn);			/* Nuclear timescale */
-
-//	double timescales[TSCLS_ARRAY_SIZE];
-//	double lums[LUMS_ARRAY_SIZE];
-//	double GB[GB_ARRAY_SIZE];
-//	struct star_t * star = &(stardata->star[ksn]);
-
-//	calc_lum_and_evol_time(stellar_type,stardata->star[ksn].initial_mass,stardata->star[ksn].mass,tms,tn,timescales,lums,GB,stardata,star);
-
-//	if (stellar_type == 5) printf("TGIANT %g EAGB %g %g %g TPAGB %g\n",timescales[T_GIANT_T], timescales[T_EAGB_T],timescales[T_EAGB_TINF_1],timescales[T_EAGB_TINF_1],timescales[T_TPAGB_T]);
-
-//	printf("tms %g\n",*tms);
 
     int T_BGB = 0;
     int T_HE_IGNITION = 1;
     int T_HE_BURNING = 2;
 
-    //printf("AMC_data_function input log_m %g age %g tms %g\n",log_m, age, tms);
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("apsidal_motion_constant.cpp -- AMC_data_function -- input log_m %g age %g tms %g\n",log_m, age, tms);
+    }
+    #endif
 
 	if (log_m == -0.0969)	/* 0.80 M_SUN */
 	{

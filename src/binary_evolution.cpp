@@ -63,7 +63,6 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
         
         Particle *p = (*it_p).second;
         
-        //printf("i %d %d %d\n",donor->index,donor->is_binary,donor->is_bound);
         if (p->is_binary == false and p->is_bound == true)
         {
             /* Wind accretion from particle p onto its companion */
@@ -189,13 +188,12 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double M_donor = donor->mass;
     double M_accretor = accretor->mass;
-
-    /* MT & dynamical timescales */
+    int kw = donor->stellar_type;
     
+    /* MT & dynamical timescales */
     double R_donor = donor->radius;
     double t_dyn_donor = compute_stellar_dynamical_timescale(M_donor, R_donor);
 
-    int kw = donor->stellar_type;
 
     /* Critical mass ratios */
     double q = M_donor / M_accretor;
@@ -528,9 +526,6 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
 
     double dt = t - t_old;
     dm1 = m_donor;
-    
-    //double dme = 2.08d-03*eddfac*(1.d0/(1.d0 + zpars(11)))*rad(j2)*tb // TO DO: include case for eddfac<10
-    
     dm2 = dm1;
 
     bool destroyed;;
@@ -704,15 +699,10 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     double e = parent->e;
     double rp = a*(1.0-e);
     
-//    double fm = donor->fm;
-//    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb); /* NOTE: ignoring mass transfer rates as calculated in BSE */
-    
     double dt = t - t_old;
-    //double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
 
 
     /* Default value of dm1 -- transferred mass during this time-step */
-
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
     double dm1 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
     double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
@@ -866,17 +856,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
             *integration_flag = 1;
 
-            #ifdef IGNORE
-            handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag); /* TO DO: should use different ML timescale here? */
-
-            /* The binary becomes a body with the donor's properties. */
-            update_stellar_evolution_properties(donor);
-            parent->is_binary = false; 
-            copy_all_body_properties(donor, parent);
-
-            //particlesMap->erase(donor_index);
-            particlesMap->erase(accretor_index);
-            #endif
         }
         else if (kw1 <= 10 and kw2 >= 11)
         {
@@ -910,17 +889,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
                     *integration_flag = 1;
 
-                    #ifdef IGNORE
-                    handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag);
-
-                    /* The binary becomes a body with the donor's properties. */
-                    update_stellar_evolution_properties(donor);
-                    parent->is_binary = false; 
-                    copy_all_body_properties(donor, parent);
-
-                    particlesMap->erase(donor_index);
-                    particlesMap->erase(accretor_index);
-                    #endif
                 }
                 else
                 {
@@ -959,17 +927,6 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 donor->RLOF_flag = 0;
                 particlesMap->erase(accretor_index);
         
-                #ifdef IGNORE
-                handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, donor, accretor, Delta_m1, Delta_m2, parent->compact_object_disruption_mass_loss_timescale, integration_flag);
-
-                /* The binary becomes a body with the donor's properties. */
-                update_stellar_evolution_properties(donor);
-                parent->is_binary = false; 
-                copy_all_body_properties(donor, parent);
-
-                particlesMap->erase(donor_index);
-                particlesMap->erase(accretor_index);
-                #endif
             }
         }
     }
@@ -1176,26 +1133,18 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
     set_up_derived_quantities(particlesMap); /* for setting a, e, etc. for all orbits */
     
-
-//    double P_orb = compute_orbital_period_from_semimajor_axis(parent->mass,parent->a);
     double m_donor = donor->mass;
     double m_inner_binary = inner_binary->mass;
     double m1 = star1->mass;
     double m2 = star2->mass;
 
-
     double q = m_donor/m_inner_binary;
 
     double R_donor = donor->radius;
-    //double R_accretor = accretor->radius;
-
-    //double m_old = m_donor + m_inner_binary;
 
     int kw1 = donor->stellar_type;
-    //int kw2 = accretor->stellar_type;
 
     double t_KH_donor = compute_Kelvin_Helmholtz_timescale(kw1,m_donor,donor->core_mass,R_donor,donor->luminosity);
-    //double t_KH_accretor = compute_Kelvin_Helmholtz_timescale(kw2,m_accretor,accretor->core_mass,R_accretor,accretor->luminosity);
 
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
     double a_out = outer_binary->a;
@@ -1206,15 +1155,9 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     double e_in = inner_binary->e;
     double rp_in = a_in*(1.0-e_in);
     
-//    double fm = donor->fm;
-//    double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(m_donor,fm,P_orb); /* NOTE: ignoring mass transfer rates as calculated in BSE */
-    
     double dt = t - t_old;
-    //double dm1 = -m_dot * dt; /* amount of mass lost by donor during dt; NOTE: defined here dm1>0 */
-
 
     /* Default value of dm3 -- transferred mass during this time-step */
-
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp_out,q);
     double dm3 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
     
@@ -1287,7 +1230,6 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     }
     else if (kw1 == 10)
     {
-        //dm1 = 1.0e3*dm1 / CV_max(R_donor/CONST_R_SUN, 1.0e-4);
         dm1 = 1.0e3* dm1 * m_donor/CV_max(R_donor/CONST_R_SUN,1.0e-4);
     }
     

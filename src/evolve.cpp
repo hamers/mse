@@ -40,12 +40,15 @@ int initialize_code(ParticlesMap *particlesMap)
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
-    //if (*integration_flag == 0)
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
     {
-        //determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
-        //printf("beginning of evolve start_time %g  end_time  %g %d %d %d %d\n",start_time,end_time,N_bodies,N_binaries,N_root_finding,N_ODE_equations);
-        //print_system(particlesMap,*integration_flag);
+        printf("evolve.cpp -- evolve -- start \n");
+        print_system(particlesMap,*integration_flag);
     }
+    #endif
+
 
     if (start_time == end_time)
     {
@@ -65,7 +68,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     double t_end = end_time;
     double dt,dt_stev,dt_binary_evolution,dt_nbody;
     double t_out;
-    //double t_next_encounter = 0.0;
 
     bool apply_SNe_effects = false;
     bool unbound_orbits = false;
@@ -78,7 +80,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     dt_binary_evolution = max_dt;
     
     /* Time loop */
-    //printf("evolve.cpp -- start integration_flag %d\n",*integration_flag);
 
     int i=0;
     *state = 0;
@@ -88,23 +89,16 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         t += dt;
 
         /* Stellar evolution */
-        //printf("pre ev\n");
-        //print_system(particlesMap,*integration_flag);
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects,integration_flag);
-        //printf("post ev\n");
-        //print_system(particlesMap,*integration_flag);
 
         /* SNe */
         if (apply_SNe_effects == true)
         {
             flag = handle_SNe_in_system(particlesMap,&unbound_orbits,integration_flag);
         }
-        //printf("post SNe\n");
         
         /* Binary evolution */
         binary_flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
-        //printf("post bin binary_flag %d integration_flag  %d\n",binary_flag,*integration_flag);
-        //print_system(particlesMap,*integration_flag);
 
         /* Dynamical evolution -- will update masses/radii */
         if (*integration_flag == 0) // Secular
@@ -113,22 +107,10 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
         else // Direct N-body
         {
-            //if (binary_flag == 0 or binary_flag == 5)
-            {
-                integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
-            }
-            //else
-            {
-              //  update_stellar_evolution_quantities_directly(particlesMap,t - t_old);
-              //  printf("Skipping N-body after CE/quick event\n");
-                //exit(-1);
-            }
-                
+            integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
         }
-
-        //printf("post dyn\n");
-        //print_system(particlesMap,*integration_flag);
-        
+                
+      
         t = t_out;
 
         #ifdef VERBOSE
@@ -156,8 +138,15 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
        
         /* Time step (phase 1) */
         dt = CV_min(dt_stev,dt_binary_evolution);
-        //printf("t %g dt_stev %g dt_binary_evolution %g\n",t,dt_stev,dt_binary_evolution);
-        
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("evolve.cpp -- evolve -- t %g dt_stev %g dt_binary_evolution %g\n",t,dt_stev,dt_binary_evolution);
+            print_system(particlesMap,*integration_flag);
+        }
+        #endif
+
         if (*integration_flag > 0)
         {
             dt = CV_min(dt,dt_nbody);
@@ -167,10 +156,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         if (include_flybys == true)
         {
             bool apply_flyby = flyby_criterion(particlesMap, integration_flag);
-            if (t + dt >= flybys_t_next_encounter and last_iteration == false and apply_flyby == true)// and *integration_flag==0)
+            if (t + dt >= flybys_t_next_encounter and last_iteration == false and apply_flyby == true)
             {
-                //printf("NE t+dt %g flybys_t_next_encounter %g \n",t+dt,flybys_t_next_encounter);
-                //printf("flybys dt %g %g\n",dt,flybys_t_next_encounter - t);
                 dt = flybys_t_next_encounter - t;
                 
                 handle_next_flyby(particlesMap, false, integration_flag);
@@ -182,7 +169,15 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         {
             dt = end_time - t;
             last_iteration = true;
-            //printf("adjust dt to reach end time \n");
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("evolve.cpp -- evolve -- adjust dt to reach end time \n");
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
+            
         }
 
         dt = CV_min(dt,max_dt);
@@ -229,30 +224,18 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
         #endif
         
-        //*integration_flag=1;
-
     }
 
-  //if (*integration_flag == 0)
-    {
-        //int N_bodies_new,N_binaries_new,N_root_finding_new,N_ODE_equations_new;
-        //determine_binary_parents_and_levels(particlesMap,&N_bodies_new,&N_binaries_new,&N_root_finding_new,&N_ODE_equations_new);
-        //if (N_binaries != N_binaries_new and *integration_flag == 0)
-        {
-        //    printf("Restructuring of system! %d %d\n",N_binaries,N_binaries_new);
-            //*state = 1;
-        }
-    }
-
-    //printf("end of evolve\n");
-    //print_system(particlesMap,*integration_flag);
-    
-    //update_log_data(particlesMap, t, *integration_flag, 0);
-    
     *output_time = t;
     *hamiltonian = 0.0;
-    //*output_flag = 0;
-    //*error_code = error_code;
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("evolve.cpp -- evolve -- end \n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
     
     return 0;
 }

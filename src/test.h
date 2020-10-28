@@ -39,8 +39,6 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
 int test_wind_accretion();
 
 int test_collisions();
-//int test_collision_MS_MS();
-//int test_collision_giant_MS();
 
 int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration_flag);
 

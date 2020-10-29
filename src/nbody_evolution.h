@@ -1,5 +1,5 @@
 #include "types.h"
-//#include "mstar/regularization.h"
+
 extern "C"
 {
 
@@ -13,7 +13,6 @@ double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag
 
 void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt);
 
-//int handle_dynamical_instability(ParticlesMap *particlesMap);
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag);
 
 void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, ParticlesMap *particlesMap, double *P_orb_min, double *P_orb_max,double dt);
@@ -23,7 +22,7 @@ void get_all_semimajor_axes_in_system(ParticlesMap *particlesMap, std::vector<do
 
 void extract_pos_vel_from_mstar_system_and_reset_particlesMap(struct RegularizedRegion *R, ParticlesMap *particlesMap);
 void update_pos_vel_from_mstar_system(struct RegularizedRegion *R, ParticlesMap *particlesMap);
-void print_state(struct RegularizedRegion *R);
+void mstar_print_state(struct RegularizedRegion *R);
 double compute_nbody_total_energy(struct RegularizedRegion *R);
 
 void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vector<double> &masses, std::vector<double> &delta_masses, std::vector<std::vector<double> > &R_vecs, std::vector<std::vector<double> > &V_vecs);
@@ -35,7 +34,6 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 void free_data(struct RegularizedRegion *R);
 void into_CoM_frame(struct RegularizedRegion *R);
 
-void check_MSTAR_system_for_distant_bodies(struct RegularizedRegion *R);
 int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap);
 
 }

@@ -80,6 +80,7 @@ extern double triple_mass_transfer_inner_binary_alpha_times_lambda;
 
 extern double nbody_analysis_fractional_semimajor_axis_change_parameter;
 extern double nbody_analysis_fractional_integration_time;
+extern double nbody_analysis_minimum_integration_time;
 extern double nbody_analysis_maximum_integration_time;
 
 extern double nbody_dynamical_instability_direct_integration_time_multiplier;

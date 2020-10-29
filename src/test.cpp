@@ -271,7 +271,7 @@ int test_nbody_two_body_stopping_conditions()
 
                 t+=reached_dt;
                 
-                print_state(R);
+                mstar_print_state(R);
                 
                 if (stopping_condition_occurred == 1)
                 {
@@ -296,8 +296,6 @@ int test_nbody_two_body_stopping_conditions()
             v[j] = R->Vel[3 * 0 + j] - R->Vel[3 * 1 + j];
         }
         
-        //double r_RLOF1 = R1/fq_RLOF_Eggleton(m1,m2);
-        //double r_RLOF2 = R2/fq_RLOF_Eggleton(m2,m1);
         double r_RLOF1 = R1/roche_radius_pericenter_eggleton(1.0,m1/m2);
         double r_RLOF2 = R2/roche_radius_pericenter_eggleton(1.0,m2/m1);
         
@@ -487,14 +485,6 @@ int test_nbody_two_body_kick()
     int j=0;
     R->Vel[3 * j + i] += 1000.0*CONST_KM_PER_S;
 
-    //double R_cm[3],V_cm[3];
-    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    //printf("pre int R_cm %g %g %g V_cm %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
-
-    //compute_center_of_mass_position_and_velocity(R,R_cm,V_cm);
-    //printf("post kick pre int %g %g %g %g %g %g\n",R_cm[0],R_cm[1],R_cm[2],V_cm[0],V_cm[1],V_cm[2]);
-
-    //into_CoM_frame(R);
     double E_init = compute_nbody_total_energy(R);
 
     //print_state(R);
@@ -536,7 +526,7 @@ int test_nbody_two_body_kick()
             t+=reached_dt;
             
             //printf("t %g reached dt %g stopping_condition_occurred %d\n",t,reached_dt,stopping_condition_occurred);
-            print_state(R);
+            mstar_print_state(R);
             
             if (stopping_condition_occurred == 1)
             {
@@ -1635,11 +1625,6 @@ int test_collisions()
     printf("test.cpp -- test_collisions\n");
     int flag;
     
-    //flag = test_collision_MS_MS();
-    //flag = test_collision_giant_MS();
-    //flag = test_collision_star_MS(10.0,1,5.0);
-    //flag = test_collision_star_MS(40.0,2,5.0);
-    
     int i,j;
     for (i=1; i<=14; i++)
     {
@@ -1659,7 +1644,6 @@ int test_collisions()
             }
             flag += test_collision_stars(10.0,i,13,j,0);
             random_seed = 0;
-            //flag = test_collision_stars(10.0,i,13,j,1);
             
         }
     }
@@ -1668,20 +1652,7 @@ int test_collisions()
     {
         printf("test.cpp -- test_collisions -- passed\n");
     }
-    //flag = test_collision_stars(10.0,3,8,6);
-    //flag = test_collision_stars(5.01,4,2.0);
-    //flag = test_collision_stars(5.01,6,3.0);
-    //flag = test_collision_stars(10.0,4,15);
-    //flag = test_collision_stars(22.0,4,21.98);
-    //flag = test_collision_stars(22.0,14,8.0);
-    //flag = test_collision_stars(50.0,14,22.0);
-    
-//    double m=1.2;
-//    double Omega = 1.8;
-//    double chi = compute_spin_parameter_from_spin_frequency(m,Omega);
-//    double Omega2 = compute_spin_frequency_from_spin_parameter(m,chi);
-//    printf("test Omega %g %g\n",Omega,Omega2);
-    
+
     return flag;
 }
 
@@ -1743,16 +1714,6 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     }
 
     handle_collisions(&particlesMap,t,&integration_flag);
-    //printf("pre s %d\n",particlesMap.size());
-    //collision_product(&particlesMap, 4, 0, 1, &integration_flag);
-    //printf("post s %d b %d %g r %g\n",particlesMap.size(),particlesMap[2]->is_binary,particlesMap[2]->mass,particlesMap[2]->radius);
-
-    //printf("post1\n");
-    //print_system(&particlesMap);
-
-
-
-    printf("post merge integration_flag %d\n",integration_flag);
     
     print_system(&particlesMap,integration_flag);
     
@@ -1760,8 +1721,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     for (it_p = particlesMap.begin(); it_p != particlesMap.end(); it_p++)
     {
         Particle *P_p = (*it_p).second;
-        printf("i %d\n",P_p->index);
-        //printf("determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
+
         P_p->parent = -1;
     }
     //#ifdef IGNORE
@@ -1772,7 +1732,6 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     //evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
     //printf("post evolve\n");
     //#endif
-    
     
     print_system(&particlesMap,integration_flag);
     

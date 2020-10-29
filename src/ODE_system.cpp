@@ -83,13 +83,17 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 
     
     set_initial_ODE_variables(particlesMap, y, y_abs_tol,abs_tol_spin_vec,abs_tol_e_vec,abs_tol_h_vec);
-    #ifdef DEBUG
-    for (int i=1; i<=N_ODE_equations; i++)
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
     {
-        printf("evolve.cpp -- evolve -- i %d Ith(y,i) %g Ith(y_abs,i) %g\n",i,Ith(y,i),Ith(y_abs_tol,i));
+        for (int i=1; i<=N_ODE_equations; i++)
+        {
+            printf("ODE_evolve.cpp -- evolve -- i %d Ith(y,i) %g Ith(y_abs,i) %g\n",i,Ith(y,i),Ith(y_abs_tol,i));
+        }
     }
     #endif
-
+    
     /***************************
      * setup of ODE integrator *
      **************************/    

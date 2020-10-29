@@ -977,7 +977,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, \
     double MSTAR_gbs_tolerance_default_, double MSTAR_gbs_tolerance_kick_, double MSTAR_stopping_condition_tolerance_, double MSTAR_output_time_tolerance_, \
-    double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_maximum_integration_time_, \
+    double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_minimum_integration_time_, double nbody_analysis_maximum_integration_time_, \
     double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
@@ -1015,6 +1015,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
 
     nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;
     nbody_analysis_fractional_integration_time = nbody_analysis_fractional_integration_time_;
+    nbody_analysis_minimum_integration_time = nbody_analysis_minimum_integration_time_;
     nbody_analysis_maximum_integration_time = nbody_analysis_maximum_integration_time_;
     
     nbody_dynamical_instability_direct_integration_time_multiplier = nbody_dynamical_instability_direct_integration_time_multiplier_;
@@ -1085,6 +1086,7 @@ int set_verbose_flag(int value)
 
 int unit_tests_interface(int mode)
 {
+    verbose_flag = 0;
     int flag=0;
     flag += test_tools();
     flag += test_nbody(mode);

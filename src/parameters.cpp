@@ -63,6 +63,7 @@ double MSTAR_output_time_tolerance = 1.0e-4;
 
 double nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01;
 double nbody_analysis_fractional_integration_time = 0.05;
+double nbody_analysis_minimum_integration_time = 1.0e1;
 double nbody_analysis_maximum_integration_time = 1.0e5;
 
 double nbody_dynamical_instability_direct_integration_time_multiplier = 1.5;

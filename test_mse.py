@@ -1452,8 +1452,6 @@ class test_mse():
 
         flag = code.unit_tests(args.mode)
         
-        print("flag",flag)
-
         assert(flag == 0)
         
         print("Tests passed")
@@ -1470,13 +1468,11 @@ class test_mse():
         
         N = 10000
         
-        #np.random.seed(0)
         m2 = 1.0
         h_vec_unit = np.array( [0.0,0.0,1.0] )
         e_vec_unit = np.array( [1.0,0.0,0.0] )
         
         seed = 0
-        #code.random_seed = seed
         np.random.seed(seed)
         
         vs = []
@@ -1484,22 +1480,13 @@ class test_mse():
         delta_Ms = []
         for index in range(N):
             q = np.random.random()
-            #q=1.5/6.5
-            #q=1.0
             m1 = q * m2
             M = m1 + m2
             chi1 = np.random.random()
             chi2 = np.random.random()
-            #chi1=0.0
-            #chi2=0.0
                     
             spin_vec_1_unit = sample_random_vector_on_unit_sphere()
             spin_vec_2_unit = sample_random_vector_on_unit_sphere()
-
-#            spin_vec_1_unit = np.array( [0.0,0.0,1.0] )
-#            spin_vec_2_unit = np.array( [0.0,0.0,1.0] )
-
-            #v_recoil_vec,alpha_vec,M_final = code.determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit)
             v_recoil_vec,alpha_vec,M_final = code.determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit)
             v_recoil = np.linalg.norm(v_recoil_vec)/code.CONST_KM_PER_S ### convert AU/yr to km/s
             vs.append(v_recoil)

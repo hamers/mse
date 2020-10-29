@@ -58,6 +58,7 @@ class MSE(object):
         
         self.__nbody_analysis_fractional_semimajor_axis_change_parameter = 0.01
         self.__nbody_analysis_fractional_integration_time = 0.05
+        self.__nbody_analysis_minimum_integration_time = 1.0e1
         self.__nbody_analysis_maximum_integration_time = 1.0e5
         self.__nbody_dynamical_instability_direct_integration_time_multiplier = 1.5
         self.__nbody_semisecular_direct_integration_time_multiplier = 1.0e2
@@ -238,7 +239,7 @@ class MSE(object):
             ctypes.c_double, ctypes.c_double, \
             ctypes.c_int, ctypes.c_int, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
-            ctypes.c_double, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
@@ -247,7 +248,8 @@ class MSE(object):
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
-         
+
+
         self.lib.evolve_interface.argtypes = (ctypes.c_double,ctypes.c_double, \
             ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.evolve_interface.restype = ctypes.c_int
@@ -726,7 +728,7 @@ class MSE(object):
             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
             self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, self.__binary_evolution_mass_transfer_timestep_parameter, \
             self.__MSTAR_gbs_tolerance_default, self.__MSTAR_gbs_tolerance_kick, self.__MSTAR_collision_tolerance, self.__MSTAR_output_time_tolerance, \
-            self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_maximum_integration_time, \
+            self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_minimum_integration_time,self.__nbody_analysis_maximum_integration_time, \
             self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
             self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
             self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda, \
@@ -1274,6 +1276,14 @@ class MSE(object):
     @nbody_analysis_fractional_integration_time.setter
     def nbody_analysis_fractional_integration_time(self, value):
         self.__nbody_analysis_fractional_integration_time = value
+        self.__set_parameters_in_code()
+
+    @property
+    def nbody_analysis_minimum_integration_time(self):
+        return self.__nbody_analysis_minimum_integration_time
+    @nbody_analysis_minimum_integration_time.setter
+    def nbody_analysis_minimum_integration_time(self, value):
+        self.__nbody_analysis_minimum_integration_time = value
         self.__set_parameters_in_code()
 
     @property

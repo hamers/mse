@@ -14,7 +14,13 @@ void compute_EOM_Newtonian_for_particle(ParticlesMap *particlesMap, Particle *p,
     
     if (p->exclude_for_secular_integration == true)
     {
-        //printf("newtonian.cpp -- compute_EOM_Newtonian_for_particle -- not applying terms for particle %d\n",p->index);
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_Newtonian_for_particle -- not applying terms for particle %d\n",p->index);
+        }
+        #endif
+
         return;
     }
     
@@ -412,8 +418,11 @@ void compute_EOM_binary_pairs_single_averaged(ParticlesMap *particlesMap, int in
             dB_n_m_i1_i2_de += 2.0* ( (double) index_B_eccp2) * B_lookup * e_Podd;
         }
 
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- n %g m %g i1 %g i2 %g A_n_m %g e %g B %g dB/de %g\n",n,m,i1,i2,A_n_m,e,B_n_m_i1_i2,dB_n_m_i1_i2_de);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- n %g m %g i1 %g i2 %g A_n_m %g e %g B %g dB/de %g\n",n,m,i1,i2,A_n_m,e,B_n_m_i1_i2,dB_n_m_i1_i2_de);
+        }
         #endif
         
         n_minus_1 = n - 1.0;
@@ -434,8 +443,11 @@ void compute_EOM_binary_pairs_single_averaged(ParticlesMap *particlesMap, int in
         C_r_k_n = minus_1_Pn * C_1 * mu_p * M_p_n * a_div_r_k_Pn * A_n_m;
         C_H_n = -C_r_k_n * r_k_Pminus_i1_minus_i2 * r_k_Pminus_1;
         
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- C_r_k_n %g C_H_n %g r_k_vec %g %g %g e_vec %g %g %g j_vec %g %g %g\n",C_r_k_n,C_H_n,r_k_vec[0],r_k_vec[1],r_k_vec[2],e_vec[0],e_vec[1],e_vec[2],j_vec[0],j_vec[1],j_vec[2]);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- C_r_k_n %g C_H_n %g r_k_vec %g %g %g e_vec %g %g %g j_vec %g %g %g\n",C_r_k_n,C_H_n,r_k_vec[0],r_k_vec[1],r_k_vec[2],e_vec[0],e_vec[1],e_vec[2],j_vec[0],j_vec[1],j_vec[2]);
+        }
         #endif
 
         /* compute the Hamiltonian */
@@ -454,11 +466,14 @@ void compute_EOM_binary_pairs_single_averaged(ParticlesMap *particlesMap, int in
             for (i=0; i<3; i++)
             {
                 k->a_vec[i] += C_r_k_n2 * ( i1 * j_vec_dot_r_k_vec * r_k_P2 * e_vec[i] + i2 * e_vec_dot_r_k_vec * r_k_P2 * j_vec[i] - n_plus_1_plus_i1_plus_i2 * e_vec_dot_r_k_vec * j_vec_dot_r_k_vec * r_k_vec[i] );
-                
-            #ifdef DEBUG
-            printf("newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- a_vec[i] += %g C_r_k_n2 %g\n",C_r_k_n2 * ( i1 * j_vec_dot_r_k_vec * r_k_P2 * e_vec[i] + i2 * e_vec_dot_r_k_vec * r_k_P2 * j_vec[i] - n_plus_1_plus_i1_plus_i2 * e_vec_dot_r_k_vec * j_vec_dot_r_k_vec * r_k_vec[i]),C_r_k_n2);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 2)
+            {
+                printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_single_averaged -- a_vec[i] += %g C_r_k_n2 %g\n",C_r_k_n2 * ( i1 * j_vec_dot_r_k_vec * r_k_P2 * e_vec[i] + i2 * e_vec_dot_r_k_vec * r_k_P2 * j_vec[i] - n_plus_1_plus_i1_plus_i2 * e_vec_dot_r_k_vec * j_vec_dot_r_k_vec * r_k_vec[i]),C_r_k_n2);
+            }
             #endif
-            
+
             }
         }
     }
@@ -515,9 +530,13 @@ void compute_EOM_binary_pairs_double_averaged(ParticlesMap *particlesMap, int in
         P_sibling = (*particlesMap)[outer_binary->child1];
     }
     
-    #ifdef DEBUG
-    printf("newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- compute_EOM_binary_pairs inner_binary_index %d outer_binary_index %d connecting_child_in_outer_binary %d P_sibling %d sibling_mass %g\n",inner_binary_index,outer_binary_index,connecting_child_in_outer_binary,P_sibling->index,P_sibling->mass);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- compute_EOM_binary_pairs inner_binary_index %d outer_binary_index %d connecting_child_in_outer_binary %d P_sibling %d sibling_mass %g\n",inner_binary_index,outer_binary_index,connecting_child_in_outer_binary,P_sibling->index,P_sibling->mass);
+    }
     #endif
+
     
     double e_in = inner_binary->e;
     double e_in_p2 = inner_binary->e_p2;
@@ -981,22 +1000,26 @@ void compute_EOM_binary_pairs_double_averaged(ParticlesMap *particlesMap, int in
         //printf("test %g %g\n",e_in_vec[0],dot3(e_in_vec,x_hat_prime)*x_hat_prime[0] + dot3(e_in_vec,y_hat_prime)*y_hat_prime[0] + dot3(e_in_vec,z_hat_prime)*z_hat_prime[0]);
     }
     
-    #ifdef DEBUG
-    printf("newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- begin print\n");
-    printf("e_in %g %g %g\n",e_in_vec[0],e_in_vec[1],e_in_vec[2]);
-    printf("e_out %g %g %g\n",e_out_vec[0],e_out_vec[1],e_out_vec[2]);    
-    printf("h_in %g %g %g\n",h_in_vec[0],h_in_vec[1],h_in_vec[2]);
-    printf("h_out %g %g %g\n",h_out_vec[0],h_out_vec[1],h_out_vec[2]);    
 
-    printf("grad1 %g %g %g\n",grad_e_in_vec_f1[0],grad_e_in_vec_f1[1],grad_e_in_vec_f1[2]);
-    printf("grad2 %g %g %g\n",grad_e_in_vec_f2[0],grad_e_in_vec_f2[1],grad_e_in_vec_f2[2]);    
-    printf("grad3 %g %g %g\n",grad_e_in_vec_f3[0],grad_e_in_vec_f3[1],grad_e_in_vec_f3[2]);    
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- begin print\n");
+        printf("e_in %g %g %g\n",e_in_vec[0],e_in_vec[1],e_in_vec[2]);
+        printf("e_out %g %g %g\n",e_out_vec[0],e_out_vec[1],e_out_vec[2]);    
+        printf("h_in %g %g %g\n",h_in_vec[0],h_in_vec[1],h_in_vec[2]);
+        printf("h_out %g %g %g\n",h_out_vec[0],h_out_vec[1],h_out_vec[2]);    
 
-    printf("de_in_dt %g %g %g\n",inner_binary->de_vec_dt[0],inner_binary->de_vec_dt[1],inner_binary->de_vec_dt[2]);
-    printf("de_out_dt %g %g %g\n",outer_binary->de_vec_dt[0],outer_binary->de_vec_dt[1],outer_binary->de_vec_dt[2]);    
-    printf("dh_in_dt %g %g %g\n",inner_binary->dh_vec_dt[0],inner_binary->dh_vec_dt[1],inner_binary->dh_vec_dt[2]);
-    printf("dh_out_dt %g %g %g\n",outer_binary->dh_vec_dt[0],outer_binary->dh_vec_dt[1],outer_binary->dh_vec_dt[2]); 
-    printf("newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- end print\n");
+        printf("grad1 %g %g %g\n",grad_e_in_vec_f1[0],grad_e_in_vec_f1[1],grad_e_in_vec_f1[2]);
+        printf("grad2 %g %g %g\n",grad_e_in_vec_f2[0],grad_e_in_vec_f2[1],grad_e_in_vec_f2[2]);    
+        printf("grad3 %g %g %g\n",grad_e_in_vec_f3[0],grad_e_in_vec_f3[1],grad_e_in_vec_f3[2]);    
+
+        printf("de_in_dt %g %g %g\n",inner_binary->de_vec_dt[0],inner_binary->de_vec_dt[1],inner_binary->de_vec_dt[2]);
+        printf("de_out_dt %g %g %g\n",outer_binary->de_vec_dt[0],outer_binary->de_vec_dt[1],outer_binary->de_vec_dt[2]);    
+        printf("dh_in_dt %g %g %g\n",inner_binary->dh_vec_dt[0],inner_binary->dh_vec_dt[1],inner_binary->dh_vec_dt[2]);
+        printf("dh_out_dt %g %g %g\n",outer_binary->dh_vec_dt[0],outer_binary->dh_vec_dt[1],outer_binary->dh_vec_dt[2]); 
+        printf("ODE_newtonian.cpp -- compute_EOM_binary_pairs_double_averaged -- end print\n");
+    }
     #endif
 }
 
@@ -1120,8 +1143,12 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
     if (binary_A->integration_method==0 && binary_B->integration_method==0 && binary_C->integration_method==0)
     {
         /* A, B, C averaged */
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_triplets -- A %d, B %d, C %d averaged\n",binary_A->index,binary_B->index,binary_C->index);
+       
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_triplets -- A %d, B %d, C %d averaged\n",binary_A->index,binary_B->index,binary_C->index);
+        }
         #endif
         
         double A_cross = -(c_9div32) * C_tr *(a_A*a_A*a_B/(a_C*a_C*a_C*a_C));
@@ -1249,11 +1276,13 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
     else if (binary_A->integration_method==0 && binary_B->integration_method==0 && binary_C->integration_method>0)
     {
         /* A, B averaged; C direct */
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_triplets -- A %d B %d averaged, C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_triplets -- A %d B %d averaged, C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        }
         #endif
 
-        
         double *r_C_vec = binary_C->r_vec;
         
         double r_C_P1 = norm3(r_C_vec);
@@ -1338,8 +1367,11 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
     else if (binary_A->integration_method==0 && binary_B->integration_method>0 && binary_C->integration_method>0)
     {
         /* A averaged; B & C direct */
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_triplets -- A %d averaged, B %d C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_triplets -- A %d averaged, B %d C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        }
         #endif
         
         double *r_B_vec = binary_B->r_vec;
@@ -1412,8 +1444,11 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
     else if (binary_A->integration_method>0 && binary_B->integration_method>0 && binary_C->integration_method>0)
     {
         /* A, B & C direct */
-        #ifdef DEBUG
-        printf("newtonian.cpp -- compute_EOM_binary_triplets -- A %d, B %d, C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_newtonian.cpp -- compute_EOM_binary_triplets -- A %d, B %d, C %d direct\n",binary_A->index,binary_B->index,binary_C->index);
+        }
         #endif
 
         double *r_A_vec = binary_A->r_vec;
@@ -1470,8 +1505,6 @@ double compute_order_of_magnitude_secular_timescale_for_pair(ParticlesMap *parti
     Particle *inner_binary = (*particlesMap)[inner_binary_index];
     Particle *outer_binary = (*particlesMap)[outer_binary_index];
     
-    //Particle *P_child1 = (*particlesMap)[inner_binary->child1];
-    //Particle *P_child2 = (*particlesMap)[inner_binary->child2];
     Particle *P_sibling;
     if (connecting_child_in_outer_binary==1)
     {

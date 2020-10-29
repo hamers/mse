@@ -62,7 +62,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                 double AM_time_scale = compute_AM_time_scale(P_p);
                 double orbital_period = compute_orbital_period_from_semimajor_axis(P_p->mass,P_p->a);
 
-                //printf("sec %g\n",(double) root_functions[i_root]);                
                 f_root = 1.0 - AM_time_scale/orbital_period;
                 if (use_root_functions == true)
                 {
@@ -106,9 +105,14 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     double ra_in = a_in*(1.0+e_in);
                     double rp_out = a_out*(1.0-e_out);
                     
-//                    printf("check_for_dynamical_instability p %d par %d c1 %d c2 %d \n",P_p->index,P_parent->index,P_child1->index,P_child2->index);
-//                    printf("a_in %g a_out %g\n",a_in,a_out);
-    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 2)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_roots --  p id %d parent %d c1 %d c2 %d \n",P_p->index,P_parent->index,P_child1->index,P_child2->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
+
                     Particle *P_sibling = (*particlesMap)[P_p->sibling];
         
                     if (P_p->dynamical_instability_criterion == 0) /* for mass ratios on the order of unity */
@@ -119,11 +123,8 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         get_inclination_relative_to_parent(particlesMap,P_p->index,&rel_INCL);
                         double rp_out_crit = compute_rp_out_crit_MA01(a_in,q_out,e_out,rel_INCL);
                         
-                        //root_functions[i_root] = rp_out - a_in*2.8*pow( (1.0+q_out)*(1.0+e_out)/sqrt(1.0-e_out),2.0/5.0)*(1.0 - 0.3*rel_INCL/M_PI);
                         f_root = rp_out - rp_out_crit;
 
-                        //printf("di MA %g\n",root_functions[i_root]);
-                        //printf("di MA %g %g\n",P_sibling->mass,M_p);
                     }
                     else if (P_p->dynamical_instability_criterion == 1) /* for S-type test particles in binaries */
                     {
@@ -133,9 +134,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         double mu = m2/(m1+m2);
                         double e = e_out;
                         f_root = (0.464 - 0.38*mu - 0.631*e + 0.586*mu*e + 0.15*e*e - 0.198*mu*e*e) - a_in/a_out;
-                        //printf("di WH %g %g %g %g %g %g\n",root_functions[i_root],m1,m2,e,a_in/a_out,(0.464 - 0.38*mu - 0.631*e + 0.586*mu*e + 0.15*e*e - 0.198*mu*e*e));
-                        
-                        //printf("di MA %g %g\n",P_sibling->mass,M_p);
                     }
                     else if (P_p->dynamical_instability_criterion > 1)
                     /* in case of a central dominant particle
@@ -178,7 +176,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
 
                             double K = P_p->dynamical_instability_K_parameter;
                             f_root = (rp_out - ra_in) - K*R_H;
-                            //printf("rf %g %g %g %g %g\n",central_particle_mass,m1,m2,K,root_functions[i_root]);
                         }
 
                         else if (P_p->dynamical_instability_criterion == 3)
@@ -193,7 +190,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         
                     }
 
-                    //printf("dyn %g\n",(double) root_functions[i_root]);
                     if (use_root_functions == true)
                     {
                         root_functions[i_root] = f_root;
@@ -209,9 +205,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                             P_p->dynamical_instability_has_occurred = false;
                         }
                     }
-                        //printf("di P15a %d %d %g %g %g\n",P_p->index,central_particle_index,m1,m2,central_particle_mass);
-                        //printf("di P15b %g %g %g \n",a_in,a_out,root_functions[i_root]);
-
                 }
                 i_root++;                
             }
@@ -243,15 +236,20 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     if (f_root >= 0.0)
                     {
                         P_p->physical_collision_or_orbit_crossing_has_occurred = true;
-                        //printf("COL %g %g\n",periapse_distance,cross_section);
-//                    printf("root finding check_for_physical_collision_or_orbit_crossing %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
+
+                        #ifdef VERBOSE
+                        if (verbose_flag > 0)
+                        {
+                            printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing index %d a %g cross-section %g root function%g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
+                        }
+                        #endif
+
                     }  
                     else
                     {
                         P_p->physical_collision_or_orbit_crossing_has_occurred = false;
                     }
                 }
-                //printf("col %g\n",(double) root_functions[i_root]);
                 
                 i_root++;
             }
@@ -271,7 +269,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                 double periapse_distance = P_p->a*(1.0 - P_p->e);
                 f_root = 1.0 - periapse_distance/cross_section;
                 
-//                printf("root finding check_for_minimum_periapse_distance %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
                 if (use_root_functions == true)
                 {
                     root_functions[i_root] = f_root;
@@ -281,14 +278,19 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     if (f_root >= 0.0)
                     {
                         P_p->minimum_periapse_distance_has_occurred = true;
-//                    printf("root finding check_for_minimum_periapse_distance %d %g %g %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
+
+                        #ifdef VERBOSE
+                        if (verbose_flag > 0)
+                        {
+                            printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing root finding check_for_minimum_periapse_distance index %d a %g cross-section %g root function%g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
+                        }
+                        #endif
                     }                
                     else
                     {
                         P_p->minimum_periapse_distance_has_occurred = false;
                     }
                 }
-                //printf("min rp %g\n",(double) root_functions[i_root]);
 
                 i_root++;
             }
@@ -351,8 +353,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                             P_p->GW_condition_has_occurred = false;
                         }
                     }   
-                    
-                    //printf("GW cond %g\n",(double) root_functions[i_root]);
                 }
 
                 i_root++;
@@ -396,7 +396,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     }
                     
                     f_root = 1.0 - P_p->radius/roche_radius_pericenter;
-                    //printf("check_for_RLOF_at_pericentre id %d rp %g roche_radius_pericenter %g R %g\n", P_p->index,rp, roche_radius_pericenter, P_p->radius);
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 2)
+                    {
+                        printf("root_finding.cpp -- check_for_roots -- check_for_RLOF_at_pericentre id %d rp %g roche_radius_pericenter %g R %g\n", P_p->index,rp, roche_radius_pericenter, P_p->radius);
+                    }
+                    #endif
 
                     if (use_root_functions == true)
                     {
@@ -413,14 +419,12 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                             P_p->RLOF_at_pericentre_has_occurred = false;
                         }
                     }
-                    //printf("RLOF %g\n",(double) root_functions[i_root]);
                 }
                 
                 i_root++;
             }
         }
     }
-    //return 0;
 }
 
 int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integration_flag)
@@ -447,7 +451,6 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 }
                 else if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == false) /* Going out of RLOF */
                 {
-                    //p->check_for_RLOF_at_pericentre = 1;
                     p->RLOF_flag = 0;
                 }
                 
@@ -475,8 +478,6 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 }
                 #endif
 
-                //p->check_for_RLOF_at_pericentre = 0; /* do not subsequently check for RLOF during ODE integration */
-                //printf("test %d\n",p->RLOF_at_pericentre_has_occurred_entering_RLOF);
                 RLOF_occurred = true;
                 return_flag = 1;
             }
@@ -536,7 +537,6 @@ void cross_section_function(Particle *p, double *cross_section)
 { 
     if (p->is_binary==false)
     {
-        //*cross_section += p->radius;
         *cross_section += determine_effective_radius_for_collision(p->radius, p->stellar_type, 0);
     }
     else
@@ -638,18 +638,24 @@ double roche_radius_pericenter_sepinsky(double rp, double q, double e, double f)
             double j_3 = 0.256*(5.5 + exp(-1.33*pow(log_A,2.9)));
 
             ratio = j_0 + j_1*exp(-j_2*pow(log_q,j_3));
-            
-//            printf("log_A %g\n",log_A);
-//            printf("1 %g %g %g \n",num_0,den_0,j_0);
-//            printf("2 %g %g %g \n",num_1,den_1,j_1);            
-//            printf("2 %g %g %g \n",den_2,j_2,j_3);            
-//            printf("ratio %g %g %g \n",ratio);            
+
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("ODE_root_finding.cpp -- roche_radius_pericenter_sepinsky\n");
+                printf("log_A %g\n",log_A);
+                printf("1 %g %g %g \n",num_0,den_0,j_0);
+                printf("2 %g %g %g \n",num_1,den_1,j_1);            
+                printf("2 %g %g %g \n",den_2,j_2,j_3);            
+                printf("ratio %g %g %g \n",ratio);            
+            }
+            #endif
         }
     }
 
     if (ratio == 0.0)
     {
-        printf("root_finding.cpp -- unrecoverable error occurred in function roche_radius_pericenter_sepinsky\n");
+        printf("ODE_root_finding.cpp -- unrecoverable error occurred in function roche_radius_pericenter_sepinsky\n");
         printf("log_q %g log_A %g ratio %g\n",log_q,log_A,ratio);
         printf("rp %g q %g e %g f %g\n",rp,q,e,f);
         exit(-1);
@@ -739,11 +745,17 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
     int N_bodies, N_binaries,N_root_finding,N_ODE_equations;
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("ODE_root_finding.cpp -- check_for_initial_roots -- start\n");
+        print_system(particlesMap,0);
+    }
+    #endif
     
     realtype root_functions[N_root_finding];
     check_for_roots(particlesMap, false, root_functions);
     
-
     int N_root_found = 0;
 
     ParticlesMapIterator it_p;
@@ -759,7 +771,14 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->secular_breakdown_has_occurred == true)
                 {
                     N_root_found++;
-                    //printf("SB\n");
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d secular breakdown \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
 
             }
@@ -768,7 +787,14 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->dynamical_instability_has_occurred == true)
                 {
                     N_root_found++;
-                    //printf("dynsint\n");
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d dynamical instability \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
             }
             if (P_p->check_for_physical_collision_or_orbit_crossing == true)
@@ -776,7 +802,14 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->physical_collision_or_orbit_crossing_has_occurred == true)
                 {
                     N_root_found++;
-                    //printf("col\n");
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d collision instability \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
             }
             if (P_p->check_for_minimum_periapse_distance == true)
@@ -784,7 +817,14 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->minimum_periapse_distance_has_occurred == true)
                 {
                     N_root_found++;
-                    //printf("minper\n");
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d minimum peri \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
             }            
             if (P_p->check_for_GW_condition == true)
@@ -792,7 +832,14 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->GW_condition_has_occurred == true)
                 {
                     N_root_found++;
-                    //printf("GW\n");
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d GW condition \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
             }   
         }
@@ -803,13 +850,27 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                 if (P_p->RLOF_at_pericentre_has_occurred == true)
                 {
                     //N_root_found++;
-                    //printf("RLOF\n");
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d RLOF \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
                 }
             }
         }
     }
-    //printf("check init roots %d\n",N_root_found);
     
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("ODE_root_finding.cpp -- check_for_initial_roots -- done\n");
+        print_system(particlesMap,0);
+    }
+    #endif
+
     return N_root_found;
 }
 
@@ -824,8 +885,6 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         }
         #endif
         
-        //*dt_binary_evolution = *dt_stev;
-        //printf("adjusting dt_binary_evolution to %g; dt_stev %g \n",*dt_binary_evolution,*dt_stev);
         *CVODE_flag = 0;
     }
     else if (root_flag == 2) // Dynamical instability
@@ -872,8 +931,9 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
             printf("root_finding.cpp -- handle_roots -- Other\n");
         }
         #endif
+        printf("ODE_root_finding.cpp -- handle_roots -- other root condition -- ERROR \n");
+        print_system(particlesMap,0);
         exit(-1);
-        //printf("Other\n");
         //break;
     }
 }

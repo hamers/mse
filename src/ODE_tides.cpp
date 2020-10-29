@@ -112,8 +112,14 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
             star->gyration_radius,
             star->apsidal_motion_constant
         ); 
-        //printf("compute_t_V 1 %g\n",t_V);
     }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_tides.cpp -- compute_t_V star %d companion %d t_V %g\n",star->index,companion->index,t_V);
+    }
+    #endif
 
     return t_V;
 }
@@ -133,24 +139,25 @@ double compute_t_V_hurley
     double apsidal_motion_constant
 )
 {
-    //printf("compute_t_V_hurley kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_tides.cpp -- compute_t_V_hurley kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
+    }
+    #endif
+    
     bool USE_RADIATIVE_DAMPING = check_for_radiative_damping(stellar_type,mass,convective_envelope_mass,convective_envelope_radius);
     bool USE_CONVECTIVE_DAMPING = check_for_convective_damping(stellar_type);
     double k_AM_div_T,t_V;
     
     if (USE_CONVECTIVE_DAMPING == true && ((convective_envelope_mass <= 0.0) || (convective_envelope_radius <= 0.0)))
     {
-        //printf("to rad \n");
         USE_RADIATIVE_DAMPING = true;
     }
     if (radius <= 0.0)
     {
         return 1.0e100;
     }
-    
-    //printf("stellar_type %d \n",stellar_type);
-    //printf("USE_RADIATIVE_DAMPING %d \n",USE_RADIATIVE_DAMPING);
-    //printf("USE_CONVECTIVE_DAMPING %d \n",USE_CONVECTIVE_DAMPING);
     
     if (USE_RADIATIVE_DAMPING == true) // radiative damping
     {
@@ -213,9 +220,7 @@ double compute_t_V_hurley
     }
     else if (USE_CONVECTIVE_DAMPING == true) // convective damping
     {
-        //double P_orb = 2.0*M_PI*sqrt((semimajor_axis*semimajor_axis*semimajor_axis)/(CONST_G*(mass + companion_mass)));
         double P_orb = compute_orbital_period_from_semimajor_axis(mass + companion_mass, semimajor_axis);
-//        printf("a %g\n",semimajor_axis);
         double P_spin,P_tid;
         
         if (spin_angular_frequency < epsilon)
@@ -228,8 +233,6 @@ double compute_t_V_hurley
             P_tid = 1.0/( 1e-10 + fabs( 1.0/P_orb - 1.0/P_spin) );
         }
         double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*(radius - (1.0/2.0)*convective_envelope_radius))/(3.0*luminosity), 1.0/3.0);
-        //double tau_convective = pow( (convective_envelope_mass*radius*radius)/(3.0*luminosity), 1.0/3.0);
-//	print 'tau',envelope_mass,envelope_mass*envelope_radius*(radius - (1.0/2.0)*envelope_radius)/(3.0*luminosity)
 
         double f_convective = pow(P_tid/(2.0*tau_convective),2.0);
         f_convective = CV_min(1.0,f_convective);
@@ -237,27 +240,11 @@ double compute_t_V_hurley
         k_AM_div_T = (2.0/21.0)*(f_convective/tau_convective)*(convective_envelope_mass/mass);
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
 
-        //printf("test %g %g %g %g %g %g %g  \n",P_spin,P_tid,P_orb,tau_convective,f_convective,k_AM_div_T,t_V);
-
-        //if ((convective_envelope_mass <= 0.0) || (convective_envelope_radius <= 0.0))
-       // {
-       //     t_V = 1.0e100;
-       // }
-    
-//        printf("test par conv %g %g %g %g %g \n",mass,radius,convective_envelope_mass,convective_envelope_radius,spin_angular_frequency);
-//        printf("test conv %g %g %g %g %g \n",P_orb,tau_convective,P_tid,P_spin,f_convective);
         return t_V;
 
     }
     else // degenerate damping -- 1984MNRAS.207..433C
     {
-        //double seconds_in_year = 365.25*24.0*3600.0;
-        //double tau_degenerate = 1.3e7*seconds_in_year;
-        //k_AM_div_T = (1.0/(3.0*tau_degenerate))*gyration_radius*gyration_radius*pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
-
-        /* Change September 09 2020 */
-        //double seconds_in_year = 365.25*24.0*3600.0;
-        //double tau_degenerate = 1.3e7*seconds_in_year;
         k_AM_div_T = 2.564e-8 * gyration_radius*gyration_radius * pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
 
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
@@ -281,12 +268,24 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     
     if (star->is_binary == true)
     {
-        //printf("tides.cpp -- star is actually a binary -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- star is actually a binary -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        }
+        #endif
+
         return 0;
     }
     if (star->is_bound == false or companion->is_bound == false)
     {
-        //printf("tides.cpp -- star/companion is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- tar/companion is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        }
+        #endif
+
         return 0;
     }
 
@@ -337,18 +336,19 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         k_AM = star->apsidal_motion_constant;
     }
 
-    //printf("index %d k_AM %g I %g\n",star->index,k_AM,I);
     double t_V = compute_t_V(star,companion,a);
     star->tides_viscous_time_scale = t_V;
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g rg %g kAM %g R %g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius);
+    }
+    #endif
     
-    //#ifdef DEBUG
-    //printf("tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g rg %g kAM %g R %g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius);
-    //#endif
-    //printf("TS %d %g %g %g\n",star->index,star->spin_vec[0],star->spin_vec[1],star->spin_vec[2]);
-    //t_V *= 1.0e-10;
     if (t_V!=t_V)
     {
-        printf("tides.cpp -- FATAL ERROR: t_V is NaN\n");
+        printf("ODE_tides.cpp -- FATAL ERROR: t_V is NaN\n");
         printf("binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
         printf("t_V %g \n",t_V);
         printf("st %d\n",star->stellar_type);
@@ -363,19 +363,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("k_AM %g\n",k_AM);
         print_system(particlesMap,0);
         exit(-1);
-    }
-    if (1==0)
-    {
-        printf("t_V %g \n",t_V);
-        printf("st %d\n",star->stellar_type);
-        printf("pr %d\n",star->tides_viscous_time_scale_prescription);
-        printf("M %g\n",M);
-        printf("star->convective_envelope_mass %d\n",star->convective_envelope_mass);
-        printf("m %g\n",m);
-        printf("a %g\n",a);
-        printf("R %g\n",R);
-        printf("star->convective_envelope_radius %g\n",star->convective_envelope_radius);
-        printf("star->luminosity %g\n",star->luminosity);
     }
 
 
@@ -394,9 +381,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 
     double spin_vec_dot_e_vec = dot3(spin_vec,e_vec);
     double spin_vec_dot_h_vec = dot3(spin_vec,h_vec);
-
-//    double q_vec_unit[3];
-//    cross3(h_vec_unit,e_vec_unit,q_vec_unit);
 
     double spin_vec_dot_e_vec_unit = dot3(spin_vec,e_vec_unit);
     double spin_vec_dot_h_vec_unit = dot3(spin_vec,h_vec_unit);
@@ -435,12 +419,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
             X_rot = -C_rot*spin_vec_dot_e_vec_unit;
             Y_rot = -C_rot*spin_vec_dot_q_vec_unit;
         }
-//        printf("e %g q %g \n",spin_vec_dot_e_vec_unit/norm3(spin_vec),spin_vec_dot_q_vec_unit/norm3(spin_vec));
 
         Z_rot = C*c_1div2*j_p4_inv*(2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit - spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit - spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
-        //printf("1 %g 2 %g 3 %g\n",2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit ,- spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit ,- spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
-        //printf("1 %g 2 %g 3 %g\n",2.0*spin_vec_dot_h_vec_unit ,- spin_vec_dot_q_vec_unit ,- spin_vec_dot_e_vec_unit);
-//        printf("X %g Y %g Z %g\n",X_rot,Y_rot,Z_rot);
     }    
     if (include_tidal_bulges_precession_terms == 1)
     {
@@ -451,9 +431,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double Y = Y_rot;
     double Z = Z_rot + Z_TB;
     
-    //printf("M %g m %g R %g k_AM %g a %g e %g Z %g Z_rot %g Z_TB %g\n",M,R,k_AM,a,e,Z,Z_rot,Z_TB);
-
-    //printf("log ome %g\n",log10(1.0-e));
     check_number(X_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","X_rot", true);
     check_number(Y_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Y_rot", true);
     check_number(Z_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Z_rot", true);
@@ -476,8 +453,13 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
             binary->de_vec_dt[i] += -(t_f_inv/h)*( spin_vec_dot_e_vec*f_tides2*h_vec[i]/(2.0*n) \
                 + 9.0*e_vec[i]*(f_tides1*h - c_11div18*spin_vec_dot_h_vec*f_tides2/n) );
             star->dspin_vec_dt[i] += -dh_vec_dt_star_i/I;
-            //printf("star %d bin %d t_f_inv %g binary->dh_vec_dt[i] %g binary->de_vec_dt[i] %g star->dspin_vec_dt[i] %g\n",star->index,binary->index,t_f_inv,binary->dh_vec_dt[i],binary->de_vec_dt[i],star->dspin_vec_dt[i]);
-            
+
+            #ifdef VERBOSE
+            if (verbose_flag > 2)
+            {
+                printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- star %d bin %d t_f_inv %g binary->dh_vec_dt[i] %g binary->de_vec_dt[i] %g star->dspin_vec_dt[i] %g\n",star->index,binary->index,t_f_inv,binary->dh_vec_dt[i],binary->de_vec_dt[i],star->dspin_vec_dt[i]);
+            }
+            #endif
             
         }
         if (include_rotation_precession_terms == 1 || include_tidal_bulges_precession_terms == 1)
@@ -490,7 +472,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
                 binary->dh_vec_dt[i] += dh_vec_dt_star_i;
                 star->dspin_vec_dt[i] += -dh_vec_dt_star_i/I;
                 
-//                printf("ok %d %d\n",include_rotation_precession_terms,include_tidal_bulges_precession_terms);
             }
         }
         
@@ -499,9 +480,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         check_number(star->dspin_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","star->dspin_vec_dt[i]", true);
     }
 
-//    printf("I %g %g %g %g\n",rg,M,R,Q_prime);
-    //printf("f dh_vec_dt %g %g %g\n",binary->dh_vec_dt[0],binary->dh_vec_dt[1],binary->dh_vec_dt[2]);
-    //printf("f dspin_vec_dt %g %g %g\n",star->dspin_vec_dt[0],star->dspin_vec_dt[1],star->dspin_vec_dt[2]);
     return 0;
 }
 

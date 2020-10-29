@@ -33,7 +33,13 @@ void compute_EOM_Post_Newtonian_for_particle(ParticlesMap *particlesMap, Particl
 
 double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
-    //printf("compute_EOM_pairwise_1PN\n");
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_postnewtonian.cpp -- compute_EOM_pairwise_1PN\n");
+    }
+    #endif
+
     Particle *binary = (*particlesMap)[binary_index];
     double e = binary->e;
     double a = binary->a;
@@ -47,7 +53,13 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
 
     if (binary->exclude_for_secular_integration == true)
     {
-        //printf("postnewtonian.cpp -- compute_EOM_pairwise_1PN -- not applying 1PN terms for particle %d\n",binary->index);
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("ODE_postnewtonian.cpp -- compute_EOM_pairwise_1PN -- not applying 1PN terms for particle %d\n",binary->index);
+        }
+        #endif
+
         return 0;
     }
 
@@ -57,9 +69,6 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
     {
         return hamiltonian_1PN;
     }
-    
-    //double q_vec_unit[3];
-    //cross3(h_vec_unit,e_vec_unit,q_vec_unit);
     
     double GMdiva = CONST_G*mt/a;
     double Z_1PN = 3.0*sqrt(GMdiva)*GMdiva/(a*CONST_C_LIGHT_P2*j_p2);
@@ -79,6 +88,13 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
 
 double compute_EOM_pairwise_25PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_postnewtonian.cpp -- compute_EOM_pairwise_25PN\n");
+    }
+    #endif
+    
     Particle *binary = (*particlesMap)[binary_index];
     double e = binary->e;
     double e_p2 = e*e;
@@ -131,7 +147,6 @@ double compute_EOM_spin_orbit_coupling_1PN(ParticlesMap *particlesMap, int binar
     double j_p3 = binary->j_p3;
     
     double constant_factor = (2.0*CONST_G/(CONST_C_LIGHT_P2*a*a*a*j_p3))*(1.0 + c_3div4*mc/mp);
-    //printf("constant_factor %g mp %g mc %g a %g j %g jp3 %g\n",constant_factor,mp,mc,a,binary->e,j_p3);
     
     double *spin_vec = body->spin_vec;
     double h_vec_cross_spin_vec[3];
@@ -146,10 +161,13 @@ double compute_EOM_spin_orbit_coupling_1PN(ParticlesMap *particlesMap, int binar
         
     }
 
-    #ifdef DEBUG
-    printf("postnewtonian -- compute_EOM_spin_orbit_coupling_1PN -- bin %d body %d comp %d constant_factor %g body->dspin_vec_dt %g %g %g\n",binary_index,body_index,companion_index,constant_factor,body->dspin_vec_dt[0],body->dspin_vec_dt[1],body->dspin_vec_dt[2]);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_postnewtonian -- compute_EOM_spin_orbit_coupling_1PN -- bin %d body %d comp %d constant_factor %g body->dspin_vec_dt %g %g %g\n",binary_index,body_index,companion_index,constant_factor,body->dspin_vec_dt[0],body->dspin_vec_dt[1],body->dspin_vec_dt[2]);
+    }
     #endif
-
+    
     return 0.0;
 
 }
@@ -171,10 +189,7 @@ double compute_spin_frequency_from_spin_parameter(double m, double chi)
 
 double compute_1PN_timescale(double a, double M, double e)
 {
-    //double GMdiva = CONST_G*M/a;
     double j_p2 = 1.0 - e*e;
-    //double Z_1PN = 3.0*sqrt(GMdiva)*GMdiva/(a*CONST_C_LIGHT_P2*j_p2);
-    //double t_1PN = 1.0/Z_1PN;
     
     double P_orb = compute_orbital_period_from_semimajor_axis(M, a);
     double rg = CONST_G*M/(CONST_C_LIGHT_P2);

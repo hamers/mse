@@ -8,30 +8,11 @@ extern "C"
 
 int ODE_handle_stellar_winds(Particle *p)
 {
-    /* p is assumed to be a binary */
+     /* p is assumed to be a binary.
+      * Change the binary's h-vector in accordance with adiabatic mass loss. */
     
-//    ParticlesMapIterator it_p;
-    //std::vector<int>::iterator it_parent_p,it_parent_q;
-
-//    int seed = orbital_phases_random_seed;
-//    int index=0;
-    
-    //int is_binary;
     double factor_h_vec,factor_spin_vec;
 
-
-    //for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    //{
-        //Particle *p = (*it_p).second;
-        
-        /* assuming constant semimajor axis with mass loss */
-        //double factor_h_vec = (child1_mass_dot/(2.0*child1_mass))*(1.0 + child2_mass/child1_mass_plus_child2_mass) + (child2_mass_dot/(2.0*child2_mass))*(1.0 + child1_mass/child1_mass_plus_child2_mass); 
-        /* assuming constant SPECIFIC orbital angular momentum with mass loss, i.e. a(m1+m2)=const. */
-        //is_binary = p->is_binary;
-        //printf("??? %d %d\n",is_binary,p->is_binary);
-        
-        //if (p->is_binary == 1)
-        //{
     double m1 = p->child1_mass;
     double m2 = p->child2_mass;
 
@@ -39,33 +20,11 @@ int ODE_handle_stellar_winds(Particle *p)
     double m2dot = p->child2_mass_dot_wind + p->child2_mass_dot_wind_accretion + p->child2_mass_dot_adiabatic_ejection;;
 
     factor_h_vec = m1dot/m1 + m2dot/m2 - (m1dot + m2dot)/(m1+m2);
-    //factor_h_vec = p->child1_mass_dot_wind/p->child1_mass + p->child2_mass_dot_wind/p->child2_mass - (p->child1_mass_dot_wind + p->child2_mass_dot_wind)/p->child1_mass_plus_child2_mass; /* assuming constant SPECIFIC orbital angular momentum with mass loss, i.e. a(m1+m2)=const. */
-            //printf("factor_h_vec %g\n",factor_h_vec);
-//        }
-        //else
-        //{
-        
-            /* assuming constant spin angular momentum of the body */
-            //factor_spin_vec = - (p->mass_dot/p->mass + 2.0*p->radius_dot/p->radius);
-//        }
-//
-        /* set external time derivatives if appropriate */
-        //double h_vec_dot[3] = {h_vec_x_dot,h_vec_y_dot,h_vec_z_dot};
-        //double e_vec_dot[3] = {e_vec_x_dot,e_vec_y_dot,e_vec_z_dot};
-        //double spin_vec_dot[3] = {spin_vec_x_dot,spin_vec_y_dot,spin_vec_z_dot};
 
     for (int i=0; i<3; i++)
     {
-    //        if (p->is_binary == 1)
-      //      {
-        p->dh_vec_dt[i] += p->h_vec[i]*factor_h_vec; //+ h_vec_dot[i];
+        p->dh_vec_dt[i] += p->h_vec[i]*factor_h_vec;
     }
-            //else
-          //  {
-                //dspin_vec_dt[i] += spin_vec[i]*factor_spin_vec; // + spin_vec_dot[i];
-        //    }
-      //  }
-    //}
     
     return 0;
 
@@ -77,9 +36,7 @@ int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
     Particle *child2 = (*particlesMap)[p->child2];
     
     if (child1->is_binary == false and child2->is_binary == false)
-    /* For now, only allow mass transfer between two single stars in a binary (e.g., no transfer from tertiary to inner binary */
     {
-     //   printf("ok %d %d %d\n",p->index,child1->index,child2->index);
         ODE_handle_RLOF_emt(p, child1, child2);
     }
     else if (child1->is_binary == false and child2->is_binary == true)
@@ -185,10 +142,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
         outer_binary->dh_vec_dt[i] += outer_binary->h_vec[i] * h_out_dot_div_h_out;
 
         donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_donor_dot;
-        
-        //p->de_vec_dt[i] += p->e_vec_unit[i] * de_dt;
     }
-    
     
     
     return 0;
@@ -221,22 +175,19 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
     {
         q = child1->mass/child2->mass;
         R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
-        //printf("R_lc %g a %g q %g M %g R %g\n",R_Lc,a,q,child1->mass,child1->radius);
         x = R_Lc/child1->radius;
-
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
-        //printf("1 x %g q %g E_0 %g\n",x,q,E_0);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("ODE_mass_changes.cpp -- ODE_handle_RLOF_emt -- child1->child2 R_lc %g a %g q %g M %g R %g x %g E_0 %g in_RLOF %d\n",R_Lc,a,q,child1->mass,child1->radius,x,E_0,in_RLOF);
+        }
+        #endif
+
         if (in_RLOF == true and flag == 0 and x>=0.0)
         {
             compute_RLOF_emt_model(p,child1,child2,x,E_0);
-            //printf("Delta R/R %g\n",(child1->radius-R_Lc)/child1->radius);
-            
-            #ifdef VERBOSE
-            if (verbose_flag > 1)
-            {
-                printf("mass_changes.cpp -- IN RLOF *1 index %d x %g E_0 %g\n",child1->index,x,E_0);
-            }
-            #endif
         }
     }
 
@@ -247,17 +198,18 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         R_Lc = roche_radius_pericenter_eggleton(a,q);
         x = R_Lc/child2->radius;
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
-        //printf("2 x %g q %g E_0 %g\n",x,q,E_0);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("ODE_mass_changes.cpp -- ODE_handle_RLOF_emt -- child2->child1 R_lc %g a %g q %g M %g R %g x %g E_0 %g in_RLOF %d\n",R_Lc,a,q,child2->mass,child2->radius,x,E_0,in_RLOF);
+        }
+        #endif
+
+
         if (in_RLOF == true and flag == 0 and x>=0.0)
         {
             compute_RLOF_emt_model(p,child2,child1,x,E_0);
-
-            #ifdef VERBOSE
-            if (verbose_flag > 1)
-            {
-                printf("mass_changes.cpp -- IN RLOF *2 index %d x %g E_0 %g\n",child2->index,x,E_0);
-            }
-            #endif
         }
     }
     
@@ -316,7 +268,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
     double beta = -M_a_dot_av/M_d_dot_av; /* Quantifies non-conservativeness. */
 
-    //printf("B %g\n",beta);
     
     /* TO DO: allow for user-specified MA_tau */
     double n = sqrt(CONST_G*M/(a*a*a));
@@ -335,8 +286,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     fa = fa_function(e,x,E_0,E_tau);
     fe = fe_function(e,x,E_0,E_tau);
     fomega = fomega_function(e,x,E_0,E_tau);
-
-    //donor->emt_fm = fm;
 
     if (fabs(fm) <= epsilon)
     {
@@ -374,19 +323,8 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         }
     }
 
-    //double P_orb = compute_orbital_period(p);
-    //double M_d_dot_av = -(M_d/P_orb)*fm;
-    //double M_a_dot_av = -M_d_dot_av;
-    
-    //if (fabs(M_d_dot_av) > 1.0)
-    //{
-//        printf("mass_changes.cpp -- changing M_d_MT %g to -1.0\n",M_d_dot_av);
-        //M_d_dot_av = -1.0;
-        //M_a_dot_av = -M_d_dot_av;
-//    }
-    
     double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
-    //printf("CF %g\n",common_factor);
+
     if (x<=0.0)
     {
         #ifdef VERBOSE
@@ -400,9 +338,12 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         M_a_dot_av=0.0;
     }
 
-    //printf("mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
-    
-
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("ODE_mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
+    }
+    #endif
     
     double da_dt = common_factor*a*( fa*(1.0 - q*beta) + finite_size_term_a );
     double de_dt = common_factor*( fe*(1.0 - q*beta) + finite_size_term_e );
@@ -412,7 +353,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     donor->dmass_dt += M_d_dot_av;
     accretor->dmass_dt += M_a_dot_av;
 
-    //double factor_h_vec = M_d_dot_av/M_d + M_a_dot_av/M_a - c_1div2*(M_d_dot_av + M_a_dot_av)/M + c_1div2*(da_dt/a) - e*de_dt/(1.0 - e*e);
     double factor_h_vec = compute_h_dot_div_h(M_d, M_d_dot_av, M_a, M_a_dot_av, a, da_dt, e, de_dt);
 
     check_number(da_dt,                   "mass_changes.cpp -- compute_RLOF_emt_model","da_dt", true);
@@ -421,9 +361,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     
     /* Compute spin changes due to RLOF */
     double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
-    //double I_donor = compute_moment_of_inertia(M_d, donor->core_mass, R_d, donor->core_radius, donor->sse_k2, donor->sse_k3);
-    //double I_donor_dot = donor->sse_k2*donor->dmass_dt*R_d_p2 + 2.0*donor->sse_k2*(M_d - donor->core_mass)*R_d*donor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
-    //double Omega_d_dot = (J_spin_donor_dot - I_donor_dot*Omega_d)/I_donor;
     double Omega_d_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_d, M_d, M_d_dot_av, donor->core_mass, R_d, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
     
     double J_spin_accretor_dot;
@@ -433,15 +370,11 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     }
     else
     {
-        //double r_disk = 1.7*accretor->accretion_disk_r_min;
         double q_accretor = M_a/M_d;
-        double accretion_disk_r_min =  0.0425 * a*(1.0-e) * pow(q_accretor*(1.0 + q_accretor), 0.25); /* ASH: taking rp instead of separation */
+        double accretion_disk_r_min =  0.0425 * a*(1.0-e) * pow(q_accretor*(1.0 + q_accretor), 0.25); /* Taking rp instead of separation */
         double r_disk = 1.7 * accretion_disk_r_min;
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
     }
-    //double I_accretor = compute_moment_of_inertia(M_a, accretor->core_mass, R_a, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
-    //double I_accretor_dot = accretor->sse_k2*accretor->dmass_dt*R_a_p2 + 2.0*accretor->sse_k2*(M_a - accretor->core_mass)*R_a*accretor->radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
-    //double Omega_a_dot = (J_spin_accretor_dot - I_accretor_dot*Omega_a)/I_accretor;
     double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
     
     if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
@@ -449,7 +382,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);
         exit(-1);
     }
-    
 
     for (i=0; i<3; i++)
     {
@@ -460,11 +392,14 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
         accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
         
-        //#ifdef VERBOSE
-        //printf("mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
-        //#endif
-    }
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("ODE_mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
+        }
+        #endif
 
+    }
 
     return 0;
 }
@@ -497,14 +432,20 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
         
         return -1;
     }
-    //printf("x %g e %g E_0... %g\n",x,e,*E_0);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("mass_changes.cpp -- determine_E_0 -- x %g e %g E_0... %g\n",x,e,*E_0);
+    }
+    #endif
+    
     return 0;
 }
 
 
-
-
-
+/* Definition of functions used in emt model
+ * https://ui.adsabs.harvard.edu/abs/2019ApJ...872..119H/abstract */
 double fm_function(double e, double x, double E0, double Etau)
 {
     return -(-192*E0 + 576*E0*x - 576*E0*pow(x,2) - 288*pow(e,2)*E0*pow(x,2) + 192*E0*pow(x,3) + 288*pow(e,2)*E0*pow(x,3) + 72*pow(e,2)*E0*x*(4 - 8*x + (4 + pow(e,2))*pow(x,2))*cos(Etau) - 
@@ -580,6 +521,5 @@ double XL0_q_function(double q)
     double Aminus = pow(q*(54 + pow(q,2) - 6*sqrt(3)*sqrt(27 + pow(q,2))),0.3333333333333333);
     return (3 + sqrt(3)*sqrt(3 + Aminus + Aplus - 2*q) - sqrt(3)*sqrt(6 - Aplus - 4*q - pow(q,2)/Aplus + (6*sqrt(3)*(1 + q))/sqrt(3 + Aminus + Aplus - 2*q)))/6.;
 }
-
 
 }

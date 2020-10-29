@@ -126,7 +126,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                     if (j>10000)
                     {
                         #ifdef VERBOSE
-                        if (verbose_flag > 0)
+                        if (verbose_flag > 1)
                         {
                             printf("stellar_evolution.cpp -- unable to evolve star with index %d to desired stellar type %d; current stellar type %d; stopping initial evolution lum %g\n",p->index,kw_desired,kw,lum);
                         }

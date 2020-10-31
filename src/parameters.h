@@ -2,6 +2,7 @@
 #define __PARAMETERS
 #include <stdbool.h>
 
+// Constants //
 extern double CONST_G;
 extern double CONST_G_P2;
 extern double CONST_G_P3;
@@ -18,9 +19,11 @@ extern double CONST_KM_PER_S;
 extern double CONST_PER_PC3;
 extern double CONST_MJUP;
 
-// Default parameters //
+// Parameters //
 extern double relative_tolerance;
 extern double absolute_tolerance_eccentricity_vectors;
+extern double absolute_tolerance_spin_vectors;
+extern double absolute_tolerance_angular_momentum_vectors;
 extern bool include_quadrupole_order_terms;
 extern bool include_octupole_order_binary_pair_terms;
 extern bool include_octupole_order_binary_triplet_terms;

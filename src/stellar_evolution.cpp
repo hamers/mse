@@ -453,7 +453,7 @@ void check_for_critical_rotation(ParticlesMap *particlesMap)
     {
         
         Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->is_bound == true)
+        if (p->is_binary == false and p->is_bound == true and p->object_type == 1)
         {
             double spin_vec_norm = norm3(p->spin_vec);
             if (spin_vec_norm < epsilon)
@@ -461,9 +461,10 @@ void check_for_critical_rotation(ParticlesMap *particlesMap)
                 spin_vec_norm = epsilon;
             }
             double Omega_crit = compute_breakup_angular_frequency(p->mass,p->radius);
+
             if (spin_vec_norm > Omega_crit)
             {
-                
+
                 #ifdef VERBOSE
                 if (verbose_flag > 0)
                 {

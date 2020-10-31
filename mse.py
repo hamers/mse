@@ -4,17 +4,16 @@ import ctypes
 import ast
 
 """
-Multiple Stellar Evolution (`MSE`) -- A Population Synthesis Code for Multiple-Star Systems
+# Multiple Stellar Evolution (MSE) -- A Population Synthesis Code for Multiple-Star Systems #
 
-!!! This is a very early-stage version with still many bugs and missing features. !!!
+MSE is code that models the long-term evolution of hierarchical multiple-star systems (binaries, triples, quadruples, and higher-order systems) from the main sequence until remnant phase. It takes into account gravitational dynamical evolution, stellar evolution (using the `sse` tracks), and binary interactions (such as mass transfer and common-envelope evolution).  It includes routines for external perturbations from flybys in the field, or (to limited extent) encounters in dense stellar systems such as galactic nuclei. 
 
-A code to model the long-term evolution of hierarchical multiple-star systems (binaries, triples, quadruples, and higher-order systems) from the main sequence until  remnant phase. Takes into account gravitational dynamical evolution, stellar evolution (using the `sse` tracks), and binary interactions (such as mass transfer and common-envelope evolution).
+C++ and Fortran compilers are required, as well as Python (2/3) for the Python interface. Make sure to first compile the code using `make`. Please modify the Makefile according to your installation (`CXX` and `FC` should be correctly assigned).  
 
-Includes routines for external perturbations from flybys in the field, or (to limited extent) encounters in dense stellar systems such as galactic nuclei.
+The script `test_mse.py` can be used to test the installation. The script `run_system.py` is useful for quickly running a system. 
 
-C++ compiler and Fortran compilers are required, as well as Python (2/3) for the Python interface. Make sure to first compile the code using `make`. Please modify the Makefile according to your installation (`CXX` and `FC` should be correctly assigned).
+See the user guide (doc/doc.pdf) for more detailed information.
 
-The script `test_mse.py` can be used to test the installation.
 """
 
 
@@ -33,6 +32,9 @@ class MSE(object):
 
         self.__relative_tolerance = 1.0e-10
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-8
+        self.__absolute_tolerance_spin_vectors = 1.0e-4
+        self.__absolute_tolerance_angular_momentum_vectors = 1.0e-2
+
         self.__include_quadrupole_order_terms = True
         self.__include_octupole_order_binary_pair_terms = True
         self.__include_octupole_order_binary_triplet_terms = True
@@ -90,11 +92,11 @@ class MSE(object):
         self.state = 0
         self.CVODE_flag = 0
         self.CVODE_error_code = 0
-        self.integration_flag = 0 # start with secular integration 
+        self.integration_flag = 0
         
         self.__random_seed = 0
         
-        self.__verbose_flag = 1 ### 0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably)
+        self.__verbose_flag = 0 ### 0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably)
         
         self.enable_tides = True
         self.enable_root_finding = True
@@ -156,6 +158,9 @@ class MSE(object):
         self.lib.set_mass_transfer_terms.argtypes = (ctypes.c_int,ctypes.c_bool)
         self.lib.set_mass_transfer_terms.restype = ctypes.c_int
 
+        self.lib.get_mass_transfer_terms.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_mass_transfer_terms.restype = ctypes.c_int
+
         self.lib.get_mass_dot.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
         self.lib.get_mass_dot.restype = ctypes.c_int
 
@@ -211,11 +216,17 @@ class MSE(object):
         self.lib.set_integration_method.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool)
         self.lib.set_integration_method.restype = ctypes.c_int
 
-        self.lib.set_PN_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
+        self.lib.set_PN_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
         self.lib.set_PN_terms.restype = ctypes.c_int
 
-        self.lib.set_tides_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_double)
+        self.lib.get_PN_terms.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_PN_terms.restype = ctypes.c_int
+
+        self.lib.set_tides_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_double,ctypes.c_bool)
         self.lib.set_tides_terms.restype = ctypes.c_int
+
+        self.lib.get_tides_terms.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_tides_terms.restype = ctypes.c_int
 
         self.lib.set_root_finding_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool);
         self.lib.set_root_finding_terms.restype = ctypes.c_int
@@ -231,7 +242,7 @@ class MSE(object):
 
         self.__set_constants_in_code()
 
-        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double, \
+        self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double, \
             ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
             ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
             ctypes.c_bool,ctypes.c_int,ctypes.c_bool, ctypes.c_int,ctypes.c_int, \
@@ -348,18 +359,6 @@ class MSE(object):
 
     ###############
     
-#    def add_particle(self,particle):
-#        index = ctypes.c_int(0)
-#        self.lib.add_particle(ctypes.byref(index), particle.is_binary, particle.is_external)
-#        particle.index = index.value
-#        flag = self.__update_particle_in_code(particle)
-
-#        self.particles.append(particle)
-
-#    def add_particles(self,particles):
-#        for index,particle in enumerate(particles):
-#            self.add_particle(particle)
-            
     def add_particle(self,particle):
         index = ctypes.c_int(0)
 
@@ -453,8 +452,6 @@ class MSE(object):
         orbits = [p for p in self.particles if p.is_binary == True]
         children1 = [o.child1.index for o in orbits]
         children2 = [o.child2.index for o in orbits]
-#        children1 = [o.child1 for o in orbits]
-#        children2 = [o.child2 for o in orbits]
             
         self.structure_change = False
         if children1 != children1_old or children2 != children2_old:
@@ -478,19 +475,14 @@ class MSE(object):
         if particle.is_binary == False:
             flag = self.lib.set_mass(particle.index,particle.mass)
 
-#        if self.enable_tides == True:
-#            particle.include_tidal_friction_terms = True
-#            particle.tides_method = 1
-#            particle.include_tidal_bulges_precession_terms = True
-#            particle.include_rotation_precession_terms = True
         if self.enable_tides == False:
             particle.include_tidal_friction_terms = False
             particle.tides_method = 1
             particle.include_tidal_bulges_precession_terms = False
             particle.include_rotation_precession_terms = False
-            
+
         flag += self.lib.set_tides_terms(particle.index,particle.include_tidal_friction_terms,particle.tides_method,particle.include_tidal_bulges_precession_terms,particle.include_rotation_precession_terms, \
-            particle.minimum_eccentricity_for_tidal_precession)
+            particle.minimum_eccentricity_for_tidal_precession,particle.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary)
             
         if self.enable_root_finding == False:
             particle.check_for_secular_breakdown = False
@@ -513,18 +505,16 @@ class MSE(object):
         flag += self.lib.set_binary_evolution_properties(particle.index,particle.dynamical_mass_transfer_low_mass_donor_timescale,particle.dynamical_mass_transfer_WD_donor_timescale,particle.compact_object_disruption_mass_loss_timescale, \
             particle.common_envelope_alpha, particle.common_envelope_lambda, particle.common_envelope_timescale, particle.triple_common_envelope_alpha)
 
-        flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms,particle.include_spin_orbit_1PN_terms)
+        flag += self.lib.set_PN_terms(particle.index,particle.include_pairwise_1PN_terms,particle.include_pairwise_25PN_terms,particle.include_spin_orbit_1PN_terms,particle.exclude_1PN_precession_in_case_of_isolated_binary)
         
         if particle.is_external==False:
             
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
-                #flag += self.lib.set_children(particle.index,particle.child1,particle.child2)
                 flag += self.lib.set_orbital_elements(particle.index,particle.a, particle.e, particle.TA, particle.INCL, particle.AP, particle.LAN, particle.sample_orbital_phase_randomly)
                 flag += self.lib.set_integration_method(particle.index,particle.integration_method,particle.KS_use_perturbing_potential)
             else:
                 flag += self.lib.set_radius(particle.index,particle.radius,particle.radius_dot)
-                #flag += self.lib.set_mass_dot(particle.index,particle.mass_dot)
                 flag += self.lib.set_mass_transfer_terms(particle.index,particle.include_mass_transfer_terms)
                 flag += self.lib.set_spin_vector(particle.index,particle.spin_vec_x,particle.spin_vec_y,particle.spin_vec_z)
                 flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.object_type,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
@@ -542,18 +532,11 @@ class MSE(object):
     
         return flag
 
-#    def __update_particles_in_code(self,set_instantaneous_perturbation_properties=False):
-#        flag = 0
-#        for index,particle in enumerate(self.particles):
-#            flag += self.__update_particle_in_code(particle,set_instantaneous_perturbation_properties=set_instantaneous_perturbation_properties)
-#        return flag
-        
     def __update_particles_in_code(self,set_instantaneous_perturbation_properties=False):
         flag = 0
         for index,particle in enumerate(self.particles):
             if particle.is_binary==True:
                 flag += self.lib.set_children(particle.index,particle.child1.index,particle.child2.index)
-                #flag += self.lib.set_children(particle.index,particle.child1,particle.child2)
         
         flag = 0
         for index,particle in enumerate(self.particles):
@@ -564,6 +547,15 @@ class MSE(object):
         mass = ctypes.c_double(0.0)
         flag = self.lib.get_mass(particle.index,ctypes.byref(mass))
         particle.mass = mass.value
+
+        include_tidal_friction_terms,tides_method,include_tidal_bulges_precession_terms,include_rotation_precession_terms,minimum_eccentricity_for_tidal_precession,exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = ctypes.c_bool(True),ctypes.c_int(0),ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_double(0.0),ctypes.c_bool(True)
+        flag += self.lib.get_tides_terms(particle.index,ctypes.byref(include_tidal_friction_terms),ctypes.byref(tides_method),ctypes.byref(include_tidal_bulges_precession_terms),ctypes.byref(include_rotation_precession_terms),ctypes.byref(minimum_eccentricity_for_tidal_precession),ctypes.byref(exclude_rotation_and_bulges_precession_in_case_of_isolated_binary))
+        particle.include_tidal_friction_terms = include_tidal_friction_terms.value
+        particle.tides_method = tides_method.value
+        particle.include_tidal_bulges_precession_terms = include_tidal_bulges_precession_terms.value
+        particle.include_rotation_precession_terms = include_rotation_precession_terms.value
+        particle.minimum_eccentricity_for_tidal_precession = minimum_eccentricity_for_tidal_precession.value
+        particle.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = exclude_rotation_and_bulges_precession_in_case_of_isolated_binary.value
 
         if self.enable_root_finding == True:
             secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
@@ -591,13 +583,20 @@ class MSE(object):
             particle.INCL_parent = INCL_parent.value
             
             x,y,z,vx,vy,vz = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
-            flag = self.lib.get_relative_position_and_velocity(particle.index,ctypes.byref(x),ctypes.byref(y),ctypes.byref(z),ctypes.byref(vx),ctypes.byref(vy),ctypes.byref(vz))
+            flag += self.lib.get_relative_position_and_velocity(particle.index,ctypes.byref(x),ctypes.byref(y),ctypes.byref(z),ctypes.byref(vx),ctypes.byref(vy),ctypes.byref(vz))
             particle.x = x.value
             particle.y = y.value
             particle.z = z.value
             particle.vx = vx.value
             particle.vy = vy.value
             particle.vz = vz.value
+            
+            include_pairwise_1PN_terms,include_pairwise_25PN_terms, include_spin_orbit_1PN_terms, exclude_1PN_precession_in_case_of_isolated_binary = ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True)
+            flag += self.lib.get_PN_terms(particle.index,ctypes.byref(include_pairwise_1PN_terms),ctypes.byref(include_pairwise_25PN_terms),ctypes.byref(include_spin_orbit_1PN_terms),ctypes.byref(exclude_1PN_precession_in_case_of_isolated_binary))
+            particle.include_pairwise_1PN_terms = include_pairwise_1PN_terms.value
+            particle.include_pairwise_25PN_terms = include_pairwise_25PN_terms.value
+            particle.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms.value
+            particle.exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary.value
         else:
             X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
             flag = self.lib.get_absolute_position_and_velocity(particle.index,ctypes.byref(X),ctypes.byref(Y),ctypes.byref(Z),ctypes.byref(VX),ctypes.byref(VY),ctypes.byref(VZ))
@@ -634,8 +633,8 @@ class MSE(object):
                 particle.core_mass = core_mass.value
                 particle.core_radius = core_radius.value
                 particle.luminosity = luminosity.value
-                particle.apsidal_motion_constant = apsidal_motion_constant
-                particle.gyration_radius = gyration_radius
+                particle.apsidal_motion_constant = apsidal_motion_constant.value
+                particle.gyration_radius = gyration_radius.value
                 particle.tides_viscous_time_scale = tides_viscous_time_scale.value
                 particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
 
@@ -662,6 +661,10 @@ class MSE(object):
                 particle.spin_vec_x = spin_vec_x.value
                 particle.spin_vec_y = spin_vec_y.value
                 particle.spin_vec_z = spin_vec_z.value
+                
+                include_mass_transfer_terms = ctypes.c_bool(True)
+                flag += self.lib.get_mass_transfer_terms(particle.index,ctypes.byref(include_mass_transfer_terms))
+                particle.include_mass_transfer_terms = include_mass_transfer_terms.value
 
         return flag
         
@@ -674,9 +677,6 @@ class MSE(object):
 
     def __copy_particle_structure_from_code(self):
         self.particles = []
-        #N_particles = ctypes.c_int(0)
-        #flag = self.lib.get_number_of_particles(ctypes.byref(N_particles))
-        #N_particles = N_particles.value
         N_particles = self.lib.get_number_of_particles()
         
         for i in range(N_particles):
@@ -692,8 +692,6 @@ class MSE(object):
             if is_binary==True:
                 child1,child2 = ctypes.c_int(0),ctypes.c_int(0)
                 self.lib.get_children(internal_index,ctypes.byref(child1),ctypes.byref(child2))
-                #child1 = self.particles[child1.value]
-                #child2 = self.particles[child2.value]
                 child1_index = child1.value
                 child2_index = child2.value
 
@@ -720,7 +718,7 @@ class MSE(object):
 
 
     def __set_parameters_in_code(self):
-        self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__include_quadrupole_order_terms, \
+        self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__absolute_tolerance_spin_vectors,self.__absolute_tolerance_angular_momentum_vectors,self.__include_quadrupole_order_terms, \
             self.__include_octupole_order_binary_pair_terms,self.__include_octupole_order_binary_triplet_terms, \
             self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
             self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
@@ -983,6 +981,22 @@ class MSE(object):
     @absolute_tolerance_eccentricity_vectors.setter
     def absolute_tolerance_eccentricity_vectors(self, value):
         self.__absolute_tolerance_eccentricity_vectors = value
+        self.__set_parameters_in_code()
+
+    @property
+    def absolute_tolerance_spin_vectors(self):
+        return self.__absolute_tolerance_spin_vectors
+    @absolute_tolerance_spin_vectors.setter
+    def absolute_tolerance_spin_vectors(self, value):
+        self.__absolute_tolerance_spin_vectors = value
+        self.__set_parameters_in_code()
+
+    @property
+    def absolute_tolerance_angular_momentum_vectors(self):
+        return self.__absolute_tolerance_angular_momentum_vectors
+    @absolute_tolerance_angular_momentum_vectors.setter
+    def absolute_tolerance_angular_momentum_vectors(self, value):
+        self.__absolute_tolerance_angular_momentum_vectors = value
         self.__set_parameters_in_code()
 
     @property
@@ -1458,8 +1472,8 @@ class Particle(object):
             include_mass_transfer_terms=True, \
             kick_distribution = 1, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
-            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=True, \
-            include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, \
+            include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=True, exclude_1PN_precession_in_case_of_isolated_binary=True, \
+            include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = True, \
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0e100, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0e-10, convective_envelope_radius=1.0e-10, luminosity=1.0e-10, \
             check_for_secular_breakdown=True,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
@@ -1474,9 +1488,6 @@ class Particle(object):
             VRR_initial_time = 0.0, VRR_final_time = 1.0,roche_lobe_radius_pericenter=0.0, \
             dynamical_mass_transfer_low_mass_donor_timescale=1.0e3, dynamical_mass_transfer_WD_donor_timescale=1.0e3, compact_object_disruption_mass_loss_timescale=1.0e3, common_envelope_alpha=1.0, common_envelope_lambda=1.0, common_envelope_timescale=1.0e3, triple_common_envelope_alpha=1.0):
                 
-                
-                ### TO DO: remove default values for check_for_... here
-
         ### spin_vec: nonzero spin_vec_z: need to specify a finite initial direction 
 
         if is_binary==None:
@@ -1504,10 +1515,12 @@ class Particle(object):
         self.minimum_eccentricity_for_tidal_precession=minimum_eccentricity_for_tidal_precession
         self.tides_viscous_time_scale=tides_viscous_time_scale
         self.tides_viscous_time_scale_prescription=tides_viscous_time_scale_prescription
+        self.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = exclude_rotation_and_bulges_precession_in_case_of_isolated_binary
 
         self.include_pairwise_1PN_terms = include_pairwise_1PN_terms
         self.include_pairwise_25PN_terms = include_pairwise_25PN_terms
         self.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms
+        self.exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary
         
         self.include_mass_transfer_terms = include_mass_transfer_terms
 
@@ -2063,7 +2076,7 @@ class Tools(object):
         Returns T_eff in K
         """
         
-        T_Sun = 5770.0 ### (the Sun knows about ATI's product stack)
+        T_Sun = 5770.0 ### (the Sun knows about ATI's old product stack)
         T_eff = T_Sun * pow(luminosity/CONST_L_SUN,0.25) * pow(radius/CONST_R_SUN,-0.5)
         return T_eff
     
@@ -2322,7 +2335,6 @@ class Tools(object):
                 particles = log["particles"]
                 event_flag = log["event_flag"]
                 
-                #Tools.generate_mobile_diagram(particles,plot,fontsize=N_c)
                 Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize)
 
                 text = Tools.get_description_for_event_flag(event_flag)
@@ -2522,10 +2534,8 @@ class Tools(object):
             size=0.7*fontsize,
             bbox=bbox_props)
         
-     
-        #text = "$e = %.2f$"%(particle.e)
+   
         text = "$e = %.2f$"%(particle.e)
-        
         #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
 
         alpha = 1.0
@@ -2740,4 +2750,3 @@ class Tools(object):
         else:
             text = ""
         return text
-

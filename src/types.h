@@ -822,10 +822,12 @@ class Particle
 
     /* PN terms */
     bool include_pairwise_1PN_terms,include_pairwise_25PN_terms,include_spin_orbit_1PN_terms;
+    bool exclude_1PN_precession_in_case_of_isolated_binary;
         
     /* tidal friction */
     int include_tidal_friction_terms,tides_method,include_tidal_bulges_precession_terms,include_rotation_precession_terms;
     double minimum_eccentricity_for_tidal_precession;
+    bool exclude_rotation_and_bulges_precession_in_case_of_isolated_binary;
     
     double tides_viscous_time_scale;
     int tides_viscous_time_scale_prescription;
@@ -937,6 +939,9 @@ class Particle
         include_tidal_friction_terms = true;
         include_tidal_bulges_precession_terms = true;
         include_rotation_precession_terms = true;
+        
+        exclude_1PN_precession_in_case_of_isolated_binary = true;
+        exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = true;
 
         radius = 1.0e-10; /* this must be set (to nonzero), otherwise ODE solver will have invalid ewt values */
         tides_method = 1; /* `full' tides equations of motion including spin-orbit terms for all orientations */

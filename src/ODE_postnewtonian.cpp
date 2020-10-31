@@ -34,7 +34,7 @@ void compute_EOM_Post_Newtonian_for_particle(ParticlesMap *particlesMap, Particl
 double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
     #ifdef VERBOSE
-    if (verbose_flag > 2)
+    if (verbose_flag > 1)
     {
         printf("ODE_postnewtonian.cpp -- compute_EOM_pairwise_1PN\n");
     }
@@ -73,7 +73,7 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
     double GMdiva = CONST_G*mt/a;
     double Z_1PN = 3.0*sqrt(GMdiva)*GMdiva/(a*CONST_C_LIGHT_P2*j_p2);
     
-    if (binary->parent == -1)
+    if (binary->parent == -1 and binary->exclude_1PN_precession_in_case_of_isolated_binary == true)
     {
         Z_1PN = 0.0;
     }
@@ -89,7 +89,7 @@ double compute_EOM_pairwise_1PN(ParticlesMap *particlesMap, int binary_index, bo
 double compute_EOM_pairwise_25PN(ParticlesMap *particlesMap, int binary_index, bool compute_hamiltonian_only)
 {
     #ifdef VERBOSE
-    if (verbose_flag > 2)
+    if (verbose_flag > 1)
     {
         printf("ODE_postnewtonian.cpp -- compute_EOM_pairwise_25PN\n");
     }
@@ -162,7 +162,7 @@ double compute_EOM_spin_orbit_coupling_1PN(ParticlesMap *particlesMap, int binar
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 2)
+    if (verbose_flag > 1)
     {
         printf("ODE_postnewtonian -- compute_EOM_spin_orbit_coupling_1PN -- bin %d body %d comp %d constant_factor %g body->dspin_vec_dt %g %g %g\n",binary_index,body_index,companion_index,constant_factor,body->dspin_vec_dt[0],body->dspin_vec_dt[1],body->dspin_vec_dt[2]);
     }

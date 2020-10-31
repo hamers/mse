@@ -1,6 +1,7 @@
 #include "parameters.h"
 #include <math.h>
 
+// Constants //
 double CONST_G = 4.0*M_PI*M_PI; 
 double CONST_G_P2 = CONST_G*CONST_G;
 double CONST_G_P3 = CONST_G_P2*CONST_G;
@@ -18,8 +19,10 @@ double CONST_PER_PC3 = 1.14059e-16;
 double CONST_MJUP = 0.000954248;
 
 // Default parameters //
-double relative_tolerance = 1.0e-12;
-double absolute_tolerance_eccentricity_vectors = 1.0e-10;
+double relative_tolerance = 1.0e-10;
+double absolute_tolerance_eccentricity_vectors = 1.0e-8;
+double absolute_tolerance_spin_vectors = 1.0e-4;
+double absolute_tolerance_angular_momentum_vectors = 1.0e-2;
 bool include_quadrupole_order_terms = true;
 bool include_octupole_order_binary_pair_terms = true;
 bool include_octupole_order_binary_triplet_terms = true;
@@ -27,7 +30,7 @@ bool include_hexadecupole_order_binary_pair_terms = true;
 bool include_dotriacontupole_order_binary_pair_terms = true;
 bool include_double_averaging_corrections = false;
 int random_seed = 0;
-int verbose_flag = 1;
+int verbose_flag = 0;
 
 double secular_integration_exclusion_safety_factor = 1.0e-3;
 double ODE_min_dt = 1.0;

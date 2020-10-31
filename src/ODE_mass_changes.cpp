@@ -391,7 +391,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         /* Assume mass transfer does not affect the directions of the spins. */
         donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_d_dot;
         accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
-        
+
         #ifdef VERBOSE
         if (verbose_flag > 1)
         {

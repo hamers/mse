@@ -19,7 +19,6 @@ void handle_secular_tidal_evolution(ParticlesMap *particlesMap, Particle *p)
 
     Particle *child1 = (*particlesMap)[p->child1];
     Particle *child2 = (*particlesMap)[p->child2];
-
     
     if (child1->include_tidal_friction_terms == true || child1->include_tidal_bulges_precession_terms == true || child1->include_rotation_precession_terms == true)
     {
@@ -92,7 +91,7 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
     int tides_viscous_time_scale_prescription = star->tides_viscous_time_scale_prescription;
     double t_V = 1.0e10; /* large value by default, i.e. weak tides if tides_viscous_time_scale_prescription is not given the correct value */
     
-    if (tides_viscous_time_scale_prescription == 0 or star->object_type == 2)
+    if (tides_viscous_time_scale_prescription == 0 or star->object_type != 1)
     {
         t_V = star->tides_viscous_time_scale;
     }
@@ -253,7 +252,7 @@ double compute_t_V_hurley
     }
 }
 
-double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, int include_tidal_friction_terms, int include_tidal_bulges_precession_terms, int include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, int tides_method)
+double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, int tides_method)
 /* Barker & Ogilvie (2009; http://adsabs.harvard.edu/abs/2009MNRAS.395.2268B) */
 
 /* NOTE: in SecularMultiple, the h-vector is defined as the orbital angular momentum vector,
@@ -298,6 +297,13 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double e = binary->e;
     double e_p2 = binary->e_p2;
     double a = binary->a;
+
+    if (e >= 1.0 or a <= 0.0)
+    {
+        //printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- invalid e %g and/or a %g; skipping\n",e,a);
+        //return 0;
+    }
+    
     double h = binary->h;
     double *e_vec = binary->e_vec;
     double *h_vec = binary->h_vec;
@@ -314,7 +320,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double j_p4_inv = 1.0/j_p4; 
     double j_p10_inv = 1.0/j_p10; 
     double j_p13_inv = 1.0/j_p13;
-    double P_orb = compute_orbital_period_from_semimajor_axis(binary->mass,binary->a);
+    double P_orb = compute_orbital_period_from_semimajor_axis(binary->mass,a);
     double n = 2.0*M_PI/P_orb; /* mean motion */
 
     /* stellar properties */
@@ -342,9 +348,10 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     #ifdef VERBOSE
     if (verbose_flag > 2)
     {
-        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %g rg %g kAM %g R %g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius);
+        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- binary_index %d star_index %d companion_index %d t_V %.15g rg %.15g kAM %.15g R %.15g I %.15g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius,I);
     }
     #endif
+
     
     if (t_V!=t_V)
     {
@@ -356,7 +363,9 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("M %g\n",M);
         printf("star->convective_envelope_mass %g\n",star->convective_envelope_mass);
         printf("m %g\n",m);
-        printf("a %g\n",a);
+        printf("a %.15g\n",a);
+        printf("e %.15g\n",e);
+        printf("rp %g\n",a*(1.0-e));
         printf("R %g\n",R);
         printf("star->convective_envelope_radius %g\n",star->convective_envelope_radius);
         printf("star->luminosity %g\n",star->luminosity);
@@ -411,7 +420,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double Y_rot = 0.0;
     double Z_rot = 0.0;
     double Z_TB = 0.0;
-    if (include_rotation_precession_terms == 1)
+    if (include_rotation_precession_terms == true)
     {
         if (tides_method == 1)
         {
@@ -422,7 +431,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
 
         Z_rot = C*c_1div2*j_p4_inv*(2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit - spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit - spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
     }    
-    if (include_tidal_bulges_precession_terms == 1)
+    if (include_tidal_bulges_precession_terms == true)
     {
         Z_TB = C*15.0*n*n*(mu/M)*f_tides2;
     }
@@ -438,13 +447,12 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     check_number(h,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h", true);
     check_number(n,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","n", true);
 
-
     double dh_vec_dt_star_i;
    
     for (int i=0; i<3; i++)
     {
 
-        if (include_tidal_friction_terms == 1)
+        if (include_tidal_friction_terms == true)
         {
             dh_vec_dt_star_i = -t_f_inv*( (h/(2.0*n))*(spin_vec_dot_e_vec*f_tides5*e_vec[i] - spin_vec[i]*f_tides3) \
                 + h_vec[i]*(f_tides4 - spin_vec_dot_h_vec*f_tides2/(2.0*n*h)) );
@@ -462,16 +470,15 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
             #endif
             
         }
-        if (include_rotation_precession_terms == 1 || include_tidal_bulges_precession_terms == 1)
+        if (include_rotation_precession_terms == true || include_tidal_bulges_precession_terms == true)
         {
-            if (e >= minimum_eccentricity_for_tidal_precession and binary->parent != -1) /* Do not include orbital precession if e is very small, or the binary is isolated */
+            if (e >= minimum_eccentricity_for_tidal_precession and (binary->parent != -1 or binary->exclude_rotation_and_bulges_precession_in_case_of_isolated_binary == false)) /* Do not include orbital precession if e is very small, or if the binary is isolated */
             {
                 binary->de_vec_dt[i] += e*(Z*q_vec_unit[i] - Y*h_vec_unit[i]);
-                
+
                 dh_vec_dt_star_i = h*(-X*q_vec_unit[i] + Y*e_vec_unit[i]);
                 binary->dh_vec_dt[i] += dh_vec_dt_star_i;
                 star->dspin_vec_dt[i] += -dh_vec_dt_star_i/I;
-                
             }
         }
         
@@ -479,6 +486,16 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         check_number(binary->de_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","binary->de_vec_dt[i]", true);
         check_number(star->dspin_vec_dt[i],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","star->dspin_vec_dt[i]", true);
     }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        for (int i=0; i<3; i++)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full i %d spin %.15f dh %.15g dspin %.15g a %.15g e %.15\n",i,spin_vec[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
+        }
+    }
+    #endif
 
     return 0;
 }
@@ -506,7 +523,7 @@ double f_tides5_function_BO(double e_p2, double j_p10_inv, double j_p13_inv)
 }  
 
 
-double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, int include_tidal_friction_terms, int include_tidal_bulges_precession_terms, int include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession)
+double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession)
 
 /* Equilibrium tide in vector form adopted from Eggleton & Kisseleva 1998 */
  
@@ -516,8 +533,14 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
  * In particular, note the line `star->dspin_vec_dt[i] += -dh_vec_dt_star[i]/I;' */
 
 {
-//    printf("tides EK \n");
-//    printf("TIDES %d %d %d\n",binary_index,star_index,companion_index);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide (Eggleton & Kisseleva 1998) -- bin %d star %d companion %d\n",binary_index,star_index,companion_index);
+    }
+    #endif
+
     Particle *binary = (*particlesMap)[binary_index];
     Particle *star = (*particlesMap)[star_index];
     Particle *companion = (*particlesMap)[companion_index];
@@ -572,9 +595,6 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
 	double R_div_a_p5 = pow(R_div_a,5.0);
     double R_div_a_p8 = pow(R_div_a,8.0);
     double t_f_inv = (9.0/t_V)*R_div_a_p8*((M+m)*m/(M*M))*(1.0 + 2.0*k_AM)*(1.0 + 2.0*k_AM);
-    
-//    double q_vec_unit[3];
-    //cross3(h_vec_unit,e_vec_unit,q_vec_unit);
 
     double spin_vec_dot_e_vec_unit = dot3(spin_vec,e_vec_unit);
     double spin_vec_dot_h_vec_unit = dot3(spin_vec,h_vec_unit);
@@ -589,10 +609,12 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
         spin_vec_dot_h_vec_unit, spin_vec_dot_e_vec_unit, spin_vec_dot_q_vec_unit, \
         &V, &W, &X, &Y, &Z);
 
-    //printf("t_f_inv V %g W %g X %g Y %g Z %g\n",t_f_inv,V,W,X,Y,Z);
-
-//    printf("js %g %g %g\n",j_p10_inv,j_p13_inv);
-//    printf("fs %g %g %g %g %g \n",f_tides1,f_tides2,f_tides3,f_tides4,f_tides5);
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide (Eggleton & Kisseleva 1998) -- t_f_inv V %g W %g X %g Y %g Z %g\n",t_f_inv,V,W,X,Y,Z);
+    }
+    #endif
 
     double dh_vec_dt_star[3];
     
@@ -604,25 +626,18 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
         binary->de_vec_dt[i] += e*( -V*e_vec_unit[i] - Y*h_vec_unit[i] + Z*q_vec_unit[i] );
         
         star->dspin_vec_dt[i] += -dh_vec_dt_star[i]/I; /* conservation of total angular momentum (orbit+spin) */
-
-
-
-
-//        printf("test %g %g\n",I*spin_vec[2], h_vec[2]);
-//        printf("test2 %g %g %g\n",I*spin_vec[0] + h_vec[0],I*spin_vec[1] + h_vec[1],I*spin_vec[2] + h_vec[2]);        
-//        printf("test2 %g %g %g\n",I*spin_vec[0] + mu*h_vec[0],I*spin_vec[1] + mu*h_vec[1],I*spin_vec[2] + mu*h_vec[2]);        
     }
 
-//    double omega = norm3(spin_vec);
-//    double h2 = sqrt(CONST_G*(M+m)*a*(1.0-e*e));
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        for (int i=0; i<3; i++)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide (Eggleton & Kisseleva 1998) i %d spin %.15f dh %.15g dspin %.15g a %.15g e %.15\n",i,spin_vec[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
+        }
+    }
+    #endif
 
-//    printf("R %g\n",h/(mu*h2));
-//    printf("H%g H_a %g H_b %g\n",mu*h2 + I*omega, mu*h2, I*omega);
-//    printf("H%g H_a %g H_b %g\n",mu*h + I*omega, mu*h, I*omega);
-
-//    printf("I %g %g %g %g\n",rg,M,R,Q_prime);
-//    printf("f dh_vec_dt %g %g %g\n",binary->dh_vec_dt[0],binary->dh_vec_dt[1],binary->dh_vec_dt[2]);
-//    printf("f dspin_vec_dt %g %g %g\n",star->dspin_vec_dt[0],star->dspin_vec_dt[1],star->dspin_vec_dt[2]);
     return 0;
 }
 
@@ -650,7 +665,7 @@ double f_tides5_function(double e_p2, double j_p10_inv, double j_p13_inv)
 
 int VWXYZ_tides_function
 (
-    int include_tidal_friction_terms, int include_tidal_bulges_precession_terms, int include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, \
+    bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, \
     double t_f_inv, double k_AM, \
     double m, double M, double mu, double n, double R_div_a_p5, \
     double e, double e_p2, double j_p4_inv, double j_p10_inv,double j_p13_inv, \
@@ -673,7 +688,7 @@ int VWXYZ_tides_function
 //    }
 
 
-    if (include_tidal_friction_terms == 1)
+    if (include_tidal_friction_terms == true)
     {
         double f1 = f_tides1_function(e_p2,j_p10_inv,j_p13_inv);
         double f3 = f_tides3_function(e_p2,j_p10_inv,j_p13_inv);
@@ -694,16 +709,16 @@ int VWXYZ_tides_function
     }
 
 
-    if ((include_tidal_bulges_precession_terms == 1) || (include_rotation_precession_terms) == 1)
+    if ((include_tidal_bulges_precession_terms == true) || (include_rotation_precession_terms) == true)
     {
         double C = m*k_AM*R_div_a_p5/(mu*n);
     
-        if (include_tidal_bulges_precession_terms == 1)
+        if (include_tidal_bulges_precession_terms == true)
         {
             *Z += C*15.0*n*n*(mu/M)*f2;
 //            printf("include_tidal_bulges_precession_terms Z %g\n",*Z);
         }    
-        if (include_rotation_precession_terms == 1)
+        if (include_rotation_precession_terms == true)
         {
             double C_XY = -C*spin_vec_dot_h_vec_unit*j_p4_inv;
             *X += C_XY*spin_vec_dot_e_vec_unit;
@@ -719,6 +734,7 @@ int VWXYZ_tides_function
 //            printf("include_rotation_precession_terms Z %g\n",*Z);
         }
     }
+    
     return 0;
 }
 

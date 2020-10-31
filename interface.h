@@ -21,6 +21,8 @@ int set_mass(int index, double mass);
 int get_mass(int index, double *mass);
 
 int set_mass_transfer_terms(int index, bool include_mass_transfer_terms);
+int get_mass_transfer_terms(int index, bool *include_mass_transfer_terms);
+
 int get_mass_dot(int index, double *mass_dot);
 
 int set_radius(int index, double radius, double radius_dot);
@@ -92,15 +94,15 @@ int get_absolute_position_and_velocity(int index, double *X, double *Y, double *
 /************
 /* PN terms *
  ************/
-int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwise_25PN_terms, bool include_spin_orbit_1PN_terms);
-int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms);
+int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwise_25PN_terms, bool include_spin_orbit_1PN_terms, bool exclude_1PN_precession_in_case_of_isolated_binary);
+int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms, bool *exclude_1PN_precession_in_case_of_isolated_binary);
 
 
 /*********
 /* tides *
  *********/
-int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_method, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession);
-int get_tides_terms(int index, bool *include_tidal_friction_terms, bool *tides_method, bool *include_tidal_bulges_precession_terms, bool *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession);
+int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_method, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, bool exclude_rotation_and_bulges_precession_in_case_of_isolated_binary);
+int get_tides_terms(int index, bool *include_tidal_friction_terms, int *tides_method, bool *include_tidal_bulges_precession_terms, bool *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession, bool *exclude_rotation_and_bulges_precession_in_case_of_isolated_binary);
 
 /*******
  * VRR *
@@ -144,7 +146,7 @@ int get_de_dt(int index, double *de_dt);
  ************************/
 
 int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double CONST_R_SUN_, double CONST_L_SUN_, double CONST_KM_PER_S_, double CONST_PER_PC3_, double CONST_MJUP_);
-int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
+int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, double absolute_tolerance_spin_vectors_, double absolute_tolerance_angular_momentum_vectors_,
     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,

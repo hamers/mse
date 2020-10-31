@@ -74,7 +74,7 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
             
             factor = (1.0/parent->j) * pow( CONST_G * companion->mass / v_wind_p2, 2.0) * (alpha_wind_accretion / (2.0 * parent->a*parent->a)) * pow(1.0 + v_orb_p2/v_wind_p2, -1.5);
             companion->mass_dot_wind_accretion = CV_min(1.0, factor) * (- p->mass_dot_wind); /* sanity check (necessary for eccentric orbits): ensure that the companion cannot accrete more than the wind loss from p */
-            
+
             if (companion->mass_dot_wind_accretion!=companion->mass_dot_wind_accretion)
             {
                 printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);

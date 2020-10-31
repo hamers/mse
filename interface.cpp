@@ -160,6 +160,18 @@ int set_mass_transfer_terms(int index, bool include_mass_transfer_terms)
     
     return 0;
 }
+int get_mass_transfer_terms(int index, bool *include_mass_transfer_terms)
+{
+    if (index > particlesMap.size())
+    {
+//      return -1;
+    }
+
+    Particle *p = particlesMap[index];
+    *include_mass_transfer_terms = p->include_mass_transfer_terms;
+    
+    return 0;
+}
 int get_mass_dot(int index, double *mass_dot)
 {
     if (index > particlesMap.size())
@@ -650,7 +662,7 @@ int get_absolute_position_and_velocity(int index, double *X, double *Y, double *
 /* PN terms *
  ************/
 
-int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwise_25PN_terms, bool include_spin_orbit_1PN_terms)
+int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwise_25PN_terms, bool include_spin_orbit_1PN_terms, bool exclude_1PN_precession_in_case_of_isolated_binary)
 {
     if (index > particlesMap.size())
     {
@@ -661,10 +673,11 @@ int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwi
     p->include_pairwise_1PN_terms = include_pairwise_1PN_terms;
     p->include_pairwise_25PN_terms = include_pairwise_25PN_terms;
     p->include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms;
+    p->exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary;
         
     return 0;
 }
-int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms)
+int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms, bool *exclude_1PN_precession_in_case_of_isolated_binary)
 {
     if (index > particlesMap.size())
     {
@@ -676,6 +689,7 @@ int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pair
     *include_pairwise_1PN_terms = p->include_pairwise_1PN_terms;
     *include_pairwise_25PN_terms = p->include_pairwise_25PN_terms;
     *include_spin_orbit_1PN_terms = p->include_spin_orbit_1PN_terms;
+    *exclude_1PN_precession_in_case_of_isolated_binary = p->exclude_1PN_precession_in_case_of_isolated_binary;
     
     return 0;
 }
@@ -685,7 +699,7 @@ int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pair
 /* tides *
  *********/
 
-int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_method, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession)
+int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_method, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, bool exclude_rotation_and_bulges_precession_in_case_of_isolated_binary)
 {
     if (index > particlesMap.size())
     {
@@ -699,11 +713,13 @@ int set_tides_terms(int index, bool include_tidal_friction_terms, int tides_meth
     p->include_tidal_bulges_precession_terms = include_tidal_bulges_precession_terms;
     p->include_rotation_precession_terms = include_rotation_precession_terms;
     p->minimum_eccentricity_for_tidal_precession = minimum_eccentricity_for_tidal_precession;
+    p->exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = exclude_rotation_and_bulges_precession_in_case_of_isolated_binary;
     //printf("set tides1 %d %d %d %g\n",include_tidal_friction_terms,include_tidal_bulges_precession_terms,include_rotation_precession_terms,minimum_eccentricity_for_tidal_precession);
     //printf("set tides2 %g %g %g %d %g %g %g\n",tides_apsidal_motion_constant,tides_gyration_radius,tides_viscous_time_scale,tides_viscous_time_scale_prescription,convective_envelope_mass,convective_envelope_radius,luminosity);
+    //printf("include_tidal_bulges_precession_terms %d include_rotation_precession_terms %d\n",include_tidal_bulges_precession_terms,include_rotation_precession_terms);
     return 0;
 }
-int get_tides_terms(int index, bool *include_tidal_friction_terms, bool *tides_method, bool *include_tidal_bulges_precession_terms, bool *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession)
+int get_tides_terms(int index, bool *include_tidal_friction_terms, int *tides_method, bool *include_tidal_bulges_precession_terms, bool *include_rotation_precession_terms, double *minimum_eccentricity_for_tidal_precession, bool *exclude_rotation_and_bulges_precession_in_case_of_isolated_binary)
 {
     if (index > particlesMap.size())
     {
@@ -717,6 +733,7 @@ int get_tides_terms(int index, bool *include_tidal_friction_terms, bool *tides_m
     *include_tidal_bulges_precession_terms = p->include_tidal_bulges_precession_terms;
     *include_rotation_precession_terms = p->include_rotation_precession_terms;
     *minimum_eccentricity_for_tidal_precession = p->minimum_eccentricity_for_tidal_precession;
+    *exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = p->exclude_rotation_and_bulges_precession_in_case_of_isolated_binary;
     return 0;
 }
 
@@ -969,7 +986,7 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
     return 0;
 }
 
-int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, 
+int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, double absolute_tolerance_spin_vectors_, double absolute_tolerance_angular_momentum_vectors_,
     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
@@ -986,6 +1003,9 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
+    absolute_tolerance_spin_vectors = absolute_tolerance_spin_vectors_;
+    absolute_tolerance_angular_momentum_vectors = absolute_tolerance_angular_momentum_vectors_;
+    
     include_quadrupole_order_terms = include_quadrupole_order_terms_;
     include_octupole_order_binary_pair_terms = include_octupole_order_binary_pair_terms_;
     include_octupole_order_binary_triplet_terms = include_octupole_order_binary_triplet_terms_;

@@ -44,22 +44,25 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     /********************************
      * set ODE tolerances   *
      ********************************/
-    if (relative_tolerance <= 0.0)
-    {
-        printf("relative tolerance cannot be zero; setting default value of 1e-16\n");
-        relative_tolerance = 1.0e-16;
-    }
 
-    /* Warning: hardcoded parameters for ODE solver */
-    //double abs_tol_spin_vec = 1.0e-12;
-    double abs_tol_spin_vec = 1.0e4;
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        for (int i=1; i<=N_ODE_equations; i++)
+        {
+            printf("ODE_evolve.cpp -- evolve --  relative_tolerance %g absolute_tolerance_spin_vectors %g absolute_tolerance_eccentricity_vectors %g absolute_tolerance_angular_momentum_vectors %g\n",relative_tolerance,absolute_tolerance_spin_vectors,absolute_tolerance_eccentricity_vectors,absolute_tolerance_angular_momentum_vectors);
+        }
+    }
+    #endif
+        
+    double abs_tol_spin_vec = absolute_tolerance_spin_vectors;
     double abs_tol_e_vec = absolute_tolerance_eccentricity_vectors;
-    //abs_tol_e_vec = 1.0e-10;
-    double abs_tol_h_vec = 1.0e-2;
+    double abs_tol_h_vec = absolute_tolerance_angular_momentum_vectors;
     double initial_ODE_timestep = 1.0e0; /* one year */
     int maximum_number_of_internal_ODE_steps = 5e8;
     int maximum_number_of_convergence_failures = 100;    
     //double maximum_ODE_integration_time = 13.8e10;
+
 
     /***************************
      * setup of ODE variables  *
@@ -682,7 +685,6 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                 Ith(y_dot,k + k_component) = f_breakup * p->dspin_vec_dt[k_component];
             }
             
-            
             Ith(y_dot,k + 2 + 1) = p->dmass_dt;
             Ith(y_dot,k + 2 + 2) = p->dradius_dt;
             
@@ -946,7 +948,6 @@ void check_for_integration_exclusion_orbits(ParticlesMap *particlesMap)
         if (p->is_binary == true)
         {
 
-//        /* binary pairs */
             for (it_parent_p = p->parents.begin(); it_parent_p != p->parents.end(); it_parent_p++)
             {
                
@@ -960,23 +961,18 @@ void check_for_integration_exclusion_orbits(ParticlesMap *particlesMap)
                 if (t_1PN < t_sec * secular_integration_exclusion_safety_factor)
                 {
                     p->exclude_for_secular_integration = true;
-                    //printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- excluding p %d parent %d t_sec %g t_1PN %g\n",p->index,q->index,t_sec,t_1PN);
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 1)
+                    {
+                        printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- excluding p %d parent %d t_sec %g t_1PN %g\n",p->index,q->index,t_sec,t_1PN);
+                    }
+                    #endif
                 }
                 else
                 {
                     p->exclude_for_secular_integration = false;
                 }
-                //compute_EOM_binary_pairs(particlesMap,p->index,P_q->index,connecting_child_in_parent_q,hamiltonian,KS_V,compute_hamiltonian_only);
-                //double hamiltonian=0.0;
-                //double KS_V=0.0;
-                //compute_EOM_Newtonian_for_particle(particlesMap,P_p,&hamiltonian,&KS_V,false);
-
-                //double e = p->e;
-                //double e_p2 = P_p->e_p2;
-                //double de_dt = dot3(P_p->e_vec_unit,P_p->de_vec_dt);    
-                //double AM_time_scale = compute_AM_time_scale(P_p);
-
-
             }
         }
     }

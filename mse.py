@@ -93,7 +93,7 @@ class MSE(object):
         self.CVODE_flag = 0
         self.CVODE_error_code = 0
         self.integration_flag = 0
-        
+        self.__stop_after_root_found = False
         self.__random_seed = 0
         
         self.__verbose_flag = 0 ### 0: no verbose output in C++; > 0: verbose output, with increasing verbosity (>1 will slow down the code considerably)
@@ -255,7 +255,8 @@ class MSE(object):
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, \
-            ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double)
+            ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, \
+            ctypes.c_bool)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -413,12 +414,9 @@ class MSE(object):
         orbits = [p for p in self.particles if p.is_binary == True]
         children1_old = [o.child1.index for o in orbits]
         children2_old = [o.child2.index for o in orbits]
-        #children1_old = [o.child1 for o in orbits]
-        #children2_old = [o.child2 for o in orbits]
 
         ### integrate system of ODEs ###
         start_time = self.model_time
-#        time_step = end_time - start_time   
 
         output_time,hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(self.integration_flag)
         evolve_flag = self.lib.evolve_interface(start_time,end_time,ctypes.byref(output_time),ctypes.byref(hamiltonian), \
@@ -557,6 +555,13 @@ class MSE(object):
         particle.minimum_eccentricity_for_tidal_precession = minimum_eccentricity_for_tidal_precession.value
         particle.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = exclude_rotation_and_bulges_precession_in_case_of_isolated_binary.value
 
+        include_pairwise_1PN_terms,include_pairwise_25PN_terms, include_spin_orbit_1PN_terms, exclude_1PN_precession_in_case_of_isolated_binary = ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True)
+        flag += self.lib.get_PN_terms(particle.index,ctypes.byref(include_pairwise_1PN_terms),ctypes.byref(include_pairwise_25PN_terms),ctypes.byref(include_spin_orbit_1PN_terms),ctypes.byref(exclude_1PN_precession_in_case_of_isolated_binary))
+        particle.include_pairwise_1PN_terms = include_pairwise_1PN_terms.value
+        particle.include_pairwise_25PN_terms = include_pairwise_25PN_terms.value
+        particle.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms.value
+        particle.exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary.value
+
         if self.enable_root_finding == True:
             secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
             flag += self.lib.get_root_finding_state(particle.index,ctypes.byref(secular_breakdown_has_occurred),ctypes.byref(dynamical_instability_has_occurred), \
@@ -591,12 +596,6 @@ class MSE(object):
             particle.vy = vy.value
             particle.vz = vz.value
             
-            include_pairwise_1PN_terms,include_pairwise_25PN_terms, include_spin_orbit_1PN_terms, exclude_1PN_precession_in_case_of_isolated_binary = ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True),ctypes.c_bool(True)
-            flag += self.lib.get_PN_terms(particle.index,ctypes.byref(include_pairwise_1PN_terms),ctypes.byref(include_pairwise_25PN_terms),ctypes.byref(include_spin_orbit_1PN_terms),ctypes.byref(exclude_1PN_precession_in_case_of_isolated_binary))
-            particle.include_pairwise_1PN_terms = include_pairwise_1PN_terms.value
-            particle.include_pairwise_25PN_terms = include_pairwise_25PN_terms.value
-            particle.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms.value
-            particle.exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary.value
         else:
             X,Y,Z,VX,VY,VZ = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
             flag = self.lib.get_absolute_position_and_velocity(particle.index,ctypes.byref(X),ctypes.byref(Y),ctypes.byref(Z),ctypes.byref(VX),ctypes.byref(VY),ctypes.byref(VZ))
@@ -731,7 +730,8 @@ class MSE(object):
             self.__chandrasekhar_mass,self.__eddington_accretion_factor,self.__nova_accretion_factor,self.__alpha_wind_accretion,self.__beta_wind_accretion, \
             self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda, \
             self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects, \
-            self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q)
+            self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q, \
+            self.__stop_after_root_found)
 
     def reset(self):
         self.__init__()
@@ -1071,6 +1071,15 @@ class MSE(object):
     def verbose_flag(self, value):
         self.__verbose_flag = value
         self.__set_verbose_flag()
+
+    @property
+    def stop_after_root_found(self):
+        return self.__stop_after_root_found
+    @stop_after_root_found.setter
+    def stop_after_root_found(self, value):
+        self.__stop_after_root_found = value
+        self.__set_parameters_in_code()
+
 
     ### Flybys ###
     @property

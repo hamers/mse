@@ -1,6 +1,5 @@
 """
 A number of test systems
-Adrian Hamers, October 2020
 """
 
 import numpy as np

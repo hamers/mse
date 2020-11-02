@@ -119,11 +119,16 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             printf("evolve.cpp -- evolve -- ODE dt %g t_old - t %g t - t_out %g\n",dt,t_old-t,t-t_out);
         }
         #endif
-       
         
         /* Handle roots */
         if (*CVODE_flag==2)
         {
+            if (stop_after_root_found == true) // Used for root finding implementation testing
+            {
+                *CVODE_flag = 2;
+                break;
+            }
+
             #ifdef VERBOSE
             if (verbose_flag > 0)
             {
@@ -134,6 +139,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             
             flag = investigate_roots_in_system(particlesMap, t, *integration_flag);
             handle_roots(particlesMap, flag, integration_flag, CVODE_flag, t, &dt_stev, &dt_binary_evolution);
+            
         }
        
         /* Time step (phase 1) */

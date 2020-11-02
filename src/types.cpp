@@ -8,6 +8,6 @@ extern "C"
 ParticlesMap particlesMap;
 LogData logData;
 
-extern std::mt19937 random_number_generator(0); //Standard mersenne_twister_engine (default seed 0)
+std::mt19937 random_number_generator(0); //Standard mersenne_twister_engine (default seed 0)
 
 }

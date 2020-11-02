@@ -366,7 +366,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                 #ifdef VERBOSE
                 if (verbose_flag > 2)
                 {
-                    printf("root_finding.cpp -- check_for_roots -- check_for_RLOF_at_pericentre\n");
+                    printf("root_finding.cpp -- check_for_roots -- check_for_RLOF_at_pericentre P_p %d\n",P_p->index);
                 }
                 #endif
                 
@@ -806,7 +806,7 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                     #ifdef VERBOSE
                     if (verbose_flag > 0)
                     {
-                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d collision instability \n",P_p->index);
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d collision \n",P_p->index);
                         print_system(particlesMap,0);
                     }
                     #endif

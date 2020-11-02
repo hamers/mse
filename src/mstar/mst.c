@@ -1126,7 +1126,7 @@ void extrapolate_single_variable(double *y, const int N, double *result,
 }
 
 double get_gbs_scaling( double *y, int N ){
-
+    return 0.0;
 }
 
 int extrapolate_all_variables(int korder ) {

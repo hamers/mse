@@ -1,6 +1,5 @@
 """
-Run a system from the command line
-Adrian Hamers, September 2020
+Run a system with Python directly from the command line.
 """
 
 import numpy as np
@@ -8,7 +7,6 @@ import numpy.random as randomf
 import argparse
 
 from mse import MSE,Particle,Tools
-
 
 try:
     from matplotlib import pyplot

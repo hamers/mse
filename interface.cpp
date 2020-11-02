@@ -674,7 +674,7 @@ int set_PN_terms(int index, bool include_pairwise_1PN_terms, bool include_pairwi
     p->include_pairwise_25PN_terms = include_pairwise_25PN_terms;
     p->include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms;
     p->exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary;
-        
+
     return 0;
 }
 int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pairwise_25PN_terms, bool *include_spin_orbit_1PN_terms, bool *exclude_1PN_precession_in_case_of_isolated_binary)
@@ -690,7 +690,7 @@ int get_PN_terms(int index, bool *include_pairwise_1PN_terms, bool *include_pair
     *include_pairwise_25PN_terms = p->include_pairwise_25PN_terms;
     *include_spin_orbit_1PN_terms = p->include_spin_orbit_1PN_terms;
     *exclude_1PN_precession_in_case_of_isolated_binary = p->exclude_1PN_precession_in_case_of_isolated_binary;
-    
+
     return 0;
 }
 
@@ -999,7 +999,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
     double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
-    double MSTAR_include_PN_acc_10_,double MSTAR_include_PN_acc_20_,double MSTAR_include_PN_acc_25_,double MSTAR_include_PN_acc_30_,double MSTAR_include_PN_acc_35_,double MSTAR_include_PN_acc_SO_,double MSTAR_include_PN_acc_SS_,double MSTAR_include_PN_acc_Q_,double MSTAR_include_PN_spin_SO_,double MSTAR_include_PN_spin_SS_,double MSTAR_include_PN_spin_Q_)
+    bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
+    bool stop_after_root_found_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1072,6 +1073,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     MSTAR_include_PN_spin_SS = MSTAR_include_PN_spin_SS_;
     MSTAR_include_PN_spin_Q = MSTAR_include_PN_spin_Q_;
 
+    stop_after_root_found = stop_after_root_found_;
+    
      //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 

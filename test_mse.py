@@ -11,7 +11,6 @@ Specific tests can be run with the command line --t i, where i is the
 number of the test. Use --verbose for verbose terminal output, and --plot to
 make and show plots if applicable (required Matplotlib).
 
-Adrian Hamers, August 2020
 """
 
 try:
@@ -35,8 +34,9 @@ def parse_arguments():
     
     
     ### boolean arguments ###
-    add_bool_arg(parser, 'verbose',                         default=False,         help="verbose terminal output")
-    add_bool_arg(parser, 'plot',                            default=False,         help="make plots")
+    add_bool_arg(parser, 'verbose',                         default=False,         help="Verbose terminal output")
+    add_bool_arg(parser, 'plot',                            default=False,         help="Make plots")
+    add_bool_arg(parser, 'fancy_plots',                     default=False,         help="Use LaTeX fonts for plots (slow)")
     
     args = parser.parse_args()
 
@@ -304,7 +304,7 @@ class test_mse():
                 AP_print_array.append(binary.AP)
 
                 if args.verbose==True:
-                    print("t",t*1e-6,'a/AU',binary.a,'e',binary.e)
+                    print("t",t*1e-6,'a/au',binary.a,'e',binary.e)
 
         a_print_array = np.array(a_print_array)
         e_print_array = np.array(e_print_array)
@@ -339,7 +339,7 @@ class test_mse():
 
             fontsize = 15
             plot1.set_ylabel("$e$",fontsize=fontsize)
-            plot2.set_ylabel("$a/\mathrm{AU}$",fontsize=fontsize)
+            plot2.set_ylabel("$a/\mathrm{au}$",fontsize=fontsize)
             plot2.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
 
             handles,labels = plot2.get_legend_handles_labels()
@@ -457,7 +457,7 @@ class test_mse():
             binary = binaries[0]
 
             if args.verbose==True:
-                print( 'flag',code.CVODE_flag,'t/yr',t,'a/AU',binary.a,'e',binary.e)
+                print( 'flag',code.CVODE_flag,'t/yr',t,'a/au',binary.a,'e',binary.e)
 
 
             t_print_array.append(t)
@@ -501,7 +501,7 @@ class test_mse():
             N_p = 4
             plot1 = fig.add_subplot(N_p,1,1)
             plot1.plot(t_print_array*1.0e-6,a_print_array, color='r')
-            plot1.set_ylabel("$a/\mathrm{AU}$",fontsize=fontsize)
+            plot1.set_ylabel("$a/\mathrm{au}$",fontsize=fontsize)
 
             plot2 = fig.add_subplot(N_p,1,2)
             plot2.plot(t_print_array*1.0e-6,e_print_array,color='k')
@@ -511,7 +511,7 @@ class test_mse():
 
             plot3.plot(t_print_array*1.0e-6,a_print_array*(1.0-e_print_array**2),color='k')
             plot3.axhline(y = a0*(1.0 - e0**2), color='k')
-            plot3.set_ylabel("$a(1-e^2)/\mathrm{AU}$",fontsize=fontsize)
+            plot3.set_ylabel("$a(1-e^2)/\mathrm{au}$",fontsize=fontsize)
 
             plot4 = fig.add_subplot(N_p,1,4)
             plot4.plot(t_print_array*1.0e-6,spin_print_array/n_print_array)
@@ -553,12 +553,15 @@ class test_mse():
             b.include_mass_transfer_terms = False
             b.check_for_RLOF_at_pericentre = False
             b.include_spin_orbit_1PN_terms = False
-
+            b.spin_vec_x = 0.0
+            b.spin_vec_y = 0.0
+            b.spin_vec_z = 1.0e-15
+            
         for b in binaries:
             b.include_pairwise_1PN_terms = False
             b.include_pairwise_25PN_terms = False
             b.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = False
-                        
+
         k_L = 0.41
         k_AM = k_L/2.0
 
@@ -572,8 +575,8 @@ class test_mse():
         particles[1].include_tidal_bulges_precession_terms = True
         particles[1].include_rotation_precession_terms = False
         particles[1].minimum_eccentricity_for_tidal_precession = 1.0e-5
-        particles[1].tides_apsidal_motion_constant = k_AM
-        particles[1].tides_gyration_radius = 0.25
+        particles[1].apsidal_motion_constant = k_AM
+        particles[1].gyration_radius = 0.25
         
         code.add_particles(particles)
 
@@ -586,7 +589,7 @@ class test_mse():
         
         t = 0.0
         dt = 1.0e6
-        tend = 1.0e7
+        tend = 1.0e8
 
         t_print_array = []
         a_print_array = []
@@ -603,18 +606,18 @@ class test_mse():
             particles = code.particles
             binaries = [x for x in particles if x.is_binary == True]
             bodies = [x for x in particles if x.is_binary == False]
-
+            #print("?",[b.include_spin_orbit_1PN_terms for b in bodies])
             binary = binaries[0]
 
             if args.verbose==True:
-                print( 'flag',code.CVODE_flag,'t',t,'a/AU',binary.a,'e',binary.e,"AP",binary.AP)
+                print( 'flag',code.CVODE_flag,'t',t,'a/au',binary.a,'e',binary.e,"AP",binary.AP)
 
             t_print_array.append(t*1.0e-6)
             a_print_array.append(binary.a)
             e_print_array.append(binary.e)
             AP_print_array.append(binary.AP)
 
-        AP = 0.01 +2.0*np.pi*tend/(t_TB)
+        AP = 0.01 + 2.0*np.pi*tend/(t_TB)
         AP = (AP+np.pi)%(2.0*np.pi) - np.pi ### -pi < AP < pi
         
         if args.verbose == True:
@@ -715,8 +718,8 @@ class test_mse():
         particles[1].include_tidal_bulges_precession_terms = False
         particles[1].include_rotation_precession_terms = True
         particles[1].minimum_eccentricity_for_tidal_precession = 1.0e-5
-        particles[1].tides_apsidal_motion_constant = k_AM
-        particles[1].tides_gyration_radius = rg
+        particles[1].apsidal_motion_constant = k_AM
+        particles[1].gyration_radius = rg
 
         code.add_particles(particles)
 
@@ -747,7 +750,6 @@ class test_mse():
             
             particles = code.particles
             binaries = [x for x in particles if x.is_binary == True]
-
             bodies = [x for x in particles if x.is_binary == False]
             binary = binaries[0]
             
@@ -768,7 +770,7 @@ class test_mse():
         if args.verbose == True:
             print("Predicted AP",AP,"AP_print_array[-1]",AP_print_array[-1])        
 
-        N_r = 0
+        N_r = 3
         assert round(AP,N_r) == round(AP_print_array[-1],N_r)
         print("Test passed")
 
@@ -806,21 +808,32 @@ class test_mse():
             pyplot.show()
 
     def test7(self,args):
-        print("Test collision detection in 3-body system")
+        print("Test ODE collision detection in 3-body system")
 
         code = MSE()
-        
-        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+
+        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01], metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[2,2,2])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
-        binaries[0].check_for_physical_collision_or_orbit_crossing = True
-        R = 0.03 ### AU
-        for body in bodies:
-            body.radius = R
+        R = 0.03 ### radius of individual objects; collision distance is 2*R
+
+        for b in bodies:
+            b.include_mass_transfer_terms = False
+            b.check_for_RLOF_at_pericentre = False
+            b.include_spin_orbit_1PN_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+            b.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = False
+        
 
         code.add_particles(particles)
-
+        code.stop_after_root_found = True
+        code.enable_tides = False
+        code.verbose_flag = 0
+        
         t = 0.0
         dt = 1.0e4
         tend = 1.0e6
@@ -835,9 +848,24 @@ class test_mse():
             code.evolve_model(t)
             flag = code.CVODE_flag
 
+            particles = code.particles
+            binaries = [x for x in particles if x.is_binary == True]
+            bodies = [x for x in particles if x.is_binary == False]
+
+            for b in bodies:
+                b.include_mass_transfer_terms = False
+                b.check_for_RLOF_at_pericentre = False
+                b.include_spin_orbit_1PN_terms = False
+                
+            binaries[0].check_for_minimum_periapse_distance = False
+            binaries[0].check_for_physical_collision_or_orbit_crossing = True
+
+            for body in bodies:
+                body.radius = R ### Force stellar radii to custom value
+
             if args.verbose==True:
                 print("="*50)
-                print("t/Myr",t*1e-6,"rp/AU",binaries[0].a*(1.0 - binaries[0].e) )
+                print("t/Myr",t*1e-6,"a",binaries[0].a,"e",binaries[0].e,"rp/au",binaries[0].a*(1.0 - binaries[0].e) )
                 print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
                 print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
                 print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
@@ -854,7 +882,10 @@ class test_mse():
                     print( 'root found at t=',t_root)
                 break
         
-        N_r = 5
+        if args.verbose == True:
+            print("num rp ",a_print_array[-1]*(1.0 - e_print_array[-1])," 2*R ",2*R)
+
+        N_r = 10            
         assert round(a_print_array[-1]*(1.0 - e_print_array[-1]),N_r) == round(2.0*R,N_r)
         print("Test passed")
 
@@ -868,26 +899,39 @@ class test_mse():
             plot = fig.add_subplot(1,1,1)
             plot.plot(t_print_array,a_print_array*(1.0-e_print_array))
             plot.axhline(y = bodies[0].radius + bodies[1].radius,color='k')
-            plot.set_ylabel("$r_\mathrm{p}/\mathrm{AU}$")
+            plot.set_ylabel("$r_\mathrm{p}/\mathrm{au}$")
             plot.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
 
     def test8(self,args):
-        print("Test minimum periapse occurrence")
+        print("Test ODE minimum periapsis distance root finding")
 
         code = MSE()
-        
-        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+
+        particles = Tools.create_fully_nested_multiple(3,[1.0, 1.2, 0.9], [1.0, 100.0], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01], metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[2,2,2])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
-        binaries[0].check_for_minimum_periapse_distance = True
         rp_min = 0.1
-        binaries[0].check_for_minimum_periapse_distance_value = rp_min
-        
-        code.add_particles(particles)
+        R = 1.0e-10
 
+        for b in bodies:
+            b.include_mass_transfer_terms = False
+            b.check_for_RLOF_at_pericentre = False
+            b.include_spin_orbit_1PN_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+            b.exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = False
+        
+
+        code.add_particles(particles)
+        code.stop_after_root_found = True
+        code.enable_tides = False
+        code.verbose_flag = 0
+        
         t = 0.0
         dt = 1.0e4
         tend = 1.0e6
@@ -900,11 +944,27 @@ class test_mse():
         while (t<tend):
             t+=dt
             code.evolve_model(t)
-            flag = code.flag
+            flag = code.CVODE_flag
+
+            particles = code.particles
+            binaries = [x for x in particles if x.is_binary == True]
+            bodies = [x for x in particles if x.is_binary == False]
+
+            for b in bodies:
+                b.include_mass_transfer_terms = False
+                b.check_for_RLOF_at_pericentre = False
+                b.include_spin_orbit_1PN_terms = False
+                
+            binaries[0].check_for_minimum_periapse_distance = True
+            binaries[0].check_for_minimum_periapse_distance_value = rp_min
+            binaries[0].check_for_physical_collision_or_orbit_crossing = False
+
+            for body in bodies:
+                body.radius = R ### Force stellar radii to custom value
 
             if args.verbose==True:
                 print("="*50)
-                print("t/Myr",t*1e-6,"rp/AU",binaries[0].a*(1.0 - binaries[0].e) )
+                print("t/Myr",t*1e-6,"a",binaries[0].a,"e",binaries[0].e,"rp/au",binaries[0].a*(1.0 - binaries[0].e) )
                 print( 'secular_breakdown_has_occurred',binaries[0].secular_breakdown_has_occurred)
                 print( 'dynamical_instability_has_occurred',binaries[0].dynamical_instability_has_occurred)
                 print( 'physical_collision_or_orbit_crossing_has_occurred',binaries[0].physical_collision_or_orbit_crossing_has_occurred)
@@ -921,7 +981,10 @@ class test_mse():
                     print( 'root found at t=',t_root)
                 break
         
-        N_r = 5
+        if args.verbose == True:
+            print("num rp ",a_print_array[-1]*(1.0 - e_print_array[-1]),"rp_min",rp_min)
+
+        N_r = 10            
         assert round(a_print_array[-1]*(1.0 - e_print_array[-1]),N_r) == round(rp_min,N_r)
         print("Test passed")
 
@@ -935,7 +998,7 @@ class test_mse():
             plot = fig.add_subplot(1,1,1)
             plot.plot(t_print_array,a_print_array*(1.0-e_print_array))
             plot.axhline(y = rp_min,color='k')
-            plot.set_ylabel("$r_\mathrm{p}/\mathrm{AU}$")
+            plot.set_ylabel("$r_\mathrm{p}/\mathrm{au}$")
             plot.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
@@ -945,31 +1008,34 @@ class test_mse():
 
         code = MSE()
         
-        m1i = 1.0
-        m2i = 1.2
-        m3i = 0.9
-        a1i = 1.0
-        a2i = 100.0
-        particles = Tools.create_fully_nested_multiple(3,[m1i,m2i,m3i], [a1i,a2i], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01])
+        m1i = 15.0
+        m2i = 10.0
+        m3i = 1.0
+        a_in_i = 1.0
+        a_out_i = 1000.0
+        particles = Tools.create_fully_nested_multiple(3,[m1i,m2i,m3i], [a_in_i,a_out_i], [0.1, 0.5], [0.01, 80.0*np.pi/180.0], [0.01, 0.01], [0.01, 0.01],metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[1,1,1])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
 
-        m1dot = -1.0e-7
-        m2dot = -1.0e-8
-        m3dot = -1.0e-9
-        mdots = [m1dot,m2dot,m3dot]
-        for index,body in enumerate(bodies):
-            body.mass_dot = mdots[index]
+        #m1dot = -1.0e-7
+        #m2dot = -1.0e-8
+        #m3dot = -1.0e-9
+        #mdots = [m1dot,m2dot,m3dot]
+        #for index,body in enumerate(bodies):
+        #    body.mass_dot = mdots[index]
 
         code.add_particles(particles)
+        code.enable_tides = False
 
         t = 0.0
         dt = 1.0e4
         tend = 1.0e6
 
         t_print_array = []
-        a1_print_array = []
-        a2_print_array = []
+        m_in_print_array = []
+        m_out_print_array = []
+        a_in_print_array = []
+        a_out_print_array = []
         e_print_array = []
 
         while (t<tend):
@@ -977,201 +1043,61 @@ class test_mse():
             code.evolve_model(t)
             flag = code.CVODE_flag
 
+            particles = code.particles
+            binaries = [x for x in particles if x.is_binary == True]
+            bodies = [x for x in particles if x.is_binary == False]
+
+            for b in bodies:
+                b.include_mass_transfer_terms = False
+                b.check_for_RLOF_at_pericentre = False
+                b.include_spin_orbit_1PN_terms = False
+
             if args.verbose==True:
-                print( 't/Myr',t*1e-6,'m1',bodies[0].mass,'m2',bodies[1].mass,'m3',bodies[2].mass,'a/AU',binaries[0].a)
+                print( 't/Myr',t*1e-6,'m1',bodies[0].mass,'m2',bodies[1].mass,'m3',bodies[2].mass,'a/au',[b.a for b in binaries])
 
             t_print_array.append(t*1.0e-6)
-            a1_print_array.append(binaries[0].a)
-            a2_print_array.append(binaries[1].a)
+            m_in_print_array.append(bodies[0].mass + bodies[1].mass)
+            m_out_print_array.append(bodies[0].mass + bodies[1].mass + bodies[2].mass)
+            a_in_print_array.append(binaries[0].a)
+            a_out_print_array.append(binaries[1].a)
             e_print_array.append(binaries[0].e)
 
-        m1 = m1i + m1dot*tend
-        m2 = m2i + m2dot*tend
-        m3 = m3i + m3dot*tend
-            
-        a1 = a1i*(m1i+m2i)/(m1+m2)
-        a2 = a2i*(m1i+m2i+m3i)/(m1+m2+m3)
+        m_in_print_array = np.array(m_in_print_array)
+        m_out_print_array = np.array(m_out_print_array)
+        a_in_print_array = np.array(a_in_print_array)
+        a_out_print_array = np.array(a_out_print_array)
 
+        inner_adiabat = m_in_print_array*a_in_print_array
+        outer_adiabat = m_out_print_array*a_out_print_array
+
+        if args.verbose == True:
+            print("a_in_i*(m1i+m2i)",a_in_i*(m1i+m2i),"num ",inner_adiabat[1])
+            print("a_out_i*(m1i+m2i+m3i)",a_out_i*(m1i+m2i+m3i),"num ",outer_adiabat[1])
+            
         N_r = 4
-        assert round(a1,N_r) == round(a1_print_array[-1],N_r)
-        assert round(a2,N_r) == round(a2_print_array[-1],N_r)
+        assert round(a_in_i*(m1i+m2i),N_r) == round(inner_adiabat[-1],N_r)
+        assert round(a_out_i*(m1i+m2i+m3i),N_r) == round(outer_adiabat[-1],N_r)
         print("Test passed")
 
         code.reset()
         
         if HAS_MATPLOTLIB == True and args.plot==True:
-            a1_print_array = np.array(a1_print_array)
-            a2_print_array = np.array(a2_print_array)
-            e_print_array = np.array(e_print_array)
-
-            t = pow(10.0,np.linspace(4.0,6.0,100))
-            m1 = m1i + m1dot*t
-            m2 = m2i + m2dot*t
-            m3 = m3i + m3dot*t
-            
-            a1 = a1i*(m1i+m2i)/(m1+m2)
-            a2 = a2i*(m1i+m2i+m3i)/(m1+m2+m3)
-
             fig = pyplot.figure(figsize=(10,8))
             plot1 = fig.add_subplot(2,1,1,yscale="log")
             plot2 = fig.add_subplot(2,1,2,yscale="log")
-            plot1.plot(t_print_array,a1_print_array,color='k',linestyle='solid',label='$a_1$',zorder=10)
-            plot2.plot(t_print_array,a2_print_array,color='k',linestyle='solid',label='$a_2$',zorder=10)
+            plot1.plot(t_print_array,inner_adiabat,color='k',linestyle='solid',label='$a_1$',zorder=10)
+            plot2.plot(t_print_array,outer_adiabat,color='k',linestyle='solid',label='$a_2$',zorder=10)
             
-            plot1.plot(t*1.0e-6,a1,color='g',linestyle='dashed',linewidth=3,label='$a_1\,(\mathrm{an})$')
-            plot2.plot(t*1.0e-6,a2,color='g',linestyle='dashed',linewidth=3,label='$a_2\,(\mathrm{an})$')
-
             handles,labels = plot1.get_legend_handles_labels()
             plot1.legend(handles,labels,loc="lower left",fontsize=18)
 
-            plot1.set_ylabel("$a_1$")
-            plot2.set_ylabel("$a_2$")
+            plot1.set_ylabel(r"$a_1(m_1+m_2)/(\mathrm{au\,M_\odot})$")
+            plot2.set_ylabel(r"$a_2(m_1+m_2+m_3)/(\mathrm{au\,M_\odot})$")
             plot2.set_xlabel("$t/\mathrm{Myr}$")
 
             pyplot.show()
 
     def test10(self,args):
-        print("Test hybrid integration")
-
-        m1=1.0
-        m2=1.0e-6
-        m3=1.0
-        e1=0
-        e2=0.4
-        a1=1.0
-        a2=10.0
-
-        i1=0.01
-        i2=65.0*np.pi/180.0
-        AP1=0
-        AP2=0
-        LAN1=0
-        LAN2=0
-
-        particles = Tools.create_fully_nested_multiple(3, [m1,m2,m3],[a1,a2],[e1,e2],[i1,i2],[AP1,AP2],[LAN1,LAN2])
-        
-        bodies = [x for x in particles if x.is_binary==False]
-        binaries = [x for x in particles if x.is_binary==True]
-        N_binaries = len(binaries)
-        
-
-        for b in bodies:
-            b.evolve_as_star = False
-            b.include_mass_transfer_terms = False
-
-        for b in binaries:
-            b.include_pairwise_1PN_terms = False
-            b.include_pairwise_25PN_terms = False
-
-        code = MSE()
-
-
-        code.include_flybys = False
-        code.enable_tides = False
-        code.enable_root_finding = False
-        code.absolute_tolerance_eccentricity_vectors = 1.0e-14 ### need to set lower than default to get more accurate result and compare to analytic expression
-        
-        integration_methods = [0,2]
-        KS_use_V = [True,True]
-        terms = [False,True,True,True,True,True]
-        
-        binaries[0].integration_method = integration_methods[0]
-        binaries[1].integration_method = integration_methods[1]
-
-        binaries[0].KS_use_perturbing_potential = KS_use_V[0]
-        binaries[1].KS_use_perturbing_potential = KS_use_V[1]
-
-        CONST_G = code.CONST_G
-        P1=2.0*np.pi*np.sqrt(a1**3/(CONST_G*(m1+m2)))
-        P2=2.0*np.pi*np.sqrt(a2**3/(CONST_G*(m1+m2+m3)))
-        P_LK12 = (P2**2/P1)*((m1+m2+m3)/m3)*pow(1.0-e2**2,3.0/2.0)
-        if args.verbose==True:
-            print("P_orbs/yr",P1,P2)
-            print("P_LK/yr",P_LK12)
-
-
-        code.add_particles(particles)        
-        code.include_double_averaging_corrections = terms[0]
-        code.include_quadrupole_order_terms = terms[1]
-        code.include_octupole_order_binary_pair_terms = terms[2]
-        code.include_octupole_order_binary_triplet_terms = terms[3]
-        code.include_hexadecupole_order_binary_pair_terms = terms[4]
-        code.include_dotriacontupole_order_binary_pair_terms = terms[5]
-        
-        a_print = [[] for x in range(N_binaries)]
-        e_print = [[] for x in range(N_binaries)]
-        t_print = []
-        rel_INCL_print = []
-        
-
-        #code.enable_root_finding = True
-        binaries[0].check_for_physical_collision_or_orbit_crossing=True
-        bodies[0].radius=1.0e-5
-        bodies[1].radius=1.0e-5
-        
-        import time
-        
-        t = 0.0
-        N = 1000
-        tend = 1.e3
-        dt = tend/float(N)
-                
-        start = time.time()
-        while t<tend:
-            t+=dt
-            code.evolve_model(t)
-            
-            if args.verbose==True:
-                print( 't/Myr',t*1e-6,'es',[x.e for x in binaries],'smas',[x.a for x in binaries])
-
-            rel_INCL_print.append(binaries[0].INCL_parent)                        
-            for i in range(N_binaries):
-                a_print[i].append(binaries[i].a)
-                e_print[i].append(binaries[i].e)
-            t_print.append(t)
-            
-            flag=code.CVODE_flag
-            if flag==2:
-                print("RF")
-                break
-        wall_time = time.time()-start
-
-        t_print = np.array(t_print)
-        rel_INCL_print = np.array(rel_INCL_print)
-        for i in range(N_binaries):
-            a_print[i] = np.array(a_print[i])
-            e_print[i] = np.array(e_print[i])
-
-        N_r = 4
-        print(round(e_print[0][-1],N_r))
-        #assert round(e_print[0][-1],N_r) == 0.5274
-       # print("Test passed")
-
-        code.reset()
-        
-        if HAS_MATPLOTLIB==True and args.plot==True:
-            if 1==0:
-                pyplot.rc('text',usetex=True)
-                pyplot.rc('legend',fancybox=True)
-
-            
-            fig=pyplot.figure(figsize=(10,8))
-            plot1=fig.add_subplot(2,1,1)
-            plot2=fig.add_subplot(2,1,2,yscale="log")
-
-            plot1.plot(1.0e-6*t_print,rel_INCL_print*180.0/np.pi)
-            plot2.plot(1.0e-6*t_print,1-e_print[0])
-
-            fontsize=18
-
-            plot1.set_ylabel("$i_\mathrm{rel}\,(\mathrm{deg})$",fontsize=fontsize)
-            plot2.set_ylabel("$1-e$",fontsize=fontsize)
-
-            plot2.set_xlabel("$t/\mathrm{Myr}$")
-            
-            pyplot.show()
-
-    def test11(self,args):
         print("Test flybys module: instantaneous change -- SNe in binary")
 
         code = MSE()
@@ -1188,7 +1114,7 @@ class test_mse():
         LAN1 = 0.3
         f1 = 60.5*np.pi/180.0
 
-        particles = Tools.create_fully_nested_multiple(2, [m1,m2], [a1], [e1], [INCL1], [AP1], [LAN1] )
+        particles = Tools.create_fully_nested_multiple(2, [m1,m2], [a1], [e1], [INCL1], [AP1], [LAN1], metallicities=[0.02,0.02],stellar_types=[1,1],object_types=[1,1])
 
         binary = particles[2]
         binary.sample_orbital_phase_randomly = False
@@ -1208,14 +1134,14 @@ class test_mse():
         if args.verbose==True:
             print( '='*50)
             print( 'pre')
-            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass,'TA',binary.TA)
+            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,'TA',binary.TA)
 
         code.apply_user_specified_instantaneous_perturbation()
         
         if args.verbose==True:
             print( '='*50)
             print( 'post')
-            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,binary.mass,'TA',binary.TA)
+            print( 'a',binary.a,'e',binary.e,'INCL',binary.INCL*180.0/np.pi,'AP',binary.AP*180.0/np.pi,'LAN',binary.LAN*180.0/np.pi,'TA',binary.TA)
 
         ### Compute analytic result (e.g., https://ui.adsabs.harvard.edu/abs/2016ComAC...3....6T/abstract) ###
         r1 = a1*(1.0-e1**2)/(1.0 + e1*np.cos(f1))
@@ -1247,7 +1173,7 @@ class test_mse():
 
         code.reset()
         
-    def test12(self,args):
+    def test11(self,args):
         print("Test flybys module: instantaneous change -- SNe in triple")
 
         code = MSE()
@@ -1274,7 +1200,7 @@ class test_mse():
         APs = [AP1,AP2]
         LANs = [LAN1,LAN2]
         masses = [m1,m2,m3]
-        particles = Tools.create_fully_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs)
+        particles = Tools.create_fully_nested_multiple(3,masses, [a1,a2], [e1,e2], INCLs, APs, LANs, metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[1,1,1])
         
         inner_binary = particles[3]
         outer_binary = particles[4]
@@ -1299,16 +1225,16 @@ class test_mse():
         if args.verbose==True:
             print( '='*50)
             print( 'pre')
-            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
-            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
+            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi)
+            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi)
         
         code.apply_user_specified_instantaneous_perturbation()
         
         if args.verbose==True:
             print( '='*50)
             print( 'post')
-            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi,'m',inner_binary.mass)
-            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi,'m',outer_binary.mass)
+            print( 'inner','a',inner_binary.a,'e',inner_binary.e,'INCL',inner_binary.INCL*180.0/np.pi,'AP',inner_binary.AP*180.0/np.pi,'LAN',inner_binary.LAN*180.0/np.pi)
+            print( 'outer','a',outer_binary.a,'e',outer_binary.e,'INCL',outer_binary.INCL*180.0/np.pi,'AP',outer_binary.AP*180.0/np.pi,'LAN',outer_binary.LAN*180.0/np.pi)
 
         
         ### Compute analytic result (e.g., https://ui.adsabs.harvard.edu/abs/2016ComAC...3....6T/abstract) ###
@@ -1370,127 +1296,7 @@ class test_mse():
 
         code.reset()
         
-    def test13(self,args):
-        print("Test flybys module: numerically integrating over perturber's orbit")
-
-        code = MSE()
-        CONST_G = code.CONST_G
-        
-        ### binary orbit ###
-        a = 1.0
-        e = 0.1
-        m1 = 1.0
-        m2 = 0.8
-        M_per = 1.0
-        E = 2.0
-        Q = 100.0
-        INCL = 0.4*np.pi
-        AP = 0.25*np.pi
-        LAN = 0.25*np.pi
-
-        masses = [m1,m2]
-        m = m1 + m2
-        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
-        bodies = [x for x in particles if x.is_binary==False]
-        binaries = [x for x in particles if x.is_binary==True]
-
-        t_per = np.sqrt(CONST_G*(m+M_per)/(Q**3))
-
-        t = 0.0
-        t_ref = 1.0e4
-        tend = 4.0*t_ref
-        Nsteps = 1000
-        dt = tend/float(Nsteps)
-
-        for b in bodies:
-            b.evolve_as_star = False
-            b.include_mass_transfer_terms = False
-
-        for b in binaries:
-            b.include_pairwise_1PN_terms = False
-            b.include_pairwise_25PN_terms = False
-        
-        external_particle = Particle(mass = M_per, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
-
-        particles.append(external_particle)
-
-        code = MSE()
-        code.add_particles(particles)
-        binary = code.particles[2]
-        
-        code.include_quadrupole_order_terms = True
-        code.include_octupole_order_binary_pair_terms = True
-        code.include_hexadecupole_order_binary_pair_terms = False
-        code.include_dotriacontupole_order_binary_pair_terms = False
-
-        code.include_flybys = False
-        code.enable_tides = False
-        code.enable_root_finding = False
-
-        t_print_array = []
-        a_print_array = []
-        e_print_array = []
-        INCL_print_array = []
-        AP_print_array = []
-        LAN_print_array = []
-        
-        while (t<tend):
-            t+=dt
-            code.evolve_model(t)
-             
-            t_print_array.append(t)
-            a_print_array.append(binary.a)
-            e_print_array.append(binary.e)
-            
-            if args.verbose==True:
-                print("t/yr",t,"a",binary.a,"e",binary.e)
-            
-        Delta_e = binary.e - e
-            
-        ### compute analytic result (https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.5630H/abstract) ###
-        e_vec_hat,j_vec_hat = compute_e_and_j_hat_vectors(INCL,AP,LAN)
-        e_vec = e_vec_hat*e
-        j_vec = j_vec_hat*np.sqrt(1.0-e**2)
-
-        ex = e_vec[0]
-        ey = e_vec[1]
-        ez = e_vec[2]
-        jx = j_vec[0]
-        jy = j_vec[1]
-        jz = j_vec[2]
-
-        eps_SA = (M_per/np.sqrt(m*(m+M_per)))*pow(a/Q,3.0/2.0)*pow(1.0 + E,-3.0/2.0)
-        eps_oct = (a/Q)*(m1-m2)/((1.0+E)*m)
-        Delta_e_an = (5*eps_SA*(np.sqrt(1 - E**(-2))*((1 + 2*E**2)*ey*ez*jx + (1 - 4*E**2)*ex*ez*jy + 2*(-1 + E**2)*ex*ey*jz) + 3*E*ez*(ey*jx - ex*jy)*np.arccos(-1.0/E)))/(2.*E*np.sqrt(ex**2 + ey**2 + ez**2))
-        
-        Delta_e_an += -(5*eps_oct*eps_SA*(np.sqrt(1 - E**(-2))*(ez*jy*(14*ey**2 + 6*jx**2 - 2*jy**2 + 8*E**4*(-1 + ey**2 + 8*ez**2 + 2*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 - 7*jx**2 + 9*jy**2)) - ey*(2*(7*ey**2 + jx**2 - jy**2) + 8*E**4*(-1 + ey**2 + 8*ez**2 + 4*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 + 11*jx**2 + 9*jy**2))*jz + ex**2*(-((14 + 45*E**2 + 160*E**4)*ez*jy) + 3*(14 - 27*E**2 + 16*E**4)*ey*jz) + 2*(-2 + 9*E**2 + 8*E**4)*ex*jx*(7*ey*ez + jy*jz)) + 3*E**3*(ez*jy*(-4 - 3*ey**2 + 32*ez**2 + 5*jx**2 + 5*jy**2) + ey*(4 + 3*ey**2 - 32*ez**2 - 15*jx**2 - 5*jy**2)*jz + ex**2*(-73*ez*jy + 3*ey*jz) + 10*ex*jx*(7*ey*ez + jy*jz))*np.arccos(-1.0/E)))/(32.*E**2*np.sqrt(ex**2 + ey**2 + ez**2))
-
-        if args.verbose==True:
-            print( 'Numerically integrated: Delta e = ',Delta_e,'; analytic expression: Delta e = ',Delta_e_an)
-
-        N_r = 3
-        assert round(Delta_e,N_r) == round(Delta_e_an,N_r)
-
-        print("Test passed")
-        
-        code.reset()
-        
-        if HAS_MATPLOTLIB == True and args.plot==True:
-            fig = pyplot.figure(figsize=(8,6))
-            plot1 = fig.add_subplot(1,1,1)
-            
-            t_print_array = np.array(t_print_array)
-            e_print_array = np.array(e_print_array)
-            
-            plot1.plot(t_print_array*1.0e-6,e_print_array, color='k')
-            
-            fontsize = 15
-            plot1.set_ylabel("$e$",fontsize=fontsize)
-            plot1.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
-            
-            pyplot.show()
-    
-    def test14(self,args):
+    def test12(self,args):
         print("Test flybys module: using analytic formulae")
 
         code = MSE()
@@ -1510,7 +1316,7 @@ class test_mse():
         
         masses = [m1,m2]
         m = m1 + m2
-        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN])
+        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN], metallicities=[0.02,0.02],stellar_types=[1,1],object_types=[1,1])
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
         binary = particles[2]
@@ -1526,7 +1332,6 @@ class test_mse():
         t_ref = 1.0e5 ### not actually used in this case, but needs to be specified for external particles
 
         external_particle = Particle(mass = M_per, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
-        #external_particle.evolve_as_star = False
         
         particles.append(external_particle)
 
@@ -1572,19 +1377,7 @@ class test_mse():
 
         code.reset()
 
-    def test100(self,args):
-        print('Unit tests')
-        
-        code = MSE()
-
-        flag = code.unit_tests(args.mode)
-        
-        assert(flag == 0)
-        
-        print("Tests passed")
-        
-
-    def test101(self,args):
+    def test13(self,args):
         print('Test compact object merger remnant properties')
         
         code = MSE()
@@ -1658,7 +1451,7 @@ class test_mse():
 
             pyplot.show()
         
-    def test102(self,args):
+    def test14(self,args):
         print('Test sample elementary distributions')
         
         code = MSE()
@@ -1670,9 +1463,7 @@ class test_mse():
         N2 = 20000
 
         seed = 0
-        #code.random_seed = seed
         np.random.seed(seed)
-
        
         vs = []
         vs2 = []
@@ -1756,7 +1547,7 @@ class test_mse():
             pyplot.show()
 
 
-    def test103(self,args):
+    def test15(self,args):
         print('Test sample Kroupa 93 IMF')
         
         code = MSE()
@@ -1765,10 +1556,8 @@ class test_mse():
         CONST_C = code.CONST_C
         
         N = 100000
-        
 
         seed = 0
-        #code.random_seed = seed
         np.random.seed(seed)
 
         ms = []
@@ -1797,7 +1586,7 @@ class test_mse():
 
             pyplot.show()
 
-    def test104(self,args):
+    def test16(self,args):
         print('Test kick velocity recipes')
         
         code = MSE()
@@ -1806,12 +1595,11 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         CONST_KM_PER_S = code.CONST_KM_PER_S
-        N = 500
+        N = 100
         if args.mode == 1:
             N = 5000
         
         seed = 0
-        #code.random_seed = seed
         np.random.seed(seed)
 
         kick_distributions = [1,2,3,4,5]
@@ -1825,10 +1613,8 @@ class test_mse():
         m2 = 100.0
         for index_kick,kick_distribution in enumerate(kick_distributions):
             for index in range(N):
-                #m = code.test_sample_from_kroupa_93_imf()
                 x = np.random.random()
                 m = pow( x*(pow(m2,1.0-alpha) - pow(m1,1.0-alpha)) + pow(m1,1.0-alpha), 1.0/(1.0-alpha) )
-                #print("m",m)
                 kw,v = code.test_kick_velocity(kick_distribution,m)
                 
                 if args.verbose == True:
@@ -1844,64 +1630,47 @@ class test_mse():
             vs_NS[index_kick] = np.array(vs_NS[index_kick])
             vs_BH[index_kick] = np.array(vs_BH[index_kick])
 
-
-        #assert(round(np.mean(ms),2) == 0.50)
-        
-#        if args.verbose==True:
-#            print("mean ms/MSun",np.mean(ms))
-        
+       
         if args.plot == True:
             Nb=50
             fontsize=16
             labelsize=12
             from matplotlib import pyplot
 
-            pyplot.rc('text',usetex=True)
-            pyplot.rc('legend',fancybox=True)
+            if args.fancy_plots == True:
+                pyplot.rc('text',usetex=True)
+                pyplot.rc('legend',fancybox=True)
 
             fig=pyplot.figure(figsize=(16,10))
             
             colors = ['k','tab:red','tab:blue','tab:green','tab:cyan']
-            #bins = np.linspace(0.0,3.0,Nb)
+
             bins = np.linspace(0.0,1500.0,Nb)
             for index_kick in range(N_k):
                 plot=fig.add_subplot(2,3,index_kick+1,yscale="log")
-                color = 'k'#colors[index_kick]
-#                plot.hist(np.log10(vs[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='solid',label='$\mathrm{All}$')
-#                plot.hist(np.log10(vs_BH[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='dotted',label='$\mathrm{BH}$')
-#                plot.hist(np.log10(vs_NS[index_kick]),bins=bins,histtype='step',density=True,color=color,linestyle='dashed',label='$\mathrm{NS}$')
+                color = 'k'
 
                 plot.hist(vs[index_kick],bins=bins,histtype='step',density=True,color='k',linestyle='solid',label='$\mathrm{All}$')
                 plot.hist(vs_BH[index_kick],bins=bins,histtype='step',density=True,color='tab:red',linestyle='dotted',label='$\mathrm{BH}$')
                 plot.hist(vs_NS[index_kick],bins=bins,histtype='step',density=True,color='tab:blue',linestyle='dashed',label='$\mathrm{NS}$')
             
                 plot.annotate("$\mathrm{Kick\,distribution\,%s}$"%(index_kick+1),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
-                #if index_kick==N_k-1:
                 
                 plot.set_xlabel("$V_\mathrm{kick}/(\mathrm{km\,s^{-1}})$",fontsize=fontsize)
                 plot.set_ylabel("$\mathrm{PDF}$",fontsize=fontsize)
-                #else:
-                #    plot.set_xticklabels([])
-
-                
-                    
                     
                 if 1==1:
                     points=np.linspace(10.0,1500.0,1000)
                     sigma_km_s = 265.0
                     PDF_an = np.sqrt(2.0/np.pi) * (points**2/(sigma_km_s**3)) * np.exp( -points**2/(2.0*sigma_km_s**2) )
-                    #plot.plot(points,PDF_an, color='tab:green',label='$\mathrm{MW}\,\sigma=265\,\mathrm{km/s}$')
                     plot.plot(points,PDF_an, color='tab:green',label='$\mathrm{Hobbs+05}$')
                 handles,labels = plot.get_legend_handles_labels()
                 plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
-                #if index_kick==N_k-1:
-                #    handles,labels = plot.get_legend_handles_labels()
-                #    plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
                 
                 plot.set_ylim(1.0e-5,1.0e-1)
                 
             plot=fig.add_subplot(2,3,6,yscale="log")
-            #handles,labels = plot.get_legend_handles_labels()
+
             plot.legend(handles,labels,loc="upper left",fontsize=0.85*fontsize)
             plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
             plot.axis('off')
@@ -1911,13 +1680,10 @@ class test_mse():
             plot.set_xticklabels([])
             plot.set_yticklabels([])
             
-            #points=np.linspace(-1.0,2.0,Nb)
-            #PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]
-            #plot.plot(points,PDF_an, color='tab:green')
             fig.savefig("kick_distributions.pdf")
             pyplot.show()
 
-    def test105(self,args):
+    def test17(self,args):
         print('Test flybys sampling')
         
         code = MSE()
@@ -1928,7 +1694,6 @@ class test_mse():
         N = 20000
         
         seed = 0
-        #code.random_seed = seed
         np.random.seed(seed)
 
         R_enc = 1.0e4
@@ -1973,9 +1738,6 @@ class test_mse():
             labelsize=12
             from matplotlib import pyplot
 
-#            pyplot.rc('text',usetex=True)
-#            pyplot.rc('legend',fancybox=True)
-
             fig=pyplot.figure(figsize=(8,10))
             
             plot1=fig.add_subplot(2,1,1,yscale="log")
@@ -2003,6 +1765,17 @@ class test_mse():
 
             pyplot.show()
 
+    def test100(self,args):
+        print('Unit tests')
+        
+        code = MSE()
+
+        flag = code.unit_tests(args.mode)
+        
+        assert(flag == 0)
+        
+        print("Tests passed")
+        
 
 def kroupa_93_imf(m):
 
@@ -2060,10 +1833,9 @@ def compute_e_and_j_hat_vectors(INCL,AP,LAN):
 if __name__ == '__main__':
     args = parse_arguments()
     
-    N_tests = 14
+    N_tests = 17
     if args.test==0:
-        #tests = range(1,N_tests+1)
-        tests = [1,2,3,4,100,101,102,103,105]
+        tests = list(range(1,N_tests+1)) + [100]
     else:
         tests = [args.test]
 
@@ -2075,4 +1847,3 @@ if __name__ == '__main__':
     
     print("="*50)
     print("All tests passed!")
-

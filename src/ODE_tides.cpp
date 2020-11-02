@@ -492,7 +492,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     {
         for (int i=0; i<3; i++)
         {
-            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full i %d spin %.15f dh %.15g dspin %.15g a %.15g e %.15\n",i,spin_vec[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full star %d comp %d i %d spin %.15f de/dt %.15g dh/dt %.15g dspin/dt %.15g a %.15g e %.15g\n",star->index,companion->index,i,spin_vec[i],binary->de_vec_dt[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
         }
     }
     #endif
@@ -629,11 +629,11 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > -1)
     {
         for (int i=0; i<3; i++)
         {
-            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide (Eggleton & Kisseleva 1998) i %d spin %.15f dh %.15g dspin %.15g a %.15g e %.15\n",i,spin_vec[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide (Eggleton & Kisseleva 1998) star %d comp %d i %d spin %.15f de/dt %.15g dh/dt %.15g dspin/dt %.15g a %.15g e %.15g\n",star->index,companion->index,i,spin_vec[i],binary->de_vec_dt[i],binary->dh_vec_dt[i],star->dspin_vec_dt[i],a,e);
         }
     }
     #endif

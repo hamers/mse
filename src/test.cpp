@@ -1125,7 +1125,7 @@ int test_spin_conversion()
 {
     printf("test.cpp -- test_spin_conversion\n");
     int flag = 0;
-    
+
     double stellar_types[2] = {1,10};
     double Omega = 1.0;
     double mass = 1.0;
@@ -1139,7 +1139,7 @@ int test_spin_conversion()
     double S;
     double Omega2;
     double tol = 1.0e-14;
-    for (int i=0; i<3; i++)
+    for (int i=0; i<2; i++)
     {
         stellar_type = stellar_types[i];
     
@@ -1152,7 +1152,7 @@ int test_spin_conversion()
             flag = 1;
         }
     }
-    
+
     return flag;
 }
 

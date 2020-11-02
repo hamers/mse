@@ -159,7 +159,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double chandrasekhar_mass_, double eddington_accretion_factor_, double nova_accretion_factor_, double alpha_wind_accretion_, double beta_wind_accretion_, \
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
     double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
-    double MSTAR_include_PN_acc_10_,double MSTAR_include_PN_acc_20_,double MSTAR_include_PN_acc_25_,double MSTAR_include_PN_acc_30_,double MSTAR_include_PN_acc_35_,double MSTAR_include_PN_acc_SO_,double MSTAR_include_PN_acc_SS_,double MSTAR_include_PN_acc_Q_,double MSTAR_include_PN_spin_SO_,double MSTAR_include_PN_spin_SS_,double MSTAR_include_PN_spin_Q_);
+    bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
+    bool stop_after_root_found_);
 
 int get_random_seed(int *value);
 int set_random_seed(int value);

@@ -100,7 +100,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Binary evolution */
         binary_flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
 
-        /* Dynamical evolution -- will update masses/radii */
+        /* Dynamical evolution -- will update masses, radii, and spins */
         if (*integration_flag == 0) // Secular
         {
             flag = integrate_ODE_system(particlesMap,t_old,t,&t_out,hamiltonian,CVODE_flag,CVODE_error_code);
@@ -109,7 +109,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         {
             integrate_nbody_system(particlesMap, integration_flag, t_old, t, &t_out, &dt_nbody);
         }
-                
+
       
         t = t_out;
 
@@ -123,7 +123,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Handle roots */
         if (*CVODE_flag==2)
         {
-            if (stop_after_root_found == true) // Used for root finding implementation testing
+            if (stop_after_root_found == true) // Used for root finding implementation testing only
             {
                 *CVODE_flag = 2;
                 break;

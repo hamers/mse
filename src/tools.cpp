@@ -800,6 +800,11 @@ bool equal_number(double x1, double x2, double tol)
 
 void check_number(double x, char *source, char *description, bool exit_on_error)
 {
+    if (check_numbers_internally == false)
+    {
+        return;
+    }
+    
     double y = ((double) x);
     bool error = false;
     if (isnan(y))

@@ -58,7 +58,7 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     double abs_tol_spin_vec = absolute_tolerance_spin_vectors;
     double abs_tol_e_vec = absolute_tolerance_eccentricity_vectors;
     double abs_tol_h_vec = absolute_tolerance_angular_momentum_vectors;
-    double initial_ODE_timestep = 1.0e0; /* one year */
+    double initial_ODE_timestep = ODE_min_dt; /* one year by default */
     int maximum_number_of_internal_ODE_steps = 5e8;
     int maximum_number_of_convergence_failures = 100;    
     //double maximum_ODE_integration_time = 13.8e10;
@@ -75,8 +75,6 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 	cvode_mem = NULL;
 
     int number_of_ODE_variables = N_ODE_equations;
-    
-//    data->number_of_ODE_variables = number_of_ODE_variables;
     y = N_VNew_Serial(number_of_ODE_variables);
 	if (check_flag((void *)y, "N_VNew_Serial", 0)) return 1;
     y_out = N_VNew_Serial(number_of_ODE_variables);
@@ -156,11 +154,10 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
      * ODE integration         *
      **************************/ 
     
-	//double user_end_time = start_time + time_step;
     double user_end_time = end_time;
 	realtype integrator_end_time;
 
-    if (check_for_initial_roots(particlesMap) > 0)
+    if (check_for_initial_roots(particlesMap) > 0) /* do not evolve ODE system when a root was found initially, EXCEPT for RLOF */
     {
         flag = CV_ROOT_RETURN;
         *output_flag = CV_ROOT_RETURN;

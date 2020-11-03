@@ -35,15 +35,15 @@ int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
     Particle *child1 = (*particlesMap)[p->child1];
     Particle *child2 = (*particlesMap)[p->child2];
     
-    if (child1->is_binary == false and child2->is_binary == false)
+    if (child1->is_binary == false and child2->is_binary == false) /* star-star */
     {
         ODE_handle_RLOF_emt(p, child1, child2);
     }
-    else if (child1->is_binary == false and child2->is_binary == true)
+    else if (child1->is_binary == false and child2->is_binary == true) /* star-binary */
     {
         ODE_handle_RLOF_triple_mass_transfer(particlesMap, p, child1, child2);
     }
-    else if (child1->is_binary == true and child2->is_binary == false)
+    else if (child1->is_binary == true and child2->is_binary == false) /* star-binary */
     {
         ODE_handle_RLOF_triple_mass_transfer(particlesMap, p, child2, child1);
     }
@@ -323,8 +323,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         }
     }
 
-    double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
-
     if (x<=0.0)
     {
         #ifdef VERBOSE
@@ -337,6 +335,8 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         M_d_dot_av=0.0;
         M_a_dot_av=0.0;
     }
+    
+    double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
 
     #ifdef VERBOSE
     if (verbose_flag > 1)

@@ -148,7 +148,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("collision.cpp -- CP binary %d child1 %d child2 %d t %g int flag %d\n",binary_index,child1_index,child2_index,t,*integration_flag);
+        printf("collision.cpp -- collision_product -- CP binary %d child1 %d child2 %d t %g int flag %d\n",binary_index,child1_index,child2_index,t,*integration_flag);
         print_system(particlesMap,*integration_flag);
     }
     #endif
@@ -156,23 +156,24 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
     
+    /* Check for collisions that are NOT of the star-star type */
     if (child1->object_type == 1 and child2->object_type == 2)
     {
         collision_product_star_planet(particlesMap, binary_index, child1_index, child2_index,t,integration_flag);
         return;
     }
-    if (child1->object_type == 2 and child2->object_type == 1)
+    else if (child1->object_type == 2 and child2->object_type == 1)
     {
         collision_product_star_planet(particlesMap, binary_index, child2_index, child1_index,t,integration_flag);
         return;
     }
-    if (child1->object_type == 2 and child2->object_type == 2)
+    else if (child1->object_type == 2 and child2->object_type == 2)
     {
         collision_product_planet_planet(particlesMap, binary_index, child1_index, child2_index,t,integration_flag);
         return;
     }
     
-    
+    /* Below: star-star case */
     double m1 = child1->mass;
     double m2 = child2->mass;
     double m = m1 + m2;
@@ -216,7 +217,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     get_unit_vector(spin_vec_2, spin_vec_2_unit);
 
     /* Properties of merged object */
-    double m0,mc,age,t_MS;
+    double m0,mc,age,t_MS; /* new initial mass, new core mass, new age, new MS timescale */
     age = -1;
     m0 = -1;
     
@@ -227,19 +228,17 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     tscls = new double[20];
     lums = new double[10];    
     double *zpars;
-    zpars = child1->zpars; /* for now: take metallicity of star 1; should think of Z-mixing in future */
+    zpars = child1->zpars; /* for now: take metallicity of star 1 (arbitrary); should think of Z-mixing in future */
   
     bool destroyed = false;
     bool reset_spin_vec = true;
     
     int kick_distribution = child1->kick_distribution; /* by default, adopt kick distribution of child1 */
 
-
     double V_kick_vec[3] = {0.0,0.0,0.0};
     double spin_vec[3];
     double M_final; /* used for compact objects */
-    double alpha_vec_final[3];
-
+    double alpha_vec_final[3]; /* used for compact objects */
 
     /* Two H/He MS stars forming new MS star */
     if ((kw1 >= 0 and kw1 <= 1 or kw1 == 7) and (kw2 >= 0 and kw2 <= 1 or kw2 == 7)) 
@@ -434,15 +433,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         exit(-1);
     }
     
-    /* m, m0, age */
+    /* stellar properties of merged object */
     double Omega_crit,Omega;
-    
-    if (destroyed == true)
-    {
-        m = 0.0; /* need to set for instantaneous_perturbation_delta_mass below */
-    }
-
-
     double r,lum,rc,menv,renv,k2;
     double z_new;
     double *zpars_new;
@@ -450,8 +442,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
     if (destroyed == false)
     {
-
-        /* stellar properties of merged object */
         star_(&kw, &m0, &m, &tm, &tn, tscls, lums, GB, zpars);
 
         hrdiag_(&m0,&age,&m,&tm,&tn,tscls,lums,GB,zpars, \

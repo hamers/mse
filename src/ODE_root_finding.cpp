@@ -429,8 +429,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
 
 int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integration_flag)
 {
-    /* TO DO/ consideration: could roots happen simultaneously? */
-    
     int return_flag = 0;
     bool RLOF_occurred = false;
     bool collision_occurred = false;
@@ -442,7 +440,6 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
         {
             if (p->RLOF_at_pericentre_has_occurred == true)
             {
-                
                 p->RLOF_at_pericentre_has_occurred = false; /* Reset ODE root found flag */
                 
                 if (p->RLOF_at_pericentre_has_occurred_entering_RLOF == true) /* Going into RLOF */
@@ -719,17 +716,17 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
         }
         else /* P_p not a binary */
         {
-            if (P_p->check_for_RLOF_at_pericentre == 1)
+            if (P_p->check_for_RLOF_at_pericentre == true)
             {
                 if FOUND_ROOT
                 {
-                    P_p->RLOF_at_pericentre_has_occurred = 1;
+                    P_p->RLOF_at_pericentre_has_occurred = true;
                 }
-                if (roots_found[i_root] == 1) /* Going out of RLOF */
+                if (roots_found[i_root] == 1) /* Going out of RLOF (froot passed 0 and increased from negative (RLOF) to positive (no RLOF)) */
                 {
                     P_p->RLOF_at_pericentre_has_occurred_entering_RLOF = false;
                 }
-                else if (roots_found[i_root] == -1) /* Going into RLOF */
+                else if (roots_found[i_root] == -1) /* Going into RLOF (froot passed 0 and decreased from positive (no RLOF) to negative (RLOF)) */
                 {
                     P_p->RLOF_at_pericentre_has_occurred_entering_RLOF = true;
                 }
@@ -849,12 +846,10 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
             {
                 if (P_p->RLOF_at_pericentre_has_occurred == true)
                 {
-                    //N_root_found++;
-
                     #ifdef VERBOSE
                     if (verbose_flag > 0)
                     {
-                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d RLOF \n",P_p->index);
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d RLOF but continuing \n",P_p->index);
                         print_system(particlesMap,0);
                     }
                     #endif
@@ -876,7 +871,7 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
 
 void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_flag, int *CVODE_flag, double t, double *dt_stev, double *dt_binary_evolution)
 {
-    if (root_flag == 1) // RLOF
+    if (root_flag == 1) // RLOF -- continue secular but with mass transfer terms
     {
         #ifdef VERBOSE
         if (verbose_flag > 0)
@@ -887,7 +882,7 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         
         *CVODE_flag = 0;
     }
-    else if (root_flag == 2) // Dynamical instability
+    else if (root_flag == 2) // Dynamical instability -- switch to direct N-body
     {
         #ifdef VERBOSE
         if (verbose_flag > 0)
@@ -899,7 +894,7 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         *integration_flag = 1;
         *CVODE_flag = 0;
     }
-    else if (root_flag == 3) // Semisecular
+    else if (root_flag == 3) // Semisecular -- switch to direct N-body
     {
         #ifdef VERBOSE
         if (verbose_flag > 0)

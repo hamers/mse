@@ -182,7 +182,6 @@ void compute_PN_twobody_Acc(struct RegularizedRegion *R, double *Vel, double *Ac
 
     cross_product( nv, vv, n_cross_v );
 
-    // this is the old spin
     double *S_1 = &Spin[3*i];
     double *S_2 = &Spin[3*j];
 

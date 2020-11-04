@@ -8,11 +8,8 @@
 #include <unistd.h>
 #include "regularization.h"
 
-int **indexlist;
-
 double GBSTOL;
 int MAXPART;
-
 
 double *errorbuf;
 double *resultbuf;
@@ -23,44 +20,13 @@ double **extrapolation_error;
 double **result;
 double **gbsS;
 
-int Ntask;
-int ThisTask;
-
-int NumGbsGroup;
-int NumTaskPerGbsGroup;
-int ThisGbsGroup;
-int ThisTask_in_GbsGroup;
-int ok_steps;
-int failed_steps;
 struct ToDoList ComputationToDoList;
 
 void die(void) {
-
-    if (ThisTask == 0)
-        printf("The code is dead because 'die()' was called..\n");
+    printf("The code is dead because 'die()' was called..\n");
     exit(0);
 }
 
-int cmp_weight_index2(const void *a, const void *b) {
-    struct WeightIndex2 *a1 = (struct WeightIndex2 *)a;
-    struct WeightIndex2 *a2 = (struct WeightIndex2 *)b;
-    if ((*a1).weight > (*a2).weight)
-        return 1;
-    else if ((*a1).weight < (*a2).weight)
-        return -1;
-    else
-        return 0;
-}
-int cmp_weight_index(const void *a, const void *b) {
-    struct WeightIndex *a1 = (struct WeightIndex *)a;
-    struct WeightIndex *a2 = (struct WeightIndex *)b;
-    if ((*a1).weight > (*a2).weight)
-        return 1;
-    else if ((*a1).weight < (*a2).weight)
-        return -1;
-    else
-        return 0;
-}
 int cmp(const void *a, const void *b) {
     struct GraphEdge *a1 = (struct GraphEdge *)a;
     struct GraphEdge *a2 = (struct GraphEdge *)b;
@@ -71,31 +37,12 @@ int cmp(const void *a, const void *b) {
     else
         return 0;
 }
-int cmp_int(const void *a, const void *b) {
-    int int_a = *((int *)a);
-    int int_b = *((int *)b);
-    if (int_a == int_b)
-        return 0;
-    else if (int_a < int_b)
-        return -1;
-    else
-        return 1;
-}
-
 
 void initialize_mpi_or_serial(void) {
-
 #if defined(USE_PN_SPIN) && !defined(USE_PN)
     printf("PN spin terms enabled.\nPlease enable USE_PN as well. Currently USE_PN not enabled.\n");
     exit(0);
 #endif
-
-    NumGbsGroup = 1;
-    Ntask = 1;
-    ThisTask = 0;
-    ThisGbsGroup = 0;
-    ThisTask_in_GbsGroup = 0;
-    NumTaskPerGbsGroup = 1;
 }
 
 int check_relative_proximity_ND_2(int v1, int v2, struct RegularizedRegion *R,
@@ -161,8 +108,7 @@ int check_relative_proximity(int v1, int v2, const int Nd,
 
         if (R->Vertex[v1].level == 0) {
             printf("This level stuff should not happen\n");
-            printf("thistask: %d --- v1 v2 %d %d ---levels: %d %d\n", ThisTask,
-                   R->Vertex[v1].id, R->Vertex[v2].id, R->Vertex[v1].level,
+            printf("--- v1 v2 %d %d ---levels: %d %d\n", R->Vertex[v1].id, R->Vertex[v2].id, R->Vertex[v1].level,
                    R->Vertex[v2].level);
             exit(0);
         }
@@ -267,71 +213,6 @@ void get_v1_v2(int N, int target, int *v1, int *v2) {
     }
 }
 
-int sign(double x) {
-    if (x >= 0) return 1;
-    return -1;
-}
-
-double get_rmax(struct RegularizedRegion *R) {
-    double rmax2 = 0;
-    for (int i = 0; i < R->NumVertex; i++) {
-        double ds;
-        double r2 = 0;
-        for (int k = 0; k < 3; k++) {
-            ds = R->Pos[3 * i + k];
-            r2 += ds * ds;
-        }
-        if (r2 > rmax2) { rmax2 = r2; }
-    }
-    return sqrt(rmax2);
-}
-
-int get_longest(double w[3], int id[3]) {
-
-    double L = -1;
-    int ind = -1;
-    for (int m = 0; m < 3; m++) {
-        if (w[m] > L) {
-            L = w[m];
-            ind = m;
-        }
-    }
-    return id[ind];
-}
-
-int get_edge(int Nleafs, int va, int vb) {
-
-    int N = Nleafs - 2;
-    int lo, hi;
-    lo = va, hi = vb;
-    if (va > vb) {
-        lo = vb;
-        hi = va;
-    }
-    int index = hi - 1;
-    for (int p = 0; p < lo; p++) {
-        index += N;
-        N--;
-    }
-    return index;
-}
-
-void SwapEdge(struct RegularizedRegion *R, int i, int j) {
-
-    int v1 = R->EdgeInMST[i].vertex1;
-    int v2 = R->EdgeInMST[i].vertex2;
-    double w = R->EdgeInMST[i].weight;
-
-    R->EdgeInMST[i].vertex1 = R->EdgeInMST[j].vertex1;
-    R->EdgeInMST[i].vertex2 = R->EdgeInMST[j].vertex2;
-    R->EdgeInMST[i].weight = R->EdgeInMST[j].weight;
-
-    R->EdgeInMST[j].vertex1 = v1;
-    R->EdgeInMST[j].vertex2 = v2;
-    R->EdgeInMST[j].weight = w;
-}
-
-
 int EdgeSearchForPrim(struct RegularizedRegion *R, int NumLocalEdges) {
 
     struct WeightIndex wi;
@@ -348,33 +229,6 @@ int EdgeSearchForPrim(struct RegularizedRegion *R, int NumLocalEdges) {
     }
 
     return wi.index;
-}
-
-int PresentInArray(int p, int *Array, int N) {
-
-    int result = -1;
-    for (int i = 0; i < N; i++) {
-        if (Array[i] == p) {
-            result = i;
-            break;
-        }
-    }
-    return result;
-}
-
-int get_heaviest(double a[3], int b1, int b2, int b3) {
-
-    int index = -1;
-    double w = -1;
-    for (int i = 0; i < 3; i++) {
-        if (a[i] > w) {
-            w = a[i];
-            index = i;
-        }
-    }
-    if (index == 0) return b1;
-    if (index == 1) return b2;
-    return b3;
 }
 
 void PrimMST(struct RegularizedRegion *R) {
@@ -967,40 +821,14 @@ void kick(double ds, struct RegularizedRegion *R) {
 double get_n_double(int i) { return (2.0 * (i + 1.0)); }
 int get_n_int(int i) { return (2.0 * (i + 1.0)); }
 
-double get_error(double a, double b) { return fabs(b - a); }
-
-int gbs_group_with_min_workload(int *GbsGroupWorkLoad) {
-    int min_workload = INT_MAX;
-    int index = 0;
-    for (int i = 0; i < NumGbsGroup; i++) {
-        if (GbsGroupWorkLoad[i] < min_workload) {
-            min_workload = GbsGroupWorkLoad[i];
-            index = i;
-        }
-    }
-    return index;
-}
-
 void divide_computational_load(struct RegularizedRegion *R) {
-
-    int *GbsGroupWorkLoad = calloc(NumGbsGroup, sizeof(int));
     int counter = 0;
-
     for (int i = KMAX - 1; i >= 0; i--) {
-        int ThisSubdivisionCost = get_n_int(i);
-        int GroupIndex = gbs_group_with_min_workload(GbsGroupWorkLoad);
-        GbsGroupWorkLoad[GroupIndex] += ThisSubdivisionCost;
-        ComputationToDoList.ComputationalTask[i].GroupToPerformTask =
-            GroupIndex;
         ComputationToDoList.ComputationalTask[i].ThisR = R;
-        ComputationToDoList.ComputationalTask[i].NumberOfSubsteps =
-            get_n_int(i);
+        ComputationToDoList.ComputationalTask[i].NumberOfSubsteps = get_n_int(i);
         counter++;
     }
-
     ComputationToDoList.NumberOfComputationalTasks = counter;
-
-    free(GbsGroupWorkLoad);
 }
 
 void compute_total_energy(struct RegularizedRegion *R) {
@@ -1123,10 +951,6 @@ void extrapolate_single_variable(double *y, const int N, double *result,
     }
     result[N - 2] = gbsS[0][N - 1];
     err[N - 2] = fabs(gbsS[0][N - 1] - gbsS[0][N - 1 - 1]) / yscal[N - 1];
-}
-
-double get_gbs_scaling( double *y, int N ){
-    return 0.0;
 }
 
 int extrapolate_all_variables(int korder ) {
@@ -1260,11 +1084,9 @@ int extrapolate_all_variables(int korder ) {
 #ifdef USE_PN_SPIN
 	from_SpinState_to_Spin_S(ThisR);
 #endif
-        ok_steps++;
 
     } else {
         status = 0;
-        failed_steps++;
         if (Hnextfac > 0.7) { Hnextfac = 0.7; }
         ThisR->Hstep *= Hnextfac;
     }
@@ -1287,11 +1109,9 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
         return;
     }
 
-    failed_steps = 0;
-    ok_steps = 0;
 
     // Needed variables
-    double dt = time_interval/1e6;	// USE_PN_SPIN: Antti: not an ifdef, just to catch attention. This could be changed into P/10 for binaries, for example
+    double dt = time_interval/1e6;	// may be adjusted by the user
     double Hstep;
     double time;
 
@@ -1332,7 +1152,6 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
             // Perform the leapfrog tasks
             for (int ctask = 0; ctask < ComputationToDoList.NumberOfComputationalTasks; ctask++) {
-                if (ThisGbsGroup == ComputationToDoList.ComputationalTask[ctask].GroupToPerformTask) {
 
                     // copy the system in order not to overwrite the original one
                     struct RegularizedRegion *ThisR = ComputationToDoList.ComputationalTask[ctask].ThisR;
@@ -1342,7 +1161,6 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     Hstep = ComputationToDoList.CopyOfSingleRegion[ctask].Hstep;
                     mst_leapfrog(&ComputationToDoList.CopyOfSingleRegion[ctask], Hstep, ComputationToDoList.ComputationalTask[ctask].NumberOfSubsteps);
 
-                }
             }
 
         } while (redo);
@@ -1373,8 +1191,6 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     		R->Hstep = R->U * (time_interval - time);
                 	}
 		}
-
-                /* Some debug printing */
 
 #ifdef USE_PN_SPIN	// a useful two-body system debug
 #if 0
@@ -1494,7 +1310,7 @@ void allocate_regularized_region(struct RegularizedRegion *S, int N) {
     S->Vertex = calloc(N, sizeof(struct GraphVertex));
 
     double safetybuf = 1.05;
-    int NumLocalEdge = (int)floor(safetybuf * S->NumEdge / Ntask);
+    int NumLocalEdge = (int)floor(safetybuf * S->NumEdge);
     S->LocalEdge = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->LocalEdgeSubset = calloc(NumLocalEdge, sizeof(struct GraphEdge));
     S->EdgeInMST = calloc(N - 1, sizeof(struct GraphEdge));
@@ -1552,12 +1368,6 @@ void allocate_armst_structs(struct RegularizedRegion **R, int MaxNumPart) {
     }
 #endif
 
-    indexlist = calloc(8, sizeof(int *));
-
-    for (int i = 0; i < 8; i++) {
-        indexlist[i] = calloc(MaxNumPart, sizeof(int));
-    }
-
     int NumAlloc = KMAX;
 
     ComputationToDoList.ComputationalTask =
@@ -1611,89 +1421,6 @@ void free_data(struct RegularizedRegion *R) {
     free(gbsS);
    
 }
-
-// Read in the test IC
-void read_ic_from_file(struct RegularizedRegion *R, char *INPUTFILE) {
-    FILE *fp;
-    for (int task = 0; task < Ntask; task++) {
-        if (ThisTask == task) {
-            fp = fopen(INPUTFILE, "r");
-            for (int i = 0; i < R->NumVertex; i++) {
-
-#ifdef USE_PN_SPIN
-                int status = fscanf(fp, "%d %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
-		&R->Vertex[i].type, &R->Mass[i],
-		&R->Pos[3 * i + 0], &R->Pos[3 * i + 1],
-		&R->Pos[3 * i + 2], &R->Vel[3 * i + 0],
-		&R->Vel[3 * i + 1], &R->Vel[3 * i + 2],
-		&R->Spin_S[3*i+0],&R->Spin_S[3*i+1],&R->Spin_S[3*i+2] );
-#else
-                int status = fscanf(fp, "%d %lf %lf %lf %lf %lf %lf %lf\n",
-		&R->Vertex[i].type, &R->Mass[i],
-		&R->Pos[3 * i + 0], &R->Pos[3 * i + 1],
-		&R->Pos[3 * i + 2], &R->Vel[3 * i + 0],
-		&R->Vel[3 * i + 1], &R->Vel[3 * i + 2] );
-#endif
-                if (!(status > 0)) { die(); }
-            }
-            fclose(fp);
-        }
-    }
-}
-
-#if 1
-int main(int argc, char *argv[]) {
-
-    // input: file numpart gbstol
-    initialize_mpi_or_serial();
-
-    GBSTOL  = atof(argv[3]);
-    MAXPART = atoi(argv[2]);
-
-    failed_steps = 0;
-    ok_steps = 0;
-
-    /////////////////////////////////////////
-
-    struct RegularizedRegion *R;
-    int MaxNumPart = MAXPART;
-
-    allocate_armst_structs(&R, MaxNumPart);
-
-    read_ic_from_file(R, argv[1]);
-
-   double IntegrationTime = 2.25e-4 * 1100;	//882.254;
-
-    // Integrate for some time interval
-
-// Antti debugging lines
-    int stopping_condition_occurred;
-    double end_time;
-
-    run_integrator(R, IntegrationTime, &end_time, &stopping_condition_occurred );
-
-
-    // Do some output
-
-    if (ThisTask == 0) {
-
-        printf("\n\nInput dt: %e	Physical time %e. end_time: %e 	stopping_condition:	%d\n", IntegrationTime, R->time, end_time, stopping_condition_occurred );
-        int n = MaxNumPart > 10 ? 10 : MaxNumPart;
-
-	// Antti debug line: modified output for plotting
-        for (int i = 0; i < n; ++i) {
-            printf("%d %e %e %e %e %e %e\n",
-                i, R->Pos[3 * i + 0], R->Pos[3 * i + 1], R->Pos[3 * i + 2],
-                R->Vel[3 * i + 0], R->Vel[3 * i + 1], R->Vel[3 * i + 2]);
-        }
-    }
-
-    // Free stuff and finalize
-    free_data(R);
-
-    return 0;
-}
-#endif
 
 void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min)
 {

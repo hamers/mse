@@ -81,9 +81,8 @@ double compute_apsidal_motion_constant(Particle *star)
     else if (stellar_type == 13) 
     {
 
-        /* Take canonical constant value for polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
-        //val = 0.25990728; // n=1
-        val = 0.14327923; // n=3/2
+        /* Take canonical constant value for n=1 polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
+        val = 0.25990728; // n=1
     }
     
     else if (stellar_type == 14)

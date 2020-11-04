@@ -2139,7 +2139,6 @@ class Tools(object):
     def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0):
 
         np.random.seed(random_seed)
-        print("Python rand",np.random.random())
         
         if configuration == "fully_nested":
             particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
@@ -2184,7 +2183,7 @@ class Tools(object):
         code.verbose_flag = verbose_flag
         
         code.include_flybys = True
-        code.flybys_stellar_density = 10*0.1*code.CONST_PER_PC3
+        code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
         code.flybys_encounter_sphere_radius = 1.0e5
 
         t_print = [[]]
@@ -2372,16 +2371,10 @@ class Tools(object):
             colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
             linewidth=1.0
             for i_status in range(N_status):
-                #color = colors[i_status]
                 N_bodies = N_bodies_status[i_status]
                 N_orbits = N_orbits_status[i_status]
                 
-                plot3.plot(1.0e-6*t_print[i_status],integration_flags[i_status],color='k',linestyle='dotted',linewidth=linewidth)
-                
                 for index in range(N_bodies):
-                    #print("internal_indices_print[i_status][index]",internal_indices_print[i_status][index],index,internal_indices_print)
-                    #internal_index = internal_indices_print[i_status][index][0]
-                    #color = colors[internal_index]
                     color=colors[index]
                     plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
                     plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
@@ -2393,13 +2386,7 @@ class Tools(object):
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
                     
                     plot_HRD.plot(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth)
-                    #print("i",index,"Final R",X_print[i_status][index][-1],Y_print[i_status][index][-1])
-                    
-                    #if index in [0,1]:
-                        #plot2.plot(1.0e-6*t_print,R_L_print[index],color='g',linestyle='dotted',linewidth=linewidth)
-                    #plot3.plot(1.0e-6*t_print,t_V_print[index],color='k',linestyle='solid',linewidth=linewidth)
-                    #linewidth+=0.8
-                    
+                   
                 linewidth=1.0
                 for index in range(N_orbits):
                     color = colors[index]
@@ -2407,7 +2394,6 @@ class Tools(object):
                     es = np.array(e_print[i_status][index])
                     plot2.plot(1.0e-6*t_print[i_status],smas,color=color,linestyle='dotted',linewidth=linewidth)
                     plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
-                    #plot3.plot(1.0e-6*t_print,(180.0/np.pi)*rel_INCL_print[index],color='k',linestyle='solid',linewidth=linewidth)
                 
                 linewidth+=0.4
 
@@ -2455,7 +2441,7 @@ class Tools(object):
 
        
     @staticmethod
-    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+    def generate_mobile_diagram_old(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
         """
         Generate a Mobile diagram of a given multiple system.
         """
@@ -2468,8 +2454,6 @@ class Tools(object):
 
         bodies = [x for x in particles if x.is_binary==False]
         binaries = [x for x in particles if x.is_binary==True]
-
-#        print("N",len(bodies),len(binaries))
 
         if len(binaries)==0:
             if len(bodies)==0:
@@ -2522,6 +2506,80 @@ class Tools(object):
         #plot.autoscale(enable=True,axis='both')
         
     @staticmethod
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+        """
+        Generate a Mobile diagram of a given multiple system.
+        """
+        
+        try:
+            import matplotlib
+        except ImportError:
+            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to generate a Mobile diagram!")
+            exit(0)
+
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+
+        if len(binaries)==0:
+            if len(bodies)==0:
+                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
+                exit(0)
+            else:
+                Tools.draw_bodies(plot,bodies,fontsize)
+                return
+
+        Tools.determine_binary_levels_in_particles(particles)                    
+        unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
+        if len(unbound_bodies)>0:
+            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.5*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
+            
+        top_level_binaries = [x for x in binaries if x.level==0]
+        
+        for p in particles:
+            p.color = 'k'
+        
+        if use_default_colors==True:
+            ### Assign some colors from mcolors to the orbits ###
+            import matplotlib.colors as mcolors
+            colors = mcolors.TABLEAU_COLORS
+            color_names = list(colors)
+            
+            for index in range(len(binaries)):
+                color_name = color_names[index]
+                color=colors[color_name]
+            
+                o = binaries[index]
+                o.color = color
+
+        ### Make mobile diagram ###
+        top_x = 0.0
+        top_y = 0.0
+        
+        if len(top_level_binaries)>1: ### adjustments for two unbound subsystems
+            top_x = -3*line_width_horizontal
+            top_y = 0.0
+            
+        for index,top_level_binary in enumerate(top_level_binaries):
+        
+            top_level_binary.x = top_x - 5*index * line_width_horizontal
+            top_level_binary.y = top_y 
+
+            x_min = x_max = y_min = 0.0
+            y_max = line_width_vertical
+    
+            plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+
+        plot.set_xticks([])
+        plot.set_yticks([])
+        #print("minmax",x_min,x_max,y_min,y_max)
+        beta = 0.7
+        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
+        plot.set_ylim([y_min - beta*np.fabs(y_min),1.5*y_max + beta*np.fabs(y_max)])
+        
+        #plot.autoscale(enable=True,axis='both')
+        
+    @staticmethod
     def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
         x = particle.x
         y = particle.y
@@ -2529,22 +2587,17 @@ class Tools(object):
         child1 = particle.child1
         child2 = particle.child2
 
-        #from decimal import Decimal
-        #plot.annotate("$a = % \, \mathrm{AU}$"%(particle.semimajor_axis.value_in(units.AU)),xytext=(x,y))
-        #text = "$a = %s \, \mathrm{AU}$"%(round(particle.semimajor_axis.value_in(units.AU),1))
-        #text = "$a = \mathrm{%.1E}$"%(Decimal(particle.a))
-        #text = "$a=\mathrm{%.1E\,au}$"%(Decimal(particle.a))
         text = "$a=\mathrm{%s\,au}$\n $e= %.2f$"%(round(particle.a,1),particle.e)
         x_plot = x - 0*0.8*line_width_horizontal
         y_plot = y - 0.3*line_width_vertical
-        #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.3*line_width_vertical),fontsize=fontsize,color=particle.color,facecolor='w')
+
         bbox_props = dict(boxstyle="round", pad=0.1, fc=particle.color, ec="k", lw=0.5,alpha=0.9)
         plot.text(x_plot, y_plot, text, ha="center", va="center", rotation=0,
             size=0.7*fontsize,
             bbox=bbox_props)
         
    
-        text = "$e = %.2f$"%(particle.e)
+        #text = "$e = %.2f$"%(particle.e)
         #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
 
         alpha = 1.0
@@ -2593,59 +2646,36 @@ class Tools(object):
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
             plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
-            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child1.mass,1)))
             if child1.object_type == 2:
                 text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child1.mass/CONST_MJUP,1)))    
             else:
                 text = "$\mathrm{%s}$"%(str(round(child1.mass,1)))
                 
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child1.mass,1)),child1.index)
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
             
-            #text = "$%d; \,k=%d$"%(child1.index,child1.stellar_type)
-            #plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
-
         if child2.is_binary == True:
             x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
             plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
 
-            #text = "$\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child2.mass))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(child2.mass,1)))
-
             if child2.object_type == 2:
                 text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child2.mass/CONST_MJUP,1)))    
             else:
                 text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
 
-
-#            text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot\,(%d)$"%(str(round(child2.mass,1)),child2.index)
             plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
-            text = "$%d; \,k=%d$"%(child2.index,child2.stellar_type)
-            #plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.25*line_width_vertical),color='k',fontsize=0.5*fontsize)
 
         return x_min,x_max,y_min,y_max
 
     @staticmethod
     def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
-        #dx = 0.5
-        #dy = 0.5
+
         for index,body in enumerate(bodies):
             color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
             plot.scatter([index],[y_ref],color=color,s=s)
-            #text = "$%s\, M_\mathrm{J}$"%(round(child1.mass.value_in(units.MJupiter)))
-            #text = "$m_i=\mathrm{%.1E}\,\mathrm{M}_\odot$"%(Decimal(child1.mass))
-            #text = "$\mathrm{%s}\,\mathrm{M}_\odot$"%(str(round(body.mass,1)))
             text = "$\mathrm{%s}$"%(str(round(body.mass,1)))
             plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
-
-            #text = "$\mathrm{%d}$"%body.index
-            #text = "$%d; \,k=%d$"%(body.index,body.stellar_type)
-            #plot.annotate(text,xy=(index - dx,y_ref+0.5*dy),color='k',fontsize=fontsize)
             
             try:
                 VX = body.VX

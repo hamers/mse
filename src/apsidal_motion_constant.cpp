@@ -81,29 +81,22 @@ double compute_apsidal_motion_constant(Particle *star)
     else if (stellar_type == 13) 
     {
 
-        /*--------------------------------------------------------------------------------------------------------------------------*/
-        /* Neutron star: see Hinderer, 2008 - take n = 1.0
-        /*--------------------------------------------------------------------------------------------------------------------------*/
-
-        //double compactness = stardata->star[ksn].mass/(stardata->star[ksn].radius*R_SUN*1e-5); /* M/R; units: M_SUN/km */
-        //val = 1.5*(-0.41+0.56/1.00)*pow(compactness,-0.003);
-        
-        /* June 2020: simplify and take canonical constant value for an n=1 polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
-        val = 0.25990728;
-
+        /* Take canonical constant value for polytrope (https://ui.adsabs.harvard.edu/abs/1955MNRAS.115..101B/abstract) */
+        //val = 0.25990728; // n=1
+        val = 0.14327923; // n=3/2
     }
     
     else if (stellar_type == 14)
     {
 
         /*--------------------------------------------------------------------------------------------------------------------------*/
-        /* Black hole: see Binnington, 2009: k2 = 0 for a non-rotating black hole
+        /* Black hole: see Binnington, 2009: k_AM = 0 for a non-rotating black hole
         /*--------------------------------------------------------------------------------------------------------------------------*/
 
         val = 0.0;
     }
     
-    else if (stellar_type == 15) /* Massless remnant: k2 = 0 */
+    else if (stellar_type == 15) /* Massless remnant: k_AM = 0 */
     {
         val = 0.0;
     }

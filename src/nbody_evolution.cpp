@@ -91,19 +91,6 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         return;
     }
 
-    if (*integration_flag == 2) // Continue with direct N-body after semisecular regime; need to make sure particlesMap is updated with pos/vel of bodies
-    {
-        update_pos_vel_from_mstar_system(R,particlesMap);
-        
-        /* Update orbits */
-        update_masses_positions_and_velocities_of_all_binaries(particlesMap);
-        update_orbital_vectors_in_binaries_from_positions_and_velocities(particlesMap);        
-        
-        update_stellar_evolution_quantities_directly(particlesMap,dt);
-        
-        free_data(R);
-        return;
-    }
 
     /* The system is potentially stable.
      * Analyse the system for stability. */
@@ -113,10 +100,12 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
 
+    update_stellar_evolution_quantities_directly(particlesMap,dt);
+
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("nbody_evolution.cpp -- integrate_nbody_system -- done -- new integration flag %d dt_nbody %g\n",*integration_flag,*dt_nbody);
+        printf("nbody_evolution.cpp -- integrate_nbody_system -- done -- new integration flag %d dt_nbody %g P_orb_min %g P_orb_max %g\n",*integration_flag,*dt_nbody,P_orb_min,P_orb_max);
         print_system(particlesMap,*integration_flag);
     }
     #endif

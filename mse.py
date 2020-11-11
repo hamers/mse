@@ -2336,7 +2336,7 @@ class Tools(object):
             legend_elements = []
             for k in range(15):
                 color,s,description = Tools.get_color_and_size_and_description_for_star(k,1.0)
-                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label=description))#label = "$\mathrm{%s}$"%description) )
+                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label="$\mathrm{%s}$"%description))#label = "$\mathrm{%s}$"%description) )
 
             for index_log,log in enumerate(plot_log):
                 plot=fig.add_subplot(N_r,N_c,index_log+1)
@@ -2700,7 +2700,7 @@ class Tools(object):
     def get_color_and_size_and_description_for_star(stellar_type,radius):
         if (stellar_type == 0): 
             color='gold'
-            description = 'low-mass ' + 'MS'
+            description = 'low-mass\, ' + 'MS'
         elif (stellar_type == 1): 
             color='gold'
             description = 'MS'

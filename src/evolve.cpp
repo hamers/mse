@@ -160,7 +160,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         if (*integration_flag == 2) // semisecular; use stellar evolution timesteps
         {
-            printf("ADJUST DT %g %g\n",dt,dt_nbody);
             dt = dt_stev;
         }
 

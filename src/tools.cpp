@@ -26,17 +26,10 @@ double generate_random_number_between_zero_and_unity()
 
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3])
 {
-    double u1,u2,s,theta;
-    for (int k=1; k<3; k++)
+    for (int k=0; k<3; k++)
     {
-        u1 = generate_random_number_between_zero_and_unity();
-        u2 = generate_random_number_between_zero_and_unity();
-        s = sigma*sqrt(-2.0*log(1.0 - u1));
-        theta = TWOPI*u2;
-        v[2*k-2] = s*cos(theta);
-        v[2*k-1] = s*sin(theta);
-    }    
-
+        v[k] = sample_from_normal_distribution(0.0, sigma);
+    }
     return 0;
 }
 

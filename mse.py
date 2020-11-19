@@ -32,7 +32,7 @@ class MSE(object):
 
         self.__relative_tolerance = 1.0e-10
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-8
-        self.__absolute_tolerance_spin_vectors = 1.0e-4
+        self.__absolute_tolerance_spin_vectors = 1.0e-3
         self.__absolute_tolerance_angular_momentum_vectors = 1.0e-2
 
         self.__include_quadrupole_order_terms = True

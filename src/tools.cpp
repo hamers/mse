@@ -49,7 +49,8 @@ double sample_from_normal_distribution(double mu, double sigma)
     //std::random_device rd{};
     //std::mt19937 gen{rd()};
     //return std::normal_distribution<> d{mu,sigma};
-
+    
+    /* Box-Muller transform */
     double u1 = generate_random_number_between_zero_and_unity();
     double u2 = generate_random_number_between_zero_and_unity();
     double result = mu + sigma * sqrt(-2.0*log(u1)) * cos(TWOPI*u2);

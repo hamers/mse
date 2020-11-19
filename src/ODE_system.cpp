@@ -131,7 +131,7 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 	flag = CVodeSetMaxNumSteps(cvode_mem, maximum_number_of_internal_ODE_steps);
 	if (check_flag(&flag, "CVodeSetMaxNumSteps", 1)) return 1;
 
-//	flag = CVodeSetMinStep(cvode_mem, 0.1); // minimum step size
+//	flag = CVodeSetMinStep(cvode_mem, 1.0e-14); // minimum step size
 //	if (check_flag(&flag, "CVodeSetMinStep", 1)) return 1;
 
 	flag = CVodeSetMaxHnilWarns(cvode_mem, 1);

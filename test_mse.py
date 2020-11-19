@@ -1516,9 +1516,11 @@ class test_mse():
         if args.verbose==True:
             print("Maxwellian mean vs/(km/s)",np.mean(np.array(vs))," an ", 2.0*sigma*np.sqrt(2.0/np.pi))
             print("Normal mean vs/(km/s)",np.mean(np.array(vs2))," an ", mu)
+            print("Normal std vs/(km/s)",np.std(np.array(vs2))," an ", sigma)
         
         assert(round(np.mean(np.array(vs)),N_r) == round(2.0*sigma*np.sqrt(2.0/np.pi),N_r))
         assert(round(np.mean(np.array(vs2)),N_r) == round(mu,N_r))
+        assert(round(np.std(np.array(vs2)),N_r) == round(sigma,N_r))
 
         if args.plot == True:
             Nb=100

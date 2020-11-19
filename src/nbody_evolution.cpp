@@ -87,7 +87,6 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         handle_collisions_nbody(R, particlesMap, t, integration_flag);
         *integration_flag = 1; // continue with direct N-body after the collision, at least initially
 
-        free_data(R);
         return;
     }
 
@@ -124,7 +123,6 @@ int determine_orbits_in_system_using_nbody(ParticlesMap *particlesMap)
         printf("nbody_evolution.cpp -- determine_orbits_in_system_using_nbody\n");
     }
     #endif
-    
     int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
 
     if (N_bodies_eff < 1)
@@ -137,7 +135,7 @@ int determine_orbits_in_system_using_nbody(ParticlesMap *particlesMap)
     double P_orb_min,P_orb_max;
     integration_flag = determine_new_integration_flag_using_nbody(R,particlesMap,&P_orb_min,&P_orb_max);
     
-    //free_data(R);
+    free_data(R);
     
     return integration_flag;
 }
@@ -197,6 +195,8 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
             break;
         }
     }
+    free_data(R);
+    
     if (col_part_i == -1 or col_part_j == -1)
     {
         printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");

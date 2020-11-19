@@ -1419,7 +1419,7 @@ void free_data(struct RegularizedRegion *R) {
     free(R);
 
     free(gbsS);
-   
+    
 }
 
 void stopping_condition_function(struct RegularizedRegion *R, int *possible_stopping_condition, int *stopping_condition_occurred, double *Delta_t_min)

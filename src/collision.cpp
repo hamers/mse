@@ -545,7 +545,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         print_system(particlesMap,*integration_flag);
     }
     #endif
-    
+
     return;
 }
 

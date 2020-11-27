@@ -412,6 +412,7 @@ class MSE(object):
 
         ### get initial system structure ###
         orbits = [p for p in self.particles if p.is_binary == True]
+        bodies_old = [b.index for b in self.particles if b.is_binary == False]
         children1_old = [o.child1.index for o in orbits]
         children2_old = [o.child2.index for o in orbits]
 
@@ -446,15 +447,17 @@ class MSE(object):
 
         self.__update_particles_from_code()
 
-        ### check if the system structure changed ###
+        ### check if the system structure changed (including changes in bodies) ###
         orbits = [p for p in self.particles if p.is_binary == True]
+        
         children1 = [o.child1.index for o in orbits]
         children2 = [o.child2.index for o in orbits]
-            
+        bodies = [b.index for b in self.particles if b.is_binary == False]            
+        
         self.structure_change = False
-        if children1 != children1_old or children2 != children2_old:
+        if bodies != bodies_old or children1 != children1_old or children2 != children2_old:
             self.structure_change = True
-
+    
 
         return self.state,self.structure_change,self.CVODE_flag,self.CVODE_error_code
 
@@ -2229,7 +2232,7 @@ class Tools(object):
             N_bodies = len(bodies)
                
             if code.structure_change == True:
-                #print("Python restruct")#,children1,children1_old,children2,children2_old)
+                print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
                 integration_flags.append([])
                 internal_indices_print.append([[] for x in range(N_bodies)])
@@ -2278,18 +2281,7 @@ class Tools(object):
 
             t_print[i_status].append(t)        
             integration_flags[i_status].append(code.integration_flag)
-            if flag==2:
-                print("Root",t,'RLOF',[o.RLOF_at_pericentre_has_occurred for o in orbits],'col',[o.physical_collision_or_orbit_crossing_has_occurred for o in orbits],'dyn inst',[o.dynamical_instability_has_occurred for o in orbits],'sec break',[o.secular_breakdown_has_occurred for o in orbits],'min peri',[o.minimum_periapse_distance_has_occurred for o in orbits],'GW',[o.GW_condition_has_occurred for o in orbits])
-                break
-            if flag==3:
-                print("SNe")
-                break
-            if state==3:
-                print("unbound")
-                break
-            
-            #seed += 1
-            
+
             i += 1
 
         N_status = i_status+1

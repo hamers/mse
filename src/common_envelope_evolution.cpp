@@ -743,12 +743,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->RLOF_flag = 0;
         star1->apply_kick = false;
         star1->mass_dot_wind = 0.0;
+        star1->mass_dot_wind_accretion = 0.0;
         star1->radius_dot = 0.0;
         star1->ospin_dot = 0.0;
 
         star2->RLOF_flag = 0;
         star2->apply_kick = false;
         star2->mass_dot_wind = 0.0;
+        star2->mass_dot_wind_accretion = 0.0;
         star2->radius_dot = 0.0;
         star2->ospin_dot = 0.0;
     }
@@ -824,6 +826,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->RLOF_flag = 0;
         star1->apply_kick = false;
         star1->mass_dot_wind = 0.0;
+        star1->mass_dot_wind_accretion = 0.0;
         star1->radius_dot = 0.0;
         star1->ospin_dot = 0.0;
            

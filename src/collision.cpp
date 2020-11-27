@@ -519,6 +519,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         child1->RLOF_flag = 0;
         child1->apply_kick = false;
         child1->mass_dot_wind = 0.0;
+        child1->mass_dot_wind_accretion = 0.0;
         child1->radius_dot = 0.0;
         child1->ospin_dot = 0.0;
     }

@@ -457,7 +457,6 @@ class MSE(object):
         self.structure_change = False
         if bodies != bodies_old or children1 != children1_old or children2 != children2_old:
             self.structure_change = True
-    
 
         return self.state,self.structure_change,self.CVODE_flag,self.CVODE_error_code
 
@@ -680,7 +679,7 @@ class MSE(object):
     def __copy_particle_structure_from_code(self):
         self.particles = []
         N_particles = self.lib.get_number_of_particles()
-        
+
         for i in range(N_particles):
             
             internal_index = self.lib.get_internal_index_in_particlesMap(i)
@@ -2232,7 +2231,7 @@ class Tools(object):
             N_bodies = len(bodies)
                
             if code.structure_change == True:
-                print("Python restruct")#,children1,children1_old,children2,children2_old)
+                #print("Python restruct")#,children1,children1_old,children2,children2_old)
                 t_print.append([])
                 integration_flags.append([])
                 internal_indices_print.append([[] for x in range(N_bodies)])
@@ -2264,19 +2263,19 @@ class Tools(object):
                 e_print[i_status][index].append(orbits[index].e)
                 a_print[i_status][index].append(orbits[index].a)
             for index in range(N_bodies):
-                internal_indices_print[i_status][index].append(particles[index].index)
-                m_print[i_status][index].append(particles[index].mass)
-                L_print[i_status][index].append(particles[index].luminosity)
-                k_print[i_status][index].append(particles[index].stellar_type)
-                R_print[i_status][index].append(particles[index].radius)
-                X_print[i_status][index].append(particles[index].X)
-                Y_print[i_status][index].append(particles[index].Y)
-                Z_print[i_status][index].append(particles[index].Z)
-                t_V_print[i_status][index].append(particles[index].tides_viscous_time_scale)
-                Rc_print[i_status][index].append(particles[index].convective_envelope_radius)
-                R_L_print[i_status][index].append(particles[index].roche_lobe_radius_pericenter)
-                mc_print[i_status][index].append(particles[index].convective_envelope_mass)
-                T_eff = Tools.compute_effective_temperature(particles[index].luminosity, particles[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
+                internal_indices_print[i_status][index].append(bodies[index].index)
+                m_print[i_status][index].append(bodies[index].mass)
+                L_print[i_status][index].append(bodies[index].luminosity)
+                k_print[i_status][index].append(bodies[index].stellar_type)
+                R_print[i_status][index].append(bodies[index].radius)
+                X_print[i_status][index].append(bodies[index].X)
+                Y_print[i_status][index].append(bodies[index].Y)
+                Z_print[i_status][index].append(bodies[index].Z)
+                t_V_print[i_status][index].append(bodies[index].tides_viscous_time_scale)
+                Rc_print[i_status][index].append(bodies[index].convective_envelope_radius)
+                R_L_print[i_status][index].append(bodies[index].roche_lobe_radius_pericenter)
+                mc_print[i_status][index].append(bodies[index].convective_envelope_mass)
+                T_eff = Tools.compute_effective_temperature(bodies[index].luminosity, bodies[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
                 T_eff_print[i_status][index].append(T_eff)
 
             t_print[i_status].append(t)        

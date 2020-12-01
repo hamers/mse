@@ -418,7 +418,15 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
     }
     else
     {
-        *E_0 = acos( (1.0/e)*(1.0 - 1.0/x) );
+        double arg = (1.0/e)*(1.0 - 1.0/x);
+        if (arg >= 1.0)
+        {
+            *E_0 = 0.0;
+        }
+        else
+        {
+            *E_0 = acos(arg);
+        }
         *in_RLOF = true;
     }
     if (*E_0 != *E_0)
@@ -426,7 +434,7 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
         #ifdef VERBOSE
         if (verbose_flag > 0)
         {
-            printf("mass_changes.cpp -- ERROR in determine_E_0; E_0 = %g x  = %g e = %g \n",*E_0,x,e);
+            printf("ODE_mass_changes.cpp -- ERROR in determine_E_0; E_0 = %g x  = %g e = %g (1.0/e)*(1.0 - 1.0/x) %g\n",*E_0,x,e,(1.0/e)*(1.0 - 1.0/x));
         }
         #endif
         
@@ -436,7 +444,7 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
     #ifdef VERBOSE
     if (verbose_flag > 2)
     {
-        printf("mass_changes.cpp -- determine_E_0 -- x %g e %g E_0... %g\n",x,e,*E_0);
+        printf("ODE_mass_changes.cpp -- determine_E_0 -- x %g e %g E_0... %g\n",x,e,*E_0);
     }
     #endif
     

@@ -39,6 +39,8 @@ double f_tides3_function_BO(double e_p2, double j_p10_inv, double j_p13_inv);
 double f_tides4_function_BO(double e_p2, double j_p10_inv, double j_p13_inv);
 double f_tides5_function_BO(double e_p2, double j_p10_inv, double j_p13_inv);
 
+void compute_estimated_tidal_apsidal_motion_timescales(double M, double m, double R, double k_AM, double *spin_vec, double a, double e, double *e_vec, double *h_vec, double *t_apsidal_motion);
+
 int VWXYZ_tides_function
 (
     bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, \

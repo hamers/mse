@@ -435,20 +435,24 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     {
         Z_TB = C*15.0*n*n*(mu/M)*f_tides2;
     }
-    
+
     double X = X_rot;
     double Y = Y_rot;
     double Z = Z_rot + Z_TB;
-    
+
     check_number(X_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","X_rot", true);
     check_number(Y_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Y_rot", true);
     check_number(Z_rot,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Z_rot", true);
     check_number(Z_TB,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","Z_TB", true);
     check_number(h,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","h", true);
     check_number(n,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","n", true);
-
     double dh_vec_dt_star_i;
-   
+
+    if (binary->exclude_for_secular_integration == true)// and binary->exclude_rotation_and_bulges_precession_in_case_of_isolated_binary == false)
+    {
+        X = Y = Z = 0.0;
+    }
+
     for (int i=0; i<3; i++)
     {
 
@@ -521,6 +525,52 @@ double f_tides5_function_BO(double e_p2, double j_p10_inv, double j_p13_inv)
 {
     return j_p10_inv*(3.0 + c_1div2*e_p2);
 }  
+
+void compute_estimated_tidal_apsidal_motion_timescales(double M, double m, double R, double k_AM, double *spin_vec, double a, double e, double *e_vec, double *h_vec, double *t_apsidal_motion)
+{
+    /* This function estimates the timescale for tides to advance the apsidal line.
+     * Is supposed to be called only occasionally, so not much attempt made at optimisation. 
+     * M: subject; m: companion */
+     
+    double mu = m*M/(m+M);
+    double P_orb = compute_orbital_period_from_semimajor_axis(m+M,a);
+    double n = 2.0*M_PI/P_orb; /* mean motion */
+    double C = m*k_AM*pow(R/a,5.0)/(mu*n);
+    
+    double e_p2 = e*e;
+    double j = sqrt(1.0-e_p2);
+    double j_p4_inv = pow(j,-4.0);
+    double j_p10_inv = pow(j,-10.0);
+    double j_p13_inv = pow(j,-13.0);
+    
+    double f_tides2 = f_tides2_function_BO(e_p2,j_p10_inv,j_p13_inv);
+
+    double spin_vec_dot_e_vec = dot3(spin_vec,e_vec);
+    double spin_vec_dot_h_vec = dot3(spin_vec,h_vec);
+
+    double h = norm3(h_vec);
+    double q_vec_unit[3];
+    cross3(h_vec,e_vec,q_vec_unit); /* not yet normalised */
+    double q_norm = norm3(q_vec_unit);
+    for (int i=0; i<3; i++)
+    {
+        q_vec_unit[i] = q_vec_unit[i]/q_norm;
+    }
+
+    double spin_vec_dot_e_vec_unit = dot3(spin_vec,e_vec)/e;
+    double spin_vec_dot_h_vec_unit = dot3(spin_vec,h_vec)/h;
+    double spin_vec_dot_q_vec_unit = dot3(spin_vec,q_vec_unit);
+    
+    double Z_rot = C*c_1div2*j_p4_inv*(2.0*spin_vec_dot_h_vec_unit*spin_vec_dot_h_vec_unit - spin_vec_dot_q_vec_unit*spin_vec_dot_q_vec_unit - spin_vec_dot_e_vec_unit*spin_vec_dot_e_vec_unit);
+    double Z_TB = C*15.0*n*n*(mu/M)*f_tides2;
+
+    double Z = fabs(Z_rot + Z_TB);
+    if (Z <= epsilon)
+    {
+        Z = epsilon;
+    }
+    *t_apsidal_motion = 1.0/Z;
+}
 
 
 double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession)

@@ -952,9 +952,12 @@ void check_for_integration_exclusion_orbits(ParticlesMap *particlesMap)
                 Particle *q = (*particlesMap)[(*it_parent_p)];
                 int connecting_child_in_parent_q = p->connecting_child_in_parents[i];
 
-                double t_sec = compute_order_of_magnitude_secular_timescale_for_pair(particlesMap,p->index,q->index,connecting_child_in_parent_q);
-                double t_1PN = compute_1PN_timescale(p->a,p->mass,p->e);
+                p->exclude_for_secular_integration = false;
 
+                double t_sec = compute_order_of_magnitude_secular_timescale_for_pair(particlesMap,p->index,q->index,connecting_child_in_parent_q);
+
+                /* 1PN apsidal motion */
+                double t_1PN = compute_1PN_timescale(p->a,p->mass,p->e);
                 if (t_1PN < t_sec * secular_integration_exclusion_safety_factor)
                 {
                     p->exclude_for_secular_integration = true;
@@ -962,13 +965,30 @@ void check_for_integration_exclusion_orbits(ParticlesMap *particlesMap)
                     #ifdef VERBOSE
                     if (verbose_flag > 1)
                     {
-                        printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- excluding p %d parent %d t_sec %g t_1PN %g\n",p->index,q->index,t_sec,t_1PN);
+                        printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- 1PN excluding p %d parent %d t_sec %g t_1PN %g\n",p->index,q->index,t_sec,t_1PN);
                     }
                     #endif
                 }
-                else
+                
+                /* Apsidal motion due to tides */
+                double t_apsidal_motion1;
+                double t_apsidal_motion2;
+                Particle *child1 = (*particlesMap)[p->child1];
+                Particle *child2 = (*particlesMap)[p->child2];
+                compute_estimated_tidal_apsidal_motion_timescales(child1->mass,child2->mass,child1->radius,child1->apsidal_motion_constant,child1->spin_vec,p->a,p->e,p->e_vec,p->h_vec,&t_apsidal_motion1);
+                compute_estimated_tidal_apsidal_motion_timescales(child2->mass,child1->mass,child2->radius,child2->apsidal_motion_constant,child2->spin_vec,p->a,p->e,p->e_vec,p->h_vec,&t_apsidal_motion2);
+                double t_apsidal_motion_eff = CV_min(t_apsidal_motion1,t_apsidal_motion2);
+                
+                if (t_apsidal_motion_eff < t_sec * secular_integration_exclusion_safety_factor)
                 {
-                    p->exclude_for_secular_integration = false;
+                    p->exclude_for_secular_integration = true;
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- tides excluding p %d parent %d t_sec %g t_apsidal_motion_eff %g\n",p->index,q->index,t_sec,t_apsidal_motion_eff);
+                    }
+                    #endif
                 }
             }
         }

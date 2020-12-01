@@ -885,7 +885,7 @@ class test_mse():
         if args.verbose == True:
             print("num rp ",a_print_array[-1]*(1.0 - e_print_array[-1])," 2*R ",2*R)
 
-        N_r = 10            
+        N_r = 10       
         assert round(a_print_array[-1]*(1.0 - e_print_array[-1]),N_r) == round(2.0*R,N_r)
         print("Test passed")
 

@@ -34,7 +34,7 @@ int verbose_flag = 0;
 bool stop_after_root_found = false;
 bool check_numbers_internally = true;
 
-double secular_integration_exclusion_safety_factor = 1.0e-3;
+double secular_integration_exclusion_safety_factor = 1.0e-5;
 double ODE_min_dt = 1.0;
 
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */

@@ -942,7 +942,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     }
     if (kw2 <= 1 or kw2 == 7)
     {
-        accretor->sse_initial_mass = m_donor_new;
+        accretor->sse_initial_mass = m_accretor_new;
     }
     
     /* For a HG star check if the initial mass can be reduced. */    

@@ -172,7 +172,7 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)//, ParticlesMapIterator &it_p)
 {
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 0)
     {
         printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
         print_system(particlesMap,*integration_flag);
@@ -214,6 +214,45 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
     double fabs_m_dot = fabs(m_dot);
     //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
+    
+    
+    
+    if (accretor->RLOF_flag == 1) /* Contact evolution */
+    {
+        int kw2 = accretor->stellar_type;
+        if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) 
+        {
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("binary_evolution.cpp -- handle_mass_transfer_cases -- Contact evolution -- kw2 %d -- invoking CE \n",kw2);
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
+
+            /* CE if the accretor is also a giant */
+            flag = 6;
+            common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+            *dt_binary_evolution = ODE_min_dt;
+            return flag;
+        }
+        else
+        {
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("binary_evolution.cpp -- handle_mass_transfer_cases -- Contact evolution -- kw2 %d -- merging \n",kw2);
+                print_system(particlesMap,*integration_flag);
+            }
+            #endif
+
+            /* Otherwise, let the stars merge */
+            flag = 7;
+            collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
+            *dt_binary_evolution = ODE_min_dt;
+            return flag;
+        }
+    }
     
     double t_MT;
     if (fabs_m_dot <= epsilon)

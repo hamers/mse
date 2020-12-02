@@ -231,14 +231,20 @@ double compute_t_V_hurley
             P_spin = TWOPI/spin_angular_frequency;
             P_tid = 1.0/( 1e-10 + fabs( 1.0/P_orb - 1.0/P_spin) );
         }
-        double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*(radius - (1.0/2.0)*convective_envelope_radius))/(3.0*luminosity), 1.0/3.0);
+        double radius_arg = (radius - (1.0/2.0)*convective_envelope_radius);
+        if (radius_arg <= 0.0)
+        {
+            radius_arg = convective_envelope_radius;
+        }
+            
+        double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*radius_arg)/(3.0*luminosity), 1.0/3.0);
 
         double f_convective = pow(P_tid/(2.0*tau_convective),2.0);
         f_convective = CV_min(1.0,f_convective);
 
         k_AM_div_T = (2.0/21.0)*(f_convective/tau_convective)*(convective_envelope_mass/mass);
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
-
+        
         return t_V;
 
     }
@@ -364,9 +370,11 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("star->convective_envelope_mass %g\n",star->convective_envelope_mass);
         printf("m %g\n",m);
         printf("a %.15g\n",a);
+        printf("spin %g %g %g norm %g\n",spin_vec[0],spin_vec[1],spin_vec[2],star->spin_vec_norm);
         printf("e %.15g\n",e);
         printf("rp %g\n",a*(1.0-e));
         printf("R %g\n",R);
+        printf("rg %g\n",star->gyration_radius);
         printf("star->convective_envelope_radius %g\n",star->convective_envelope_radius);
         printf("star->luminosity %g\n",star->luminosity);
         printf("k_AM %g\n",k_AM);

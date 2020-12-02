@@ -1000,7 +1000,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         }
         else
         {
-            accretor->age *= (tms/tms_donor_old);
+            accretor->age *= (tms/tms_accretor_old);
         }
         accretor->epoch = t - accretor->age;
     }

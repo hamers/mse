@@ -125,7 +125,7 @@ void limit_tau(double *tau)
     if (*tau >= 1.0)
     {
         #ifdef VERBOSE
-        if (verbose_flag > 0)
+        if (verbose_flag > 1)
         {
             printf("apsidal_motion_constant.cpp -- limit_tau -- limiting tau from %g to 1.0\n",*tau);
         }

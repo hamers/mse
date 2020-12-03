@@ -548,13 +548,18 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
             gntage_(&MC1,&M1,&KW,ZPARS2,&M01,&AJ1);
             star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
-         }
-         
-         hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
+        }
+        else
+        {
+            star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+        }
+        
+        //printf("HRDIAG0 M01 %g M1 %g AJ1 %g KW %d TN %g TM1 %g\n",M01,M1,AJ1,KW1,TN,TM1);
+        hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
             &R1,&L1,&KW,&MC1,&RC1,&MENV1,&RENV1,&K21);
-
-         KW1 = KW;
-         ECC = 0.0;
+        //printf("HRDIAG1 M01 %g M1 %g AJ1 %g KW %d R1 %g L1 %g\n",M01,M1,AJ1,KW1,R1,L1);
+        KW1 = KW;
+        ECC = 0.0;
     }
     else if (COEL == false) /* No coalescence */
     {

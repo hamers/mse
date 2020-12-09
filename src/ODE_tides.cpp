@@ -422,7 +422,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     check_number(spin_vec_dot_q_vec_unit,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec_dot_q_vec_unit", true);
     check_number(C,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","C", true);
     check_number(j_p4_inv,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","j_p4_inv", true);
-    
+
     double C_rot;
     double X_rot = 0.0;
     double Y_rot = 0.0;
@@ -460,7 +460,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     {
         X = Y = Z = 0.0;
     }
-
+    //printf("X %g Y %g Z %g\n",X,Y,Z);
     for (int i=0; i<3; i++)
     {
 

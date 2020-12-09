@@ -528,7 +528,33 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
                     p->e_vec[k_component] = Ith(y,k + k_component);
                     p->h_vec[k_component] = Ith(y,k + k_component + 3);
                 }
-                
+                if (norm3(p->e_vec) > 1.0)
+                {
+                   
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d e = %g > 1; original e_vec %g %g %g\n",norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
+                    }
+                    #endif
+
+                    double e_norm = norm3(p->e_vec);
+                    double e_overshoot = e_norm - 1.0;
+                    for (k_component=0; k_component<3; k_component++)
+                    {
+                        p->e_vec[k_component] = (1.0 - e_overshoot) * p->e_vec[k_component]/e_norm;
+                    }
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d; new adjusted e = %g; e_vec %g %g %g\n",norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
+                    }
+                    #endif
+
+
+                }
+               
                 k=k+6;
             }
             else if (p->integration_method==1)
@@ -900,7 +926,6 @@ void extract_final_ODE_variables(ParticlesMap *particlesMap, N_Vector &y_out)
                     p->e_vec[k_component] = Ith(y_out,k + k_component);
                     p->h_vec[k_component] = Ith(y_out,k + k_component + 3);
                 }
-
                 k=k+6;
             }
             else if (p->integration_method==1)

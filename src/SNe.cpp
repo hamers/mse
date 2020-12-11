@@ -263,17 +263,14 @@ bool check_for_unbound_orbits(ParticlesMap *particlesMap)
 
 void remove_massless_remnants_from_system(ParticlesMap *particlesMap, int *integration_flag)
 {
-    ParticlesMapIterator it_p;
-    
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    ParticlesMapIterator it_p = particlesMap->begin();
+    while (it_p != particlesMap->end())
     {
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->object_type == 1)
         {
             if (p->stellar_type == 15)
             {
-                print_system(particlesMap,1);
-
                 #ifdef VERBOSE
                 if (verbose_flag > 0)
                 {
@@ -281,10 +278,18 @@ void remove_massless_remnants_from_system(ParticlesMap *particlesMap, int *integ
                 }
                 #endif
                 
-                particlesMap->erase(p->index);
-                print_system(particlesMap,1);
+                it_p = particlesMap->erase(it_p);
+
                 *integration_flag = 1;
             }
+            else
+            {
+                ++it_p;
+            }
+        }
+        else
+        {
+            ++it_p;
         }
     }
 }

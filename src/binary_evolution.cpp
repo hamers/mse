@@ -894,6 +894,8 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             particlesMap->erase(accretor_index);
 
             *integration_flag = 1;
+            
+            return 0;
 
         }
         else if (kw1 <= 10 and kw2 >= 11)
@@ -927,6 +929,8 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                     particlesMap->erase(accretor_index);
 
                     *integration_flag = 1;
+                    
+                    return 0;
 
                 }
                 else
@@ -965,6 +969,10 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 update_stellar_evolution_properties(donor);
                 donor->RLOF_flag = 0;
                 particlesMap->erase(accretor_index);
+                
+                *integration_flag = 1;
+                
+                return 0;
         
             }
         }

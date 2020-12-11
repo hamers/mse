@@ -1112,6 +1112,7 @@ int test_stellar_evolution()
     flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
+    flag += test_remove_massless_remnants_from_system();
     
     if (flag == 0)
     {
@@ -1410,6 +1411,41 @@ int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
     return 0;
 }
     
+int test_remove_massless_remnants_from_system()
+{
+    printf("test.cpp -- test_remove_massless_remnants_from_system\n");
+    
+    ParticlesMap particlesMap;
+    int N_bodies = 4;
+    double m1 = 20.0;
+    double m2 = 15.0;
+    double m3 = 25.0;
+    double m4 = 14.0;
+    double a1 = 1.0;
+    double a2 = 40.0;
+    double a3 = 2000.0;
+    double masses[4] = {m1,m2,m3,m4};
+    int stellar_types[4] = {1,1,1,1};
+    int object_types[4] = {1,1,1,1};
+    double smas[3] = {a1,a2,a3};
+    double es[3] = {0.01,0.01,0.01};
+    double TAs[3] = {0.01,0.01,0.01};
+    double INCLs[3] = {0.01,0.01,0.01};
+    double APs[3] = {0.01,0.01,0.01};
+    double LANs[3] = {0.01,0.01,0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+//    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
+    initialize_code(&particlesMap);
+    
+    particlesMap[0]->stellar_type = 15;
+    
+    int integration_flag = 1;
+    remove_massless_remnants_from_system(&particlesMap,&integration_flag);
+    
+    return 0;
+}
+
     
 /*********************
  * Binary evolution *

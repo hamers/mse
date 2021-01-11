@@ -839,7 +839,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     } // end of label30
 
-    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+    //*integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
 
     #ifdef LOGGING
     //Log_info_type log_info;

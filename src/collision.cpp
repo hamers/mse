@@ -124,6 +124,8 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         }
     }
     
+    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+  
     #ifdef VERBOSE
     if (verbose_flag > 1)
     {
@@ -529,8 +531,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         particlesMap->erase(child2->index);
     }
 
-    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
-    
     #ifdef LOGGING
     //Log_info_type log_info;
     log_info.binary_index = binary_index;

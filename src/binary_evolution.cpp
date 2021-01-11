@@ -132,14 +132,24 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
 
     /* Handle RLOF cases */
     std::vector<int>::iterator it;
+    bool reevaluate_integration_flag = false;
     int flag = 0;
     for (int i=0; i<parent_indices.size(); i++)
     {
         flag = handle_mass_transfer_cases(particlesMap, parent_indices[i], donor_indices[i], accretor_indices[i], integration_flag, t_old, t, dt_binary_evolution);
+        if (flag != 5)
+        {
+            reevaluate_integration_flag = true;
+        }
     }
 
+    if (reevaluate_integration_flag == true)
+    {
+        *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+    }
+    
     update_structure(particlesMap, *integration_flag);
-
+    
     return flag;
     
 }
@@ -674,6 +684,8 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
 
     collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
 
+    *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+    
     return 0;
 }
 

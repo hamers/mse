@@ -534,7 +534,7 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
                     #ifdef VERBOSE
                     if (verbose_flag > 0)
                     {
-                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d e = %g > 1; original e_vec %g %g %g\n",norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
+                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d e = %g > 1; original e_vec %g %g %g\n",p->index,norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
                     }
                     #endif
 
@@ -542,13 +542,13 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
                     double e_overshoot = e_norm - 1.0;
                     for (k_component=0; k_component<3; k_component++)
                     {
-                        p->e_vec[k_component] = (1.0 - e_overshoot) * p->e_vec[k_component]/e_norm;
+                        p->e_vec[k_component] = fmod(1.0 - e_overshoot,1.0) * p->e_vec[k_component]/e_norm;
                     }
 
                     #ifdef VERBOSE
                     if (verbose_flag > 0)
                     {
-                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d; new adjusted e = %g; e_vec %g %g %g\n",norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
+                        printf("ODE_system.cpp -- extract_ODE_variables -- p %d; new adjusted e = %g; e_vec %g %g %g\n",p->index,norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
                     }
                     #endif
 
@@ -1009,7 +1009,7 @@ void check_for_integration_exclusion_orbits(ParticlesMap *particlesMap)
                     p->exclude_for_secular_integration = true;
                     
                     #ifdef VERBOSE
-                    if (verbose_flag > 0)
+                    if (verbose_flag > 1)
                     {
                         printf("ODE_system.cpp -- check_for_integration_exclusion_orbits -- tides excluding p %d parent %d t_sec %g t_apsidal_motion_eff %g\n",p->index,q->index,t_sec,t_apsidal_motion_eff);
                     }

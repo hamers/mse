@@ -417,7 +417,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         else
                         {
                             P_p->RLOF_at_pericentre_has_occurred = false;
-                            // P_p->RLOF_flag = 0; // TO CHANGE
+                            P_p->RLOF_flag = 0;
                         }
                     }
                 }
@@ -481,7 +481,7 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
             }
             else
             {
-                // p->RLOF_flag = 0; // TO CHANGE
+                p->RLOF_flag = 0;
             }
                 
         }

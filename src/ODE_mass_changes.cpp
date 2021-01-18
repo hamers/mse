@@ -65,6 +65,10 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     {
         return 0;
     }
+    if (donor->object_type != 1)
+    {
+        return 0;
+    }
     
     Particle *child1 = (*particlesMap)[inner_binary->child1];
     Particle *child2 = (*particlesMap)[inner_binary->child2];

@@ -236,7 +236,7 @@ void PrimMST(struct RegularizedRegion *R) {
     int NumLocalEdges = 0;
     int c = 0, counter = 0;
 
-    double rmin = 1e5, r2;
+    double rmin = DBL_MAX, r2;
     int last = -1;
 
     for (int i = 0; i < R->NumVertex; i++) {

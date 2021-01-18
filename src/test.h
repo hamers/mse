@@ -19,6 +19,7 @@ struct RegularizedRegion *generate_pythagorean_ICs(double m1, double m2, double 
 int test_nbody_pythagorean();
 int test_nbody_inspiral(int mode);
 int test_nbody_spin_orbit(int mode);
+int test_nbody_custom(int mode);
 
 int test_flybys();
 int test_flybys_integrals();

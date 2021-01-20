@@ -35,6 +35,7 @@ extern int random_seed;
 extern int verbose_flag;
 extern bool stop_after_root_found;
 extern bool check_numbers_internally;
+extern int error_code;
 
 extern double secular_integration_exclusion_safety_factor;
 extern double ODE_min_dt;

@@ -33,6 +33,45 @@ int random_seed = 0;
 int verbose_flag = 0;
 bool stop_after_root_found = false;
 bool check_numbers_internally = true;
+int error_code = 0;
+
+/* Description of error codes
+ * 0: no error 
+ * 1: tools.cpp -- check_number() (NaN or INF)
+ * 2: binary_evolution.cpp -- handle_wind_accretion()
+ * 3: binary_evolution.cpp -- handle_mass_transfer_cases()
+ * 4: binary_evolution.cpp -- dynamical_mass_transfer_WD_donor()
+ * 5: binary_evolution.cpp -- triple_stable_mass_transfer_evolution()
+ * 6: collision.cpp -- collision_product()
+ * 7: collision.cpp -- handle_collisions()
+ * 8: common_envelope_evolution.cpp -- triple_common_envelope_evolution()
+ * 9: nbody_evolution.cpp -- handle_collisions_nbody()
+ * 10: ODE_mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer()
+ * 11: ODE_mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer()
+ * 12: ODE_mass_changes.cpp -- compute_RLOF_emt_model()
+ * 13: SNe.cpp -- sample_kick_velocity()
+ * 14: flybys.cpp -- sample_next_flyby()
+ * 15: flybys.cpp -- sample_flyby_position_and_velocity_at_R_enc()
+ * 16: flybys.cpp -- sample_flyby_mass_at_infinity()
+ * 17: stellar_evolution.cpp -- initialize_stars()
+ * 18: strucutre.cpp -- check_system_for_dynamical_stability()
+ * 19: ODE_newtonian.cpp -- compute_EOM_binary_pairs()
+ * 20: ODE_newtonian.cpp -- compute_EOM_binary_pairs_single_averaged()
+ * 21: ODE_newtonian.cpp -- compute_EOM_binary_triplets()
+ * 22: ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full()
+ * 23: ODE_root_finding.cpp -- roche_radius_pericenter_sepinsky()
+ * 24: ODE_root_finding.cpp -- handle_roots()
+ * 25: apsidal_motion_constant.cpp -- compute_apsidal_motion_constant()
+ * 26: external.cpp -- compute_EOM_binary_pairs_external_perturbation()
+ * 27: mst.c -- die()
+ * 28: mst.c -- initialize_mpi_or_serial()
+ * 29: mst.c -- check_relative_proximity()
+ * 30: mst.c -- compute_U()
+ * 31: mst.c -- stopping_condition_function()
+ * 32: mst.c -- check_for_initial_stopping_condition()
+ * 33: ODE_VRR.cpp -- compute_VRR_perturbations()
+ * 34: tools.cpp -- sample_from_Kroupa_93_imf()
+ */
 
 double secular_integration_exclusion_safety_factor = 1.0e-5;
 double ODE_min_dt = 1.0;

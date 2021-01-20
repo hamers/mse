@@ -65,7 +65,8 @@ int initialize_stars(ParticlesMap *particlesMap)
             if (z < 0.0001 or z > 0.03)
             {
                 printf("stellar_evolution.cpp -- ERROR: metallicity (given: z = %g for star with index %d and initial mass %g MSun) should be in the range 0.0001 < z < 0.03; terminating program\n",z,p->index,p->mass);
-                exit(-1);
+                //exit(-1);
+                error_code = 17;
             }
 
             double *zpars;

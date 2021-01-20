@@ -379,7 +379,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("star->luminosity %g\n",star->luminosity);
         printf("k_AM %g\n",k_AM);
         print_system(particlesMap,0);
-        exit(-1);
+        //exit(-1);
+        error_code = 22;
     }
 
 

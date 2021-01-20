@@ -123,7 +123,8 @@ double sample_from_Kroupa_93_imf()
     else
     {
         printf("tools.cpp -- ERROR in sample_from_Kroupa_93_imf\n");
-        exit(-1);
+        //exit(-1);
+        error_code = 34;
     }
     
     return m;
@@ -814,8 +815,9 @@ void check_number(double x, char *source, char *description, bool exit_on_error)
 
     if (error == true and exit_on_error == true)
     {
-        printf("Exiting on fatal error\n");
-        exit(-1);
+        //printf("Exiting on fatal error\n");
+        error_code = 1;
+        //exit(-1);
     }
 }
 

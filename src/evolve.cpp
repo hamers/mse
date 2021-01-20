@@ -235,6 +235,15 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
         #endif
         
+        if (t>1e6)
+        {
+//            error_code = 1;
+        }
+        if (error_code != 0)
+        {
+            break;
+        }
+        
     }
 
     *output_time = t;
@@ -248,7 +257,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     #endif
     
-    return 0;
+    return error_code;
 }
 
 }

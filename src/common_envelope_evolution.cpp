@@ -891,7 +891,8 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (star3->is_binary == true or inner_binary->is_binary == false)
     {
         printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- ERROR: tertiary should be a star, and companion a binary\n");
-        exit(-1);
+        error_code = 8;
+        //exit(-1);
     }
 
     Particle *c1 = (*particlesMap)[inner_binary->child1];

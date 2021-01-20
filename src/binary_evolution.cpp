@@ -80,7 +80,7 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
                 printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
                 print_system(particlesMap,*integration_flag);
                 printf("p->mass %g parent->mass %g p->radius %g v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",p->mass,parent->mass,p->radius,v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
-                exit(-1);
+                error_code = -2;
             }
         }
     }
@@ -277,7 +277,8 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     if (t_MT != t_MT)
     {
         printf("binary_evolution.cpp -- handle_mass_transfer_cases -- ERROR: t_MT = %g; a %g e %g R_Lc %g x %g E_0 %g \n",t_MT,a,e,R_Lc,x,E_0);
-        exit(-1);
+        //exit(-1);
+        error_code = 3;
     }
     
     #ifdef VERBOSE
@@ -337,7 +338,8 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     if (flag == -1)
     {
         printf("binary_evolution.cpp -- fatal error in handle_mass_transfer_cases, parent %d donor %d accretor %d \n",parent->index,donor->index,accretor->index);
-        exit(-1);
+        error_code = 3;
+        //exit(-1);
     }
     
     return flag;
@@ -626,7 +628,8 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     else
     {
         printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor -- unknown case -- parent %d donor %d accretor %d\n",parent_index,donor_index,accretor_index);
-        exit(-1);
+        error_code = 4;
+        //exit(-1);
     }
 
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
@@ -1159,7 +1162,8 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     if (donor->is_binary == true or inner_binary->is_binary == false)
     {
         printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution() -- ERROR: donor should be a star, and accretor a binary\n");
-        exit(-1);
+        error_code = 5;
+        //exit(-1);
     }
 
     Particle *c1 = (*particlesMap)[inner_binary->child1];

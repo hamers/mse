@@ -268,7 +268,8 @@ void compute_EOM_binary_pairs_external_perturbation(ParticlesMap *particlesMap, 
             else
             {
                 printf("external.cpp -- FATAL ERROR in constructing B-function \n");
-                exit(-1);
+                //exit(-1);
+                error_code = 26;
             }
             
             B_n_m_i1_i2 += B_lookup * e_Peven;

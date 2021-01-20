@@ -394,7 +394,7 @@ class MSE(object):
         self.__update_particles_from_code()
         
         end_time,initial_hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
-        evolve_flag = self.lib.evolve_interface(0.0,0.0,ctypes.byref(end_time),ctypes.byref(initial_hamiltonian), \
+        error_code = self.lib.evolve_interface(0.0,0.0,ctypes.byref(end_time),ctypes.byref(initial_hamiltonian), \
             ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code),ctypes.byref(integration_flag))
 
         self.initial_hamiltonian = initial_hamiltonian.value
@@ -420,7 +420,7 @@ class MSE(object):
         start_time = self.model_time
 
         output_time,hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(self.integration_flag)
-        evolve_flag = self.lib.evolve_interface(start_time,end_time,ctypes.byref(output_time),ctypes.byref(hamiltonian), \
+        error_code = self.lib.evolve_interface(start_time,end_time,ctypes.byref(output_time),ctypes.byref(hamiltonian), \
             ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code),ctypes.byref(integration_flag))
         output_time,hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = output_time.value,hamiltonian.value,state.value,CVODE_flag.value,CVODE_error_code.value,integration_flag.value
 
@@ -437,6 +437,7 @@ class MSE(object):
         if (flag==99):
             print('Error occurred during ODE integration; error code is {0}'.format(error_code))
 
+        self.error_code = error_code
         self.CVODE_flag = CVODE_flag
         self.CVODE_error_code = CVODE_error_code
         self.state = state
@@ -2221,7 +2222,12 @@ class Tools(object):
             t+=dt
             code.evolve_model(t)
             
-            flag = code.CVODE_flag
+            error_code = code.error_code
+            if error_code != 0:
+                print("mse.py -- Internal error with code ",error_code,"occurred -- stopping simulation.")
+                return error_code,code.log
+                
+            CVODE_flag = code.CVODE_flag
             state = code.state
 
             particles = code.particles
@@ -2428,7 +2434,7 @@ class Tools(object):
     
         code.reset()
 
-        return code.log
+        return code.error_code, code.log
 
        
     @staticmethod

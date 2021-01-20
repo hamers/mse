@@ -660,7 +660,8 @@ double roche_radius_pericenter_sepinsky(double rp, double q, double e, double f)
         printf("ODE_root_finding.cpp -- unrecoverable error occurred in function roche_radius_pericenter_sepinsky\n");
         printf("log_q %g log_A %g ratio %g\n",log_q,log_A,ratio);
         printf("rp %g q %g e %g f %g\n",rp,q,e,f);
-        exit(-1);
+        //exit(-1);
+        error_code = 23;
     }
     
     return ratio*R_L_pericenter_eggleton;
@@ -933,7 +934,8 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         #endif
         printf("ODE_root_finding.cpp -- handle_roots -- other root condition -- ERROR \n");
         print_system(particlesMap,0);
-        exit(-1);
+        //exit(-1);
+        error_code = 24;
         //break;
     }
 }

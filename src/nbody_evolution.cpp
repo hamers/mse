@@ -200,7 +200,8 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
     if (col_part_i == -1 or col_part_j == -1)
     {
         printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");
-        exit(-1);
+        error_code = 9;
+        //exit(-1);
     }
 
     #ifdef VERBOSE

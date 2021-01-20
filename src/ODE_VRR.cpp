@@ -59,7 +59,8 @@ double compute_VRR_perturbations(ParticlesMap *particlesMap, int index, double t
     if (p->VRR_model == 2)
     {
         printf("ERROR: VRR Model 2 not supported!\n");
-        exit(-1);
+        //exit(-1);
+        error_code = 33;
         
 #ifdef IGNORE
         /* Distortion model */
@@ -133,7 +134,8 @@ double compute_VRR_perturbations(ParticlesMap *particlesMap, int index, double t
         if (fracdip < 0.0 || fracdip > 1.0)
         {
             printf("Invalid dipole fraction -- exiting\n");
-            exit(-1);
+            error_code = 33;
+            //exit(-1);
         }
 
         double Ad = p->VRR_AD_parameter;

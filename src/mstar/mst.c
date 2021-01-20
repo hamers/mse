@@ -24,7 +24,8 @@ struct ToDoList ComputationToDoList;
 
 void die(void) {
     printf("The code is dead because 'die()' was called..\n");
-    exit(0);
+    //exit(0);
+    error_code = 27;
 }
 
 int cmp(const void *a, const void *b) {
@@ -41,7 +42,8 @@ int cmp(const void *a, const void *b) {
 void initialize_mpi_or_serial(void) {
 #if defined(USE_PN_SPIN) && !defined(USE_PN)
     printf("PN spin terms enabled.\nPlease enable USE_PN as well. Currently USE_PN not enabled.\n");
-    exit(0);
+    //exit(0);
+    error_code = 28;
 #endif
 }
 
@@ -110,7 +112,8 @@ int check_relative_proximity(int v1, int v2, const int Nd,
             printf("This level stuff should not happen\n");
             printf("--- v1 v2 %d %d ---levels: %d %d\n", R->Vertex[v1].id, R->Vertex[v2].id, R->Vertex[v1].level,
                    R->Vertex[v2].level);
-            exit(0);
+            //exit(0);
+            error_code = 29;
         }
 
         int halfNd = (int)floor(0.5 * Nd);
@@ -400,7 +403,8 @@ void compute_U(struct RegularizedRegion *R) {
 
     if (!isfinite(R->U)) {
         printf("U not finite.\n");
-        exit(0);
+        //exit(0);
+        error_code = 30;
     }
 
     R->U *= GCONST;
@@ -1517,7 +1521,8 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
             else
             {
                 printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
-                exit(-1);
+                //exit(-1);
+                error_code = 31;
             }
             
             r_crit_p2 = r_crit * r_crit;
@@ -1718,7 +1723,8 @@ int check_for_initial_stopping_condition(struct RegularizedRegion *R)
             else
             {
                 printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
-                exit(-1);
+                //exit(-1);
+                error_code = 32;
             }
             
             r_crit_p2 = r_crit * r_crit;

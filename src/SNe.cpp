@@ -200,7 +200,8 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         else
         {
             printf("SNe.cpp -- sample_kick_velocity -- kick_distribution = 2 -- ERROR: new stellar type %d should be 13 or 14\n",p->stellar_type);
-            exit(-1);
+            //exit(-1);
+            error_code = 13;
         }
         double sigma_kick = mu_kick*p->kick_distribution_5_sigma;
         
@@ -213,7 +214,8 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     else
     {
         printf("SNe.cpp -- sample_kick_velocity -- ERROR: invalid kick distribution %d \n",kick_distribution);
-        exit(-1);
+        //exit(-1);
+        error_code = 13;
     }
 
     #ifdef VERBOSE

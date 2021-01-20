@@ -99,7 +99,8 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         if (col_part_i == -1 or col_part_j == -1)
         {
             printf("merger.cpp -- error in handle_collisions: unable to find pair of colliding bodies; col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
-            exit(-1);
+            error_code = 7;
+            //exit(-1);
         }
         /* Reset Stopping_Condition_Partner */
         pi->Stopping_Condition_Partner = -1;
@@ -432,7 +433,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     if (age == -1 or m0 == -1)
     {
         printf("collision.cpp -- collision_product -- ERROR: age %g and/or m0 %g not set correctly\n",age,m0);
-        exit(-1);
+        error_code = 6;
+        //exit(-1);
     }
     
     /* stellar properties of merged object */

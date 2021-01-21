@@ -19,6 +19,8 @@ int initialize_code(ParticlesMap *particlesMap)
 
     random_number_generator.seed(random_seed);
 
+    error_code = 0;
+
     int integration_flag = 0;
 
     initialize_stars(particlesMap);

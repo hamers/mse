@@ -77,4 +77,4 @@ if __name__ == '__main__':
 
     print("="*50)
     
-    Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag)
+    error_code, log = Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag)

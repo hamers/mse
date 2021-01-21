@@ -2,6 +2,7 @@ import os
 import numpy as np
 import ctypes
 import ast
+import copy
 
 """
 # Multiple Stellar Evolution (MSE) -- A Population Synthesis Code for Multiple-Star Systems #
@@ -2432,9 +2433,12 @@ class Tools(object):
             if show_plots == True:
                 pyplot.show()
     
-        code.reset()
+        error_code_copy = copy.deepcopy(code.error_code)
+        log_copy = copy.deepcopy(code.log)
 
-        return code.error_code, code.log
+        code.reset()
+      
+        return error_code_copy, log_copy
 
        
     @staticmethod

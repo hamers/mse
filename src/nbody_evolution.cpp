@@ -12,7 +12,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     /* Integration flags:
      * 0: secular
      * 1: N-body (initiated after dynamical instability; could last for a while)
-     * 2: N-body (initiated after semisecular; will last indefinitely)
+     * 2: N-body (initiated after semisecular)
      * 3: N-body after unbound orbit(s) due to SNe
      * 4: N-body after unbound orbit(s) due to flyby */
      

@@ -83,10 +83,16 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
     double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
 
+    print_system(particlesMap,1);
     get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, M1, M2, \
         r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
     
     ECC = norm3(e_vec);
+    if (ECC <= epsilon)
+    {
+        ECC = epsilon;
+    }
+    
     SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
     get_unit_vector(h_vec,h_vec_unit);
     get_unit_vector(e_vec,e_vec_unit);
@@ -663,7 +669,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             if (OORB >= Omega_crit)
             {
                 #ifdef VERBOSE
-                if (verbose_flag > 0)
+                if (verbose_flag > 1)
                 {
                     printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
                     print_system(particlesMap,*integration_flag);

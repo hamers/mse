@@ -56,7 +56,10 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     if (*integration_flag == 0)
     {
         *unbound_orbits = check_for_unbound_orbits(particlesMap);
-        if (*unbound_orbits == true)
+        int dummy;
+        bool stable_MA01 = check_system_for_dynamical_stability(particlesMap, &dummy);
+        
+        if (*unbound_orbits == true or stable_MA01 == false)
         {
             #ifdef VERBOSE
             if (verbose_flag > 0)

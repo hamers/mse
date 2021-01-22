@@ -27,7 +27,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     {
 
         #ifdef VERBOSE
-        if (verbose_flag > 0)
+        if (verbose_flag > 1)
         {
             printf("nbody_evolution.cpp -- no bodies to integrate N_bodies_eff %d!\n",N_bodies_eff);
             print_system(particlesMap,*integration_flag);
@@ -880,7 +880,7 @@ int check_particlesMap_for_inclusion_in_MSTAR(ParticlesMap *particlesMap)
             if (find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec) > nbody_maximum_separation_for_inclusion)
             {
                 #ifdef VERBOSE
-                if (verbose_flag > 0)
+                if (verbose_flag > 1)
                 {
                     printf("nbody_evolution.cpp -- check_particlesMap_for_inclusion_in_MSTAR -- Excluding body index %d norm3(R_vec) %g sep %g\n",p->index,norm3(p->R_vec),find_nearest_neighbor_separation(particlesMap, p->index, p->R_vec));
                 }

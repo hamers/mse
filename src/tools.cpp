@@ -441,29 +441,43 @@ double sample_random_true_anomaly(double eccentricity)//,int seed)
     return true_anomaly;
 }
 
-void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, double e_vec[3], double h_vec[3], double true_anomaly, double r[3], double v[3])
+void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, double e_vec_[3], double h_vec[3], double true_anomaly, double r[3], double v[3])
 {
     double total_mass = child1_mass + child2_mass;
-    
+
+    int i;
+    double e_try = norm3(e_vec_);
+    double e_vec[3];
+    if (e_try <= epsilon) // when e=0, the direction of e_vec becomes undefined. In this case, set an arbitrary direction. 
+    {
+        e_vec[0] = epsilon;
+        e_vec[1] = 0.0;
+        e_vec[2] = 0.0;
+    }
+    else
+    {
+        for (i=0; i<3; i++)
+        {
+            e_vec[i] = e_vec_[i];
+        }
+    }
+
+
+    double q_vec[3];
+    cross3(h_vec,e_vec,q_vec);
+
+    double q = norm3(q_vec);
     double e = norm3(e_vec);
     double h = norm3(h_vec);
 
-    if (e==0.0)
-    {
-        e = epsilon;
-    }
+    double e_vec_unit[3],q_vec_unit[3];
 
-    double e_vec_unit[3],q_vec_unit[3],q_vec[3];
-    cross3(h_vec,e_vec,q_vec);
-    double q = norm3(q_vec);
-
-    int i;
     for (i=0; i<3; i++)
     {        
         e_vec_unit[i] = e_vec[i]/e;
         q_vec_unit[i] = q_vec[i]/q;        
     }
-    
+
     double e_p2 = e*e;
     double j_p2 = 1.0 - e_p2;
    
@@ -473,6 +487,7 @@ void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, d
     double sin_f = sin(true_anomaly);
     
     double r_norm = a*j_p2/(1.0 + e*cos_f);
+    
     double v_norm = sqrt( CONST_G*total_mass/(a*j_p2) );
     
     for (i=0; i<3; i++)
@@ -483,7 +498,7 @@ void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, d
         #ifdef VERBOSE
         if (verbose_flag > 1)
         {
-            printf("tools.cpp -- from_orbital_vectors_to_cartesian -- i %d r[i] %g v[i] %g\n",i,r[i],v[i]);
+            printf("tools.cpp -- from_orbital_vectors_to_cartesian -- i %d r[i] %g v[i] %g e_unit[i] %g q_unit[i] %g\n",i,r[i],v[i],e_vec_unit[i],q_vec_unit[i]);
         }
         #endif
     }
@@ -567,7 +582,7 @@ void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], do
 void get_unit_vector(double vec[3], double vec_unit[3])
 {
     double v = norm3(vec);
-    if (v == 0.0)
+    if (v <= epsilon)
     {
         v = epsilon;
     }

@@ -318,8 +318,8 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 child1_mass = child1->mass;
                 child2_mass = child2->mass;
                 parent_mass = parent->mass;
-                
                 e = norm3(parent->e_vec);
+    
                 if (e < 0 or e>= 1.0)
                 {
                     continue;
@@ -341,7 +341,11 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                     parent->e_vec,parent->h_vec,
                     true_anomaly,
                     r,v);
-                
+
+                check_number(r[0],    "structure.cpp -- set_positions_and_velocities","r[0]", true);
+                check_number(r[1],    "structure.cpp -- set_positions_and_velocities","r[1]", true);
+                check_number(r[2],    "structure.cpp -- set_positions_and_velocities","r[2]", true);
+
                 if (parent->level == 0)
                 {
                     for (i=0; i<3; i++)

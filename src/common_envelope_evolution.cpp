@@ -202,7 +202,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     double EORBF = EORBI + EBINDI/ALPHA1; // Calculate the final orbital energy without coalescence (HTP02 eq. 71).
     double EBINDF;
-    
+
     /* Generic variables */
     double TN;
     double *GB,*TSCLS,*LUMS;
@@ -297,6 +297,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         */
 
         SEPF = MC1 * MC2/(2.0 * EORBF);
+
         double Q1 = MC1 / MC2;
         double Q2 = 1.0 / Q1;
         

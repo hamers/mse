@@ -230,7 +230,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     if (accretor->RLOF_flag == 1) /* Contact evolution */
     {
         int kw2 = accretor->stellar_type;
-        if (kw2 >= 2 and kw2 <= 9 and kw2 != 7) 
+        if ((kw >= 2 and kw <= 9 and kw != 7) and (kw2 >= 2 and kw2 <= 9 and kw2 != 7)) 
         {
             #ifdef VERBOSE
             if (verbose_flag > 0)
@@ -240,7 +240,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             }
             #endif
 
-            /* CE if the accretor is also a giant */
+            /* CE if both donor and accretor are giants */
             flag = 6;
             common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
             *dt_binary_evolution = ODE_min_dt;

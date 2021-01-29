@@ -817,7 +817,7 @@ class MSE(object):
                     p.child1 = particles[i1]
                     p.child2 = particles[i2]
 
-
+            entry.update({'N_particles':len(particles)})
             entry.update({'particles':particles})
             log.append(entry)
         #print("log done")

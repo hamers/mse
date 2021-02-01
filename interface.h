@@ -202,7 +202,7 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index);
 bool get_is_binary_log(int log_index, int particle_index);
 int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index);
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
-    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type);
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity);
 int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN);
 

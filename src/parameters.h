@@ -1,6 +1,7 @@
 #ifndef __PARAMETERS
 #define __PARAMETERS
 #include <stdbool.h>
+#include <time.h>
 
 // Constants //
 extern double CONST_G;
@@ -36,6 +37,8 @@ extern int verbose_flag;
 extern bool stop_after_root_found;
 extern bool check_numbers_internally;
 extern int error_code;
+extern time_t wall_time_start;
+extern double wall_time_max_s;
 
 extern double secular_integration_exclusion_safety_factor;
 extern double ODE_min_dt;

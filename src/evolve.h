@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <map>
 #include <algorithm>
+#include <time.h>
 
 #include "types.h"
 #include "../interface.h"

@@ -36,6 +36,8 @@ class MSE(object):
         self.__absolute_tolerance_spin_vectors = 1.0e-3
         self.__absolute_tolerance_angular_momentum_vectors = 1.0e-2
 
+        self.__wall_time_max_s = 1.8e4
+
         self.__include_quadrupole_order_terms = True
         self.__include_octupole_order_binary_pair_terms = True
         self.__include_octupole_order_binary_triplet_terms = True
@@ -257,7 +259,8 @@ class MSE(object):
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, \
             ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, \
-            ctypes.c_bool)
+            ctypes.c_bool, \
+            ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -735,7 +738,8 @@ class MSE(object):
             self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk,self.__triple_mass_transfer_primary_star_accretion_efficiency_disk,self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk,self.__triple_mass_transfer_inner_binary_alpha_times_lambda, \
             self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects, \
             self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q, \
-            self.__stop_after_root_found)
+            self.__stop_after_root_found, \
+            self.__wall_time_max_s)
 
     def reset(self):
         self.__init__()
@@ -977,6 +981,14 @@ class MSE(object):
     @relative_tolerance.setter
     def relative_tolerance(self, value):
         self.__relative_tolerance = value
+        self.__set_parameters_in_code()
+
+    @property
+    def wall_time_max_s(self):
+        return self.__wall_time_max_s
+    @wall_time_max_s.setter
+    def wall_time_max_s(self, value):
+        self.__wall_time_max_s = value
         self.__set_parameters_in_code()
 
     @property

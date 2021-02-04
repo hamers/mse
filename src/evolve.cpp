@@ -36,6 +36,8 @@ int initialize_code(ParticlesMap *particlesMap)
     update_log_data(particlesMap, 0.0, 0, LOG_INIT, log_info);
     #endif
     
+    time(&wall_time_start);
+
     return 0;
 }
 

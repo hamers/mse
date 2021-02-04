@@ -1000,12 +1000,14 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double triple_mass_transfer_primary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_, double triple_mass_transfer_primary_star_accretion_efficiency_disk_, double triple_mass_transfer_secondary_star_accretion_efficiency_disk_, double triple_mass_transfer_inner_binary_alpha_times_lambda_, \
     double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
     bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
-    bool stop_after_root_found_)
+    bool stop_after_root_found_, \
+    double wall_time_max_s_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
     absolute_tolerance_spin_vectors = absolute_tolerance_spin_vectors_;
     absolute_tolerance_angular_momentum_vectors = absolute_tolerance_angular_momentum_vectors_;
+    wall_time_max_s = wall_time_max_s_;
     
     include_quadrupole_order_terms = include_quadrupole_order_terms_;
     include_octupole_order_binary_pair_terms = include_octupole_order_binary_pair_terms_;
@@ -1109,6 +1111,8 @@ int set_verbose_flag(int value)
 
 int unit_tests_interface(int mode)
 {
+    time(&wall_time_start);
+        
     verbose_flag = 0;
     int flag=0;
     flag += test_tools();

@@ -71,10 +71,14 @@ int error_code = 0;
  * 32: mst.c -- check_for_initial_stopping_condition()
  * 33: ODE_VRR.cpp -- compute_VRR_perturbations()
  * 34: tools.cpp -- sample_from_Kroupa_93_imf()
+ * 35: ODE_system.cpp -- wall time exceeded
+ * 36: mst.c -- wall time exceeded
  */
 
 double secular_integration_exclusion_safety_factor = 1.0e-5;
 double ODE_min_dt = 1.0;
+time_t wall_time_start = 0.0;
+double wall_time_max_s = 1.8e4;
 
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 

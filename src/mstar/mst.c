@@ -1117,7 +1117,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
     // Needed variables
     double dt = time_interval/1e6;	// may be adjusted by the user
     double Hstep;
-    double time;
+    double mst_time;
 
     // Initialize the system to integrate
     into_CoM_frame(R);
@@ -1174,43 +1174,53 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
 	status = extrapolate_all_variables(KMAX);
 
+        time_t wall_time_current;
+        time(&wall_time_current);
+        double wall_time_diff_s = difftime(wall_time_current,wall_time_start);
+        if (wall_time_diff_s > wall_time_max_s)
+        {
+            printf("mst.c -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
+            error_code = 36;
+            return;
+        }
+    
         if (status == 1) {
 
             // Check whether we are ready
-            time = R[0].State[R[0].TimeIndex];
-            R[0].time = time;
-            if ( fabs(time - time_interval) / time_interval < R->output_time_tolerance) {
+            mst_time = R[0].State[R[0].TimeIndex];
+            R[0].time = mst_time;
+            if ( fabs(mst_time - time_interval) / time_interval < R->output_time_tolerance) {
                not_finished = 0;
             } else {
 
                 compute_total_energy(R);
 
 		if( endtime_iteration_phase ){
-			R->Hstep = R->U * (time_interval - time);
+			R->Hstep = R->U * (time_interval - mst_time);
 		} else {
-                	if (time > time_interval) {
+                	if (mst_time > time_interval) {
 				endtime_iteration_phase = 1;
-                    		R->Hstep = -R->U * (time - time_interval);
-                	} else if (R->Hstep / R->U + time > time_interval) {
-                    		R->Hstep = R->U * (time_interval - time);
+                    		R->Hstep = -R->U * (mst_time - time_interval);
+                	} else if (R->Hstep / R->U + mst_time > time_interval) {
+                    		R->Hstep = R->U * (time_interval - mst_time);
                 	}
 		}
 
 #ifdef USE_PN_SPIN	// a useful two-body system debug
 #if 0
-		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n", time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
+		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n", mst_time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
 		R->Vel[0],R->Vel[1],R->Vel[2],R->Vel[3],R->Vel[4],R->Vel[5],R->Spin_S[0],R->Spin_S[1],R->Spin_S[2],R->Spin_S[3],R->Spin_S[4],R->Spin_S[5] );
 #endif
 #else
 #if 0
-		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e\n", time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
+		printf("%e %e %e %e %e %e %e %e %e %e %e %e %e\n", mst_time, R->Pos[0],R->Pos[1],R->Pos[2],R->Pos[3],R->Pos[4],R->Pos[5],\
 		R->Vel[0],R->Vel[1],R->Vel[2],R->Vel[3],R->Vel[4],R->Vel[5] );
 #endif
 #endif
-                  f_time = time/time_interval;
+                  f_time = mst_time/time_interval;
                   if ( ((int) (f_time*N_print) ) == i_print && MSTAR_verbose == 1)
                   {
-                        printf("MSTAR -- t %g completed %.1f %%\n",time,f_time*100.0 );
+                        printf("MSTAR -- t %g completed %.1f %%\n",mst_time,f_time*100.0 );
                         i_print+=1;
                  }
 
@@ -1224,7 +1234,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     not_finished = 0;
                     if (MSTAR_verbose == 1)
                     {
-                        printf("Stopping condition at t=%g \n",time);
+                        printf("Stopping condition at t=%g \n",mst_time);
                     }
                 }
 
@@ -1241,7 +1251,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                     if (i_sc > 100) /* The stopping condition was probably not real; give up */
                     {
                         possible_stopping_condition = 0;
-                        printf("mstar --  Giving up stopping condition search t %g\n",time);
+                        printf("mstar --  Giving up stopping condition search t %g\n",mst_time);
                         R->Hstep = R->U * dt;
                         i_sc = 0;
                     }
@@ -1257,7 +1267,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
                 }
 
                 int old_epoch = epoch;
-                epoch = (int)floor(time / percent);
+                epoch = (int)floor(mst_time / percent);
                 if (epoch != old_epoch) {
                     PrimMST(&R[0]);
                 }
@@ -1268,7 +1278,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
     out_of_CoM_frame(R);
 
-    *end_time = time;
+    *end_time = mst_time;
 
 fflush(stdout);
 

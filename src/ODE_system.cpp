@@ -219,19 +219,30 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
 
     
     
-int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
+int compute_y_dot(realtype t, N_Vector y, N_Vector y_dot, void *data_)
 {
+    
+    time_t wall_time_current;
+    time(&wall_time_current);
+    double wall_time_diff_s = difftime(wall_time_current,wall_time_start);
+    if (wall_time_diff_s > wall_time_max_s)
+    {
+        printf("ODE_system.cpp -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
+        error_code = 35;
+        return 0;
+    }
+    
 	UserData data;
 	data = (UserData) data_;
     ParticlesMap *particlesMap = data->particlesMap;
     
     double start_time = data->start_time;
-    double delta_time = time - start_time;
+    double delta_time = t - start_time;
 
     #ifdef VERBOSE
     if (verbose_flag > 2)
     {
-        printf("ODE_system.cpp -- compute_y_dot1 t=%g start_time=%g delta_time = %g\n",time,start_time,delta_time);
+        printf("ODE_system.cpp -- compute_y_dot1 t=%g start_time=%g delta_time = %g\n",t,start_time,delta_time);
         print_system(particlesMap,0);
 
     }
@@ -265,13 +276,13 @@ int compute_y_dot(realtype time, N_Vector y, N_Vector y_dot, void *data_)
             compute_EOM_Newtonian_for_particle(particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only);
             
             /* Perturbations by flybys (external perturbations) */
-            compute_EOM_Newtonian_external_perturbations(time,particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only); 
+            compute_EOM_Newtonian_external_perturbations(t,particlesMap,p,&hamiltonian,&KS_V,compute_hamiltonian_only); 
 
             /* VRR-related perturbations */
 
             if (p->VRR_model > 0) /* 0: no VRR perturbation */
             {
-                hamiltonian += compute_VRR_perturbations(particlesMap,p->index,time);
+                hamiltonian += compute_VRR_perturbations(particlesMap,p->index,t);
             }
 
             /* PN corrections */

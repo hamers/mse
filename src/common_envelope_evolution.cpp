@@ -379,7 +379,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                         MC2 = 0.0;
                         M2 = 0.0;
                         KW2 = 15;
-                        
                         goto label30;
                     }
                 }
@@ -847,6 +846,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     } // end of label30
 
     //*integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+
+    remove_massless_remnants_from_system(particlesMap, integration_flag);
 
     #ifdef LOGGING
     //Log_info_type log_info;

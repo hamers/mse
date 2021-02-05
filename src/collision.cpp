@@ -426,17 +426,11 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     
     if (destroyed == false and (m0 == -1 or age == -1))
     {
-        printf("merger.cpp -- collision_product -- was not able to determine all properties of merged object! Will ignore the collision. \n");
+        printf("merger.cpp -- collision_product -- destroyed = false -- was not able to determine all properties of merged object! Will ignore the collision. \n");
+        error_code = 6;
         return;
     }
 
-    if (age == -1 or m0 == -1)
-    {
-        printf("collision.cpp -- collision_product -- ERROR: age %g and/or m0 %g not set correctly\n",age,m0);
-        error_code = 6;
-        //exit(-1);
-    }
-    
     /* stellar properties of merged object */
     double Omega_crit,Omega;
     double r,lum,rc,menv,renv,k2;

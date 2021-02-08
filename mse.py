@@ -2336,7 +2336,7 @@ class Tools(object):
                 previous_event_flag = event_flag
                             
             N_l = len(plot_log)
-            N_r = np.ceil(np.sqrt(N_l))#+1
+            N_r = int(np.ceil(np.sqrt(N_l)))#+1
             N_c = N_r
             panel_length = 3
             #fontsize=N_l

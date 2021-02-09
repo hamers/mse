@@ -543,6 +543,10 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     }
     #endif
 
+    delete[] GB;
+    delete[] tscls;
+    delete[] lums;
+
     return;
 }
 

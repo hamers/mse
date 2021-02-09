@@ -9,6 +9,7 @@ extern "C"
 
 void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, double t_old, double t, double *t_out, double *dt_nbody)
 {
+    printf("N\n");
     /* Integration flags:
      * 0: secular
      * 1: N-body (initiated after dynamical instability; could last for a while)

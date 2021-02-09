@@ -516,6 +516,11 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     
     *integration_flag = 1;
 
+    delete[] GB;
+    delete[] tscls;
+    delete[] tscls_new;
+    delete[] lums;
+
     return 0;
 }
 
@@ -1138,6 +1143,10 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- dt_binary_evolution new %g\n",*dt_binary_evolution);
     }
     #endif
+
+    delete[] GB;
+    delete[] tscls;
+    delete[] lums;
 
     return 0;
 }

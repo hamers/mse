@@ -71,6 +71,7 @@ int initialize_stars(ParticlesMap *particlesMap)
 
             double *zpars;
             zpars = new double[20];
+            //double zpars[20];
             zcnsts_(&z,zpars);
             p->zpars = zpars;
             
@@ -203,8 +204,14 @@ int initialize_stars(ParticlesMap *particlesMap)
             check_number(p->spin_vec[1],                   "stellar_evolution.cpp -- initialize_stars","spin_vec[1]", true);
             check_number(p->spin_vec[2],                   "stellar_evolution.cpp -- initialize_stars","spin_vec[2]", true);
 
+            delete[] GB;
+            delete[] tscls;
+            delete[] lums;
+
         }
     }
+
+
 
     update_structure(particlesMap, 0); /* set new binary masses */
 
@@ -507,6 +514,10 @@ double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, dou
 
     dtm = CV_max(dtm,1.0e-6);
     
+    delete[] GB;
+    delete[] tscls;
+    delete[] lums;
+    
     return dtm;
 }
 
@@ -538,6 +549,11 @@ void update_stellar_evolution_properties(Particle *p)
     p->core_radius = rc*CONST_R_SUN;
     p->convective_envelope_mass = menv;
     p->convective_envelope_radius = renv*CONST_R_SUN;
+    
+    delete[] GB;
+    delete[] tscls;
+    delete[] lums;
+
 }
 
 double compute_moment_of_inertia(double mass, double core_mass, double radius, double core_radius, double k2, double k3)

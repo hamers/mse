@@ -865,6 +865,18 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     }
     #endif
 
+    delete[] GB1;
+    delete[] TSCLS1;
+    delete[] LUMS1;
+
+    delete[] GB2;
+    delete[] TSCLS2;
+    delete[] LUMS2;
+    
+    delete[] GB;
+    delete[] TSCLS;
+    delete[] LUMS;
+
     return;
 }
 
@@ -1148,6 +1160,10 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     bool unbound_orbits;
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
+    delete[] GB3;
+    delete[] tscls3;
+    delete[] lums3;
+    
     return;
 }
 

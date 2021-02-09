@@ -45,7 +45,6 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
     }
     #endif
 
-
     determine_internal_mass_and_semimajor_axis(particlesMap);
     
     if (initialize == true)

@@ -614,6 +614,7 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
 
 void copy_all_body_properties(Particle *source, Particle *target)
 {
+
     target->mass = source->mass;
     target->sse_initial_mass = source->sse_initial_mass;
     target->stellar_type = source->stellar_type;

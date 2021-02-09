@@ -143,13 +143,24 @@ double AMC_data_function(double log_m, Particle *star)
 	double tau = 0.0;						/* Fractional age at specific evolutionary stage */
 
     double tms,tn;
-    double *GB,*timescales,*lums;
+    double *GB,*timescales_,*lums;
     GB = new double[10];
-    timescales = new double[20];
+    timescales_ = new double[20];
     lums = new double[10];  
     
     int stellar_type_old = stellar_type;
-    star_(&stellar_type, &star->sse_initial_mass, &star->mass, &tms, &tn, timescales, lums, GB, star->zpars);
+    star_(&stellar_type, &star->sse_initial_mass, &star->mass, &tms, &tn, timescales_, lums, GB, star->zpars);
+
+    double timescales[20];
+    for (int i=0; i<20; i++)
+    {
+        timescales[i] = timescales_[i];
+    }
+    
+    
+    delete[] GB;
+    delete[] timescales_;
+    delete[] lums;
 
     if (stellar_type_old != stellar_type)
     {

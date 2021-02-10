@@ -157,7 +157,6 @@ double AMC_data_function(double log_m, Particle *star)
         timescales[i] = timescales_[i];
     }
     
-    
     delete[] GB;
     delete[] timescales_;
     delete[] lums;

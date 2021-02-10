@@ -91,7 +91,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     while (t <= t_end)
     {
         t += dt;
-//#ifdef IGNORE
+
         /* Stellar evolution */
         flag = evolve_stars(particlesMap,t_old,t,&dt_stev,false,&apply_SNe_effects,integration_flag);
 
@@ -103,7 +103,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         
         /* Binary evolution */
         binary_flag = handle_binary_evolution(particlesMap,t_old,t,&dt_binary_evolution,integration_flag);
-//#endif
+
         /* Dynamical evolution -- will also update masses, radii, and spins */
         if (*integration_flag == 0) // Secular
         {
@@ -115,7 +115,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         }
 
         t = t_out;
-//printf("evolve.cpp -- evolve -- t %g ODE dt %g t_old - t %g t - t_out %g\n",t,dt,t_old-t,t-t_out);
+
         #ifdef VERBOSE
         if (verbose_flag > 1)
         {

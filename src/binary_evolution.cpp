@@ -828,11 +828,13 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                     mcx = accretor->core_mass;
                 }
         
-                double mt2 = m_accretor + (dm2 - dms_accretor);
+                double mt2 = m_accretor ; //+ (dt/P_orb)*(dm2 - dms_accretor);
                 double accretor_age;
-                gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age);
                 
+                gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age);
                 accretor->epoch = t - accretor_age*Myr_to_yr;
+                accretor->age = accretor_age*Myr_to_yr;
+                accretor->stellar_type = kst; /* accretor becomes CHeB or AGB star; need to update stellar type */
             }
         }
     }

@@ -341,7 +341,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                 if (tphysf != desired_tphysf)
                 {
-                    printf("ERROR tphysf != desired_tphysf ");
+                    printf("stellar_evolution.cpp -- ERROR tphysf != desired_tphysf ");
                 }
 
                 age = tphysf - epoch;

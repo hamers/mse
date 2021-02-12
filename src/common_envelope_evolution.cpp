@@ -1098,13 +1098,17 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     }
 
 
+    set_binary_masses_from_body_masses(particlesMap);
+    set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
+
+
     if (stable == true)
     {
 
         /* Assume the binary true anomaly is not affected */
         
-        set_binary_masses_from_body_masses(particlesMap);
-        set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
+//        set_binary_masses_from_body_masses(particlesMap);
+//        set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
 
         /* Set spin of tertiary star. 
          * Assume it is either unaffected (binary_evolution_CE_spin_flag=0, or, alternatively,

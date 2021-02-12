@@ -126,6 +126,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double L1 = star1->luminosity/CONST_L_SUN;
     double MENV1,RENV1,K21;
     
+    
     double AJ1 = star1->age * yr_to_Myr;
     double *ZPARS1 = star1->zpars;    
 
@@ -134,6 +135,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
         &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
+
+    if (MC1 <= epsilon)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution -- no core present (MC1 = %g)! Setting MC1=M1=%g \n",MC1,M1);
+        MC1 = M1;
+    }
 
     double MENVD1 = MENV1 / (M1 - MC1);
     double RZAMS1 = rzamsf_(&M01);
@@ -281,7 +288,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             star_(&KW1,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-            
+
             if (KW1 >= 13)
             {
                 star1->apply_kick = true;
@@ -587,6 +594,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
          TB = TWOPI * (SEPF * CONST_R_SUN) * sqrt( SEPF * CONST_R_SUN / (CONST_G * (M1 + M2) ) );
          OORB = TWOPI/TB;
+         
+         check_number(OORB,"common_envelope_evolution.cpp -- binary_common_envelope_evolution()","OORB", true);
     }
 
 

@@ -953,6 +953,13 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
     }
     else
     {
+        for (i=0; i<3; i++)
+        {
+            final_R_CM[i] = initial_R_CM[i];
+            final_V_CM[i] = initial_V_CM[i];
+            final_momentum[i] = final_V_CM[i] * (M1_old + M2_old);
+        }
+        
         return;
     }
     

@@ -2694,7 +2694,6 @@ class Tools(object):
                 VX = body.VX
                 VY = body.VY
                 VZ = body.VZ
-                print('index',index,"m",body.mass,"VX",VX,"VY",VY,"VZ",VZ)
                 V = np.sqrt(VX**2 + VY**2 + VZ**2)
                 x = index
                 y = y_ref

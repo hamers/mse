@@ -192,8 +192,24 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     get_unit_vector(e_vec,e_vec_unit);
 
     double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+    if (a_old <= epsilon) /* Take instantenous separation if semimajor axis not well defined */
+    {
+        double r[3];
+        for (int i=0; i<3; i++)
+        {
+            r[i] = child1->R_vec[i] - child2->R_vec[i];
+        }
+        a_old = norm3(r);
+    }
     double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
     double n_old = TWOPI/P_old;
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("collision.cpp -- collision_product -- a_old %g P_old %g n_old %g\n",a_old,P_old,n_old);
+    }
+    #endif
     
     int kw = determine_merger_type(child1->stellar_type,child2->stellar_type);
 
@@ -388,7 +404,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         }
         
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 0)
         {
             printf("collision.cpp -- collision product -- kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14 m %g chi %g Omega %g v_k %g %g %g spin %g %g %g\n",m,chi,Omega,v_recoil_vec[0],v_recoil_vec[1],v_recoil_vec[2],spin_vec[0],spin_vec[1],spin_vec[2]);
         }
@@ -493,7 +509,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             if (n_old >= Omega_crit)
             {
                 #ifdef VERBOSE
-                if (verbose_flag > 1)
+                if (verbose_flag > 0)
                 {
                     printf("collision.cpp -- collision product -- Limiting spin frequency of star %d from %g to breakup rate %g\n",child1->index,n_old,Omega_crit);
                 }

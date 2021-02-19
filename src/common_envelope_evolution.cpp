@@ -94,6 +94,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     }
     
     SEP = compute_a_from_h(M1,M2,norm3(h_vec),ECC)/CONST_R_SUN;
+
+    if (SEP <= epsilon) /* Take instantenous separation if semimajor axis not well defined */
+    {
+        double r[3];
+        for (int i=0; i<3; i++)
+        {
+            r[i] = star1->R_vec[i] - star2->R_vec[i];
+        }
+        SEP = norm3(r);
+    }
+
     get_unit_vector(h_vec,h_vec_unit);
     get_unit_vector(e_vec,e_vec_unit);
 

@@ -325,7 +325,6 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
 
             finite_size_term_a += XL0*ha;
             finite_size_term_e += XL0*he;
-                
         }
     }
 
@@ -344,16 +343,16 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     
     double common_factor = -2.0*(M_d_dot_av/M_d)*(1.0/fm);
 
-    #ifdef VERBOSE
-    if (verbose_flag > 1)
-    {
-        printf("ODE_mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av);
-    }
-    #endif
-    
     double da_dt = common_factor*a*( fa*(1.0 - q*beta) + finite_size_term_a );
     double de_dt = common_factor*( fe*(1.0 - q*beta) + finite_size_term_e );
     double domega_dt = common_factor*fomega*( 1.0 - q*beta );
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("ODE_mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g da_dt %g de_dt %g domega_dt %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av,da_dt,de_dt,domega_dt);
+    }
+    #endif
 
     /* Update dmass_dt. */
     donor->dmass_dt += M_d_dot_av;

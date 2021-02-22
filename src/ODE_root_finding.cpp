@@ -45,7 +45,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
         Particle *P_p = (*it_p).second;
         if (P_p->is_binary == true)
         {
-            if (P_p->check_for_secular_breakdown == true)
+            if (P_p->check_for_secular_breakdown == true and P_p->parent != -1)
             {
                 
                 #ifdef VERBOSE
@@ -930,10 +930,11 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         if (verbose_flag > 0)
         {
             printf("root_finding.cpp -- handle_roots -- Other\n");
+            printf("ODE_root_finding.cpp -- handle_roots -- other root condition -- ERROR \n");
+            print_system(particlesMap,0);
         }
         #endif
-        printf("ODE_root_finding.cpp -- handle_roots -- other root condition -- ERROR \n");
-        print_system(particlesMap,0);
+
         //exit(-1);
         error_code = 24;
         //break;

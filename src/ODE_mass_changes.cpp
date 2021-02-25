@@ -91,7 +91,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 0)
+    if (verbose_flag > 1)
     {
         printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
     }

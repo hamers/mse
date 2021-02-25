@@ -83,7 +83,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
     double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
 
-    print_system(particlesMap,1);
     get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, M1, M2, \
         r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
     
@@ -868,6 +867,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     //*integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
 
     remove_massless_remnants_from_system(particlesMap, integration_flag);
+    reset_RLOF_flags(particlesMap);
 
     #ifdef LOGGING
     //Log_info_type log_info;

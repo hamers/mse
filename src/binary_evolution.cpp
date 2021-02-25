@@ -188,6 +188,11 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
         print_system(particlesMap,*integration_flag);
     }
     #endif
+ 
+    if (*integration_flag != 0)
+    {
+        return 0;
+    }
     
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];

@@ -1128,4 +1128,15 @@ void get_initial_binary_orbital_properties_from_position_and_velocity(double R1_
     return ;
 }
 
+void reset_RLOF_flags(ParticlesMap *particlesMap)
+{
+    ParticlesMapIterator it_p;
+    
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        p->RLOF_flag = 0;
+    }
+}
+
 }

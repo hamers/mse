@@ -543,6 +543,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         particlesMap->erase(child2->index);
     }
 
+    reset_RLOF_flags(particlesMap);
+
     #ifdef LOGGING
     //Log_info_type log_info;
     log_info.binary_index = binary_index;

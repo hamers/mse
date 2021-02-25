@@ -34,4 +34,7 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
 
 void get_initial_binary_orbital_properties_from_position_and_velocity(double R1_vec[3], double V1_vec[3], double R2_vec[3], double V2_vec[3], double M1, double M2, \
         double r_vec[3], double v_vec[3], double initial_momentum[3], double initial_R_CM[3], double initial_V_CM[3], double h_vec[3], double e_vec[3]);
+        
+void reset_RLOF_flags(ParticlesMap *particlesMap);
+        
 }

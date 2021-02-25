@@ -1263,7 +1263,8 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index)
 }
  
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
-    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity)
+    double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity, 
+    double *spin_vec_x, double *spin_vec_y, double *spin_vec_z)
 {
     Log_type entry = logData[log_index];
     ParticlesMap entry_particlesMap = entry.particlesMap;
@@ -1296,11 +1297,17 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     *object_type = p->object_type;
     *metallicity = p->metallicity;
 
+    *spin_vec_x = p->spin_vec[0];
+    *spin_vec_y = p->spin_vec[1];
+    *spin_vec_z = p->spin_vec[2];
+
     return 0;
 }
 
 int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
-    double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN)
+    double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN, \
+    double *h_vec_x, double *h_vec_y, double *h_vec_z, \
+    double *e_vec_x, double *e_vec_y, double *e_vec_z)
 {
 
     //printf("interface.cpp -- get_binary_properties_from_log_entry -- log_index %d particle_index %d\n",log_index, particle_index);
@@ -1333,6 +1340,14 @@ int get_binary_properties_from_log_entry(int log_index, int particle_index, int 
     compute_orbital_elements_from_orbital_vectors(p->child1_mass, p->child2_mass, h_tot_vec, \
         p->e_vec[0],p->e_vec[1],p->e_vec[2],p->h_vec[0],p->h_vec[1],p->h_vec[2],
         a, e, INCL, AP, LAN);
+    
+    *h_vec_x = p->h_vec[0];
+    *h_vec_y = p->h_vec[1];
+    *h_vec_z = p->h_vec[2];
+
+    *e_vec_x = p->e_vec[0];
+    *e_vec_y = p->e_vec[1];
+    *e_vec_z = p->e_vec[2];
     
     #ifdef IGNORE
     *a = p->a;

@@ -717,10 +717,13 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
             for (k_component=0; k_component<3; k_component++)
             {
                 Ith(y_dot,k + k_component) = f_breakup * p->dspin_vec_dt[k_component];
+                check_number(Ith(y_dot,k + k_component),                  "ODE_system.cpp -- write_ODE_variables_dots","spins", true);
             }
             
             Ith(y_dot,k + 2 + 1) = p->dmass_dt;
             Ith(y_dot,k + 2 + 2) = p->dradius_dt;
+            check_number(Ith(y_dot,k + 2 + 1),                  "ODE_system.cpp -- write_ODE_variables_dots","dmass_dt", true);
+            check_number(Ith(y_dot,k + 2 + 2),                  "ODE_system.cpp -- write_ODE_variables_dots","dradius_dt", true);
             
             k=k+5;
 
@@ -739,6 +742,8 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                 {
                     Ith(y_dot,k + k_component)      = p->de_vec_dt[k_component];
                     Ith(y_dot,k + k_component + 3)  = p->dh_vec_dt[k_component];
+                    check_number(Ith(y_dot,k + k_component),                  "ODE_system.cpp -- write_ODE_variables_dots","de_dt", true);
+                    check_number(Ith(y_dot,k + k_component + 3),                  "ODE_system.cpp -- write_ODE_variables_dots","dh_dt", true);
                 }
 
                 #ifdef VERBOSE

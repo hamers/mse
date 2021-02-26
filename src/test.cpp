@@ -197,6 +197,7 @@ int test_nbody(int mode)
     flag += test_nbody_inspiral(mode);
     flag += test_nbody_spin_orbit(mode);
     //flag += test_nbody_custom(mode);
+    //flag += test_nbody_custom2(mode);
     
     if (flag == 0)
     {
@@ -1012,6 +1013,117 @@ int test_nbody_custom(int mode)
     double t=0;
     double dt = 1756.4;
     //double dt = 20000;
+    
+    printf("pre\n");
+    mstar_print_state(R);
+    double E_init = compute_nbody_total_energy(R);
+    
+    printf("running\n");
+    run_integrator(R, dt, &reached_dt, &stopping_condition_occurred);
+    
+    double E_fin = compute_nbody_total_energy(R);
+    
+    printf("post\n");
+    mstar_print_state(R);
+    
+    printf("E_init %g E_fin %g E_err %g\n",E_init,E_fin,fabs((E_init-E_fin)/E_init));
+    
+    free_data(R);
+    
+    return flag;
+}
+
+int test_nbody_custom2(int mode)
+{
+    printf("test.cpp -- test_nbody_custom\n");
+
+    int flag = 0;    
+    int stopping_condition_mode = 0;
+    
+    initialize_mpi_or_serial(); 
+   
+    MSTAR_verbose = 1;
+    SPEEDOFLIGHT = CONST_C_LIGHT;
+
+    bool include = false;
+    MSTAR_include_PN_acc_10 = include;
+    MSTAR_include_PN_acc_20 = include;
+    MSTAR_include_PN_acc_25 = include;
+    MSTAR_include_PN_acc_30 = include;
+    MSTAR_include_PN_acc_35 = include;
+
+    MSTAR_include_PN_acc_SO = include;
+    MSTAR_include_PN_acc_SS = include;
+    MSTAR_include_PN_acc_Q = include;
+
+    MSTAR_include_PN_spin_SO = include;
+    MSTAR_include_PN_spin_SS = include;
+    MSTAR_include_PN_spin_Q = include;
+    
+    
+    double gbs_tolerance = 1.0e-12;
+    double stopping_condition_tolerance = 1.0e-12;
+
+     
+    struct RegularizedRegion *R;
+
+    int i=0;
+    int j;
+   
+    int N = 4;
+
+    allocate_armst_structs(&R, N); // Initialize the data structure
+    
+    // Issue #34
+    R->Mass[0] = 4.72225;
+    R->Mass[1] = 3.75456;
+    R->Mass[2] = 1.56984;
+    R->Mass[3] = 2.459;
+
+    double R1_vec[3] = {381.896, 581.169, 572.307};
+    double R2_vec[3] = {381.506, 581.167 ,572.323};
+    double R3_vec[3] = {-3397.39, -5128.91, -4872.17};
+    double R4_vec[3] = {-3394.78, -5128.14 ,-4872.58};
+    double V1_vec[3] = {-4.98801, -14.9323 ,13.7696};
+    double V2_vec[3] = {0.0712215 ,3.93403, -27.1107};
+    double V3_vec[3] = {1.36039, -3.57182 ,3.06344};
+    double V4_vec[3] = {-0.533719, 2.65386, -2.18125};
+    
+    for (i=0; i<3; i++)
+    {
+        R->Pos[3 * 0 + i] = R1_vec[i];
+        R->Vel[3 * 0 + i] = V1_vec[i];
+
+        R->Pos[3 * 1 + i] = R2_vec[i];
+        R->Vel[3 * 1 + i] = V2_vec[i];
+
+        R->Pos[3 * 2 + i] = R3_vec[i];
+        R->Vel[3 * 2 + i] = V3_vec[i];
+
+        R->Pos[3 * 3 + i] = R4_vec[i];
+        R->Vel[3 * 3 + i] = V4_vec[i];
+
+    }
+
+
+    R->Stopping_Condition_Mode[0] = stopping_condition_mode;
+    R->Stopping_Condition_Mode[1] = stopping_condition_mode;
+    R->Stopping_Condition_Mode[2] = stopping_condition_mode;
+    R->gbs_tolerance = gbs_tolerance;
+    R->stopping_condition_tolerance = stopping_condition_tolerance;
+
+    for (int i=0; i<3; i++)
+    {
+        R->Spin_S[3 * 0 + i] = 0.0;
+        R->Spin_S[3 * 1 + i] = 0.0;
+    }
+        
+    double reached_dt;
+    int stopping_condition_occurred;
+
+    double t=0;
+    double dt = 999986; // gives error almost immediately
+    //double dt = 200000; // takes a while, but runs without errors
     
     printf("pre\n");
     mstar_print_state(R);

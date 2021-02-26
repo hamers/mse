@@ -402,7 +402,7 @@ void compute_U(struct RegularizedRegion *R) {
     }
 
     if (!isfinite(R->U)) {
-        printf("U not finite.\n");
+        printf("mst.c -- ERROR: U not finite.\n");
         //exit(0);
         error_code = 30;
     }

@@ -414,6 +414,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 check_number(p->spin_vec[0],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[0]", true);
                 check_number(p->spin_vec[1],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[1]", true);
                 check_number(p->spin_vec[2],                   "stellar_evolution.cpp -- evolve_stars","spin_vec[2]", true);
+                check_number(p->mass_dot_wind,                   "stellar_evolution.cpp -- evolve_stars","p->mass_dot_wind", true);
+                check_number(p->radius_dot,                   "stellar_evolution.cpp -- evolve_stars","p->radius_dot", true);
+                check_number(p->ospin_dot,                   "stellar_evolution.cpp -- evolve_stars","p->ospin_dot", true);
                 
                 /* Logging */
                 #ifdef LOGGING

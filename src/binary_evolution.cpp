@@ -1278,6 +1278,12 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     /* Assume the mass not accreted by the inner binary is lost in an adiabatic wind. */
     inner_binary->mass_dot_wind = -( dm3 - (dm1 + dm2) )/dt;
  
+    check_number(donor->mass_dot_RLOF_triple,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","donor->mass_dot_RLOF_triple", true);
+    check_number(star1->mass_dot_RLOF_triple,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","star1->mass_dot_RLOF_triple", true);
+    check_number(star2->mass_dot_RLOF_triple,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","star2->mass_dot_RLOF_triple", true);
+    check_number(inner_binary->triple_mass_transfer_a_in_dot,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","inner_binary->triple_mass_transfer_a_in_dot", true);
+    check_number(inner_binary->mass_dot_wind,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","inner_binary->mass_dot_wind", true);
+ 
     return 0;
 }
  

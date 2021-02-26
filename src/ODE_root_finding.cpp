@@ -47,7 +47,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
         {
             if (P_p->check_for_secular_breakdown == true and P_p->parent != -1)
             {
-                
                 #ifdef VERBOSE
                 if (verbose_flag > 2)
                 {
@@ -683,6 +682,7 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
                 if FOUND_ROOT
                 {
                     P_p->secular_breakdown_has_occurred = true;
+                    
                 }
                 i_root++;
 

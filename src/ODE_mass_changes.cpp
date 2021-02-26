@@ -107,6 +107,10 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     double m_C1_dot = child1->mass_dot_RLOF_triple;
     double m_C2_dot = child2->mass_dot_RLOF_triple;
 
+    if (fabs(m_donor_dot) <= epsilon)
+    {
+        return 0;
+    }
         
     /* Effect on inner orbit -- CE-like behavior. */
     double a_in_dot = inner_binary->triple_mass_transfer_a_in_dot; /* This was computed beforehand in binary_evolution.cpp -- triple_stable_mass_transfer_evolution() */
@@ -132,6 +136,13 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
         //exit(-1);
     }
 
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d a_in_dot %g beta %g gamma %g a_out_dot %g a_out %g m_donor %g m_donor_dot %g m_inner_binary %g \n",outer_binary->index,donor->index,inner_binary->index,a_in_dot,beta,gamma,a_out_dot,a_out,m_donor,m_donor_dot,m_inner_binary);
+    }
+    #endif
+    
 
     /* Update dmass_dt. */
     donor->dmass_dt += m_donor_dot;
@@ -141,6 +152,9 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     /* Update h,e, and spin vectors. */
     double h_in_dot_div_h_in = compute_h_dot_div_h(m_C1, m_C1_dot, m_C2, m_C2_dot, a_in, a_in_dot, e_in, e_in_dot);
     double h_out_dot_div_h_out = compute_h_dot_div_h(m_donor, m_donor_dot, m_inner_binary, m_C1_dot+m_C2_dot, a_out, a_out_dot, e_out, e_out_dot);
+ 
+    check_number(h_in_dot_div_h_in,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_in_dot_div_h_in", true);
+    check_number(h_out_dot_div_h_out,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_out_dot_div_h_out", true);
  
     for (int i=0; i<3; i++)
     {

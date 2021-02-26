@@ -20,6 +20,7 @@ int test_nbody_pythagorean();
 int test_nbody_inspiral(int mode);
 int test_nbody_spin_orbit(int mode);
 int test_nbody_custom(int mode);
+int test_nbody_custom2(int mode);
 
 int test_flybys();
 int test_flybys_integrals();

@@ -77,6 +77,7 @@ class MSE(object):
         self.__binary_evolution_CE_spin_flag = 1
         self.__binary_evolution_mass_transfer_timestep_parameter = 0.05
         self.__binary_evolution_CE_recombination_fraction = 1.0
+        self.__binary_evolution_use_eCAML_model = False
         self.__chandrasekhar_mass = 1.44
         self.__eddington_accretion_factor = 10.0
         self.__nova_accretion_factor = 1.0e-3
@@ -252,7 +253,7 @@ class MSE(object):
             ctypes.c_bool,ctypes.c_int,ctypes.c_bool, ctypes.c_int,ctypes.c_int, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, \
-            ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_bool, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, \
@@ -736,7 +737,7 @@ class MSE(object):
             self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
             self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
-            self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, self.__binary_evolution_mass_transfer_timestep_parameter, self.__binary_evolution_CE_recombination_fraction, \
+            self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, self.__binary_evolution_mass_transfer_timestep_parameter, self.__binary_evolution_CE_recombination_fraction, self.__binary_evolution_use_eCAML_model, \
             self.__MSTAR_gbs_tolerance_default, self.__MSTAR_gbs_tolerance_kick, self.__MSTAR_collision_tolerance, self.__MSTAR_output_time_tolerance, \
             self.__nbody_analysis_fractional_semimajor_axis_change_parameter,self.__nbody_analysis_fractional_integration_time,self.__nbody_analysis_minimum_integration_time,self.__nbody_analysis_maximum_integration_time, \
             self.__nbody_dynamical_instability_direct_integration_time_multiplier,self.__nbody_semisecular_direct_integration_time_multiplier,self.__nbody_supernovae_direct_integration_time_multiplier,self.__nbody_other_direct_integration_time_multiplier, \
@@ -1435,6 +1436,14 @@ class MSE(object):
     @binary_evolution_mass_transfer_timestep_parameter.setter
     def binary_evolution_mass_transfer_timestep_parameter(self, value):
         self.__binary_evolution_mass_transfer_timestep_parameter = value
+        self.__set_parameters_in_code()
+
+    @property
+    def binary_evolution_use_eCAML_model(self):
+        return self.__binary_evolution_use_eCAML_model
+    @binary_evolution_use_eCAML_model.setter
+    def binary_evolution_use_eCAML_model(self, value):
+        self.__binary_evolution_use_eCAML_model = value
         self.__set_parameters_in_code()
 
 
@@ -2239,6 +2248,7 @@ class Tools(object):
         code.include_flybys = True
         code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
         code.flybys_encounter_sphere_radius = 1.0e5
+        code.binary_evolution_use_eCAML_model = False
 
         t_print = [[]]
         internal_indices_print = [[[] for x in range(N_bodies)]]

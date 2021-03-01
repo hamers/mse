@@ -209,12 +209,26 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double R_donor = donor->radius;
     double t_dyn_donor = compute_stellar_dynamical_timescale(M_donor, R_donor);
 
-
     /* Critical mass ratios */
     double q = M_donor / M_accretor;
     double q_crit = compute_q_crit_for_common_envelope_evolution(kw, M_donor, donor->core_mass);
     double q_crit_low_mass_donor = 0.695;
+    double q_crit_high_mass_donor = 3.0;
     double q_crit_WD_donor = 0.628;
+    
+    /* Prepare some quantities used for the eCAML model from Schreiber et al. (2016, MNRAS, 455, L16) */
+    double nudyn = 0.35/M_donor; 
+    double zeta_RL = (2.0/3.0) * ( log(1.0+pow(q,1.0/3.0)) - (0.5*pow(q,1.0/3.0))/(1.0+pow(q,1.0/3.0)) )/(0.6*pow(q,2.0/3.0)+log(1.0+pow(q,1.0/3.0))) + 2.0*nudyn + M_donor/(M_accretor+M_donor) - 2.0; // Roche lobe Zeta (Eq. A11 in Belloni et al. 2018, MNRAS, 478, 5639)
+
+    double zeta_AD; // Adiabatic Zeta (Eq. A13 in Belloni et al. 2018, MNRAS, 478, 5639)
+    if (M_donor <= 0.38412)
+    {
+        zeta_AD = -1.0/3.0;
+    }
+    else
+    {
+        zeta_AD = 0.782491 - 7.46384*M_donor + 13.9255*pow(M_donor, 2.0) - 5.3892*pow(M_donor, 3.0);
+    }
 
     /* Estimate of mass transfer timescale */
     double a = parent->a;
@@ -230,8 +244,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double fabs_m_dot = fabs(m_dot);
     //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
     
-    
-    
+        
     if (accretor->RLOF_flag == 1) /* Contact evolution */
     {
         int kw2 = accretor->stellar_type;
@@ -295,7 +308,19 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     #endif
 
     /* Different cases */
-    if (kw == 0 and q > q_crit_low_mass_donor)
+    
+    /* Low mass donor criterion is user-adjustable -- default or eCAML */
+    bool low_mass_donor_criterion;
+    if (binary_evolution_use_eCAML_model == false)
+    {
+        low_mass_donor_criterion = (kw == 0 and q > q_crit_low_mass_donor);
+    }
+    else
+    {
+        low_mass_donor_criterion = (kw <= 1 and ( ( M_donor <= 0.8 and zeta_RL > zeta_AD ) or ( M_donor > 0.8 and q > q_crit_high_mass_donor ) ));
+    }
+    
+    if (low_mass_donor_criterion)
     {
         /* `CE'-like evolution from a low-mass MS star to any secondary. */
         flag = 1;

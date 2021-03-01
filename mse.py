@@ -2232,7 +2232,7 @@ class Tools(object):
 
         for b in bodies:
             b.include_WD_kicks = include_WD_kicks
-            b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD;
+            b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
 
         N_bodies = len(bodies)
         N_orbits = len(orbits)

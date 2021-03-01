@@ -792,8 +792,10 @@ class Particle
     /* kicks */
     int kick_distribution;
     bool apply_kick;
+    bool include_WD_kicks;
     double kick_distribution_sigma_km_s_NS;
     double kick_distribution_sigma_km_s_BH;
+    double kick_distribution_sigma_km_s_WD;
 
     double kick_distribution_2_m_NS;
     double kick_distribution_4_m_NS;
@@ -1005,9 +1007,12 @@ class Particle
         
         /* kicks */
         apply_kick = false;
+        include_WD_kicks = false;
         kick_distribution = 1;
         kick_distribution_sigma_km_s_NS = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
         kick_distribution_sigma_km_s_BH = 50.0;
+        kick_distribution_sigma_km_s_WD = 1.0;
+
 
         kick_distribution_2_m_NS = 1.4;
         kick_distribution_4_m_NS = 1.2;

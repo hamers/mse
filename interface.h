@@ -34,9 +34,9 @@ int set_stellar_evolution_properties(int index, int stellar_type, int object_typ
     double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription);
 int get_stellar_evolution_properties(int index, int *stellar_type, int *object_type, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter);  
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
+int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_sigma_km_s_WD, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
     double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma);
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
+int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kicks, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH,  double *kick_distribution_sigma_km_s_WD, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
     double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma);
 
 int set_binary_evolution_properties(int index, double dynamical_mass_transfer_low_mass_donor_timescale, double dynamical_mass_transfer_WD_donor_timescale, double compact_object_disruption_mass_loss_timescale, \

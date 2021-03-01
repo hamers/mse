@@ -443,7 +443,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, int *object_t
     return 0;
 }
 
-int set_kick_properties(int index, int kick_distribution, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
+int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_sigma_km_s_WD, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
     double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma)
 {
     //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
@@ -454,8 +454,10 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
 
     Particle *p = particlesMap[index];
     p->kick_distribution = kick_distribution;
+    p->include_WD_kicks = include_WD_kicks;
     p->kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS;
     p->kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH;
+    p->kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD;
     p->kick_distribution_2_m_NS = kick_distribution_2_m_NS;
     p->kick_distribution_4_m_NS = kick_distribution_4_m_NS;
     p->kick_distribution_4_m_ej = kick_distribution_4_m_ej;
@@ -465,7 +467,7 @@ int set_kick_properties(int index, int kick_distribution, double kick_distributi
     
     return 0;
 }
-int get_kick_properties(int index, int *kick_distribution, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
+int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kicks, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH,  double *kick_distribution_sigma_km_s_WD, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
     double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma)
 
 {
@@ -476,8 +478,10 @@ int get_kick_properties(int index, int *kick_distribution, double *kick_distribu
   
     Particle *p = particlesMap[index];
     *kick_distribution = p->kick_distribution;
+    *include_WD_kicks = p->include_WD_kicks;
     *kick_distribution_sigma_km_s_NS = p->kick_distribution_sigma_km_s_NS;
     *kick_distribution_sigma_km_s_BH = p->kick_distribution_sigma_km_s_BH;
+    *kick_distribution_sigma_km_s_WD = p->kick_distribution_sigma_km_s_WD;
     *kick_distribution_2_m_NS = p->kick_distribution_2_m_NS;
     *kick_distribution_4_m_NS = p->kick_distribution_4_m_NS;
     *kick_distribution_4_m_ej = p->kick_distribution_4_m_ej;

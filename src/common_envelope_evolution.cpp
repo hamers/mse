@@ -293,11 +293,9 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
 
-            if (KW1 >= 13)
+            if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
             {
                 star1->apply_kick = true;
-                //star1->kick_distribution = 1;
-                //star1->instantaneous_perturbation_delta_mass = M1 - MF;
             }
          }
     }
@@ -407,7 +405,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             star_(&KW1,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-            if (KW1 >= 13)
+            if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
             {
                 star1->apply_kick = true;
             }
@@ -418,7 +416,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             star_(&KW2,&M02,&M2,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2);
             hrdiag_(&M02,&AJ2,&M2,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2, \
                 &R2,&L2,&KW2,&MC2,&RC2,&MENV2,&RENV2,&K22);
-            if(KW2 >= 13 and KW < 13) /* secondary became an NS */
+            if((KW2 >= 13 and KW < 13) or (KW2 >= 10 and KW <= 12 and star2->include_WD_kicks == true)) /* secondary became an NS/WD */
             {
                 star2->apply_kick = true;
             }
@@ -1053,7 +1051,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     hrdiag_(&M3_sse_init_f,&age3_f,&M3_f,&tm3,&tn3,tscls3,lums3,GB3,zpars3, \
         &R3_f,&L3_f,&kw3_f,&MC3_f,&RC3_f,&M_env3_f,&R_env3_f,&k2_3_f);
 
-    if (kw3_f >= 13)
+    if (kw3_f >= 13 or (kw3_f >= 10 and kw3_f <= 12 and star3->include_WD_kicks == true))
     {
         star3->apply_kick = true;
     }

@@ -56,15 +56,14 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     if (*integration_flag == 0)
     {
         *unbound_orbits = check_for_unbound_orbits(particlesMap);
-        int dummy;
-        bool stable_MA01 = check_system_for_dynamical_stability(particlesMap, &dummy);
+        bool stable_MA01 = check_system_for_dynamical_stability(particlesMap, integration_flag);
         
         if (*unbound_orbits == true or stable_MA01 == false)
         {
             #ifdef VERBOSE
             if (verbose_flag > 0)
             {
-                printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova!\n");
+                printf("SNe.cpp -- handle_SNe_in_system -- Unbound orbits in system due to supernova! unbound_orbits %d stable_MA01 %d\n",*unbound_orbits,stable_MA01);
             }
             #endif
 
@@ -219,6 +218,14 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         printf("SNe.cpp -- sample_kick_velocity -- ERROR: invalid kick distribution %d \n",kick_distribution);
         //exit(-1);
         error_code = 13;
+    }
+
+    /* WD kicks */
+    if (p->include_WD_kicks == true and kw >= 10 and kw <= 12)
+    {
+        sigma = p->kick_distribution_sigma_km_s_WD * CONST_KM_PER_S;
+        sample_from_3d_maxwellian_distribution(sigma, v);
+        vnorm = norm3(v);
     }
 
     #ifdef VERBOSE

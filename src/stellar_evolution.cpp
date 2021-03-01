@@ -364,6 +364,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->ospin_dot = (ospin - ospin_old)/dt;
                     p->instantaneous_perturbation_delta_mass = 0.0;
                     p->apply_kick = false;
+                    
                 }
                 else /* kw change with new kw=13 or kw=14 */
                 {
@@ -380,6 +381,20 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->instantaneous_perturbation_delta_mass = mt - mt_old; /* Will be used by handle_SNe_in_system() */
 
                 }
+                
+                if (kw_old!=kw and kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
+                {
+                    p->apply_kick = true;
+                    *apply_SNe_effects = true;
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("stellar_evolution.cpp -- will apply WD kick to star %d with old stellar type %d and new stellar type %d\n",p->index,kw_old,kw);
+                    }
+                    #endif
+                }
+                
 
                 p->sse_initial_mass = sse_initial_mass;
                 p->stellar_type = kw;

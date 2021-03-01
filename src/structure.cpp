@@ -738,11 +738,11 @@ bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integ
                 {
                     stable = false;
                 }
-                
+
                 #ifdef VERBOSE
-                if (verbose_flag > 2)
+                if (verbose_flag > 1)
                 {
-                    printf("structure.cpp -- check_system_for_dynamical_stability -- %g %g %g %g %g q_out %g rel_INCL %g\n",rp_out,rp_out_crit,a_in,e_in,M_p,q_out,rel_INCL);
+                    printf("structure.cpp -- check_system_for_dynamical_stability -- rp_out %g rp_out_crit %g a_in %g e_in %g M_p %g q_out %g rel_INCL %g\n",rp_out,rp_out_crit,a_in,e_in,M_p,q_out,rel_INCL);
                 }
                 #endif
                 

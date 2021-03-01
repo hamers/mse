@@ -47,6 +47,35 @@ void initialize_mpi_or_serial(void) {
 #endif
 }
 
+double get_timestep_estimate( struct RegularizedRegion *R ){
+        int np = R->NumVertex;
+        double dt_min = DBL_MAX;
+        for(int i=0;i<np;i++){
+                for(int j=i+1;j<np;j++){
+                        double mi = R->Mass[i];
+                        double mj = R->Mass[j];
+                        double dr[3], r2=0;
+                        for(int k=0;k<3;k++){
+                                dr[k] = R->Pos[3*j+k]-R->Pos[3*i+k];
+                                r2 += dr[k]*dr[k];
+                        }
+                        double r3 = r2*sqrt(r2);
+                        double dt_freefall = 0.1*sqrt( r3/(GCONST*(mi+mj)));
+                        if( dt_freefall<dt_min ) dt_min = dt_freefall;
+                        double dv[3], v2=0;
+                        for(int k=0;k<3;k++){
+                                dv[k] = R->Vel[3*j+k]-R->Vel[3*i+k];
+                                v2 += dv[k]*dv[k];
+                        }
+                        double dt_flyby = 0.1*sqrt(r2/v2);
+                        if( dt_flyby<dt_min ) dt_min = dt_flyby;
+                }
+        }
+        return dt_min;
+}
+
+
+
 int check_relative_proximity_ND_2(int v1, int v2, struct RegularizedRegion *R,
                                   int *d, int *path, int *sign) {
 
@@ -1115,7 +1144,18 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
 
 
     // Needed variables
-    double dt = time_interval/1e6;	// may be adjusted by the user
+    double dt = get_timestep_estimate( R );
+    double upper_dt = time_interval * 1.0e-6;
+    if (dt >= upper_dt) // Want to make sure dt is not too long
+    {
+        dt = upper_dt;
+    }
+    double lower_dt = 1.0e-15; 
+    if (dt <= lower_dt) // Want to make sure dt is not too small
+    {
+        dt = lower_dt;
+    }
+    
     double Hstep;
     double mst_time;
 

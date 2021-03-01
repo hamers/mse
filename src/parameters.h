@@ -68,6 +68,7 @@ extern double flybys_internal_semimajor_axis;
 extern int binary_evolution_CE_energy_flag;
 extern int binary_evolution_CE_spin_flag;
 extern int binary_evolution_CE_mass_loss_Nsteps;
+extern double binary_evolution_CE_recombination_fraction;
 extern double binary_evolution_mass_transfer_timestep_parameter;
 
 extern double chandrasekhar_mass;

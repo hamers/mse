@@ -992,7 +992,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
-    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, \
+    int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, double binary_evolution_CE_recombination_fraction_, \
     double MSTAR_gbs_tolerance_default_, double MSTAR_gbs_tolerance_kick_, double MSTAR_stopping_condition_tolerance_, double MSTAR_output_time_tolerance_, \
     double nbody_analysis_fractional_semimajor_axis_change_parameter_, double nbody_analysis_fractional_integration_time_, double nbody_analysis_minimum_integration_time_, double nbody_analysis_maximum_integration_time_, \
     double nbody_dynamical_instability_direct_integration_time_multiplier_, double nbody_semisecular_direct_integration_time_multiplier_, double nbody_supernovae_direct_integration_time_multiplier_, double nbody_other_direct_integration_time_multiplier_, \
@@ -1034,6 +1034,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
 
     binary_evolution_CE_energy_flag = binary_evolution_CE_energy_flag_;
     binary_evolution_CE_spin_flag = binary_evolution_CE_spin_flag_;
+    binary_evolution_CE_recombination_fraction = binary_evolution_CE_recombination_fraction_;
     binary_evolution_mass_transfer_timestep_parameter = binary_evolution_mass_transfer_timestep_parameter_;
 
     nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;

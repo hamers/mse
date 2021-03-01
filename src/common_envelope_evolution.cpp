@@ -117,8 +117,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     int CEFLAG = binary_evolution_CE_energy_flag;
     double ALPHA1 = star1->common_envelope_alpha;
     
-    double fac = 1.0;
-        
+    double fac = binary_evolution_CE_recombination_fraction;
     bool COEL = false;
     
     /* Get current state of star 1 (primary) */
@@ -136,13 +135,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double L1 = star1->luminosity/CONST_L_SUN;
     double MENV1,RENV1,K21;
     
-    
     double AJ1 = star1->age * yr_to_Myr;
     double *ZPARS1 = star1->zpars;    
 
     star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
-
-
     hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
         &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
 
@@ -175,8 +171,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double *ZPARS2 = star2->zpars;    
 
     star_(&KW2, &M02, &M2, &TM2, &TN2, TSCLS2, LUMS2, GB2, ZPARS2);
-
-    
     hrdiag_(&M02,&AJ2,&M2,&TM2,&TN2,TSCLS2,LUMS2,GB2,ZPARS2, \
         &R2,&L2,&KW2,&MC2,&RC2,&MENV2,&RENV2,&K22);
 
@@ -988,7 +982,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     hrdiag_(&M3_sse_init,&age3,&M3,&tm3,&tm3,tscls3,lums3,GB3,zpars3, \
         &R3,&L3,&kw3,&MC3,&RC3,&M_env3,&R_env3,&k2_3);
 
-    double fac = 1.0;
+    double fac = binary_evolution_CE_recombination_fraction;
     double M_envd3 = M_env3 / (M3 - MC3);
     double R_ZAMS3 = rzamsf_(&M3_sse_init);
     double lambda3 = celamf_(&kw3,&M3_sse_init,&L3,&R3,&R_ZAMS3,&M_envd3,&fac);

@@ -2501,71 +2501,6 @@ class Tools(object):
 
        
     @staticmethod
-    def generate_mobile_diagram_old(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
-        """
-        Generate a Mobile diagram of a given multiple system.
-        """
-        
-        try:
-            import matplotlib
-        except ImportError:
-            print("mse.py -- generate_mobile_diagram -- unable to import Matplotlib which is needed to generate a Mobile diagram!")
-            exit(0)
-
-        bodies = [x for x in particles if x.is_binary==False]
-        binaries = [x for x in particles if x.is_binary==True]
-
-        if len(binaries)==0:
-            if len(bodies)==0:
-                print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
-                exit(0)
-            else:
-                Tools.draw_bodies(plot,bodies,fontsize)
-                return
-
-        Tools.determine_binary_levels_in_particles(particles)                    
-        unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
-        if len(unbound_bodies)>0:
-            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.5*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
-            
-        top_level_binary = [x for x in binaries if x.level==0][0]
-        
-        for p in particles:
-            p.color = 'k'
-        
-        if use_default_colors==True:
-            ### Assign some colors from mcolors to the orbits ###
-            import matplotlib.colors as mcolors
-            colors = mcolors.TABLEAU_COLORS
-            color_names = list(colors)
-            
-            for index in range(len(binaries)):
-                color_name = color_names[index]
-                color=colors[color_name]
-            
-                o = binaries[index]
-                o.color = color
-
-        ### Make mobile diagram ###
-        top_level_binary.x = 0.0
-        top_level_binary.y = 0.0
-        x_min = x_max = y_min = 0.0
-        y_max = line_width_vertical
-    
-        plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
-        x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
-
-        
-        plot.set_xticks([])
-        plot.set_yticks([])
-        #print("minmax",x_min,x_max,y_min,y_max)
-        beta = 0.7
-        plot.set_xlim([x_min - beta*np.fabs(x_min),x_max + beta*np.fabs(x_max)])
-        plot.set_ylim([y_min - beta*np.fabs(y_min),1.5*y_max + beta*np.fabs(y_max)])
-        
-        #plot.autoscale(enable=True,axis='both')
-        
-    @staticmethod
     def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
         """
         Generate a Mobile diagram of a given multiple system.
@@ -2583,7 +2518,7 @@ class Tools(object):
         if len(binaries)==0:
             if len(bodies)==0:
                 print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
-                exit(0)
+                return
             else:
                 Tools.draw_bodies(plot,bodies,fontsize)
                 return

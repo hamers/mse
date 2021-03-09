@@ -45,36 +45,39 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
         Particle *P_p = (*it_p).second;
         if (P_p->is_binary == true)
         {
-            if (P_p->check_for_secular_breakdown == true and P_p->parent != -1)
+            if (P_p->check_for_secular_breakdown == true)
             {
-                #ifdef VERBOSE
-                if (verbose_flag > 2)
+                if (P_p->parent != -1)
                 {
-                    printf("root_finding.cpp -- check_for_roots -- check_for_secular_breakdown\n");
-                }
-                #endif
-                
-                double hamiltonian=0.0;
-                double KS_V=0.0;
-                compute_EOM_Newtonian_for_particle(particlesMap,P_p,&hamiltonian,&KS_V,false);
-                
-                double AM_time_scale = compute_AM_time_scale(P_p);
-                double orbital_period = compute_orbital_period_from_semimajor_axis(P_p->mass,P_p->a);
-
-                f_root = 1.0 - AM_time_scale/orbital_period;
-                if (use_root_functions == true)
-                {
-                    root_functions[i_root] = f_root;
-                }
-                else
-                {
-                    if (f_root >= 0.0)
+                    #ifdef VERBOSE
+                    if (verbose_flag > 2)
                     {
-                        P_p->secular_breakdown_has_occurred == true;
+                        printf("root_finding.cpp -- check_for_roots -- check_for_secular_breakdown\n");
+                    }
+                    #endif
+                    
+                    double hamiltonian=0.0;
+                    double KS_V=0.0;
+                    compute_EOM_Newtonian_for_particle(particlesMap,P_p,&hamiltonian,&KS_V,false);
+                    
+                    double AM_time_scale = compute_AM_time_scale(P_p);
+                    double orbital_period = compute_orbital_period_from_semimajor_axis(P_p->mass,P_p->a);
+
+                    f_root = 1.0 - AM_time_scale/orbital_period;
+                    if (use_root_functions == true)
+                    {
+                        root_functions[i_root] = f_root;
                     }
                     else
                     {
-                        P_p->secular_breakdown_has_occurred == false;
+                        if (f_root >= 0.0)
+                        {
+                            P_p->secular_breakdown_has_occurred == true;
+                        }
+                        else
+                        {
+                            P_p->secular_breakdown_has_occurred == false;
+                        }
                     }
                 }
                 
@@ -89,7 +92,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     printf("root_finding.cpp -- check_for_roots -- check_for_dynamical_instability\n");
                 }
                 #endif
-                
+
                 if (P_p->parent != -1)
                 {
                     Particle *P_parent = (*particlesMap)[P_p->parent];
@@ -490,7 +493,7 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
             {
                 p->dynamical_instability_has_occurred = false;
                 return_flag = 2;
-                
+
                 #ifdef LOGGING
                 Log_info_type log_info;
                 log_info.binary_index = p->index;
@@ -685,7 +688,6 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
                     
                 }
                 i_root++;
-
             }
             if (P_p->check_for_dynamical_instability == true)
             {
@@ -935,9 +937,7 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         }
         #endif
 
-        //exit(-1);
         error_code = 24;
-        //break;
     }
 }
 

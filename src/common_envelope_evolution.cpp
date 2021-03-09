@@ -600,7 +600,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
          check_number(OORB,"common_envelope_evolution.cpp -- binary_common_envelope_evolution()","OORB", true);
     }
 
-
     /* Handle orbital changes / merge binaries in case of coalescence */
     
     label30:

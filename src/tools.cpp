@@ -335,6 +335,7 @@ int get_inclination_relative_to_parent(ParticlesMap *particlesMap, int index, do
 
 void compute_eccentric_anomaly_from_mean_anomaly(double mean_anomaly, double eccentricity, double *cos_eccentric_anomaly, double *sin_eccentric_anomaly)
 {
+
     double eccentric_anomaly;
     double eccentric_anomaly_next = mean_anomaly;
     double epsilon2 = 1e-10;
@@ -346,6 +347,27 @@ void compute_eccentric_anomaly_from_mean_anomaly(double mean_anomaly, double ecc
         eccentric_anomaly = eccentric_anomaly_next;
         eccentric_anomaly_next = eccentric_anomaly - (eccentric_anomaly - eccentricity*sin(eccentric_anomaly) - mean_anomaly)/(1.0 - eccentricity*cos(eccentric_anomaly));
         error = fabs(eccentric_anomaly_next - eccentric_anomaly);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("tools.cpp -- compute_eccentric_anomaly_from_mean_anomaly -- j %d eccentric_anomaly %g eccentric_anomaly_next %g error %g\n",j,eccentric_anomaly,eccentric_anomaly_next,error);
+        }
+        #endif
+                
+        if (j>1000 and error > 1e100) /* In this case, Newton-Raphson iteration clearly cannot find a converged solution; "give up" and return eccentric_anomaly = mean_anomaly */
+        {
+            eccentric_anomaly = mean_anomaly;
+
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("tools.cpp -- compute_eccentric_anomaly_from_mean_anomaly -- j %d eccentric_anomaly %g eccentric_anomaly_next %g error %g -- Newton-Raphson iteration cannot find a converged solution; returning eccentric_anomaly = mean_anomaly \n",j,eccentric_anomaly,eccentric_anomaly_next,error);
+            }
+            #endif
+
+            break;
+        }
     }
     *cos_eccentric_anomaly = cos(eccentric_anomaly);
     *sin_eccentric_anomaly = sin(eccentric_anomaly);

@@ -2400,8 +2400,10 @@ class Tools(object):
                 plot=fig.add_subplot(N_r,N_c,index_log+1)
                 particles = log["particles"]
                 event_flag = log["event_flag"]
-                
-                Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize)
+                index1 = log["index1"]
+                index2 = log["index2"]
+
+                Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize,index1=index1,index2=index2,event_flag=event_flag)
 
                 text = Tools.get_description_for_event_flag(event_flag)
                 plot.set_title(text,fontsize=fontsize)
@@ -2501,7 +2503,7 @@ class Tools(object):
 
        
     @staticmethod
-    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True):
+    def generate_mobile_diagram(particles,plot,line_width_horizontal=1.5,line_width_vertical = 0.2,line_color = 'k',line_width = 1.5,fontsize=12,use_default_colors=True,index1=-1,index2=-1,event_flag=-1):
         """
         Generate a Mobile diagram of a given multiple system.
         """
@@ -2563,7 +2565,7 @@ class Tools(object):
             y_max = line_width_vertical
     
             plot.plot( [top_level_binary.x,top_level_binary.x], [top_level_binary.y,top_level_binary.y + line_width_vertical ], color=line_color,linewidth=line_width)
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,top_level_binary,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag)
 
         plot.set_xticks([])
         plot.set_yticks([])
@@ -2575,14 +2577,16 @@ class Tools(object):
         #plot.autoscale(enable=True,axis='both')
         
     @staticmethod
-    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max):
+    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=-1,index2=-1,event_flag=-1):
         x = particle.x
         y = particle.y
         
         child1 = particle.child1
         child2 = particle.child2
 
-        text = "$a=\mathrm{%s\,au}$\n $e= %.2f$"%(round(particle.a,1),particle.e)
+        N_ra = 1
+        if (particle.a<=0.1): N_ra = 2
+        text = "$a=\mathrm{%s\,au}$\n $e= %.2f$"%(round(particle.a,N_ra),particle.e)
         x_plot = x - 0*0.8*line_width_horizontal
         y_plot = y - 0.3*line_width_vertical
 
@@ -2635,9 +2639,11 @@ class Tools(object):
 
         CONST_MJUP = 0.000954248
         
+        
+       
         ### handle children ###
         if child1.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag)
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
             plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
@@ -2647,9 +2653,23 @@ class Tools(object):
                 text = "$\mathrm{%s}$"%(str(round(child1.mass,1)))
                 
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
+
+            if event_flag in [4,6,8]:
+                if child1.index in [index1,index2] or child2.index in [index1,index2]:
+                    plot.plot([child1.x,child2.x],[child1.y,child2.y],color='r',zorder=8)
+                    if child1.index == index1:
+                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+                    else:
+                        plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+            if event_flag in [2]:
+                if child1.index == index1:
+                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=10,marker='*')
+                if child2.index == index1:
+                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=10,marker='*')
+            
             
         if child2.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag)
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
             plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
@@ -2660,6 +2680,21 @@ class Tools(object):
                 text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
 
             plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
+
+            if event_flag in [4,6,8]:
+                if child1.index in [index1,index2] or child2.index in [index1,index2]:
+                    plot.plot([child1.x,child2.x],[child1.y,child2.y],color='r',zorder=8)
+                    if child1.index == index1:
+                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+                    else:
+                        plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+
+            if event_flag in [2]:
+                if child1.index == index1:
+                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=10,marker='*')
+                if child2.index == index1:
+                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=10,marker='*')
+
 
         return x_min,x_max,y_min,y_max
 

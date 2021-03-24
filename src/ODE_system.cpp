@@ -227,7 +227,7 @@ int compute_y_dot(realtype t, N_Vector y, N_Vector y_dot, void *data_)
     double wall_time_diff_s = difftime(wall_time_current,wall_time_start);
     if (wall_time_diff_s > wall_time_max_s)
     {
-        printf("ODE_system.cpp -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
+        //printf("ODE_system.cpp -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
         error_code = 35;
         return 0;
     }

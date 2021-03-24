@@ -740,7 +740,7 @@ void print_system(ParticlesMap *particlesMap, int integration_flag)
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
         {
             Particle *p = (*it_p).second;
-            
+
             if (p->is_binary == false)
             {
                 if (p->object_type == 1)

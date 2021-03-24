@@ -122,7 +122,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             printf("evolve.cpp -- evolve -- t %g ODE dt %g t_old - t %g t - t_out %g\n",t,dt,t_old-t,t-t_out);
         }
         #endif
-        
+
         /* Handle roots */
         if (*CVODE_flag==2)
         {

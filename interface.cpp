@@ -506,6 +506,20 @@ int set_binary_evolution_properties(int index, double dynamical_mass_transfer_lo
     
     return 0;
 }
+int get_binary_evolution_properties(int index, double *dynamical_mass_transfer_low_mass_donor_timescale, double *dynamical_mass_transfer_WD_donor_timescale, double *compact_object_disruption_mass_loss_timescale, \
+    double *common_envelope_alpha, double *common_envelope_lambda, double *common_envelope_timescale, double *triple_common_envelope_alpha)
+{
+    Particle *p = particlesMap[index];
+    *dynamical_mass_transfer_low_mass_donor_timescale = p->dynamical_mass_transfer_low_mass_donor_timescale;
+    *dynamical_mass_transfer_WD_donor_timescale = p->dynamical_mass_transfer_WD_donor_timescale;
+    *compact_object_disruption_mass_loss_timescale = p->compact_object_disruption_mass_loss_timescale;
+    *common_envelope_alpha = p->common_envelope_alpha;
+    *common_envelope_lambda = p->common_envelope_lambda;
+    *common_envelope_timescale = p->common_envelope_timescale;
+    *triple_common_envelope_alpha = p->triple_common_envelope_alpha;
+    
+    return 0;
+}
 
 /*******************************
  * instantaneous perturbations *

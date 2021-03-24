@@ -41,6 +41,8 @@ int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kick
 
 int set_binary_evolution_properties(int index, double dynamical_mass_transfer_low_mass_donor_timescale, double dynamical_mass_transfer_WD_donor_timescale, double compact_object_disruption_mass_loss_timescale, \
     double common_envelope_alpha, double common_envelope_lambda, double common_envelope_timescale, double triple_common_envelope_alpha);
+int get_binary_evolution_properties(int index, double *dynamical_mass_transfer_low_mass_donor_timescale, double *dynamical_mass_transfer_WD_donor_timescale, double *compact_object_disruption_mass_loss_timescale, \
+    double *common_envelope_alpha, double *common_envelope_lambda, double *common_envelope_timescale, double *triple_common_envelope_alpha);
 
 int set_true_anomaly(int index, double value);
 int get_true_anomaly(int index, double *value);

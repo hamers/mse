@@ -1219,7 +1219,7 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
         double wall_time_diff_s = difftime(wall_time_current,wall_time_start);
         if (wall_time_diff_s > wall_time_max_s)
         {
-            printf("mst.c -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
+            //printf("mst.c -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
             error_code = 36;
             return;
         }

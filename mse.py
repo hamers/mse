@@ -200,6 +200,9 @@ class MSE(object):
         self.lib.set_binary_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_binary_evolution_properties.restype = ctypes.c_int
 
+        self.lib.get_binary_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_binary_evolution_properties.restype = ctypes.c_int
+
 
         ### orbital elements ###
         self.lib.set_orbital_elements.argtypes = (ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
@@ -573,6 +576,17 @@ class MSE(object):
         particle.include_pairwise_25PN_terms = include_pairwise_25PN_terms.value
         particle.include_spin_orbit_1PN_terms = include_spin_orbit_1PN_terms.value
         particle.exclude_1PN_precession_in_case_of_isolated_binary = exclude_1PN_precession_in_case_of_isolated_binary.value
+
+        dynamical_mass_transfer_low_mass_donor_timescale,dynamical_mass_transfer_WD_donor_timescale,compact_object_disruption_mass_loss_timescale,common_envelope_alpha,common_envelope_lambda,common_envelope_timescale,triple_common_envelope_alpha = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+        flag += self.lib.get_binary_evolution_properties(particle.index,ctypes.byref(dynamical_mass_transfer_low_mass_donor_timescale),ctypes.byref(dynamical_mass_transfer_WD_donor_timescale),ctypes.byref(compact_object_disruption_mass_loss_timescale), \
+            ctypes.byref(common_envelope_alpha), ctypes.byref(common_envelope_lambda), ctypes.byref(common_envelope_timescale), ctypes.byref(triple_common_envelope_alpha))
+        particle.dynamical_mass_transfer_low_mass_donor_timescale = dynamical_mass_transfer_low_mass_donor_timescale.value
+        particle.dynamical_mass_transfer_WD_donor_timescale = dynamical_mass_transfer_WD_donor_timescale.value
+        particle.compact_object_disruption_mass_loss_timescale = compact_object_disruption_mass_loss_timescale.value
+        particle.common_envelope_alpha = common_envelope_alpha.value
+        particle.common_envelope_lambda = common_envelope_lambda.value
+        particle.common_envelope_timescale = common_envelope_timescale.value
+        particle.triple_common_envelope_alpha = triple_common_envelope_alpha.value
 
         if self.enable_root_finding == True:
             secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
@@ -2233,7 +2247,8 @@ class Tools(object):
         for b in bodies:
             b.include_WD_kicks = include_WD_kicks
             b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
-
+            b.common_envelope_timescale = 1.0e4
+            
         N_bodies = len(bodies)
         N_orbits = len(orbits)
 
@@ -2663,9 +2678,9 @@ class Tools(object):
                         plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
             if event_flag in [2]:
                 if child1.index == index1:
-                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=10,marker='*')
+                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=9,marker='*')
                 if child2.index == index1:
-                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=10,marker='*')
+                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=9,marker='*')
             
             
         if child2.is_binary == True:
@@ -2691,9 +2706,9 @@ class Tools(object):
 
             if event_flag in [2]:
                 if child1.index == index1:
-                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=10,marker='*')
+                    plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=9,marker='*')
                 if child2.index == index1:
-                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=10,marker='*')
+                    plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=9,marker='*')
 
 
         return x_min,x_max,y_min,y_max

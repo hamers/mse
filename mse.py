@@ -2247,7 +2247,7 @@ class Tools(object):
         for b in bodies:
             b.include_WD_kicks = include_WD_kicks
             b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
-            b.common_envelope_timescale = 1.0e4
+            b.common_envelope_timescale = 1.0e3
             
         N_bodies = len(bodies)
         N_orbits = len(orbits)

@@ -18,7 +18,8 @@ int initialize_code(ParticlesMap *particlesMap)
     update_structure(particlesMap, 0);
 
     random_number_generator.seed(random_seed);
-
+    flybys_t_next_encounter = 0.0;
+    
     error_code = 0;
 
     int integration_flag = 0;

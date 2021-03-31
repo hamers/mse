@@ -100,7 +100,6 @@ extern double nbody_supernovae_direct_integration_time_multiplier;
 extern double nbody_other_direct_integration_time_multiplier;
 extern double nbody_maximum_separation_for_inclusion;
 
-
 extern double kroupa_alpha1;
 extern double kroupa_alpha2;
 extern double kroupa_alpha3;

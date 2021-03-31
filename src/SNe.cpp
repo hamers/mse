@@ -228,12 +228,18 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         vnorm = norm3(v);
     }
 
+    Log_type &last_entry = logData.back();
+    Log_info_type &last_log_info = last_entry.log_info;
+    last_log_info.kick_speed = vnorm;
+
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
         printf("SNe.cpp -- i %d kw %d apply_kick %d distr %d kick_distribution_sigma_km_s_NS %g vnorm %g m_progenitor %g m_remnant %g\n",p->index,kw,p->apply_kick,p->kick_distribution,p->kick_distribution_sigma_km_s_NS,vnorm,m_progenitor,m_remnant);
     }
     #endif
+    
+    
 
     *vx *= vnorm;
     *vy *= vnorm;

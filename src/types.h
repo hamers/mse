@@ -1087,7 +1087,7 @@ class Log_info_type
     public:
     int index1,index2;
     int binary_index;
-    double kick_speed = -1;
+    double kick_speed_km_s = -1;
     
     Log_info_type()
     {

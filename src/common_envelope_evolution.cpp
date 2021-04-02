@@ -131,6 +131,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     int KW1_old = KW1;
     double M01 = star1->sse_initial_mass;
     double MC1 = star1->core_mass;
+    double MC1_old = MC1;
     double R1 = star1->radius/CONST_R_SUN;
     double RC1 = star1->core_radius/CONST_R_SUN;
     double L1 = star1->luminosity/CONST_L_SUN;
@@ -164,6 +165,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     int KW2_old = KW2;
     double M02 = star2->sse_initial_mass;
     double MC2 = star2->core_mass;
+    double MC2_old = MC2;
     double R2 = star2->radius/CONST_R_SUN;
     double RC2 = star2->core_radius/CONST_R_SUN;
     double L2 = star2->luminosity/CONST_L_SUN;
@@ -645,6 +647,53 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (COEL == false)
     {
         
+
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star1->index;
+            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+            
+            /* Temporarily set some properties for the purposes of kick velocity sampling */
+            star1->stellar_type = KW1;
+            star1->mass = M1_old;
+            star1->instantaneous_perturbation_delta_mass = M1 - M1_old;
+            star1->core_mass_old = MC1_old;
+            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star1->V_vec[i] += V_kick_vec[i];
+            }
+            
+        }
+        if (star2->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star2->index;
+            if (KW2 >= 10 and KW2 <= 12 and star2->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+
+            /* Temporarily set some properties for the purposes of kick velocity sampling */
+            star2->stellar_type = KW2;
+            star2->mass = M2_old;
+            star2->instantaneous_perturbation_delta_mass = M2 - M2_old;
+            star2->core_mass_old = MC2_old;
+            sample_kick_velocity(star2, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star2->V_vec[i] += V_kick_vec[i];
+            }
+        }
+
         /* Update all properties of the two stars */
         star1->stellar_type = KW1;
         star1->mass = M1;        
@@ -660,40 +709,19 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
         star1->luminosity = L1 * CONST_L_SUN;
         
-        /* Take into account kicks */
-        double V_kick_vec[3];
-        if (star1->apply_kick == true)
-        {
-            #ifdef LOGGING
-            log_info.index1 = star1->index;
-            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
-            {
-                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
-            }
-            #endif
-            
-            sample_kick_velocity(star1, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star1->V_vec[i] += V_kick_vec[i];
-            }
-        }
-        if (star2->apply_kick == true)
-        {
-            #ifdef LOGGING
-            log_info.index1 = star2->index;
-            if (KW2 >= 10 and KW2 <= 12 and star2->include_WD_kicks == true)
-            {
-                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
-            }
-            #endif
-            
-            sample_kick_velocity(star2, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star2->V_vec[i] += V_kick_vec[i];
-            }
-        }
+        star2->stellar_type = KW2;
+        star2->mass = M2;
+        star2->core_mass = MC2;
+        star2->sse_initial_mass = M02;
+        star2->convective_envelope_mass = MENV2;
+        
+        star2->age = AJ2 * Myr_to_yr;
+        star2->epoch = t - star2->age;
+
+        star2->radius = R2 * CONST_R_SUN;
+        star2->core_radius = RC2 * CONST_R_SUN;
+        star2->convective_envelope_radius = RENV2 * CONST_R_SUN;
+        star2->luminosity = L2 * CONST_L_SUN;
 
         /* Spins: either assume the spins do not change (binary_evolution_CE_spin_flag=0) */
         /* Alternatively: spins corotate and align with final orbit (binary_evolution_CE_spin_flag=1) */
@@ -720,20 +748,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 star1->spin_vec[i] = Omega * h_vec_unit[i];
             }
         }
-
-        star2->stellar_type = KW2;
-        star2->mass = M2;
-        star2->core_mass = MC2;
-        star2->sse_initial_mass = M02;
-        star2->convective_envelope_mass = MENV2;
-        
-        star2->age = AJ2 * Myr_to_yr;
-        star2->epoch = t - star2->age;
-
-        star2->radius = R2 * CONST_R_SUN;
-        star2->core_radius = RC2 * CONST_R_SUN;
-        star2->convective_envelope_radius = RENV2 * CONST_R_SUN;
-        star2->luminosity = L2 * CONST_L_SUN;
 
         if (binary_evolution_CE_spin_flag == 1)
         {
@@ -793,6 +807,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->mass_dot_wind_accretion = 0.0;
         star1->radius_dot = 0.0;
         star1->ospin_dot = 0.0;
+        star1->instantaneous_perturbation_delta_mass = 0.0;
 
         star2->RLOF_flag = 0;
         star2->apply_kick = false;
@@ -800,11 +815,37 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star2->mass_dot_wind_accretion = 0.0;
         star2->radius_dot = 0.0;
         star2->ospin_dot = 0.0;
+        star2->instantaneous_perturbation_delta_mass = 0.0;
     }
     else if (COEL == true)
     {
         /* Assign merger remnant to star1; remove star2 */
         particlesMap->erase(index2);
+
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star1->index;
+            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+            
+            /* Temporarily set some properties for the purposes of kick velocity sampling */
+            star1->stellar_type = KW1;
+            star1->mass = M1_old;
+            star1->instantaneous_perturbation_delta_mass = M1 - M1_old;
+            star1->core_mass_old = MC1_old;
+            
+            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star1->V_vec[i] += V_kick_vec[i];
+            }
+        }
 
         /* Merged star properties */
         star1->stellar_type = KW1;
@@ -820,26 +861,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->core_radius = RC1 * CONST_R_SUN;
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
         star1->luminosity = L1 * CONST_L_SUN;
-
-        /* Take into account kicks */
-        double V_kick_vec[3];
-        if (star1->apply_kick == true)
-        {
-            #ifdef LOGGING
-            log_info.index1 = star1->index;
-            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
-            {
-                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
-            }
-            #endif
-            
-            sample_kick_velocity(star1, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star1->V_vec[i] += V_kick_vec[i];
-            }
-        }
-
+        
         /* Position/velocity 
          * New position is CM position of original two stars
          * Set new velocity according to linear momentum conservation */
@@ -884,6 +906,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->mass_dot_wind_accretion = 0.0;
         star1->radius_dot = 0.0;
         star1->ospin_dot = 0.0;
+        star1->instantaneous_perturbation_delta_mass = 0.0;
            
     }
 

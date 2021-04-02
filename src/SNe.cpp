@@ -23,7 +23,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
             VZ = 0.0;
             if (p->apply_kick == true)
             {
-                flag = sample_kick_velocity(p,p->kick_distribution,&VX,&VY,&VZ);
+                flag = sample_kick_velocity(p,&VX,&VY,&VZ);
             }
 
             #ifdef VERBOSE
@@ -77,7 +77,7 @@ int handle_SNe_in_system(ParticlesMap *particlesMap, bool *unbound_orbits, int *
     return 0;
 }
 
-int sample_kick_velocity(Particle *p, int kick_distribution, double *vx, double *vy, double *vz)
+int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
 {
     double x;
     x = generate_random_number_between_zero_and_unity();
@@ -90,7 +90,7 @@ int sample_kick_velocity(Particle *p, int kick_distribution, double *vx, double 
 
     double vnorm;
     int kw = p->stellar_type;
-    //int kick_distribution = p->kick_distribution;
+    int kick_distribution = p->kick_distribution;
 
     double He_core_mass,CO_core_mass,Ne_core_mass; 
     get_core_masses_by_composition(p->stellar_type,p->core_mass_old,&He_core_mass,&CO_core_mass,&Ne_core_mass);

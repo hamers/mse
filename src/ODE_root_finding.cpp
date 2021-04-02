@@ -49,12 +49,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             {
                 if (P_p->parent != -1)
                 {
-                    #ifdef VERBOSE
-                    if (verbose_flag > 2)
-                    {
-                        printf("root_finding.cpp -- check_for_roots -- check_for_secular_breakdown\n");
-                    }
-                    #endif
                     
                     double hamiltonian=0.0;
                     double KS_V=0.0;
@@ -64,6 +58,14 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                     double orbital_period = compute_orbital_period_from_semimajor_axis(P_p->mass,P_p->a);
 
                     f_root = 1.0 - AM_time_scale/orbital_period;
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 2)
+                    {
+                        printf("root_finding.cpp -- check_for_roots -- check_for_secular_breakdown f_root %g\n",f_root);
+                    }
+                    #endif
+                    
                     if (use_root_functions == true)
                     {
                         root_functions[i_root] = f_root;
@@ -86,12 +88,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             
             if (P_p->check_for_dynamical_instability == true)
             {
-                #ifdef VERBOSE
-                if (verbose_flag > 2)
-                {
-                    printf("root_finding.cpp -- check_for_roots -- check_for_dynamical_instability\n");
-                }
-                #endif
 
                 if (P_p->parent != -1)
                 {
@@ -191,6 +187,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         }
                         
                     }
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 2)
+                    {
+                        printf("root_finding.cpp -- check_for_roots -- check_for_dynamical_instability f_root %g\n",f_root);
+                    }
+                    #endif
 
                     if (use_root_functions == true)
                     {
@@ -212,12 +215,6 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
             }
             if (P_p->check_for_physical_collision_or_orbit_crossing == true)
             {
-                #ifdef VERBOSE
-                if (verbose_flag > 2)
-                {
-                    printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing\n");
-                }
-                #endif
 
                 Particle *P_child1 = (*particlesMap)[P_p->child1];
                 Particle *P_child2 = (*particlesMap)[P_p->child2];
@@ -228,6 +225,13 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
 
                 double periapse_distance = P_p->a*(1.0 - P_p->e);
                 f_root = 1.0 - periapse_distance/cross_section;
+
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing f_root %g P_p index %d\n",f_root,P_p->index);
+                }
+                #endif
                 
                 if (use_root_functions == true)
                 {
@@ -543,10 +547,10 @@ void cross_section_function(Particle *p, double *cross_section)
     {
         *cross_section += determine_effective_radius_for_collision(p->radius, p->stellar_type, 0);
     }
-    else
-    {
-        *cross_section += p->a*(1.0 + p->e);
-    }
+    //else
+    //{
+    //    *cross_section += p->a*(1.0 + p->e);
+    //}
 }
 double compute_AM_time_scale(Particle *P_p)
 {
@@ -703,7 +707,7 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
                 {
                     P_p->physical_collision_or_orbit_crossing_has_occurred = true;
                 }
-                i_root++;                
+                i_root++;     
             }
             if (P_p->check_for_minimum_periapse_distance == true)
             {
@@ -928,6 +932,7 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
     }
     else
     {
+        printf("root_flag %d\n",root_flag);
         #ifdef VERBOSE
         if (verbose_flag > 0)
         {

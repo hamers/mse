@@ -326,7 +326,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
             ga = ga_function(e,x,E_0);
             ge = ge_function(e,x,E_0);
             double XL0 = XL0_q_function(q);
-            
+
             finite_size_term_a += XL0*ga;
             finite_size_term_e += XL0*ge;
         }

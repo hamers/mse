@@ -20,6 +20,8 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 9: collision end
  * 10: dynamical instability
  * 11: secular breakdown
+ * 12: WD kick start
+ * 13: WD kick end
  */
 {
     Log_type new_entry;

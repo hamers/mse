@@ -162,7 +162,6 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
         flag = CV_ROOT_RETURN;
         *output_flag = CV_ROOT_RETURN;
         *output_time = start_time;
-        
         return 0;
     }
     else

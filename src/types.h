@@ -27,18 +27,22 @@ extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine 
 #ifndef __LOG_STATES
 #define __LOG_STATES
 /* Log states */
-#define LOG_INIT        (int)   0
-#define LOG_ST_CHANGE   (int)   1
-#define LOG_SNE_START   (int)   2
-#define LOG_SNE_END     (int)   3
-#define LOG_MT_START    (int)   4
-#define LOG_MT_END      (int)   5
-#define LOG_CE_START    (int)   6
-#define LOG_CE_END      (int)   7
-#define LOG_COL_START   (int)   8
-#define LOG_COL_END     (int)   9
-#define LOG_DYN_INST    (int)   10
-#define LOG_SEC_BREAK   (int)   11
+#define LOG_INIT                    (int)   0
+#define LOG_ST_CHANGE               (int)   1
+#define LOG_SNE_START               (int)   2
+#define LOG_SNE_END                 (int)   3
+#define LOG_MT_START                (int)   4
+#define LOG_MT_END                  (int)   5
+#define LOG_CE_START                (int)   6
+#define LOG_CE_END                  (int)   7
+#define LOG_COL_START               (int)   8
+#define LOG_COL_END                 (int)   9
+#define LOG_DYN_INST                (int)   10
+#define LOG_SEC_BREAK               (int)   11
+#define LOG_WD_KICK_START           (int)   12
+#define LOG_WD_KICK_END             (int)   13
+#define LOG_TRIPLE_CE_START         (int)   14
+#define LOG_TRIPLE_CE_END           (int)   15
 #endif
 
 

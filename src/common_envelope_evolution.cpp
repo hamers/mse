@@ -128,6 +128,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     LUMS1 = new double[10];    
     
     int KW1 = star1->stellar_type;
+    int KW1_old = KW1;
     double M01 = star1->sse_initial_mass;
     double MC1 = star1->core_mass;
     double R1 = star1->radius/CONST_R_SUN;
@@ -160,6 +161,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     LUMS2 = new double[10];    
     
     int KW2 = star2->stellar_type;
+    int KW2_old = KW2;
     double M02 = star2->sse_initial_mass;
     double MC2 = star2->core_mass;
     double R2 = star2->radius/CONST_R_SUN;
@@ -293,9 +295,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
 
-            if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
+            if (KW1 != KW1_old)
             {
-                star1->apply_kick = true;
+                if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
+                {
+                    star1->apply_kick = true;
+                }
             }
          }
     }
@@ -405,9 +410,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             star_(&KW1,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-            if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
+            if (KW1 != KW1_old)
             {
-                star1->apply_kick = true;
+                if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
+                {
+                    star1->apply_kick = true;
+                }
             }
             
             MF = M2;
@@ -416,11 +424,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             star_(&KW2,&M02,&M2,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2);
             hrdiag_(&M02,&AJ2,&M2,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2, \
                 &R2,&L2,&KW2,&MC2,&RC2,&MENV2,&RENV2,&K22);
-            if((KW2 >= 13 and KW < 13) or (KW2 >= 10 and KW <= 12 and star2->include_WD_kicks == true)) /* secondary became an NS/WD */
+            if (KW2 != KW2_old)
             {
-                star2->apply_kick = true;
+                if((KW2 >= 13 and KW < 13) or (KW2 >= 10 and KW <= 12 and star2->include_WD_kicks == true)) /* secondary became an NS/WD */
+                {
+                    star2->apply_kick = true;
+                }
             }
-            
         }
     } // back at main level
     
@@ -635,25 +645,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (COEL == false)
     {
         
-        /* Take into account kicks */
-        double V_kick_vec[3];
-        if (star1->apply_kick == true)
-        {
-            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star1->V_vec[i] += V_kick_vec[i];
-            }
-        }
-        if (star2->apply_kick == true)
-        {
-            sample_kick_velocity(star2, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star2->V_vec[i] += V_kick_vec[i];
-            }
-        }
-
         /* Update all properties of the two stars */
         star1->stellar_type = KW1;
         star1->mass = M1;        
@@ -669,6 +660,41 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
         star1->luminosity = L1 * CONST_L_SUN;
         
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star1->index;
+            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+            
+            sample_kick_velocity(star1, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star1->V_vec[i] += V_kick_vec[i];
+            }
+        }
+        if (star2->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star2->index;
+            if (KW2 >= 10 and KW2 <= 12 and star2->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+            
+            sample_kick_velocity(star2, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star2->V_vec[i] += V_kick_vec[i];
+            }
+        }
+
         /* Spins: either assume the spins do not change (binary_evolution_CE_spin_flag=0) */
         /* Alternatively: spins corotate and align with final orbit (binary_evolution_CE_spin_flag=1) */
         /* Limit spins to critical rotation */
@@ -779,17 +805,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     {
         /* Assign merger remnant to star1; remove star2 */
         particlesMap->erase(index2);
-        
-        /* Take into account kicks */
-        double V_kick_vec[3];
-        if (star1->apply_kick == true)
-        {
-            sample_kick_velocity(star1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
-            for (int i=0; i<3; i++)
-            {
-                star1->V_vec[i] += V_kick_vec[i];
-            }
-        }
 
         /* Merged star properties */
         star1->stellar_type = KW1;
@@ -805,6 +820,25 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->core_radius = RC1 * CONST_R_SUN;
         star1->convective_envelope_radius = RENV1 * CONST_R_SUN;
         star1->luminosity = L1 * CONST_L_SUN;
+
+        /* Take into account kicks */
+        double V_kick_vec[3];
+        if (star1->apply_kick == true)
+        {
+            #ifdef LOGGING
+            log_info.index1 = star1->index;
+            if (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true)
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            #endif
+            
+            sample_kick_velocity(star1, 1, &V_kick_vec[0], &V_kick_vec[1], &V_kick_vec[2]);
+            for (int i=0; i<3; i++)
+            {
+                star1->V_vec[i] += V_kick_vec[i];
+            }
+        }
 
         /* Position/velocity 
          * New position is CM position of original two stars
@@ -913,6 +947,13 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     }
     #endif
     
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = index1;
+    log_info.index2 = index2;
+    update_log_data(particlesMap, t, *integration_flag, LOG_TRIPLE_CE_START, log_info);
+    #endif
 
     Particle *star3 = (*particlesMap)[index1];
     Particle *inner_binary = (*particlesMap)[index2];
@@ -1053,6 +1094,11 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (kw3_f >= 13 or (kw3_f >= 10 and kw3_f <= 12 and star3->include_WD_kicks == true))
     {
         star3->apply_kick = true;
+        
+        #ifdef LOGGING
+        log_info.index1 = star1->index;
+        update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+        #endif
     }
 
     /* Update the tertiary star. 
@@ -1178,6 +1224,13 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     delete[] GB3;
     delete[] tscls3;
     delete[] lums3;
+    
+    #ifdef LOGGING
+    log_info.binary_index = binary_index;
+    log_info.index1 = index1;
+    log_info.index2 = index2;
+    update_log_data(particlesMap, t, *integration_flag, LOG_TRIPLE_CE_END, log_info);
+    #endif
     
     return;
 }

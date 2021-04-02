@@ -444,9 +444,14 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     {
                         update_log_data(particlesMap, end_time, *integration_flag, LOG_ST_CHANGE, log_info);
                         
+                        if (kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
+                        {
+                            update_log_data(particlesMap, end_time, *integration_flag, LOG_WD_KICK_START, log_info);
+                        }                        
                     }
                     else
                     {
+                        
                         update_log_data(particlesMap, end_time, *integration_flag, LOG_SNE_START, log_info);
                     }
                 }

@@ -2539,13 +2539,13 @@ class Tools(object):
                 print("mse.py -- generate_mobile_diagram -- zero bodies and zero binaries!")
                 return
             else:
-                Tools.draw_bodies(plot,bodies,fontsize)
+                Tools.draw_bodies(plot,bodies,fontsize,index1=index1,index2=index2,event_flag=event_flag)
                 return
 
         Tools.determine_binary_levels_in_particles(particles)                    
         unbound_bodies = [x for x in particles if x.is_binary==False and x.parent == None]
         if len(unbound_bodies)>0:
-            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.5*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical)
+            Tools.draw_bodies(plot,unbound_bodies,fontsize,y_ref = 1.5*line_width_vertical,dx=0.4*line_width_horizontal,dy=0.4*line_width_vertical,index1=index1,index2=index2,event_flag=event_flag)
             
         top_level_binaries = [x for x in binaries if x.level==0]
         
@@ -2678,7 +2678,7 @@ class Tools(object):
                         plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
                     else:
                         plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
-            if event_flag in [2]:
+            if event_flag in [2,12]:
                 if child1.index == index1:
                     plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=9,marker='*')
                 if child2.index == index1:
@@ -2706,7 +2706,7 @@ class Tools(object):
                     else:
                         plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
 
-            if event_flag in [2]:
+            if event_flag in [2,12]:
                 if child1.index == index1:
                     plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=9,marker='*')
                 if child2.index == index1:
@@ -2716,7 +2716,7 @@ class Tools(object):
         return x_min,x_max,y_min,y_max
 
     @staticmethod
-    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5):
+    def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5,index1=-1,index2=-1,event_flag=-1):
 
         for index,body in enumerate(bodies):
             color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
@@ -2724,6 +2724,10 @@ class Tools(object):
             text = "$\mathrm{%s}$"%(str(round(body.mass,1)))
             plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
             
+            if body.index == index1:
+                if event_flag in [2,12]:
+                    plot.scatter([index],[y_ref],color=color,s=3*s,zorder=9,marker='*')
+
             try:
                 VX = body.VX
                 VY = body.VY
@@ -2833,6 +2837,14 @@ class Tools(object):
             text = "$\mathrm{Dyn.\,inst.}$"
         elif event_flag == 11:
             text = "$\mathrm{Sec.\,break.}$"
+        elif event_flag == 12:
+            text = "$\mathrm{WD\,kick\,start}$"
+        elif event_flag == 13:
+            text = "$\mathrm{WD\,kick\,end}$"
+        elif event_flag == 14:
+            text = "$\mathrm{Triple\,CE\,start}$"
+        elif event_flag == 15:
+            text = "$\mathrm{Triple\,CE\,end}$"
         else:
             text = ""
         return text

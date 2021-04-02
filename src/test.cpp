@@ -1616,7 +1616,7 @@ int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
         evolve_stars(&particlesMap,t_old,t,&dt,false,&apply_SNe_effects,&integration_flag);
         if (apply_SNe_effects == true)
         {
-            sample_kick_velocity(star,&vx,&vy,&vz);
+            sample_kick_velocity(star,star->kick_distribution,&vx,&vy,&vz);
         }
         else
         {

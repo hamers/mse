@@ -381,7 +381,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     /* Compute spin changes due to RLOF */
     double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
     double Omega_d_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_d, M_d, M_d_dot_av, donor->core_mass, R_d, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
-    
+
     double J_spin_accretor_dot;
     if (accretor->accretion_disk_is_present == true)
     {
@@ -395,7 +395,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
     }
     double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
-    
+    //printf("S %g %g %g\n",norm3(donor->spin_vec),norm3(accretor->spin_vec),compute_breakup_angular_frequency(accretor->mass,accretor->radius));
     if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
     {
         printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);

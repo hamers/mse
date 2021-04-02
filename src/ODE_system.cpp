@@ -710,9 +710,10 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
 
             if (p->spin_vec_norm > Omega_crit)
             {
-                f_breakup = 0.0;
+                //f_breakup = 0.0;
+                f_breakup = exp( -100.0*(p->spin_vec_norm/Omega_crit - 1.0) ); /* Fast but smooth transition from f_breakup = 1 to f_breakup = 0 as p->spin_vec_norm > Omega_crit */
             }
-
+            //printf("f_breakup %g %g %g\n",f_breakup,p->spin_vec_norm,Omega_crit);
             for (k_component=0; k_component<3; k_component++)
             {
                 Ith(y_dot,k + k_component) = f_breakup * p->dspin_vec_dt[k_component];

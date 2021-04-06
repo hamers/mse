@@ -1419,7 +1419,7 @@ int test_apsidal_motion_constant()
             star->stellar_type = stellar_types[j];
 
             initialize_stars(&particlesMap);
-        
+
             k_AM = compute_apsidal_motion_constant(star);
             if (k_AM != k_AM or k_AM < 0.0)
             {

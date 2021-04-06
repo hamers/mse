@@ -647,7 +647,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     if (COEL == false)
     {
         
-
         /* Take into account kicks */
         double V_kick_vec[3];
         if (star1->apply_kick == true)
@@ -659,7 +658,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
             }
             #endif
-            
+
             /* Temporarily set some properties for the purposes of kick velocity sampling */
             star1->stellar_type = KW1;
             star1->mass = M1_old;
@@ -670,7 +669,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             {
                 star1->V_vec[i] += V_kick_vec[i];
             }
-            
         }
         if (star2->apply_kick == true)
         {

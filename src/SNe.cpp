@@ -88,7 +88,7 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     *vy = sin(theta)*sin(phi);
     *vz = cos(theta);
 
-    double vnorm;
+    double vnorm = 0.0;
     int kw = p->stellar_type;
     int kick_distribution = p->kick_distribution;
 

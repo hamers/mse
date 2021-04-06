@@ -51,11 +51,20 @@ double compute_apsidal_motion_constant(Particle *star)
             m_upper = pow(10.0,d_mass_list[i]);
             i++;
         }
-        double k_AM_lower = AMC_data_function(d_mass_list[i-2],star);
-        double k_AM_upper = AMC_data_function(d_mass_list[i-1],star);
 
+        double k_AM_lower,k_AM_upper;
+        if (i>1)
+        {
+            k_AM_lower = AMC_data_function(d_mass_list[i-2],star);
+            k_AM_upper = AMC_data_function(d_mass_list[i-1],star);
+        }
+        else
+        {
+            k_AM_lower = k_AM_upper = AMC_data_function(d_mass_list[i-1],star);
+        }
         val = (k_AM_upper-k_AM_lower)/(m_upper-m_lower)*(mass-m_upper) + k_AM_upper;
-        //printf("val %g k_AM_lower %g k_AM_upper %g %dml %g dmu %g \n",val,k_AM_lower,k_AM_upper,d_mass_list[i-2],d_mass_list[i-1]);
+        
+        //printf("mass %g val %g k_AM_lower %g k_AM_upper %g ml %g mu %g \n",mass,val,k_AM_lower,k_AM_upper,d_mass_list[i-2],d_mass_list[i-1]);
     }
 
     else if ((stellar_type >= 7) and (stellar_type <= 9))

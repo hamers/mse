@@ -1147,7 +1147,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
      * Note the different units that were used in the above. */
 
     double a,e; /* The new outer orbit a & e */
-    printf("stable %d\n",stable);
+
     if (stable == true)
     {
         /* Final orbit is determined by available orbital energy */

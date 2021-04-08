@@ -182,7 +182,7 @@ c-------------------------------------------------------------c
                it = it + 1
                if(it.eq.20.and.kw.eq.4) goto 30
                if(it.gt.30)then
-                  WRITE(99,*)' DANGER1! ',it,kw,mass,dr,rm0
+                  WRITE(*,*)' DANGER1! ',it,kw,mass,dr,rm0
                   WRITE(*,*)' STOP: EVOLV1 FATAL ERROR '
                   CALL exit(0)
                   STOP 
@@ -331,11 +331,15 @@ c-------------------------------------------------------------c
          dr = r1 - rm0
          it = it + 1
          if(it.eq.20.and.kw.eq.4) goto 50
-         if(it.gt.30)then
-            WRITE(99,*)' DANGER2! ',it,kw,mass,dr,rm0
-            WRITE(*,*)' STOP: EVOLV1 FATAL ERROR '
-            CALL exit(0)
-            STOP 
+         if(it.gt.50)then
+            WRITE(*,*)' evolv1.f -- unable to converge when finding'
+            WRITE(*,*)' new timestep to limit radius'
+            WRITE(*,*)' change to 10% increase, but continuing;'
+            WRITE(*,*)' it',it,'kw',kw,'mass',mass,'dr',dr,'rm0',rm0
+            goto 50
+*            WRITE(*,*)' STOP: EVOLV1 FATAL ERROR '
+*            CALL exit(0)
+*            STOP 
          endif
          if(ABS(dr).gt.0.1d0*rm0)then
             dtdr = dtm/ABS(dr)

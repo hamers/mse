@@ -281,6 +281,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         {
             KW = determine_merger_type(KW1,KW2);
             MC3 = MC1;
+
             if (KW2 == 7 and KW == 4)
             {
                 MC3 = MC1 + M2; // note ASH: replaced `MC3' in BSE code to `MC1' -- does not change anything functionally, but is more clear
@@ -319,7 +320,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         
         double RL1 = roche_radius_pericenter_eggleton(SEP,Q1) / SEP; // dimensionless RL radius (SEP cancels out)
         double RL2 = roche_radius_pericenter_eggleton(SEP,Q2) / SEP; // dimensionless RL radius (SEP cancels out)
-        
+
         if (RC1/RL1 >= RC2/RL2)
         {
             if (RC1 > RL1 * SEPF)
@@ -572,7 +573,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             MC2 = 0.0;
 
             /* Obtain a new age and initial mass for the giant. */
-
             gntage_(&MC1,&M1,&KW,ZPARS2,&M01,&AJ1);
             star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
         }
@@ -1037,6 +1037,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     double age3 = star3->age * yr_to_Myr;
     double *zpars3 = star3->zpars;    
+
     star_(&kw3, &M3_sse_init, &M3, &tm3, &tn3, tscls3, lums3, GB3, zpars3);
     hrdiag_(&M3_sse_init,&age3,&M3,&tm3,&tm3,tscls3,lums3,GB3,zpars3, \
         &R3,&L3,&kw3,&MC3,&RC3,&M_env3,&R_env3,&k2_3);
@@ -1105,9 +1106,11 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
      * Get properties of stripped tertiary star.
      * Note: the tertiary star might get a kick. */
     double M3_f = MC3;
-    int kw3_f = kw3; // could be changed below
-    double M3_sse_init_f = M3_sse_init; // could be changed below
-    double R3_f,L3_f,MC3_f,RC3_f,M_env3_f,R_env3_f,k2_3_f,age3_f;
+    int kw3_f = kw3; // could be changed by hrdiag() below
+    double M3_sse_init_f = M3_sse_init; // could be changed by hrdiag() below
+    double age3_f = age3; // could be changed by hrdiag() below
+    double R3_f,L3_f,MC3_f,RC3_f,M_env3_f,R_env3_f,k2_3_f;
+    
     star_(&kw3_f,&M3_sse_init_f,&M3_f,&tm3,&tn3,tscls3,lums3,GB3,zpars3);
     hrdiag_(&M3_sse_init_f,&age3_f,&M3_f,&tm3,&tn3,tscls3,lums3,GB3,zpars3, \
         &R3_f,&L3_f,&kw3_f,&MC3_f,&RC3_f,&M_env3_f,&R_env3_f,&k2_3_f);
@@ -1144,7 +1147,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
      * Note the different units that were used in the above. */
 
     double a,e; /* The new outer orbit a & e */
-    
+    printf("stable %d\n",stable);
     if (stable == true)
     {
         /* Final orbit is determined by available orbital energy */
@@ -1242,6 +1245,15 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     bool unbound_orbits;
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
+    /* Reset some simulation parameters for the tertiary star */
+    star3->RLOF_flag = 0;
+    star3->apply_kick = false;
+    star3->mass_dot_wind = 0.0;
+    star3->mass_dot_wind_accretion = 0.0;
+    star3->radius_dot = 0.0;
+    star3->ospin_dot = 0.0;
+    star3->instantaneous_perturbation_delta_mass = 0.0;
+
     delete[] GB3;
     delete[] tscls3;
     delete[] lums3;
@@ -1251,6 +1263,16 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     log_info.index1 = index1;
     log_info.index2 = index2;
     update_log_data(particlesMap, t, *integration_flag, LOG_TRIPLE_CE_END, log_info);
+    #endif
+    
+    
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- end; binary_index %d index1 %d index2 %d integration_flag %d\n",binary_index,index1,index2,*integration_flag);
+        print_system(particlesMap,*integration_flag);
+    }
     #endif
     
     return;

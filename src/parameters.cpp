@@ -54,7 +54,7 @@ int error_code = 0;
  * 15: flybys.cpp -- sample_flyby_position_and_velocity_at_R_enc()
  * 16: flybys.cpp -- sample_flyby_mass_at_infinity()
  * 17: stellar_evolution.cpp -- initialize_stars()
- * 18: strucutre.cpp -- check_system_for_dynamical_stability()
+ * 18: structre.cpp -- check_system_for_dynamical_stability()
  * 19: ODE_newtonian.cpp -- compute_EOM_binary_pairs()
  * 20: ODE_newtonian.cpp -- compute_EOM_binary_pairs_single_averaged()
  * 21: ODE_newtonian.cpp -- compute_EOM_binary_triplets()

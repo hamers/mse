@@ -591,10 +591,10 @@ struct points__
 
 extern "C" void evolv1_(int *kw, double *mass,double *mt, double *r, double *lum, double *mc, double *rc, double *menv, double *renv, double *ospin, double *epoch, double *tms, double *tphys, double *tphysf, double *dtp, double *z, double *zpars, double *k2);
 extern "C" void zcnsts_(double* z, double *zpars);
-extern "C" void star_(int *kw, double *mass, double *mt, double *tm, double *tn, double *tscls, double *lums, double *GB, double *zpars);
+extern "C" void star_(int *kw, double *mass, double *mt, double *tm, double *tn, double *tscls, double *lums, double *GB, double *zpars); // Input: kw, mass, mt, zpars; Output: tm, tn, tscls, lums, GB
 extern "C" void deltat_(int *kw, double *age, double *tm, double *tn, double *tscls, double *dt, double *dtr);
 extern "C" void hrdiag_(double *mass, double *aj, double *mt, double *tm, double *tn, double * tscls, double *lums, double *GB, double *zpars,
-    double *r, double *lum, int *kw, double *mc, double *rc, double *menv, double *renv, double *k2);
+    double *r, double *lum, int *kw, double *mc, double *rc, double *menv, double *renv, double *k2); // Input: kw, mass, aj, mt, tm, tn, tscls, lums, GB, zpars; Output: r, lum, kw, mc, rc, menv, renv, k2
 extern "C" double vrotf_(double mt);    
 extern "C" double rzamsf_(double *m);
 extern "C" double celamf_(int *kw, double *m, double *lum, double *rad, double *rzams, double *menv, double *fac);

@@ -278,6 +278,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     bool reset_h_vectors = false;
     *apply_SNe_effects = false;
 
+    #ifdef IGNORE
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
         Particle *p = (*it_p).second;
@@ -287,6 +288,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             p->child2_mass_old = p->child2_mass;
         }
     }
+    #endif
             
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {

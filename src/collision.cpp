@@ -437,6 +437,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     else
     {
         printf("merger.cpp -- collision_product -- unknown outcome! Will ignore the collision. kw1 %d kw2 %d kw %d\n",kw1,kw2,kw);
+        error_code = 6;
         return;
     }
     

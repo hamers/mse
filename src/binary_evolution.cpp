@@ -248,7 +248,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     if (accretor->RLOF_flag == 1) /* Contact evolution */
     {
         int kw2 = accretor->stellar_type;
-        if ((kw >= 2 and kw <= 9 and kw != 7) and (kw2 >= 2 and kw2 <= 9 and kw2 != 7)) /* CE if both donor and accretor are giants */
+        if ((kw >= 2 and kw <= 9 and kw != 7) or (kw2 >= 2 and kw2 <= 9 and kw2 != 7)) /* CE if either donor or accretor are giants */
         {
             #ifdef VERBOSE
             if (verbose_flag > 0)

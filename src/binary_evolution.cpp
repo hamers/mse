@@ -259,7 +259,14 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             #endif
 
             flag = 6;
-            common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+            if (kw >= 2 and kw <= 9 and kw != 7) /* Take donor to be CE donor, irrespective of accretor */
+            {
+                common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+            }
+            else /* Accretor must be CE donor */
+            {
+                common_envelope_evolution(particlesMap, parent->index, accretor->index, donor->index, t, integration_flag);
+            }
             *dt_binary_evolution = ODE_min_dt;
             return flag;
         }

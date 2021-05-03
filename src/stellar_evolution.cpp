@@ -381,6 +381,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     
                     p->apply_kick = true;
                     p->instantaneous_perturbation_delta_mass = mt - mt_old; /* Will be used by handle_SNe_in_system() */
+                    p->RLOF_flag = 0;
 
                 }
                 
@@ -388,6 +389,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 {
                     p->apply_kick = true;
                     *apply_SNe_effects = true;
+                    p->RLOF_flag = 0;
                     
                     #ifdef VERBOSE
                     if (verbose_flag > 0)

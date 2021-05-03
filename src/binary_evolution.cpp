@@ -181,10 +181,14 @@ double compute_q_crit_for_common_envelope_evolution(int kw, double mass, double 
 
 int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, int *integration_flag, double t_old, double t, double *dt_binary_evolution)//, ParticlesMapIterator &it_p)
 {
+    Particle *parent = (*particlesMap)[parent_index];
+    Particle *donor = (*particlesMap)[donor_index];
+    Particle *accretor = (*particlesMap)[accretor_index];
+
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d\n",parent_index,donor_index,accretor_index);
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- parent_index %d donor_index %d accretor_index %d donor->RLOF_flag %d accretor->RLOF_flag %d\n",parent_index,donor_index,accretor_index,donor->RLOF_flag,accretor->RLOF_flag);
         print_system(particlesMap,*integration_flag);
     }
     #endif
@@ -193,10 +197,6 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     {
         return 0;
     }
-    
-    Particle *parent = (*particlesMap)[parent_index];
-    Particle *donor = (*particlesMap)[donor_index];
-    Particle *accretor = (*particlesMap)[accretor_index];
     
     int flag = 0;
     

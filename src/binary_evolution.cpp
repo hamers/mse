@@ -244,10 +244,10 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double m_dot = compute_orbit_averaged_mass_transfer_rate_emt_model(M_donor,fm,P_orb);
     double fabs_m_dot = fabs(m_dot);
     //double m_dot = compute_bse_mass_transfer_amount(donor->stellar_type, M_donor, donor->core_mass, donor->radius, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
+    int kw2 = accretor->stellar_type;
 
     if (accretor->RLOF_flag == 1) /* Contact evolution */
     {
-        int kw2 = accretor->stellar_type;
         if ((kw >= 2 and kw <= 9 and kw != 7) or (kw2 >= 2 and kw2 <= 9 and kw2 != 7)) /* CE if either donor or accretor are giants */
         {
             #ifdef VERBOSE
@@ -290,7 +290,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     double rp = a*(1.0 - e);
     if (rp < (R_donor + R_accretor)) /* Periapsis distance close enough to cause immediate merger rather than RLOF, so invoke coalescence (can happen in some cases, e.g., after SNe kicks) */
     {
-        if (kw >= 2 and kw <= 9 and kw != 7) /* CE */
+        if ((kw >= 2 and kw <= 9 and kw != 7) or (kw2 >= 2 and kw2 <= 9 and kw2 != 7)) /* CE if either donor or accretor are giants */
         {
             #ifdef VERBOSE
             if (verbose_flag > 0)

@@ -816,7 +816,13 @@ double compute_h_from_a(double m1, double m2, double a, double e)
 
 double compute_h_dot_div_h(double m1, double m1_dot, double m2, double m2_dot, double a, double a_dot, double e, double e_dot)
 {
-    return m1_dot/m1 + m2_dot/m2 - c_1div2*(m1_dot + m2_dot)/(m1+m2) + c_1div2*(a_dot/a) - e*e_dot/(1.0 - e*e);
+    /* h^2 = [m1^2 m2^2/(m1+m2)] G a (1-e^2) */
+    return (m1_dot/m1 + m2_dot/m2 - c_1div2*(m1_dot + m2_dot)/(m1+m2) + c_1div2*(a_dot/a) - e*e_dot/(1.0 - e*e));
+}
+double compute_a_dot_div_a(double m1, double m1_dot, double m2, double m2_dot, double h, double h_dot, double e, double e_dot)
+{
+    /* h^2 = [m1^2 m2^2/(m1+m2)] G a (1-e^2) */
+    return ( 2.0*h_dot/h - 2.0*m1_dot/m1 - 2.0*m2_dot/m2 + (m1_dot + m2_dot)/(m1+m2) + 2.0*e*e_dot/(1.0 - e*e));
 }
 
 

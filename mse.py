@@ -2282,6 +2282,7 @@ class Tools(object):
         a_print = [[[] for x in range(N_orbits)]]
         e_print = [[[] for x in range(N_orbits)]]
         rel_INCL_print = [[[] for x in range(N_orbits)]]
+        spin_frequency_print = [[[] for x in range(N_bodies)]]
         
         N_orbits_status = [N_orbits]
         N_bodies_status = [N_bodies]
@@ -2332,6 +2333,7 @@ class Tools(object):
                 a_print.append([[] for x in range(N_orbits)])
                 e_print.append([[] for x in range(N_orbits)])
                 rel_INCL_print.append([[] for x in range(N_orbits)])
+                spin_frequency_print.append([[] for x in range(N_bodies)])
                 
                 N_orbits_status.append(N_orbits)
                 N_bodies_status.append(N_bodies)
@@ -2359,6 +2361,7 @@ class Tools(object):
                 mc_print[i_status][index].append(bodies[index].convective_envelope_mass)
                 T_eff = Tools.compute_effective_temperature(bodies[index].luminosity, bodies[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
                 T_eff_print[i_status][index].append(T_eff)
+                spin_frequency_print[i_status][index].append( np.sqrt( bodies[index].spin_vec_x**2 + bodies[index].spin_vec_y**2 + bodies[index].spin_vec_z**2) )
 
             t_print[i_status].append(t)        
             integration_flags[i_status].append(code.integration_flag)
@@ -2433,10 +2436,11 @@ class Tools(object):
             fig.savefig(plot_filename + "_mobile.pdf")
         
             fig=pyplot.figure(figsize=(8,10))
-            Np=3
+            Np=4
             plot1=fig.add_subplot(Np,1,1)
             plot2=fig.add_subplot(Np,1,2,yscale="log")
             plot3=fig.add_subplot(Np,1,3,yscale="linear")
+            plot4=fig.add_subplot(Np,1,4,yscale="log")
             
             fig_pos=pyplot.figure(figsize=(8,8))
             plot_pos=fig_pos.add_subplot(1,1,1)
@@ -2450,6 +2454,9 @@ class Tools(object):
                 N_bodies = N_bodies_status[i_status]
                 N_orbits = N_orbits_status[i_status]
                 
+                #if i_status==0:
+                #    plot1.plot(1.0e-6*t_print[i_status],np.array(m_print[i_status][0])**2*np.array(m_print[i_status][1])**2*np.array(a_print[i_status][0]),color='y',linewidth=3)
+                #    plot1.plot(1.0e-6*t_print[i_status],(np.array(m_print[i_status][0])+np.array(m_print[i_status][1]))*np.array(a_print[i_status][0]),color='y',linewidth=3)
                 for index in range(N_bodies):
                     color=colors[index]
                     plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
@@ -2462,6 +2469,7 @@ class Tools(object):
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
                     
                     plot_HRD.plot(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth)
+                    plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
                    
                 linewidth=1.0
                 for index in range(N_orbits):
@@ -2476,7 +2484,7 @@ class Tools(object):
             fontsize=18
             labelsize=12
 
-            plots = [plot1,plot2,plot3]
+            plots = [plot1,plot2,plot3,plot4]
             for plot in plots:
                 plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
 
@@ -2490,7 +2498,8 @@ class Tools(object):
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
             plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
-            plot3.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
+            plot4.set_ylabel("$\Omega_\mathrm{spin}/\mathrm{yr^{-1}}$",fontsize=fontsize)
+            plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)
             
             plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)

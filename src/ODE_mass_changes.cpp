@@ -361,6 +361,8 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     double de_dt = common_factor*( fe*(1.0 - q*beta) + finite_size_term_e );
     double domega_dt = common_factor*fomega*( 1.0 - q*beta );
 
+    //double da_dt_ex = a*-2.0*(M_d_dot_av/M_d)*(1.0 - M_d/M_a);
+
     #ifdef VERBOSE
     if (verbose_flag > 1)
     {

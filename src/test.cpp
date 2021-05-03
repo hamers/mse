@@ -74,6 +74,20 @@ int test_a_h_conversion()
         flag = 1;
     }
 
+    double m1_dot = -1.0e-10;
+    double m2_dot = 1.0e-12;
+    double a_dot = 1.0e-5;
+    double e_dot = 1.0e-8;
+    double h_dot_div_h = compute_h_dot_div_h(m1,m1_dot,m2,m2_dot,a,a_dot,e,e_dot);
+    double h_dot = h*h_dot_div_h;
+    double a_dot_new = a*compute_a_dot_div_a(m1,m1_dot,m2,m2_dot,h,h_dot,e,e_dot);
+
+    if ( !equal_number(a_dot,a_dot_new,tol) )
+    {
+        printf("test.cpp -- error in test_a_h_conversion!\n");
+        flag = 1;
+    }
+
     return flag;
 }
 

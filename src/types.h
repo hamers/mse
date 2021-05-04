@@ -7,10 +7,6 @@
 
 extern "C"
 {
-#define CVODE_EXTENDED_PRECISION
-//#define NO_FPRINTF_OUTPUT
-#define LOGGING
-
 #define VERBOSE
  
 #ifndef __FOUND_ROOT

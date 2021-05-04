@@ -1,7 +1,12 @@
+// CVODE parameters //
+#define NO_FPRINTF_OUTPUT // UNCOMMENT to suppress CVODE messenges
+
 #ifndef __PARAMETERS
 #define __PARAMETERS
 #include <stdbool.h>
 #include <time.h>
+
+#define LOGGING
 
 // Constants //
 extern double CONST_G;

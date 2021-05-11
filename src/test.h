@@ -27,19 +27,22 @@ int test_flybys_integrals();
 int test_flybys_compute_effects_of_flyby_on_system();
 int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma, double M_int, double *M_per, double *b_vec_x, double *b_vec_y, double *b_vec_z, double *V_vec_x, double *V_vec_y, double *V_vec_z);
 
-int test_stellar_evolution();
+int test_stellar_evolution(int mode);
 int test_spin_conversion();
 int test_apsidal_motion_constant();
 int test_sse();
 int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final);
 int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm);
 int test_remove_massless_remnants_from_system();
+int test_NS_models(int mode);
+int test_determine_sse_compact_object_radius(int mode);
 
 int test_binary_evolution();
 int test_compute_Kelvin_Helmholtz_timescale();
 int test_compute_Eddington_accretion_rate();
 int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
 int test_wind_accretion();
+int test_mass_accretion_events_with_degenerate_objects();
 
 int test_collisions();
 

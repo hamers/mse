@@ -910,8 +910,7 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
     std::vector<std::vector<double>> R_vecs;
     std::vector<std::vector<double>> V_vecs;
 
-   
-    
+    /* Add the mass losing bodies */
     masses.push_back( M1_old + M2_old );
     delta_masses.push_back( (M1 + M2) - (M1_old + M2_old) );
     R_vecs.push_back( {initial_R_CM[0],initial_R_CM[1],initial_R_CM[2]} );
@@ -923,7 +922,8 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
         printf("structure.cpp -- handle_gradual_mass_loss_event_in_system -- m %g dm %g R %g %g %g V %g %g %g\n",masses[0],delta_masses[0],R_vecs[0][0],R_vecs[0][1],R_vecs[0][2],V_vecs[0][0],V_vecs[0][1],V_vecs[0][2]);
     }
     #endif
-        
+
+    /* Add the other bodies (assumed not to lose mass) */
     ParticlesMapIterator it_p;
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -947,6 +947,8 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
             }
         }
     }
+    
+    /* Integrate non-trivial systems */
     if (masses.size() > 1)
     {
         integrate_nbody_system_with_mass_loss(mass_loss_timescale, binary_evolution_CE_mass_loss_Nsteps, masses, delta_masses, R_vecs, V_vecs);
@@ -959,7 +961,7 @@ void handle_gradual_mass_loss_event_in_system(ParticlesMap *particlesMap, Partic
             final_V_CM[i] = initial_V_CM[i];
             final_momentum[i] = final_V_CM[i] * (M1_old + M2_old);
         }
-        
+
         return;
     }
     
@@ -1124,8 +1126,8 @@ void get_initial_binary_orbital_properties_from_position_and_velocity(double R1_
     }
     double true_anomaly;
     from_cartesian_to_orbital_vectors(M1,M2,r_vec,v_vec,e_vec,h_vec,&true_anomaly);
-    
-    return ;
+
+    return;
 }
 
 void reset_RLOF_flags(ParticlesMap *particlesMap)

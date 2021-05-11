@@ -135,6 +135,25 @@ extern double kroupa_x1;
 extern double kroupa_x2;
 extern double kroupa_x3;
 
+/* NSs/MSPs */
+extern double pulsar_death_line_B_crit_const_G;
+extern double MSP_defining_period_s;
+extern double NS_model;
+extern double NS_Ye19_model_NS_MSP_P_s_def;
+extern double NS_Ye19_model_NS_formation_single_P_s_lower;
+extern double NS_Ye19_model_NS_formation_single_P_s_upper;
+extern double NS_Ye19_model_NS_formation_single_B_G_lower;
+extern double NS_Ye19_model_NS_formation_single_B_G_upper;
+extern double NS_Ye19_model_NS_formation_merger_P_s_lower;
+extern double NS_Ye19_model_NS_formation_merger_P_s_upper;
+extern double NS_Ye19_model_NS_formation_merger_B_G_lower;
+extern double NS_Ye19_model_NS_formation_merger_B_G_upper;
+extern double NS_Ye19_model_NS_spin_down_constant_K;
+extern double NS_Ye19_model_NS_B_field_decay_timescale;
+extern double NS_Ye19_model_NS_minimum_B_G;
+extern double NS_Ye19_model_NS_RLOF_threshold_accreted_mass;
+
+extern int ECSNe_model;
 
 /* Used in MSTAR only */
 extern double SPEEDOFLIGHT;

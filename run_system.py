@@ -45,6 +45,8 @@ def parse_arguments():
     parser.add_argument("--plot_filename",                  type=str,       dest="plot_filename",               default="test1",           help="Plot filename")
     
     parser.add_argument("--kick_distribution_sigma_km_s_WD",type=float,     dest="kick_distribution_sigma_km_s_WD", default=1.0,           help="WD kick sigma in km/s (assuming Maxwellian distribution")
+    parser.add_argument("--NS_model",                       type=int,       dest="NS_model",                    default=0,                 help="Model assumed for NSs: default (0), or Ye+19 (1)")
+    parser.add_argument("--ECSNe_model",                    type=int,       dest="ECSNe_model",                 default=0,                 help="Model assumed for electron-capture SNe: default (0), or Ye+19 (1)")
     
     ### boolean arguments ###
     add_bool_arg(parser, 'verbose',                         default=False,         help="Verbose terminal output (Python)")
@@ -80,4 +82,4 @@ if __name__ == '__main__':
 
     print("="*50)
     
-    error_code, log = Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag,include_WD_kicks=args.include_WD_kicks,kick_distribution_sigma_km_s_WD=args.kick_distribution_sigma_km_s_WD)
+    error_code, log = Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag,include_WD_kicks=args.include_WD_kicks,kick_distribution_sigma_km_s_WD=args.kick_distribution_sigma_km_s_WD,NS_model=args.NS_model,ECSNe_model=args.ECSNe_model)

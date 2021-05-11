@@ -4,6 +4,9 @@ extern "C"
 double compute_orbital_period_from_semimajor_axis(double M, double a);
 double compute_semimajor_axis_from_orbital_period(double M, double P);
 
+double compute_spin_angular_frequency_from_spin_period(double P);
+double compute_spin_period_from_spin_angular_frequency(double Omega);
+
 double generate_random_number_between_zero_and_unity();
 int sample_from_3d_maxwellian_distribution(double sigma, double v[3]);
 double sample_from_y_times_maxwellian_distribution(double sigma);
@@ -35,6 +38,7 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target);
 void copy_all_body_properties(Particle *source, Particle *target);
 
 void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
+void create_2p2_quadruple_system(ParticlesMap &particlesMap, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs);
 void print_system(ParticlesMap *particlesMap, int integration_flag);
 
 void get_parallel_and_perpendicular_vectors_and_components(double a_vec[3], double h_vec[3], double *a_par, double *a_perp, double a_perp_vec[3]);
@@ -56,4 +60,6 @@ void compute_center_of_mass_position_and_velocity(ParticlesMap *particlesMap, do
 
 double find_nearest_neighbor_separation(ParticlesMap *particlesMap, int primary_index, double primary_R_vec[3]);
 void remove_binaries_from_system(ParticlesMap *particlesMap);
+
+void rescale_vector(double v[3], double factor);
 }

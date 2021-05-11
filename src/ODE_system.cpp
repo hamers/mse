@@ -206,6 +206,11 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     set_positions_and_velocities(particlesMap); /* update positions and velocities of all bound bodies based on updated binary e, h, and TA */
     update_positions_unbound_bodies(particlesMap, actual_time_step); /* update positions of unbound bodies, which are assumed (integration_flag = 0) to move unaccelerated */
 
+    if (NS_model == 1)
+    {
+        ODE_Ye19_model_update_magnetic_field(particlesMap, actual_time_step);
+    }
+
     *hamiltonian = data->hamiltonian;
     
     N_VDestroy_Serial(y);
@@ -294,6 +299,13 @@ int compute_y_dot(realtype t, N_Vector y, N_Vector y_dot, void *data_)
             ODE_handle_stellar_winds(p);
             ODE_handle_RLOF(particlesMap,p);
             
+        }
+        else
+        {
+            if (NS_model == 1)
+            {
+                ODE_handle_NS_properties_Ye19_model(p, delta_time);
+            }
         }
             
     }
@@ -714,6 +726,12 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
                 f_breakup = exp( -100.0*(p->spin_vec_norm/Omega_crit - 1.0) ); /* Fast but smooth transition from f_breakup = 1 to f_breakup = 0 as p->spin_vec_norm > Omega_crit */
             }
             //printf("f_breakup %g %g %g\n",f_breakup,p->spin_vec_norm,Omega_crit);
+            if (p->stellar_type == 13)
+            {
+                //f_breakup = 1.0;
+                //printf("crt %g\n",compute_spin_period_from_spin_angular_frequency(Omega_crit)*yr_to_s);
+            }
+            
             for (k_component=0; k_component<3; k_component++)
             {
                 Ith(y_dot,k + k_component) = f_breakup * p->dspin_vec_dt[k_component];

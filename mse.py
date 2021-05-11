@@ -83,6 +83,8 @@ class MSE(object):
         self.__nova_accretion_factor = 1.0e-3
         self.__alpha_wind_accretion = 1.5
         self.__beta_wind_accretion = 0.125
+        self.__NS_model = 0
+        self.__ECSNe_model = 0
 
         self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1
         self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1
@@ -189,10 +191,10 @@ class MSE(object):
 
 
         ### kicks ###
-        self.lib.set_kick_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
+        self.lib.set_kick_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_bool,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
         self.lib.set_kick_properties.restype = ctypes.c_int
 
-        self.lib.get_kick_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_kick_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_kick_properties.restype = ctypes.c_int
 
 
@@ -265,7 +267,8 @@ class MSE(object):
             ctypes.c_double, ctypes.c_double, \
             ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, \
             ctypes.c_bool, \
-            ctypes.c_double)
+            ctypes.c_double, \
+            ctypes.c_int, ctypes.c_int)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -533,7 +536,7 @@ class MSE(object):
                 flag += self.lib.set_stellar_evolution_properties(particle.index,particle.stellar_type,particle.object_type,particle.sse_initial_mass,particle.metallicity,particle.sse_time_step,particle.epoch,particle.age, \
                     particle.convective_envelope_mass,particle.convective_envelope_radius,particle.core_mass,particle.core_radius,particle.luminosity,particle.apsidal_motion_constant,particle.gyration_radius,particle.tides_viscous_time_scale,particle.tides_viscous_time_scale_prescription)
                 flag += self.lib.set_kick_properties(particle.index,particle.kick_distribution,particle.include_WD_kicks,particle.kick_distribution_sigma_km_s_NS,particle.kick_distribution_sigma_km_s_BH,particle.kick_distribution_sigma_km_s_WD, \
-                    particle.kick_distribution_2_m_NS,particle.kick_distribution_4_m_NS,particle.kick_distribution_4_m_ej,particle.kick_distribution_5_v_km_s_NS,particle.kick_distribution_5_v_km_s_BH,particle.kick_distribution_5_sigma)
+                    particle.kick_distribution_2_m_NS,particle.kick_distribution_4_m_NS,particle.kick_distribution_4_m_ej,particle.kick_distribution_5_v_km_s_NS,particle.kick_distribution_5_v_km_s_BH,particle.kick_distribution_5_sigma,particle.kick_distribution_sigma_km_s_NS_ECSN)
 
                 if set_instantaneous_perturbation_properties==True:
                     flag += self.lib.set_instantaneous_perturbation_properties(particle.index,particle.instantaneous_perturbation_delta_mass, \
@@ -663,10 +666,10 @@ class MSE(object):
                 particle.tides_viscous_time_scale = tides_viscous_time_scale.value
                 particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
 
-                kick_distribution,include_WD_kicks,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH,kick_distribution_sigma_km_s_WD,kick_distribution_2_m_NS,kick_distribution_4_m_NS,kick_distribution_4_m_ej,kick_distribution_5_v_km_s_NS,kick_distribution_5_v_km_s_BH,kick_distribution_5_sigma \
-                    = ctypes.c_int(0),ctypes.c_bool(False),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                kick_distribution,include_WD_kicks,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH,kick_distribution_sigma_km_s_WD,kick_distribution_2_m_NS,kick_distribution_4_m_NS,kick_distribution_4_m_ej,kick_distribution_5_v_km_s_NS,kick_distribution_5_v_km_s_BH,kick_distribution_5_sigma,kick_distribution_sigma_km_s_NS_ECSN \
+                    = ctypes.c_int(0),ctypes.c_bool(False),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                 flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(include_WD_kicks),ctypes.byref(kick_distribution_sigma_km_s_NS),ctypes.byref(kick_distribution_sigma_km_s_BH),ctypes.byref(kick_distribution_sigma_km_s_WD), \
-                ctypes.byref(kick_distribution_2_m_NS),ctypes.byref(kick_distribution_4_m_NS),ctypes.byref(kick_distribution_4_m_ej),ctypes.byref(kick_distribution_5_v_km_s_NS),ctypes.byref(kick_distribution_5_v_km_s_BH),ctypes.byref(kick_distribution_5_sigma))
+                ctypes.byref(kick_distribution_2_m_NS),ctypes.byref(kick_distribution_4_m_NS),ctypes.byref(kick_distribution_4_m_ej),ctypes.byref(kick_distribution_5_v_km_s_NS),ctypes.byref(kick_distribution_5_v_km_s_BH),ctypes.byref(kick_distribution_5_sigma),ctypes.byref(kick_distribution_sigma_km_s_NS_ECSN))
                 particle.kick_distribution = kick_distribution.value
                 particle.include_WD_kicks = include_WD_kicks.value
                 particle.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS.value
@@ -678,6 +681,7 @@ class MSE(object):
                 particle.kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS.value
                 particle.kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH.value
                 particle.kick_distribution_5_sigma = kick_distribution_5_sigma.value
+                particle.kick_distribution_sigma_km_s_NS_ECN = kick_distribution_sigma_km_s_NS_ECSN.value
 
                 mass_dot = ctypes.c_double(0.0)
                 flag = self.lib.get_mass_dot(particle.index,ctypes.byref(mass_dot))
@@ -760,7 +764,8 @@ class MSE(object):
             self.__effective_radius_multiplication_factor_for_collisions_stars, self.__effective_radius_multiplication_factor_for_collisions_compact_objects, \
             self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q, \
             self.__stop_after_root_found, \
-            self.__wall_time_max_s)
+            self.__wall_time_max_s, \
+            self.__NS_model, self.__ECSNe_model)
 
     def reset(self):
         self.__init__()
@@ -1543,6 +1548,22 @@ class MSE(object):
         self.__triple_mass_transfer_inner_binary_alpha_times_lambda = value
         self.__set_parameters_in_code()
 
+    @property
+    def NS_model(self):
+        return self.__NS_model
+    @NS_model.setter
+    def NS_model(self, value):
+        self.__NS_model = value
+        self.__set_parameters_in_code()
+
+    @property
+    def ECSNe_model(self):
+        return self.__ECSNe_model
+    @ECSNe_model.setter
+    def ECSNe_model(self, value):
+        self.__ECSNe_model = value
+        self.__set_parameters_in_code()
+
 
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0e-10, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \
@@ -1550,7 +1571,7 @@ class Particle(object):
             stellar_type=1, object_type=1, sse_initial_mass=None, metallicity=0.02, sse_time_step=1.0, epoch=0.0, age=0.0, core_mass=0.0, core_radius=0.0, \
             include_mass_transfer_terms=True, \
             kick_distribution = 1, include_WD_kicks = False, kick_distribution_sigma_km_s_NS = 265.0, kick_distribution_sigma_km_s_BH=50.0, kick_distribution_sigma_km_s_WD = 1.0, \
-            kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, \
+            kick_distribution_2_m_NS=1.4, kick_distribution_4_m_NS=1.2, kick_distribution_4_m_ej=9.0, kick_distribution_5_v_km_s_NS=400.0,kick_distribution_5_v_km_s_BH=200.0, kick_distribution_5_sigma=0.3, kick_distribution_sigma_km_s_NS_ECSN = 20.0, \
             spin_vec_x=0.0, spin_vec_y=0.0, spin_vec_z=1.0e-10, \
             include_pairwise_1PN_terms=True, include_pairwise_25PN_terms=True, include_spin_orbit_1PN_terms=True, exclude_1PN_precession_in_case_of_isolated_binary=True, \
             include_tidal_friction_terms=True, tides_method=1, include_tidal_bulges_precession_terms=True, include_rotation_precession_terms=True, exclude_rotation_and_bulges_precession_in_case_of_isolated_binary = True, \
@@ -1615,6 +1636,7 @@ class Particle(object):
         self.kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS
         self.kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH
         self.kick_distribution_5_sigma = kick_distribution_5_sigma
+        self.kick_distribution_sigma_km_s_NS_ECSN = kick_distribution_sigma_km_s_NS_ECSN
           
         self.check_for_secular_breakdown=check_for_secular_breakdown
         self.check_for_dynamical_instability=check_for_dynamical_instability
@@ -2209,7 +2231,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0):
 
         np.random.seed(random_seed)
         
@@ -2264,6 +2286,8 @@ class Tools(object):
         code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
         code.flybys_encounter_sphere_radius = 1.0e5
         code.binary_evolution_use_eCAML_model = False
+        code.NS_model = NS_model
+        code.ECSNe_model = ECSNe_model
 
         t_print = [[]]
         internal_indices_print = [[[] for x in range(N_bodies)]]
@@ -2469,7 +2493,8 @@ class Tools(object):
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
                     
                     plot_HRD.plot(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth)
-                    plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
+                    #plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
+                    plot4.plot(1.0e-6*t_print[i_status],3.15576e7*2.0*np.pi/np.array(spin_frequency_print[i_status][index]),color=color,linewidth=linewidth) 
                    
                 linewidth=1.0
                 for index in range(N_orbits):
@@ -2498,7 +2523,8 @@ class Tools(object):
             plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
             plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
-            plot4.set_ylabel("$\Omega_\mathrm{spin}/\mathrm{yr^{-1}}$",fontsize=fontsize)
+            #plot4.set_ylabel("$\Omega_\mathrm{spin}/\mathrm{yr^{-1}}$",fontsize=fontsize)
+            plot4.set_ylabel("$P_\mathrm{spin}/\mathrm{d}$",fontsize=fontsize)
             plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)
             
@@ -2854,6 +2880,8 @@ class Tools(object):
             text = "$\mathrm{Triple\,CE\,start}$"
         elif event_flag == 15:
             text = "$\mathrm{Triple\,CE\,end}$"
+        elif event_flag == 16:
+            text = "$\mathrm{MSP\,formation}$"
         else:
             text = ""
         return text

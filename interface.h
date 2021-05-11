@@ -35,9 +35,9 @@ int set_stellar_evolution_properties(int index, int stellar_type, int object_typ
 int get_stellar_evolution_properties(int index, int *stellar_type, int *object_type, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
     double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter);  
 int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_sigma_km_s_WD, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
-    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma);
+    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma, double kick_distribution_sigma_km_s_NS_ECSN);
 int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kicks, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH,  double *kick_distribution_sigma_km_s_WD, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
-    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma);
+    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma, double *kick_distribution_sigma_km_s_NS_ECSN);
 
 int set_binary_evolution_properties(int index, double dynamical_mass_transfer_low_mass_donor_timescale, double dynamical_mass_transfer_WD_donor_timescale, double compact_object_disruption_mass_loss_timescale, \
     double common_envelope_alpha, double common_envelope_lambda, double common_envelope_timescale, double triple_common_envelope_alpha);
@@ -163,7 +163,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
     bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
     bool stop_after_root_found_, \
-    double wall_time_max_s_);
+    double wall_time_max_s_, \
+    int NS_model_, int ECSNe_model);
 
 int get_random_seed(int *value);
 int set_random_seed(int value);

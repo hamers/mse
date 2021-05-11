@@ -40,14 +40,18 @@ extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine 
 #define LOG_WD_KICK_END             (int)   13
 #define LOG_TRIPLE_CE_START         (int)   14
 #define LOG_TRIPLE_CE_END           (int)   15
+#define LOG_MSP_FORMATION           (int)   16
 #endif
 
 
 #ifndef __BASIC_MATH
 #define __BASIC_MATH
 #define TWOPI               (double)    2.0 * M_PI
+#define ONE_DIV_FOURPISQ    (double)    (1.0/(TWOPI*TWOPI))
 #define yr_to_Myr           (double)    1.0e-6
 #define Myr_to_yr           (double)    1.0e6
+#define s_to_yr             (double)    3.16881e-8
+#define yr_to_s             (double)    3.15576e7
 #define c_1div2             (double)    1.0/2.0
 #define c_1div3             (double)    1.0/3.0
 #define c_1div4             (double)    1.0/4.0
@@ -739,8 +743,15 @@ class Particle
     double child1_mass_old,child2_mass_old;
     double apsidal_motion_constant, gyration_radius;
     double sse_k2,sse_k3;
+    bool has_formed_MSP;
     
     double mass_dot_wind_accretion;
+    
+    double magnetic_field_strength_gauss;
+    double initial_magnetic_field_strength_gauss;
+    double time_of_NS_formation;
+    double initial_NS_period_s;
+    bool apply_ECSN_kick;
     
     /* RLOF */
     bool include_mass_transfer_terms;
@@ -756,6 +767,7 @@ class Particle
     double compact_object_disruption_mass_loss_timescale;
     bool accretion_disk_is_present;
     double accretion_disk_r_min;
+    double delta_mass_RLOF,RLOF_timescale;
     
     /* RLOF -- triple mass transfer */
     double mass_dot_RLOF_triple;
@@ -797,6 +809,7 @@ class Particle
     double kick_distribution_sigma_km_s_NS;
     double kick_distribution_sigma_km_s_BH;
     double kick_distribution_sigma_km_s_WD;
+    double kick_distribution_sigma_km_s_NS_ECSN;
 
     double kick_distribution_2_m_NS;
     double kick_distribution_4_m_NS;
@@ -982,6 +995,11 @@ class Particle
         sse_main_sequence_timescale = 0.0;
         sse_k2 = 0.0;
         sse_k3 = 0.21;
+        magnetic_field_strength_gauss = 0.0;
+        initial_magnetic_field_strength_gauss = 0.0;
+        time_of_NS_formation = 0.0;
+        initial_NS_period_s = 0.0;
+        has_formed_MSP = false;
                 
         /* RLOF */
         include_mass_transfer_terms = true;
@@ -1000,6 +1018,9 @@ class Particle
         accretion_disk_is_present = false;
         accretion_disk_r_min = 0.0;
         
+        delta_mass_RLOF = 0.0;
+        RLOF_timescale = 0.0;
+        
         /* CE */
         common_envelope_alpha = 1.0;
         common_envelope_lambda = 1.0;
@@ -1009,10 +1030,12 @@ class Particle
         /* kicks */
         apply_kick = false;
         include_WD_kicks = false;
+        apply_ECSN_kick = false;
         kick_distribution = 1;
         kick_distribution_sigma_km_s_NS = 265.0; /* https://ui.adsabs.harvard.edu/abs/2005MNRAS.360..974H/abstract */
         kick_distribution_sigma_km_s_BH = 50.0;
         kick_distribution_sigma_km_s_WD = 1.0;
+        kick_distribution_sigma_km_s_NS_ECSN = 20.0; /* https://ui.adsabs.harvard.edu/abs/2008MNRAS.388..393K/abstract */
 
 
         kick_distribution_2_m_NS = 1.4;

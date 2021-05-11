@@ -1776,7 +1776,7 @@ class test_mse():
         
         assert(flag == 0)
         
-        print("Tests passed")
+        print("Unit tests passed")
         
 
 def kroupa_93_imf(m):

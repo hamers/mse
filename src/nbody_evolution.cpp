@@ -38,7 +38,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         *dt_nbody = 1.0e100;
         *t_out = t_old + dt;
         *integration_flag = 1;
-        update_stellar_evolution_quantities_directly(particlesMap,dt);
+        update_stellar_evolution_quantities_directly(particlesMap,t, dt);
         remove_binaries_from_system(particlesMap);
         return;
     }
@@ -100,7 +100,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
 
     *dt_nbody = determine_nbody_timestep(particlesMap,*integration_flag,P_orb_min,P_orb_max);
 
-    update_stellar_evolution_quantities_directly(particlesMap,dt);
+    update_stellar_evolution_quantities_directly(particlesMap,t,dt);
 
     #ifdef VERBOSE
     if (verbose_flag > 0)
@@ -220,7 +220,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
     
 }
 
-void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt)
+void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double t, double dt)
 {
     int i;
     double spin_vec_norm;
@@ -248,9 +248,17 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
             {
                 spin_vec_norm = epsilon;
             }
+            
+            /* Spin changes according to SSE */
             for (i=0; i<3; i++)
             {
                 p->spin_vec[i] += p->ospin_dot * (p->spin_vec[i]/spin_vec_norm) * dt;
+            }
+            
+            /* Spin changes due to NS spindown (not modelled in SSE) */
+            if (NS_model == 1)
+            {
+                nbody_handle_NS_properties_Ye19_model(p, spin_vec_norm, dt);
             }
         }
     }

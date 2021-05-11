@@ -227,6 +227,15 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
         sample_from_3d_maxwellian_distribution(sigma, v);
         vnorm = norm3(v);
     }
+    
+    /* ECSN kicks */
+    if (kw == 13 and p->apply_ECSN_kick == true)
+    {
+        sigma = p->kick_distribution_sigma_km_s_NS_ECSN * CONST_KM_PER_S;
+        sample_from_3d_maxwellian_distribution(sigma, v);
+        vnorm = norm3(v);
+        p->apply_ECSN_kick = false;
+    }
 
     #ifdef LOGGING
     Log_type &last_entry = logData.back();

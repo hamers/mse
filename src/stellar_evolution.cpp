@@ -120,7 +120,6 @@ int initialize_stars(ParticlesMap *particlesMap)
 
                     dt = get_new_dt_sse(kw,sse_initial_mass,mt,age,dt,zpars);
     
-
                     tphys = tphysf;
                     tphysf += dt;
                     j++;
@@ -136,6 +135,19 @@ int initialize_stars(ParticlesMap *particlesMap)
 
                         break;
                     }
+                }
+            }
+
+            if (kw == 13)
+            {
+                if (NS_model == 1)
+                {
+                    compute_NS_formation_properties_Ye19_model(false, &ospin, &p->magnetic_field_strength_gauss);
+                    rescale_vector(p->spin_vec, ospin/norm3(p->spin_vec));
+                    
+                    p->time_of_NS_formation = 0.0;
+                    p->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                    p->initial_magnetic_field_strength_gauss = p->magnetic_field_strength_gauss;
                 }
             }
 
@@ -367,6 +379,14 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->instantaneous_perturbation_delta_mass = 0.0;
                     p->apply_kick = false;
                     
+                    if (kw == 13)
+                    {
+                        if (NS_model == 1) /* Ignore SSE changes in spins in this case */
+                        {
+                            p->ospin_dot = 0.0;
+                        }
+                    }
+                    
                 }
                 else /* kw change with new kw=13 or kw=14 */
                 {
@@ -374,8 +394,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->radius_dot = 0.0;
                     p->ospin_dot = 0.0;
 
-                    /* New mass will be handled by handle_SNe_in_system(), but radius has to be adjusted here */
+                    /* New mass will be handled by handle_SNe_in_system(), but radius and spin have to be adjusted here */
                     p->radius = r*CONST_R_SUN;
+                    rescale_vector(p->spin_vec, ospin/ospin_old);
                     
                     *apply_SNe_effects = true;
                     
@@ -385,6 +406,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                 }
                 
+                /* WD kicks */
                 if (kw_old!=kw and kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
                 {
                     p->apply_kick = true;
@@ -399,6 +421,18 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     #endif
                 }
                 
+                /* Special treatment for NS formation */
+                if (kw_old!=kw and kw == 13)
+                {
+                    if (NS_model == 1)
+                    {
+                        compute_NS_formation_properties_Ye19_model(false, &ospin, &p->magnetic_field_strength_gauss);
+                        rescale_vector(p->spin_vec, ospin/norm3(p->spin_vec));
+                        p->time_of_NS_formation = end_time;
+                        p->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        p->initial_magnetic_field_strength_gauss = p->magnetic_field_strength_gauss;
+                    }
+                }
 
                 p->sse_initial_mass = sse_initial_mass;
                 p->stellar_type = kw;
@@ -457,6 +491,20 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     {
                         
                         update_log_data(particlesMap, end_time, *integration_flag, LOG_SNE_START, log_info);
+                    }
+                }
+                if (NS_model == 1 and p->stellar_type == 13)
+                {
+                    if (determine_if_NS_is_MSP(norm3(p->spin_vec),p->magnetic_field_strength_gauss) == true)
+                    {
+                        if (p->has_formed_MSP == false) /* Only consider first-time MSP formation */
+                        {
+                            Log_info_type log_info2;
+                            log_info2.index1 = p->index;
+
+                            update_log_data(particlesMap, end_time, *integration_flag, LOG_MSP_FORMATION, log_info2);
+                            p->has_formed_MSP = true;
+                        }
                     }
                 }
                 #endif
@@ -583,9 +631,22 @@ void update_stellar_evolution_properties(Particle *p)
 
 }
 
-double compute_moment_of_inertia(double mass, double core_mass, double radius, double core_radius, double k2, double k3)
+double compute_moment_of_inertia(int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
 {
-    return k2*(mass - core_mass)*radius*radius + k3*core_mass*core_radius*core_radius;
+    if (stellar_type < 10) // stars
+    {
+        return k2*(mass - core_mass)*radius*radius + k3*core_mass*core_radius*core_radius;
+    }
+    else if (stellar_type >= 10 and stellar_type <= 13)
+    {
+        return 0.4 * mass * radius * radius; // moment of inertia of solid sphere
+    }
+    else
+    {
+        printf("stellar_evolution.cpp -- compute_moment_of_inertia -- ERROR: stellar_type should not be %d\n",stellar_type);
+        error_code = 38;
+        return 0.0;
+    }
 }
 
 void get_core_masses_by_composition(int kw, double core_mass, double *He_core_mass, double *CO_core_mass, double *Ne_core_mass)
@@ -625,12 +686,12 @@ double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, 
     }
     else
     {
-        if (stellar_type < 10) // Stars
+        if (stellar_type < 14) // Stars/WDs/NSs
         {
-            double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+            double I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, k2, k3);
             S = I * spin_frequency;
         }
-        else // Compact objects
+        else // BHs
         {
             double chi = compute_spin_parameter_from_spin_frequency(mass, spin_frequency);
             S = chi * CONST_G * mass * mass / CONST_C_LIGHT;
@@ -652,12 +713,12 @@ double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_mom
     }
     else
     {
-        if (stellar_type < 10) // Stars
+        if (stellar_type < 14) // Stars/WDs/NSs
         {
-            double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, k2, k3);
+            double I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, k2, k3);
             Omega = spin_angular_momentum/I;
         }
-        else // Compact objects
+        else // BHs
         {
             double chi = spin_angular_momentum * CONST_C_LIGHT / ( CONST_G * mass * mass);
             Omega = compute_spin_frequency_from_spin_parameter(mass, chi);
@@ -670,6 +731,142 @@ double compute_spin_frequency_from_spin_angular_momentum(double spin_angular_mom
 double compute_breakup_angular_frequency(double mass, double radius)
 {
     return sqrt(CONST_G*mass/(radius*radius*radius));
+}
+
+double determine_sse_compact_object_radius_RSun(int kw, double m)
+{
+    double radius;
+    if (kw >= 10 and kw <= 12)
+    {
+        radius = 0.0115 * sqrt( CV_max( 1.48204e-6, pow(chandrasekhar_mass/m,c_2div3) - pow(m/chandrasekhar_mass,c_2div3) ) );
+        radius = CV_min(0.1, radius);
+        if (m < 0.0005)
+        {
+            radius = 0.09;
+        }
+        if (m < 0.000005)
+        {
+            radius = 0.009;
+        }
+    }
+    else if (kw == 13)
+    {
+        radius = 1.4e-5;
+    }
+    else if (kw == 14)
+    {
+        radius = 4.24e-6*m;
+    }
+    else
+    {
+        printf("stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun -- ERROR: this function was called with invalid kw=%g and m=%g\n",kw,m);
+        error_code = 37;
+    }
+    return radius;
+}
+
+
+void compute_NS_formation_properties_Ye19_model(bool merger_event, double *ospin, double *B_G)
+{
+    /* https://ui.adsabs.harvard.edu/abs/2019ApJ...877..122Y/abstract */
+    
+    double P_s;
+    if (merger_event == false)
+    {
+        P_s = NS_Ye19_model_NS_formation_single_P_s_lower + generate_random_number_between_zero_and_unity() * (NS_Ye19_model_NS_formation_single_P_s_upper - NS_Ye19_model_NS_formation_single_P_s_lower);
+        *B_G = NS_Ye19_model_NS_formation_single_B_G_lower + generate_random_number_between_zero_and_unity() * (NS_Ye19_model_NS_formation_single_B_G_upper - NS_Ye19_model_NS_formation_single_B_G_lower);
+    }
+    else
+    {
+        P_s = NS_Ye19_model_NS_formation_merger_P_s_lower + generate_random_number_between_zero_and_unity() * (NS_Ye19_model_NS_formation_merger_P_s_upper - NS_Ye19_model_NS_formation_merger_P_s_lower);
+        *B_G = NS_Ye19_model_NS_formation_merger_B_G_lower + generate_random_number_between_zero_and_unity() * (NS_Ye19_model_NS_formation_merger_B_G_upper - NS_Ye19_model_NS_formation_merger_B_G_lower);
+    }
+    double P_yr = P_s * s_to_yr;
+    *ospin = compute_spin_angular_frequency_from_spin_period(P_yr);
+}
+
+bool determine_if_NS_is_MSP(double ospin, double B_G)
+{
+    bool is_MSP = false;
+    
+    double P_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+    double B_crit_G = pulsar_death_line_B_crit_const_G * P_s * P_s;
+    //printf("determine_if_NS_is_MSP %g %g %g %g\n",B_G,B_crit_G,P_s,MSP_defining_period_s);
+    if (B_G > B_crit_G and P_s < MSP_defining_period_s)
+    {
+        is_MSP = true;
+    }
+    return is_MSP;
+}
+
+double compute_NS_magnetic_field_Ye19_model(double B_0, double T, double t_acc, double Delta_m)
+{
+    //printf("%g %g %g %g\n",B_0,T,t_acc,Delta_m);
+    double B_G = B_0 * exp( - (T - t_acc)/NS_Ye19_model_NS_B_field_decay_timescale) / (1.0 + Delta_m/NS_Ye19_model_NS_RLOF_threshold_accreted_mass);
+    if (B_G < NS_Ye19_model_NS_minimum_B_G)
+    {
+        B_G = NS_Ye19_model_NS_minimum_B_G;
+    }
+    return B_G;
+}
+
+void ODE_handle_NS_properties_Ye19_model(Particle *p, double dt)
+{
+    /* https://ui.adsabs.harvard.edu/abs/2019ApJ...877..122Y/abstract */
+    
+    if (p->stellar_type == 13)
+    {
+        double ospin = p->spin_vec_norm; /* should be up to date when called from compute_y_dot() */
+        double B_G = compute_NS_magnetic_field_Ye19_model(p->magnetic_field_strength_gauss, dt, p->RLOF_timescale, p->delta_mass_RLOF);
+        double ospin_dot = -ONE_DIV_FOURPISQ * NS_Ye19_model_NS_spin_down_constant_K * ospin * ospin * ospin * B_G * B_G;
+
+        for (int i=0; i<3; i++)
+        {
+            p->dspin_vec_dt[i] += ospin_dot * p->spin_vec_unit[i];
+        }
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("stellar_evolution.cpp -- ODE_handle_NS_properties_Ye19_model -- dt %g ospin %g ospin_dot %g B_G %g P_s %g\n",dt,ospin,ospin_dot,B_G,compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s);
+        }
+        #endif
+
+
+    }
+}
+
+void ODE_Ye19_model_update_magnetic_field(ParticlesMap *particlesMap, double dt)
+{
+    /* https://ui.adsabs.harvard.edu/abs/2019ApJ...877..122Y/abstract */
+    /* Updates magnetic fields of NSs in particlesMap after ODE evolution */
+    
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->stellar_type == 13)
+        {
+            p->magnetic_field_strength_gauss = compute_NS_magnetic_field_Ye19_model(p->magnetic_field_strength_gauss, dt, p->RLOF_timescale, p->delta_mass_RLOF);
+        }
+    }
+}
+
+void nbody_handle_NS_properties_Ye19_model(Particle *p, double ospin, double dt)
+{
+    if (p->stellar_type == 13)
+    {
+        double ospin_new = ospin/sqrt( 1.0 - ospin*ospin * NS_Ye19_model_NS_spin_down_constant_K * ONE_DIV_FOURPISQ * p->magnetic_field_strength_gauss*p->magnetic_field_strength_gauss * NS_Ye19_model_NS_B_field_decay_timescale * ( exp(-2.0 * dt/NS_Ye19_model_NS_B_field_decay_timescale) - 1.0) );
+
+        rescale_vector(p->spin_vec,ospin_new/ospin);
+        p->magnetic_field_strength_gauss = compute_NS_magnetic_field_Ye19_model(p->magnetic_field_strength_gauss, dt, 0.0, 0.0); /* Do not take into account mass accretion effects in direct N-body mode */
+
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("stellar_evolution.cpp -- nbody_handle_NS_properties_Ye19_model -- dt %g ospin %g ospin_new %g p->magnetic_field_strength_gauss %g P_s %g\n",dt,ospin,ospin_new,p->magnetic_field_strength_gauss,compute_spin_period_from_spin_angular_frequency(ospin_new) * yr_to_s);
+        }
+        #endif
+    }
 }
 
 }

@@ -24,6 +24,7 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 13: WD kick end
  * 14: Triple CE start
  * 15: Triple CE end
+ * 16: MSP formation
  */
 {
     Log_type new_entry;

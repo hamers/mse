@@ -444,7 +444,7 @@ int get_stellar_evolution_properties(int index, int *stellar_type, int *object_t
 }
 
 int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_sigma_km_s_WD, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
-    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma)
+    double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma, double kick_distribution_sigma_km_s_NS_ECSN)
 {
     //printf("set_kick_properties index %d kick_distribution %d kick_distribution_sigma %g\n",index,kick_distribution,kick_distribution_sigma);
     if (index > particlesMap.size())
@@ -464,11 +464,12 @@ int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks,
     p->kick_distribution_5_v_km_s_NS = kick_distribution_5_v_km_s_NS;
     p->kick_distribution_5_v_km_s_BH = kick_distribution_5_v_km_s_BH;
     p->kick_distribution_5_sigma = kick_distribution_5_sigma;
+    p->kick_distribution_sigma_km_s_NS_ECSN = kick_distribution_sigma_km_s_NS_ECSN;
     
     return 0;
 }
 int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kicks, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH,  double *kick_distribution_sigma_km_s_WD, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
-    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma)
+    double *kick_distribution_5_v_km_s_NS, double *kick_distribution_5_v_km_s_BH, double *kick_distribution_5_sigma, double *kick_distribution_sigma_km_s_NS_ECSN)
 
 {
     if (index > particlesMap.size())
@@ -488,6 +489,7 @@ int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kick
     *kick_distribution_5_v_km_s_NS = p->kick_distribution_5_v_km_s_NS;
     *kick_distribution_5_v_km_s_BH = p->kick_distribution_5_v_km_s_BH;
     *kick_distribution_5_sigma = p->kick_distribution_5_sigma;
+    *kick_distribution_sigma_km_s_NS_ECSN = p->kick_distribution_sigma_km_s_NS_ECSN;
     
     return 0;
 }
@@ -1020,7 +1022,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double effective_radius_multiplication_factor_for_collisions_stars_, double effective_radius_multiplication_factor_for_collisions_compact_objects_, \
     bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
     bool stop_after_root_found_, \
-    double wall_time_max_s_)
+    double wall_time_max_s_, \
+    int NS_model_, int ECSNe_model_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1075,7 +1078,9 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     nova_accretion_factor = nova_accretion_factor_;
     alpha_wind_accretion = alpha_wind_accretion_;
     beta_wind_accretion = beta_wind_accretion_;
-     
+    NS_model = NS_model_;
+    ECSNe_model = ECSNe_model_;
+    
     triple_mass_transfer_primary_star_accretion_efficiency_no_disk = triple_mass_transfer_primary_star_accretion_efficiency_no_disk_;
     triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_;
     triple_mass_transfer_primary_star_accretion_efficiency_disk = triple_mass_transfer_primary_star_accretion_efficiency_disk_;
@@ -1097,7 +1102,6 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     MSTAR_include_PN_spin_Q = MSTAR_include_PN_spin_Q_;
 
     stop_after_root_found = stop_after_root_found_;
-    
      //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 
@@ -1139,12 +1143,13 @@ int unit_tests_interface(int mode)
     flag += test_tools();
     flag += test_nbody(mode);
     flag += test_flybys();
-    flag += test_stellar_evolution();
+    flag += test_stellar_evolution(mode);
     flag += test_binary_evolution();
-    if (mode > 0)
+    if (mode == 1)
     {
         flag += test_collisions();
     }
+
     return flag;
 }
 

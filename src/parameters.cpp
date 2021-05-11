@@ -73,6 +73,8 @@ int error_code = 0;
  * 34: tools.cpp -- sample_from_Kroupa_93_imf()
  * 35: ODE_system.cpp -- wall time exceeded
  * 36: mst.c -- wall time exceeded
+ * 37: stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun()
+ * 38: stellar_evolution.cpp -- compute_moment_of_inertia()
  */
 
 double secular_integration_exclusion_safety_factor = 1.0e-5;
@@ -169,7 +171,26 @@ double kroupa_x1 = (kroupa_C1/kroupa_alpha1_plus_1)*( kroupa_m2_pow_alpha1_plus_
 double kroupa_x2 = kroupa_x1 + (kroupa_C2/kroupa_alpha2_plus_1)*( kroupa_m3_pow_alpha2_plus_one - kroupa_m2_pow_alpha2_plus_one);
 double kroupa_x3 = kroupa_x2 + (kroupa_C3/kroupa_alpha3_plus_1)*( kroupa_m4_pow_alpha3_plus_one - kroupa_m3_pow_alpha3_plus_one);
 
+/* NSs/MSPs */
+double pulsar_death_line_B_crit_const_G = 0.17e12;
+double MSP_defining_period_s = 0.03;
 
+double NS_model = 1;
+double NS_Ye19_model_NS_MSP_P_s_def = 0.03;
+double NS_Ye19_model_NS_formation_single_P_s_lower = 0.03;
+double NS_Ye19_model_NS_formation_single_P_s_upper = 1.0;
+double NS_Ye19_model_NS_formation_single_B_G_lower = pow(10.0,11.5);
+double NS_Ye19_model_NS_formation_single_B_G_upper = pow(10.0,13.8);
+double NS_Ye19_model_NS_formation_merger_P_s_lower = 0.003;
+double NS_Ye19_model_NS_formation_merger_P_s_upper = 0.02;
+double NS_Ye19_model_NS_formation_merger_B_G_lower = pow(10.0,8.0);
+double NS_Ye19_model_NS_formation_merger_B_G_upper = pow(10.0,8.8);
+double NS_Ye19_model_NS_spin_down_constant_K = 9.87e-48;
+double NS_Ye19_model_NS_B_field_decay_timescale = 3.0e9;
+double NS_Ye19_model_NS_minimum_B_G = 5.0e7;
+double NS_Ye19_model_NS_RLOF_threshold_accreted_mass = 1.0e-6;
+
+int ECSNe_model = 0;
 
 /* Used in MSTAR only */
 double SPEEDOFLIGHT = CONST_C_LIGHT;

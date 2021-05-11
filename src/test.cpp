@@ -752,7 +752,7 @@ int test_nbody_inspiral(int mode)
     double dt = tend/100.0;
     
     std::ofstream myfile;
-    if (mode == 1)
+    if (mode == 2)
     {
         myfile.open ("test_nbody_inspiral.txt");
     }
@@ -774,7 +774,7 @@ int test_nbody_inspiral(int mode)
 
         //printf("t/P_orb %g a %g e %g sep %g\n",t/P_orb,at,et,norm3(r));
         
-        if (mode == 1)
+        if (mode == 2)
         {
             myfile << t/P_orb << "," << norm3(r) << "\n";
         }
@@ -785,7 +785,7 @@ int test_nbody_inspiral(int mode)
         }
     }
 
-    if (mode == 1)
+    if (mode == 2)
     {
         myfile.close();    
     }
@@ -867,7 +867,7 @@ int test_nbody_spin_orbit(int mode)
     double precession_angle_old;
     
     std::ofstream myfile;
-    if (mode == 1)
+    if (mode == 2)
     {
         myfile.open ("test_nbody_spin_orbit.txt");
     }
@@ -897,7 +897,7 @@ int test_nbody_spin_orbit(int mode)
         //printf("spin 1 %g %g %g\n",R->Spin_S[3 * 0 + 0],R->Spin_S[3 * 0 + 1],R->Spin_S[3 * 0 + 2]);
         //printf("spin 2 %g %g %g\n",R->Spin_S[3 * 1 + 0],R->Spin_S[3 * 1 + 1],R->Spin_S[3 * 1 + 2]);
         
-        if (mode == 1)
+        if (mode == 2)
         {
             myfile << t/P_orb << "," << precession_angle*(180.0/M_PI) << "\n";
         }
@@ -911,7 +911,7 @@ int test_nbody_spin_orbit(int mode)
 
     }
     
-    if (mode == 1)
+    if (mode == 2)
     {
         myfile.close();    
     }
@@ -1166,7 +1166,7 @@ int test_flybys()
 {
     printf("test.cpp -- test_flybys\n");
     
-    int flag=0;
+    int flag = 0;
     flag += test_flybys_integrals();
     /* Note: test_flybys_perturber_sampling is carried out within Python (test_mse.py) */
     flag += test_flybys_compute_effects_of_flyby_on_system();
@@ -1354,15 +1354,17 @@ int test_flybys_compute_effects_of_flyby_on_system()
  * Stellar evolution *
 **********************/
 
-int test_stellar_evolution()
+int test_stellar_evolution(int mode)
 {
     printf("test.cpp -- test_stellar_evolution\n");
     
-    int flag;
+    int flag = 0;
     flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
     flag += test_remove_massless_remnants_from_system();
+    flag += test_NS_models(mode);
+    flag += test_determine_sse_compact_object_radius(mode);
     
     if (flag == 0)
     {
@@ -1460,6 +1462,8 @@ int test_sse()
 
     int flag = 0;
     
+    int NS_model_old = NS_model;
+    NS_model = 0; /* With other NS models, final spins of NSs will not be consistent with vanilla SSE */
     
     double z= 0.02;
     int N=4;
@@ -1480,7 +1484,7 @@ int test_sse()
     
     for (int i=0; i<N; i++)
     {
-        flag = test_sse_specific_model(masses[i],z,&kw_final,&m_init_final,&m_final,&R_final,&ospin_final,&L_final,&m_core_final,&m_env_final,&epoch_final);
+        test_sse_specific_model(masses[i],z,&kw_final,&m_init_final,&m_final,&R_final,&ospin_final,&L_final,&m_core_final,&m_env_final,&epoch_final);
         if (1==0)
         {
             printf("==========================\n");
@@ -1541,6 +1545,7 @@ int test_sse()
         }
     }
     
+    NS_model = NS_model_old;
     return flag;
 }
 
@@ -1578,7 +1583,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
         }
         else
         {
-            update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
+            update_stellar_evolution_quantities_directly(&particlesMap,t,t-t_old);
         }
 
         t_old = t;
@@ -1634,7 +1639,7 @@ int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
         }
         else
         {
-            update_stellar_evolution_quantities_directly(&particlesMap,t-t_old);
+            update_stellar_evolution_quantities_directly(&particlesMap,t,t-t_old);
         }
 
         t_old = t;
@@ -1696,6 +1701,116 @@ int test_remove_massless_remnants_from_system()
     return 0;
 }
 
+int test_NS_models(int mode)
+{
+
+    printf("test.cpp -- test_NS_models\n");
+
+    int NS_model_old = NS_model;
+    NS_model = 1;
+
+    ParticlesMap particlesMap;
+    Particle *star = new Particle(0, false);
+    particlesMap[0] = star;
+    double m = 15.0;
+    
+    star->object_type = 1;
+    star->mass = m;
+    star->sse_initial_mass = m;
+    star->stellar_type = 13;
+    
+    //random_seed = 3;
+    initialize_code(&particlesMap);
+    //particlesMap[0]->magnetic_field_strength_gauss = 1.0e10;
+    double P_s0 = compute_spin_period_from_spin_angular_frequency(norm3(particlesMap[0]->spin_vec)) * yr_to_s;
+    double B_G0 = particlesMap[0]->magnetic_field_strength_gauss;
+    //printf("P_s0 %g B_G0 %g\n",P_s0,B_G0);
+    
+    double t_old,t;
+    t_old = t = 0.0;
+    double dt = 1.0e8;
+    
+    double tend = 5e9;
+
+    std::ofstream myfile;
+    if (mode == 2)
+    {
+        myfile.open ("test_NS_models.txt");
+    }
+
+    int integration_flag = 0;
+
+    double output_time;
+    double hamiltonian;
+    int state,CVODE_flag,CVODE_error_code;
+    
+    while (t < tend)
+    {
+        evolve(&particlesMap,t,t+dt,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+        double P_s = compute_spin_period_from_spin_angular_frequency(norm3(particlesMap[0]->spin_vec)) * yr_to_s;
+        double B_G = particlesMap[0]->magnetic_field_strength_gauss;
+
+        t = output_time;
+
+        if (mode == 2)
+        {
+            myfile << t << "," << P_s << "," << B_G << "," << P_s0 << "," << B_G0 << "\n";
+        }
+
+    }
+
+    if (mode == 2)
+    {
+        myfile.close();    
+    }
+
+    NS_model = NS_model_old;
+    
+    return 0;
+}
+
+int test_determine_sse_compact_object_radius(int mode)
+{
+    printf("test.cpp -- test_determine_sse_compact_object_radius\n");
+    int flag = 0;
+    
+    std::ofstream myfile;
+    if (mode == 2)
+    {
+        myfile.open ("test_determine_sse_compact_object_radius.txt");
+    }
+    
+    double m = 0.01;
+    double dm = 0.001;
+    double r;
+    
+    while (m < chandrasekhar_mass)
+    {
+        r = determine_sse_compact_object_radius_RSun(10,m);
+        
+        if (mode == 2)
+        {
+            myfile << m << "," << r << "\n";
+        }
+        
+        m += dm;
+    }
+
+    if (mode == 2)
+    {
+        myfile.close();    
+    }
+
+    r = determine_sse_compact_object_radius_RSun(14,m);
+    double r_an = (1.0/CONST_R_SUN) * 2.0*CONST_G*m/(CONST_C_LIGHT_P2);
+    if ( !equal_number(r,r_an,1.0e-2) )
+    {
+        printf("test.cpp -- error in test_determine_sse_compact_object_radius! %g %g\n",r,r_an);
+        flag += 1;
+    }
+
+    return flag;
+}
     
 /*********************
  * Binary evolution *
@@ -1710,6 +1825,7 @@ int test_binary_evolution()
     flag += test_compute_Eddington_accretion_rate();
     flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
     flag += test_wind_accretion();
+    flag += test_mass_accretion_events_with_degenerate_objects();
     
     if (flag == 0)
     {
@@ -1905,6 +2021,295 @@ int test_wind_accretion()
 
     return flag;
 }
+
+int test_mass_accretion_events_with_degenerate_objects()
+{
+    printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects\n");
+
+    int flag = 0;
+
+    //verbose_flag = 1;
+
+    /* CO WD exceeding M_Ch */
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double m1 = 20.0;
+    double m2 = 6.0;
+    double a = 1.0;
+    double e = 0.95;
+    
+    double masses[2] = {m1,m2};
+    int stellar_types[2] = {4,11};
+    int object_types[2] = {1,1};
+    double smas[1] = {a};
+    double es[1] = {e};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
+
+    initialize_code(&particlesMap);
+    
+    int donor_index = 0;
+    int accretor_index = 1;
+    int parent_index = 2;
+        
+    Particle *star1 = particlesMap[donor_index];
+    Particle *star2 = particlesMap[accretor_index];
+    Particle *orbit = particlesMap[parent_index];
+
+    int integration_flag = 0;
+    double t_old = 0.0;
+    double t = 1.0e1;
+    double dt_binary_evolution;
+
+    star2->mass = 1.4;
+
+    star2->mass_dot_RLOF = 0.1;
+    handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    double start_time = 0.0;
+    double end_time = 1.0e1;
+    double output_time,hamiltonian;
+    int state,CVODE_flag,CVODE_error_code;
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+    if (particlesMap.size() != 1)
+    {
+        printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after SNe \n",particlesMap.size());
+        flag = 1;
+    }
+    
+    reset_interface();
+
+    /* ONe WD electron capture SNe */
+    int ECSNe_model_old = ECSNe_model;
+    int NS_model_old = NS_model;
+    ECSNe_model = 1;
+    NS_model = 1;
+    stellar_types[1] = 12;
+    masses[1] = 7.0;
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
+    
+    initialize_code(&particlesMap);
+
+    integration_flag = 0;
+    t_old = 0.0;
+    t = 1.0e1;
+
+    star1 = particlesMap[donor_index];
+    star2 = particlesMap[accretor_index];
+    orbit = particlesMap[parent_index];
+    star2->mass = 1.4;
+    star2->mass_dot_RLOF = 0.1;
+
+    handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    if (particlesMap.size() != 3 or star2->stellar_type != 13) /* Check that NS was formed */
+    {
+        printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after ECSN or incorrect stellar type (%d) \n",particlesMap.size(),star2->stellar_type);
+        flag = 1;
+    }
+
+    reset_interface();
+
+    ECSNe_model = ECSNe_model_old;
+    NS_model = NS_model_old;
+
+    
+    /* Multiple events in a system (2+2) -- skip by default; uncomment the next line to include */
+    return flag;
+    
+    /* CO WD M>M_Ch */
+    int N_bodies2 = 4;
+    double masses2[4] = {1.0,6.0,1.5,6.1}; // CO WDs
+    int stellar_types2[4] = {1,11,1,11}; // CO WDs
+    
+    int object_types2[4] = {1,1,1,1};
+    double smas2[3] = {10.0,20.0,10000.0};
+    double es2[3] = {0.01,0.01,0.01};
+    double TAs2[3] = {0.01,0.01,0.01};
+    double INCLs2[3] = {0.01,0.01,0.01};
+    double APs2[3] = {0.01,0.01,0.01};
+    double LANs2[3] = {0.01,0.01,0.01};
+    
+    create_2p2_quadruple_system(particlesMap,masses2,stellar_types2,object_types2,smas2,es2,TAs2,INCLs2,APs2,LANs2);
+    
+    initialize_code(&particlesMap);
+
+    integration_flag = 0;
+    t_old = 0.0;
+    t = 1.0e1;
+
+    star1 = particlesMap[0];
+    star2 = particlesMap[1];
+    Particle *star3 = particlesMap[2];
+    Particle *star4 = particlesMap[3];
+
+    star2->mass = 1.4;
+    star2->mass_dot_RLOF = 0.1;
+    star4->mass = 1.4;
+    star4->mass_dot_RLOF = 0.1;
+
+    handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    if (particlesMap.size() != 5) /* Check that two WDs were destroyed */
+    {
+        printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after two SNe\n",particlesMap.size());
+        flag = 1;
+    }
+
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+    reset_interface();
+    
+
+    /* ONeWD ECSN */
+    masses2[1] = 7.0;
+    masses2[3] = 7.1;
+    stellar_types2[1] = 12;
+    stellar_types2[3] = 12;
+
+    create_2p2_quadruple_system(particlesMap,masses2,stellar_types2,object_types2,smas2,es2,TAs2,INCLs2,APs2,LANs2);
+    
+    ECSNe_model = 1;
+    NS_model = 1;
+
+    initialize_code(&particlesMap);
+
+    integration_flag = 0;
+    t_old = 0.0;
+    t = 1.0e1;
+
+    star1 = particlesMap[0];
+    star2 = particlesMap[1];
+    star3 = particlesMap[2];
+    star4 = particlesMap[3];
+
+    star2->mass = 1.4;
+    star2->mass_dot_RLOF = 0.1;
+    star4->mass = 1.4;
+    star4->mass_dot_RLOF = 0.1;
+
+    handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    if (particlesMap.size() != 7 or star2->stellar_type != 13 or star4->stellar_type != 13) /* Check that two NSs were formed */
+    {
+        printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after two ECSN or incorrect stellar types (%d; %d) \n",particlesMap.size(),star2->stellar_type,star4->stellar_type);
+        flag = 1;
+    }
+
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+    reset_interface();
+
+
+    ECSNe_model = ECSNe_model_old;
+    NS_model = NS_model_old;
+
+    return flag;
+}
+
+
+
+int test_mass_transfer_special_cases_old()
+{
+    printf("test.cpp -- test_mass_transfer_special_cases\n");
+
+    int flag = 0;
+
+    /* CO WD exceeding M_Ch */
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double m1 = 20.0;
+    double m2 = 6.0;
+    double a = 1.0;
+    double e = 0.95;
+    
+    double masses[2] = {m1,m2};
+    int stellar_types[2] = {4,11};
+    int object_types[2] = {1,1};
+    double smas[1] = {a};
+    double es[1] = {e};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
+
+    initialize_code(&particlesMap);
+    
+    int donor_index = 0;
+    int accretor_index = 1;
+    int parent_index = 2;
+        
+    Particle *star1 = particlesMap[donor_index];
+    Particle *star2 = particlesMap[accretor_index];
+    Particle *orbit = particlesMap[parent_index];
+
+    int integration_flag = 0;
+    double t_old = 0.0;
+    double t = 1.0e1;
+    double dt_binary_evolution;
+
+    star2->mass = 1.4;
+    //verbose_flag = 0;
+    binary_stable_mass_transfer_evolution(&particlesMap, parent_index, donor_index, accretor_index, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    double start_time = 0.0;
+    double end_time = 1.0e1;
+    double output_time,hamiltonian;
+    int state,CVODE_flag,CVODE_error_code;
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+    if (particlesMap.size() != 1)
+    {
+        printf("test.cpp -- test_mass_transfer_special_cases -- error: incorrect number (%d) of particles after SNe \n",particlesMap.size());
+        flag = 1;
+    }
+    
+    reset_interface();
+    
+    /* ONe WD electron capture SNe */
+    int ECSNe_model_old = ECSNe_model;
+    int NS_model_old = NS_model;
+    ECSNe_model = 1;
+    NS_model = 1;
+    stellar_types[1] = 12;
+    masses[1] = 7.0;
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
+    
+    initialize_code(&particlesMap);
+
+    integration_flag = 0;
+    t_old = 0.0;
+    t = 1.0e1;
+
+    star1 = particlesMap[donor_index];
+    star2 = particlesMap[accretor_index];
+    orbit = particlesMap[parent_index];
+    star2->mass = 1.4;
+    //verbose_flag = 0;
+
+    binary_stable_mass_transfer_evolution(&particlesMap, parent_index, donor_index, accretor_index, t_old, t, &integration_flag, &dt_binary_evolution);
+    
+    if (particlesMap.size() != 3 or star2->stellar_type != 13) /* Check that NS was formed */
+    {
+        printf("test.cpp -- test_mass_transfer_special_cases -- error: incorrect number (%d) of particles after ECSN or incorrect stellar type (%d) \n",particlesMap.size(),star2->stellar_type);
+        flag = 1;
+    }
+
+    ECSNe_model = ECSNe_model_old;
+    NS_model = NS_model_old;
+
+    return flag;
+}
+
+
+
 
 int test_collisions()
 {

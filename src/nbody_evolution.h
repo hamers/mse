@@ -11,7 +11,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
 
 double determine_nbody_timestep(ParticlesMap *particlesMap, int integration_flag, double P_orb_min, double P_orb_max);
 
-void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double dt);
+void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, double t, double dt);
 
 struct RegularizedRegion *create_mstar_instance_of_system(ParticlesMap *particlesMap, int integration_flag);
 

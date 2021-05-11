@@ -14,7 +14,7 @@ int initialize_code(ParticlesMap *particlesMap)
         print_system(particlesMap,0);
     }
     #endif
-    
+
     update_structure(particlesMap, 0);
 
     random_number_generator.seed(random_seed);

@@ -294,7 +294,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         return 0;
     }
 
-    if (star->stellar_type == SSE_BH) /* No tides for BHs */
+    if (star->stellar_type == 14) /* No tides for BHs */
     {
         return 0;
     }
@@ -339,7 +339,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double I; // moment of intertia
     if (star->object_type == 1) // star 
     {
-        I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
+        I = compute_moment_of_inertia(star->stellar_type, M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
         k_AM = compute_apsidal_motion_constant(star);
     }
     else
@@ -639,7 +639,7 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
     double I;
     if (star->object_type == 1) // star 
     {
-        I = compute_moment_of_inertia(M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
+        I = compute_moment_of_inertia(star->stellar_type, M, star->core_mass, R, star->core_radius, star->sse_k2, star->sse_k3);
         k_AM = compute_apsidal_motion_constant(star);
     }
     else

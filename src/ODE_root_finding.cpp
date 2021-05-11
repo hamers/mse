@@ -246,7 +246,7 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                         #ifdef VERBOSE
                         if (verbose_flag > 0)
                         {
-                            printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing index %d a %g cross-section %g root function%g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
+                            printf("root_finding.cpp -- check_for_roots -- check_for_physical_collision_or_orbit_crossing index %d a %g cross-section %g root function %g\n",P_p->index,P_p->a,cross_section, root_functions[i_root]);
                         }
                         #endif
 

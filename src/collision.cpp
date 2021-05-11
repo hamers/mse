@@ -159,6 +159,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     Particle *child1 = (*particlesMap)[child1_index];
     Particle *child2 = (*particlesMap)[child2_index];
     
+   
     /* Check for collisions that are NOT of the star-star type */
     if (child1->object_type == 1 and child2->object_type == 2)
     {
@@ -537,6 +538,40 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         child1->mass_dot_wind_accretion = 0.0;
         child1->radius_dot = 0.0;
         child1->ospin_dot = 0.0;
+        
+        if (NS_model == 1)
+        {
+            if (kw == 13)
+            {
+                if (kw1 < 13 and kw2 < 13) /* A NS was formed */
+                {
+                    double ospin;
+                    compute_NS_formation_properties_Ye19_model(false, &ospin, &child1->magnetic_field_strength_gauss);
+                    rescale_vector(child1->spin_vec, ospin/norm3(child1->spin_vec));
+                    
+                    child1->time_of_NS_formation = t;
+                    child1->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                    child1->initial_magnetic_field_strength_gauss = child1->magnetic_field_strength_gauss;
+                }
+                
+                /* Check for existing MSPs */
+                if ((kw1 == 13 and kw2 < 13) or (kw2 == 13 and kw1 < 13))
+                {
+                    if ((kw1 == 13 and (determine_if_NS_is_MSP(spin_vec_1_norm,child1->magnetic_field_strength_gauss) == true)) or (kw2 == 13 and (determine_if_NS_is_MSP(spin_vec_2_norm,child2->magnetic_field_strength_gauss) == true)))
+                    {
+                        /* This block is entered if either of the original objects was a MSP, and the new object is also a NS */
+                        double ospin;
+                        compute_NS_formation_properties_Ye19_model(true, &ospin, &child1->magnetic_field_strength_gauss);
+                        rescale_vector(child1->spin_vec,ospin/norm3(child1->spin_vec));
+
+                        child1->time_of_NS_formation = t;
+                        child1->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        child1->initial_magnetic_field_strength_gauss = child1->magnetic_field_strength_gauss;
+                    }
+                }
+            }
+        }
+        
     }
     else
     {

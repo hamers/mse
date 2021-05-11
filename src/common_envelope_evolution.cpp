@@ -153,7 +153,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double MENVD1 = MENV1 / (M1 - MC1);
     double RZAMS1 = rzamsf_(&M01);
     double LAMB1 = celamf_(&KW1,&M01,&L1,&R1,&RZAMS1,&MENVD1,&fac);
-
+    double spin_vec_1_norm = norm3(star1->spin_vec);
+    
     /* Get current state of star 2 (secondary) */
     double TM2,TN2;
     double *GB2,*TSCLS2,*LUMS2;
@@ -181,7 +182,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double MENVD2 = MENV2 / (M2 - MC2);
     double RZAMS2 = rzamsf_(&M02);
     double LAMB2 = celamf_(&KW2,&M02,&L2,&R2,&RZAMS2,&MENVD2,&fac);
-
+    double spin_vec_2_norm = norm3(star2->spin_vec);
 
     /*
     * Calculate the binding energy of the primary star's envelope (multiplied by lambda).
@@ -242,6 +243,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     star2->apply_kick = false;
     star2->instantaneous_perturbation_delta_mass = 0.0;
+
+    bool skip_final_age_and_mass_determination = false;
 
     if(KW2 <= 1 or KW2 == 7)
     {
@@ -304,6 +307,20 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 {
                     star1->apply_kick = true;
                 }
+                
+                if (NS_model == 1)
+                {
+                    if (KW1 == 13)
+                    {
+                        double ospin;
+                        compute_NS_formation_properties_Ye19_model(false, &ospin, &star1->magnetic_field_strength_gauss);
+                        rescale_vector(star1->spin_vec, ospin/norm3(star1->spin_vec));
+                        
+                        star1->time_of_NS_formation = t;
+                        star1->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        star1->initial_magnetic_field_strength_gauss = star1->magnetic_field_strength_gauss;
+                    }
+                }
             }
          }
     }
@@ -346,16 +363,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             /* If the secondary was a neutron star or black hole the outcome
             * is an unstable Thorne-Zytkow object that leaves only the core. */
 
-               MC1 = MC2;
-               M1 = MC1;
-               MC2 = 0.0;
-               M2 = 0.0;
-               KW1 = KW2;
-               KW2 = 15;
-               AJ1 = 0.0;
-            //* The envelope mass is not required in this case.
-            //*
-               goto label30;
+                MC1 = MC2;
+                M1 = MC1;
+                MC2 = 0.0;
+                M2 = 0.0;
+                KW1 = KW2;
+                KW2 = 15;
+                AJ1 = 0.0;
+
+                R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
+                skip_final_age_and_mass_determination = true;
+               //goto label30;
             }
                 
             KW = determine_merger_type(KW1,KW2);
@@ -396,7 +414,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                         MC2 = 0.0;
                         M2 = 0.0;
                         KW2 = 15;
-                        goto label30;
+                        
+                        R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
+                        skip_final_age_and_mass_determination = true;
+                        //goto label30;
                     }
                 }
             }
@@ -419,6 +440,20 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 {
                     star1->apply_kick = true;
                 }
+                
+                if (NS_model == 1)
+                {
+                    if (KW1 == 13)
+                    {
+                        double ospin;
+                        compute_NS_formation_properties_Ye19_model(false, &ospin, &star1->magnetic_field_strength_gauss);
+                        rescale_vector(star1->spin_vec, ospin/norm3(star1->spin_vec));
+                        
+                        star1->time_of_NS_formation = t;
+                        star1->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        star1->initial_magnetic_field_strength_gauss = star1->magnetic_field_strength_gauss;
+                    }
+                }
             }
             
             MF = M2;
@@ -433,6 +468,21 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 {
                     star2->apply_kick = true;
                 }
+
+                if (NS_model == 1)
+                {
+                    if (KW2 == 13)
+                    {
+                        double ospin;
+                        compute_NS_formation_properties_Ye19_model(false, &ospin, &star2->magnetic_field_strength_gauss);
+                        rescale_vector(star2->spin_vec, ospin/norm3(star2->spin_vec));
+                        
+                        star2->time_of_NS_formation = t;
+                        star2->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        star2->initial_magnetic_field_strength_gauss = star2->magnetic_field_strength_gauss;
+                    }
+                }
+
             }
         }
     } // back at main level
@@ -443,7 +493,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     /* If making a single helium burning star, calculate the fractional age 
      * depending on the amount of helium that has burnt. */
-    if (COEL == true)
+    if (COEL == true and skip_final_age_and_mass_determination == false)
     {
         MC22 = MC2;
         if(KW == 4 or KW == 7)
@@ -498,95 +548,98 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         TB = TWOPI * (SEPL * CONST_R_SUN) * sqrt( SEPL * CONST_R_SUN / (CONST_G * (MC1 + MC2) ) );
         OORB = TWOPI/TB;
 
-        /* Set up Newton-Raphson iteration */
-        XX = 1.0 + ZPARS2[6];
+        if (skip_final_age_and_mass_determination == false)
+        {
+            /* Set up Newton-Raphson iteration */
+            XX = 1.0 + ZPARS2[6];
 
-        if(EBINDF <= 0.0)
-        {
-           MF = MC3;
-           iterate = false;
-        }
-        else
-        {
-           CONST = pow(M1 + M2, XX) * (M1 - MC1 + M2 - MC22) * (EBINDF/EBINDI);
-        }
-    
-        if (iterate == true)
-        {
-            /* Initial Guess. */
-            MF = CV_max( MC1 + MC22, (M1 + M2) * pow(EBINDF/EBINDI, 1.0/XX) );
-
-            /* Start iteration */
-            while(true)
+            if(EBINDF <= 0.0)
             {
-                DELY = pow(MF, XX) * (MF - MC1 - MC22) - CONST;
-                
-    //            if (fabs( pow(DELY/MF, 1.D0 + XX) <= 1.0e-2)) /* Note ASH: this case is commented out in BSE */
-    //            {
-    //                break;
-    //            }
-                if (fabs(DELY/MF) <= 1.0e-3)
+               MF = MC3;
+               iterate = false;
+            }
+            else
+            {
+               CONST = pow(M1 + M2, XX) * (M1 - MC1 + M2 - MC22) * (EBINDF/EBINDI);
+            }
+        
+            if (iterate == true)
+            {
+                /* Initial Guess. */
+                MF = CV_max( MC1 + MC22, (M1 + M2) * pow(EBINDF/EBINDI, 1.0/XX) );
+
+                /* Start iteration */
+                while(true)
                 {
-                    break;
+                    DELY = pow(MF, XX) * (MF - MC1 - MC22) - CONST;
+                    
+        //            if (fabs( pow(DELY/MF, 1.D0 + XX) <= 1.0e-2)) /* Note ASH: this case is commented out in BSE */
+        //            {
+        //                break;
+        //            }
+                    if (fabs(DELY/MF) <= 1.0e-3)
+                    {
+                        break;
+                    }
+
+                    DERI = pow(MF, ZPARS2[6]) * ( (1.0 + XX) * MF - XX * (MC1 + MC22) );
+                    DELMF = DELY/DERI;
+                    MF = MF - DELMF;
                 }
-
-                DERI = pow(MF, ZPARS2[6]) * ( (1.0 + XX) * MF - XX * (MC1 + MC22) );
-                DELMF = DELY/DERI;
-                MF = MF - DELMF;
             }
-        }
-        
-        /* Set the masses and separation. */
-        if (MC22 == 0.0)
-        {
-            MF = CV_max(MF, MC1 + M2);
-        }
-        M2 = 0.0;
-        M1 = MF;
-        KW2 = 15;
-
-        /* Combine the core masses. */
-
-        if (KW == 2)
-        {
-            star_(&KW,&M1,&M1,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2);
-            if(GB[8] >= MC1)
+            
+            /* Set the masses and separation. */
+            if (MC22 == 0.0)
             {
-               M01 = M1;
-               AJ1 = TM2 + (TSCLS2[0] - TM2) * (AJ1 - TM1) / (TSCLS1[0] - TM1);
-               star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+                MF = CV_max(MF, MC1 + M2);
             }
-        }
-        else if (KW == 7)
-        {
-            M01 = M1;
-            star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
-            AJ1 = TM1 * (FAGE1 * MC1 + FAGE2 * MC22) / (MC1 + MC22);
-        }
-        else if (KW == 4 or MC2 > 0.0 or KW != KW1)
-        {
-            if (KW == 4)
-            {
-                AJ1 = (FAGE1 * MC1 + FAGE2 * MC22) / (MC1 + MC22); /* Note ASH: this is actually an age factor (dimensionless); AJ1 will be changed below in gntage_ */
-            }
-            MC1 = MC1 + MC2;
-            MC2 = 0.0;
+            M2 = 0.0;
+            M1 = MF;
+            KW2 = 15;
 
-            /* Obtain a new age and initial mass for the giant. */
-            gntage_(&MC1,&M1,&KW,ZPARS2,&M01,&AJ1);
-            star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+            /* Combine the core masses. */
+
+            if (KW == 2)
+            {
+                star_(&KW,&M1,&M1,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2);
+                if(GB[8] >= MC1)
+                {
+                   M01 = M1;
+                   AJ1 = TM2 + (TSCLS2[0] - TM2) * (AJ1 - TM1) / (TSCLS1[0] - TM1);
+                   star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+                }
+            }
+            else if (KW == 7)
+            {
+                M01 = M1;
+                star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+                AJ1 = TM1 * (FAGE1 * MC1 + FAGE2 * MC22) / (MC1 + MC22);
+            }
+            else if (KW == 4 or MC2 > 0.0 or KW != KW1)
+            {
+                if (KW == 4)
+                {
+                    AJ1 = (FAGE1 * MC1 + FAGE2 * MC22) / (MC1 + MC22); /* Note ASH: this is actually an age factor (dimensionless); AJ1 will be changed below in gntage_ */
+                }
+                MC1 = MC1 + MC2;
+                MC2 = 0.0;
+
+                /* Obtain a new age and initial mass for the giant. */
+                gntage_(&MC1,&M1,&KW,ZPARS2,&M01,&AJ1);
+                star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+            }
+            else
+            {
+                star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+            }
+            
+            //printf("HRDIAG0 M01 %g M1 %g AJ1 %g KW %d TN %g TM1 %g\n",M01,M1,AJ1,KW1,TN,TM1);
+            hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
+                &R1,&L1,&KW,&MC1,&RC1,&MENV1,&RENV1,&K21);
+            //printf("HRDIAG1 M01 %g M1 %g AJ1 %g KW %d R1 %g L1 %g\n",M01,M1,AJ1,KW1,R1,L1);
+            KW1 = KW;
+            ECC = 0.0;
         }
-        else
-        {
-            star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
-        }
-        
-        //printf("HRDIAG0 M01 %g M1 %g AJ1 %g KW %d TN %g TM1 %g\n",M01,M1,AJ1,KW1,TN,TM1);
-        hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
-            &R1,&L1,&KW,&MC1,&RC1,&MENV1,&RENV1,&K21);
-        //printf("HRDIAG1 M01 %g M1 %g AJ1 %g KW %d R1 %g L1 %g\n",M01,M1,AJ1,KW1,R1,L1);
-        KW1 = KW;
-        ECC = 0.0;
     }
     else if (COEL == false) /* No coalescence */
     {
@@ -614,7 +667,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     /* Handle orbital changes / merge binaries in case of coalescence */
     
-    label30:
+    //label30:
     {
 
     *integration_flag = 1;
@@ -657,6 +710,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             {
                 update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
             }
+            else
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+            }
             #endif
 
             /* Temporarily set some properties for the purposes of kick velocity sampling */
@@ -677,6 +734,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             if (KW2 >= 10 and KW2 <= 12 and star2->include_WD_kicks == true)
             {
                 update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+            }
+            else
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             }
             #endif
 
@@ -830,6 +891,10 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             {
                 update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
             }
+            else
+            {
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+            }
             #endif
             
             /* Temporarily set some properties for the purposes of kick velocity sampling */
@@ -896,6 +961,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 star1->spin_vec[i] = Omega * h_vec_unit[i];
             }
         }
+        //printf("COEL %g Omega %g %d OORB %g Omega_crit %g\n",norm3(star1->spin_vec),Omega,binary_evolution_CE_spin_flag,OORB,Omega_crit);
         
         /* Reset some parameters */
         star1->RLOF_flag = 0;
@@ -905,7 +971,37 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         star1->radius_dot = 0.0;
         star1->ospin_dot = 0.0;
         star1->instantaneous_perturbation_delta_mass = 0.0;
-           
+
+    }
+
+    /* Special treatment for NSs */
+    if (NS_model == 1)
+    {
+        if (COEL == true)
+        {
+            if (KW1 == 13)
+            {
+                if (KW2_old == 13 and KW1_old < 13) /* star2 becomes star1; copy B field */
+                {
+                    star1->magnetic_field_strength_gauss = star2->magnetic_field_strength_gauss;
+                }
+
+                if ((KW1_old == 13 and KW2_old < 13) or (KW2_old == 13 and KW1_old < 13))
+                {
+                    if ((KW1_old == 13 and (determine_if_NS_is_MSP(spin_vec_1_norm,star1->magnetic_field_strength_gauss) == true)) or (KW2_old == 13 and (determine_if_NS_is_MSP(spin_vec_2_norm,star2->magnetic_field_strength_gauss) == true)))
+                    {
+                        /* This block is entered if either of the original objects was a MSP, and the new object is also a NS */
+                        double ospin;
+                        compute_NS_formation_properties_Ye19_model(true, &ospin, &star1->magnetic_field_strength_gauss);
+                        rescale_vector(star1->spin_vec,ospin/norm3(star1->spin_vec));
+
+                        star1->time_of_NS_formation = t;
+                        star1->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                        star1->initial_magnetic_field_strength_gauss = star1->magnetic_field_strength_gauss;
+                    }
+                }
+            }
+        }
     }
 
     } // end of label30
@@ -1123,6 +1219,21 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         log_info.index1 = star1->index;
         update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
         #endif
+        
+        if (NS_model == 1)
+        {
+            if (kw3_f != kw3 and kw3_f == 13)
+            {
+                double ospin;
+                compute_NS_formation_properties_Ye19_model(false, &ospin, &star3->magnetic_field_strength_gauss);
+                rescale_vector(star3->spin_vec, ospin/norm3(star3->spin_vec));
+                
+                star3->time_of_NS_formation = t;
+                star3->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                star3->initial_magnetic_field_strength_gauss = star3->magnetic_field_strength_gauss;
+            }
+        }
+
     }
 
     /* Update the tertiary star. 

@@ -125,7 +125,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     /* Effect on spins. */
     double Omega_donor = donor->spin_vec_norm;
     double J_spin_donor_dot = m_donor*R_donor*R_donor*Omega_donor;
-    double Omega_donor_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_donor, m_donor, m_donor_dot, donor->core_mass, R_donor, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    double Omega_donor_dot = compute_Omega_dot_from_J_dot_mass_transfer(donor->stellar_type, J_spin_donor_dot, Omega_donor, m_donor, m_donor_dot, donor->core_mass, R_donor, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
     
     /* Assume the spins in the inner binary are unaffected. */
 
@@ -174,9 +174,9 @@ double compute_a_dot_circular_non_conservative_mass_transfer(double a, double m_
     return -2.0*a*(m_donor_dot/m_donor) * ( 1.0 - beta*(m_donor/m_accretor) - (1.0 - beta)*(gamma + c_1div2)*m_donor/(m_donor+m_accretor) );
 }
 
-double compute_Omega_dot_from_J_dot_mass_transfer(double J_spin_dot, double Omega, double mass, double mass_dot, double core_mass, double radius, double radius_dot, double core_radius, double sse_k2, double sse_k3)
+double compute_Omega_dot_from_J_dot_mass_transfer(int stellar_type, double J_spin_dot, double Omega, double mass, double mass_dot, double core_mass, double radius, double radius_dot, double core_radius, double sse_k2, double sse_k3)
 {
-    double I = compute_moment_of_inertia(mass, core_mass, radius, core_radius, sse_k2, sse_k3);
+    double I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3);
     double I_dot = sse_k2*mass_dot*radius*radius + 2.0*sse_k2*(mass - core_mass)*radius*radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
     double Omega_dot = (J_spin_dot - I_dot*Omega)/I;
     return Omega_dot;
@@ -382,7 +382,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     
     /* Compute spin changes due to RLOF */
     double J_spin_donor_dot = M_d_dot_av*R_d_p2*Omega_d;
-    double Omega_d_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_donor_dot, Omega_d, M_d, M_d_dot_av, donor->core_mass, R_d, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    double Omega_d_dot = compute_Omega_dot_from_J_dot_mass_transfer(donor->stellar_type, J_spin_donor_dot, Omega_d, M_d, M_d_dot_av, donor->core_mass, R_d, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
 
     double J_spin_accretor_dot;
     if (accretor->accretion_disk_is_present == true)
@@ -396,7 +396,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         double r_disk = 1.7 * accretion_disk_r_min;
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
     }
-    double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
+    double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(accretor->stellar_type, J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
     //printf("S %g %g %g\n",norm3(donor->spin_vec),norm3(accretor->spin_vec),compute_breakup_angular_frequency(accretor->mass,accretor->radius));
     if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
     {

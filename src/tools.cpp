@@ -17,6 +17,16 @@ double compute_semimajor_axis_from_orbital_period(double M, double P)
     return pow( temp*temp* CONST_G*M, 1.0/3.0);
 }
 
+double compute_spin_angular_frequency_from_spin_period(double P)
+{
+    return TWOPI/P;
+}
+double compute_spin_period_from_spin_angular_frequency(double Omega)
+{
+    return TWOPI/Omega;
+}
+
+
 double generate_random_number_between_zero_and_unity()
 {
     std::uniform_real_distribution<> dis(0.0, 1.0);
@@ -634,40 +644,6 @@ void copy_particlesMap(ParticlesMap *source, ParticlesMap *target)
     }
 }
 
-void copy_all_body_properties(Particle *source, Particle *target)
-{
-
-    target->mass = source->mass;
-    target->sse_initial_mass = source->sse_initial_mass;
-    target->stellar_type = source->stellar_type;
-    
-    target->epoch = source->epoch;
-    target->age = source->age;
-    target->sse_main_sequence_timescale = source->sse_main_sequence_timescale;
-
-    target->radius = source->radius;
-    target->luminosity = source->luminosity;
-    
-    target->core_mass = source->core_mass;
-    target->core_radius = source->core_radius;
-    target->convective_envelope_mass = source->convective_envelope_mass;
-    target->convective_envelope_radius = source->convective_envelope_radius;
-
-    double z = source->metallicity;
-
-    double *zpars;
-    zpars = new double[20];
-    zcnsts_(&z,zpars);
-    target->zpars = zpars;
-
-    for (int i=0; i<3; i++)
-    {
-        target->spin_vec[i] = source->spin_vec[i];
-    }
-    
-    target->check_for_RLOF_at_pericentre = source->check_for_RLOF_at_pericentre;
-}
-
 void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
 {
     
@@ -727,10 +703,75 @@ void create_nested_system(ParticlesMap &particlesMap, int N_bodies, double *mass
     }
 }
 
+void create_2p2_quadruple_system(ParticlesMap &particlesMap, double *masses, int *stellar_types, int *object_types, double *smas, double *es, double *TAs, double *INCLs, double *APs, double *LANs)
+{
+    int N_bodies = 4;
+    int N_binaries = N_bodies-1;
+
+    int i;
+    int index=0;
+    for (i=0; i<N_bodies; i++)
+    {
+        
+        Particle *p = new Particle(index, false);
+        particlesMap[index] = p;
+        p->mass = masses[i];
+        p->stellar_type = stellar_types[i];
+        p->sse_initial_mass = masses[i];
+        p->object_type = object_types[i];
+        
+        index++;
+    }
+
+    int previous_binary;
+        
+    for (i=0; i<N_binaries; i++)
+    {
+        Particle *p = new Particle(index, true);
+        (particlesMap)[index] = p;
+        
+        if (i==0)
+        {
+            p->child1 = particlesMap[0]->index;
+            p->child2 = particlesMap[1]->index;
+        }
+        if (i==1)
+        {
+            p->child1 = particlesMap[2]->index;
+            p->child2 = particlesMap[3]->index;
+        }
+        if (i==2)
+        {
+            p->child1 = particlesMap[4]->index;
+            p->child2 = particlesMap[5]->index;
+        }
+       
+        index++;
+    }
+    
+    int N_root_finding,N_ODE_equations;
+    determine_binary_parents_and_levels(&particlesMap, &N_bodies, &N_binaries, &N_root_finding,&N_ODE_equations);
+    set_binary_masses_from_body_masses(&particlesMap);
+    
+    index=N_bodies;
+    for (i=0; i<N_binaries; i++)
+    {
+        Particle *p = particlesMap[index];
+        p->true_anomaly = TAs[i];
+        compute_orbital_vectors_from_orbital_elements(p->child1_mass, p->child2_mass, smas[i], es[i], \
+            INCLs[i], APs[i], LANs[i], \
+            &(p->e_vec[0]), &(p->e_vec[1]), &(p->e_vec[2]), &(p->h_vec[0]), &(p->h_vec[1]), &(p->h_vec[2]) );
+        
+        
+        index++;
+    }
+}
+
+
 void print_system(ParticlesMap *particlesMap, int integration_flag)
 {
     printf("=============================\n");
-    printf("Printing system; N=%d; integration_flag=%d size = %d\n",particlesMap->size(),integration_flag,particlesMap->size());
+    printf("Printing system; N=%d; integration_flag=%d; size = %d\n",particlesMap->size(),integration_flag,particlesMap->size());
     ParticlesMapIterator it_p;    
     if (integration_flag==0)
     {
@@ -985,6 +1026,14 @@ void remove_binaries_from_system(ParticlesMap *particlesMap)
     for (int i=0; i<binary_indices.size(); i++)
     {
         particlesMap->erase(binary_indices[i]);
+    }
+}
+
+void rescale_vector(double v[3], double factor)
+{
+    for (int i=0; i<3; i++)
+    {
+        v[i] *= factor;
     }
 }
 

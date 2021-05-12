@@ -8,6 +8,7 @@ int test_a_h_conversion();
 int test_orbital_element_conversion();
 int test_kepler_equation_solver();
 int test_orbital_vectors_cartesian_conversion();
+int test_BH_spin_conversion();
 
 int test_nbody(int mode);
 int test_nbody_two_body_stopping_conditions();

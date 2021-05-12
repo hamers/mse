@@ -187,6 +187,21 @@ double compute_spin_frequency_from_spin_parameter(double m, double chi)
     return Omega;
 }
 
+double compute_spin_frequency_dot_BHs(double m, double Omega, double J_dot, double m_dot)
+{
+    double chi = compute_spin_parameter_from_spin_frequency(m, Omega);
+    double J = chi * CONST_G * m * m / CONST_C_LIGHT;
+    double J_dot_div_J = J_dot/J;
+    double m_dot_div_m = m_dot/m;
+    
+    double chi_sq = chi*chi;
+    double sqrt_one_minus_chi_sq = sqrt(1.0 - chi_sq);
+    
+    double Omega_dot = Omega*( J_dot_div_J - 3.0*m_dot_div_m + (chi_sq/(sqrt_one_minus_chi_sq * (1.0 + sqrt_one_minus_chi_sq))) * (J_dot_div_J - 2.0*m_dot_div_m) );
+    
+    return Omega_dot;
+}
+
 double compute_1PN_timescale(double a, double M, double e)
 {
     double j_p2 = 1.0 - e*e;

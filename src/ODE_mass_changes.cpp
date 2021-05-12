@@ -170,15 +170,24 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
 
 double compute_a_dot_circular_non_conservative_mass_transfer(double a, double m_donor, double m_donor_dot, double m_accretor, double beta, double gamma)
 {
-    /* Pols, lecture notes on binary evolution, Chapter 7, eq. (7.14). */
+    /* O.R. Pols, lecture notes on binary evolution, Chapter 7, eq. (7.14). */
     return -2.0*a*(m_donor_dot/m_donor) * ( 1.0 - beta*(m_donor/m_accretor) - (1.0 - beta)*(gamma + c_1div2)*m_donor/(m_donor+m_accretor) );
 }
 
 double compute_Omega_dot_from_J_dot_mass_transfer(int stellar_type, double J_spin_dot, double Omega, double mass, double mass_dot, double core_mass, double radius, double radius_dot, double core_radius, double sse_k2, double sse_k3)
 {
-    double I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3);
-    double I_dot = sse_k2*mass_dot*radius*radius + 2.0*sse_k2*(mass - core_mass)*radius*radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
-    double Omega_dot = (J_spin_dot - I_dot*Omega)/I;
+    double I,I_dot,Omega_dot; 
+    if (stellar_type < 14) // Stars/WDs/NSs
+    {
+        I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3);
+        I_dot = compute_moment_of_inertia_dot(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3, mass_dot, radius_dot);
+        Omega_dot = (J_spin_dot - I_dot*Omega)/I;
+    }
+    else /* BHs */
+    {
+        Omega_dot = compute_spin_frequency_dot_BHs(mass, Omega, J_spin_dot, mass_dot);
+    }
+
     return Omega_dot;
 }
 

@@ -9,6 +9,7 @@ double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, dou
 void check_for_critical_rotation(ParticlesMap *particlesMap);
 void update_stellar_evolution_properties(Particle *p);
 double compute_moment_of_inertia(int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3);
+double compute_moment_of_inertia_dot(int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3, double mass_dot, double radius_dot);
 void get_core_masses_by_composition(int kw, double core_mass, double *He_core_mass, double *CO_core_mass, double *Ne_core_mass);
 
 double compute_spin_angular_momentum_from_spin_frequency(double spin_frequency, int stellar_type, int object_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3);

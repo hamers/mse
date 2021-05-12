@@ -24,6 +24,7 @@ int test_tools()
     flag += test_orbital_element_conversion();
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
+    flag += test_BH_spin_conversion();
     
     if (flag == 0)
     {
@@ -189,6 +190,32 @@ int test_kepler_equation_solver()
             flag = 1;
         }
     }
+    
+    return flag;
+}
+
+int test_BH_spin_conversion()
+{
+    printf("test.cpp -- test_BH_spin_conversion\n");
+    double m = 15.0;
+    double Omega = 2.0;
+    
+    double chi = compute_spin_parameter_from_spin_frequency(m,Omega);
+    double Omega2 = compute_spin_frequency_from_spin_parameter(m,chi);
+    
+    int flag = 0;
+    double tol = 1.0e-10;
+
+    if ( !equal_number(Omega,Omega2,tol) )
+    {
+        printf("test.cpp -- error in test_BH_spin_conversion! %g %g\n",Omega,Omega2);
+        flag = 1;
+    }
+    
+//    double m_dot = 1.0e-5;
+//    double J = chi * CONST_G * m * m / CONST_C_LIGHT;
+//    double J_dot = 1.0e-5 * J;
+//    double Omega_dot = compute_spin_frequency_dot_BHs(m,Omega,J_dot,m_dot);
     
     return flag;
 }

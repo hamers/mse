@@ -649,6 +649,25 @@ double compute_moment_of_inertia(int stellar_type, double mass, double core_mass
     }
 }
 
+double compute_moment_of_inertia_dot(int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3, double mass_dot, double radius_dot)
+{
+    if (stellar_type < 10) // stars
+    {
+        return k2*mass_dot*radius*radius + 2.0*k2*(mass - core_mass)*radius*radius_dot; /* Approximate; neglects changes in core masses and radii and k2 and k3  */
+    }
+    else if (stellar_type >= 10 and stellar_type <= 13) // WDs/NSs
+    {
+        return 0.4*radius * (mass_dot*radius + 2.0*mass*radius_dot); // moment of inertia change of solid sphere
+    }
+    else
+    {
+        printf("stellar_evolution.cpp -- compute_moment_of_inertia -- ERROR: stellar_type should not be %d\n",stellar_type);
+        error_code = 38;
+        return 0.0;
+    }
+}
+
+
 void get_core_masses_by_composition(int kw, double core_mass, double *He_core_mass, double *CO_core_mass, double *Ne_core_mass)
 {
     *He_core_mass = 0.0;

@@ -270,7 +270,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     Particle *binary = (*particlesMap)[binary_index];
     Particle *star = (*particlesMap)[star_index];
     Particle *companion = (*particlesMap)[companion_index];
-    
+
     if (star->is_binary == true)
     {
         #ifdef VERBOSE
@@ -602,6 +602,34 @@ double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index
     Particle *binary = (*particlesMap)[binary_index];
     Particle *star = (*particlesMap)[star_index];
     Particle *companion = (*particlesMap)[companion_index];
+    
+    if (star->is_binary == true)
+    {
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide -- star is actually a binary -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        }
+        #endif
+
+        return 0;
+    }
+    if (star->is_bound == false or companion->is_bound == false)
+    {
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide -- tar/companion is not bound -- not doing tides; binary_index %d star_index %d companion_index %d\n",binary_index,star_index,companion_index);
+        }
+        #endif
+
+        return 0;
+    }
+
+    if (star->stellar_type == 14) /* No tides for BHs */
+    {
+        return 0;
+    }
     
     /* orbit quantities */
     double e = binary->e;

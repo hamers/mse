@@ -8,6 +8,7 @@ double compute_EOM_spin_orbit_coupling_1PN(ParticlesMap *particlesMap, int binar
 
 double compute_spin_parameter_from_spin_frequency(double m, double Omega);
 double compute_spin_frequency_from_spin_parameter(double m, double chi);
+double compute_spin_frequency_dot_BHs(double m, double Omega, double J_dot, double m_dot);
 
 double compute_1PN_timescale(double a, double M, double e);
 }

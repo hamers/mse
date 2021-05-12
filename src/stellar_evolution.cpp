@@ -778,7 +778,7 @@ double determine_sse_compact_object_radius_RSun(int kw, double m)
     }
     else
     {
-        printf("stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun -- ERROR: this function was called with invalid kw=%g and m=%g\n",kw,m);
+        printf("stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun -- ERROR: this function was called with invalid kw=%d and m=%g\n",kw,m);
         error_code = 37;
     }
     return radius;

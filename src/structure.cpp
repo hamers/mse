@@ -21,7 +21,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
         Particle *P_p = (*it_p).second;
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("structure.cpp -- determine_binary_parents_and_levels -- determine_binary_parents_and_levels reset parent %d index %d is_binary %d C1 %d C2 %d\n",P_p->parent,P_p->index,P_p->is_binary,P_p->child1,P_p->child2);
         }
@@ -142,7 +142,7 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
                         parent = P_q->parent;
                         
                         #ifdef VERBOSE
-                        if (verbose_flag > 1)
+                        if (verbose_flag > 2)
                         {
                             printf("structure.cpp -- determine_binary_parents_and_levels -- p %d q %d %d child %d\n",P_p->index,P_q->index,P_p->level,child);
                         }
@@ -198,7 +198,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
                 Particle *P_p_child2 = (*particlesMap)[P_p->child2];
                 
                 #ifdef VERBOSE
-                if (verbose_flag > 1)
+                if (verbose_flag > 2)
                 {
                     printf("structure.cpp -- set_binary_masses_from_body_masses -- parent %d C1 %d C2 %d \n",P_p->index,P_p->child1,P_p->child2);
                 }
@@ -233,7 +233,7 @@ void set_binary_masses_from_body_masses(ParticlesMap *particlesMap)
 
 
                 #ifdef VERBOSE
-                if (verbose_flag > 1)
+                if (verbose_flag > 2)
                 {
                     printf("structure.cpp -- set_binary_masses_from_body_masses -- level %d m %g highest_level %d\n",level,P_p->mass,highest_level);
                 }

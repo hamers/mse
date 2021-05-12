@@ -944,6 +944,7 @@ void extract_final_ODE_variables(ParticlesMap *particlesMap, N_Vector &y_out)
             for (k_component=0; k_component<3; k_component++)
             {
                 p->spin_vec[k_component] = Ith(y_out,k + k_component);
+                //check_number(p->spin_vec[k_component],                  "ODE_system.cpp -- extract_final_ODE_variables","spins", true);
             }
 
             p->mass = Ith(y_out,k + 2 + 1);

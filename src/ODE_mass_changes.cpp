@@ -320,13 +320,15 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     {
         fm = epsilon;
     }
-
+    //printf("a %g e %g x %g fm %g fa %g fe %g fomega %g\n",a,e,x,fm,fa,fe,fomega);
+    
     if (donor->emt_ejection_radius_mode > 0 or accretor->emt_accretion_radius > 0.0)
     {
        
         ha = ha_function(e,x,E_0);
         he = he_function(e,x,E_0);
 
+        //printf("ha %g he %g\n",ha,he);
         finite_size_term_a = - q * beta * (accretor->emt_accretion_radius/a) * ha;
         finite_size_term_e = - q * beta * (accretor->emt_accretion_radius/a) * he;
 

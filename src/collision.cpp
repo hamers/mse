@@ -310,6 +310,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     /* He WD + He WD */
     else if (kw1 == 10 and kw2 == 10)
     {
+        #ifdef LOGGING
+        Log_info_type log_info;
+        log_info.index1 = child1->index;
+        log_info.index2 = child2->index;
+        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+        #endif
+        
         destroyed = true;
     }
     
@@ -333,6 +340,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         if (m >= chandrasekhar_mass)
         {
             destroyed = true; /* SNe Ia */
+
+            #ifdef LOGGING
+            Log_info_type log_info;
+            log_info.index1 = child1->index;
+            log_info.index2 = child2->index;
+            update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+            #endif
+           
         }
     }
     

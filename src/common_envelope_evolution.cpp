@@ -357,7 +357,17 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
         if (COEL == true)
         {
+
+            KW = determine_merger_type(KW1,KW2);
+            MC3 = MC1 + MC2;
+
+            /*
+            * Calculate the final envelope binding energy.
+            */
             
+            EORBF = CV_max(MC1 * MC2/(2.0 * SEPL), EORBI);
+            EBINDF = EBINDI - ALPHA1*(EORBF - EORBI);
+
             if(KW2 >= 13)
             {
             /* If the secondary was a neutron star or black hole the outcome
@@ -371,53 +381,66 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 KW2 = 15;
                 AJ1 = 0.0;
 
-                R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
+                if (KW1 != 15)
+                {
+                    R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
+                }
+                if (KW1 == 15) /* SNe occurred */
+                {
+                    log_info.index1 = star1->index;
+                    log_info.index2 = star2->index;
+                    update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                }
                 skip_final_age_and_mass_determination = true;
                //goto label30;
             }
                 
-            KW = determine_merger_type(KW1,KW2);
-            MC3 = MC1 + MC2;
-
-            /*
-            * Calculate the final envelope binding energy.
-            */
-            
-            EORBF = CV_max(MC1 * MC2/(2.0 * SEPL), EORBI);
-            EBINDF = EBINDI - ALPHA1*(EORBF - EORBI);
-
             /*
             * Check if we have the merging of two degenerate cores and if so
             * then see if the resulting core will survive or change form.
             */
             
-            if (KW1 == 6 and (KW2 == 6 or KW2 >= 11))
+            if (skip_final_age_and_mass_determination == false)
             {
-               dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF); /* ASH: dgcore_ only potentially changes KW (third argument) */
-            }
-
-            if(KW1 <= 3 and M01 <= ZPARS1[1])
-            {
-                if ( (KW2 >= 2 and KW2 <= 3 and M02 <= ZPARS2[1]) or KW2 == 10)
+                if (KW1 == 6 and (KW2 == 6 or KW2 >= 11))
                 {
-                    dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF);
-                    if(KW >= 10) // new star is compact object
+                   dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF); /* ASH: dgcore_ only potentially changes KW (third argument) */
+                }
+
+                if(KW1 <= 3 and M01 <= ZPARS1[1])
+                {
+                    if ( (KW2 >= 2 and KW2 <= 3 and M02 <= ZPARS2[1]) or KW2 == 10)
                     {
-                        KW1 = KW;
-                        M1 = MC3;
-                        MC1 = MC3;
-                        if (KW < 15)
+                        dgcore_(&KW1,&KW2,&KW,&MC1,&MC2,&MC3,&EBINDF);
+
+                        if(KW >= 10) // new star is compact object
                         {
-                            M01 = MC3;
+                            KW1 = KW;
+                            M1 = MC3;
+                            MC1 = MC3;
+                            if (KW < 15)
+                            {
+                                M01 = MC3;
+                            }
+                            AJ1 = 0.0;
+                            MC2 = 0.0;
+                            M2 = 0.0;
+                            KW2 = 15;
+                            
+                            if (KW1 != 15)
+                            {
+                                R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
+                            }
+                            if (KW1 == 15) /* SNe occurred */
+                            {
+                                log_info.index1 = star1->index;
+                                log_info.index2 = star2->index;
+                                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                            }
+
+                            skip_final_age_and_mass_determination = true;
+                            //goto label30;
                         }
-                        AJ1 = 0.0;
-                        MC2 = 0.0;
-                        M2 = 0.0;
-                        KW2 = 15;
-                        
-                        R1 = determine_sse_compact_object_radius_RSun(KW1,M1);
-                        skip_final_age_and_mass_determination = true;
-                        //goto label30;
                     }
                 }
             }

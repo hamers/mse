@@ -8,7 +8,7 @@
 extern "C"
 {
 #define VERBOSE
- 
+
 #ifndef __FOUND_ROOT
 #define __FOUND_ROOT
 #define FOUND_ROOT ((roots_found[i_root] == 1) || (roots_found[i_root] == -1))

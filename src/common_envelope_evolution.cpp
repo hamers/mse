@@ -815,7 +815,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             if (OORB >= Omega_crit)
             {
                 #ifdef VERBOSE
-                if (verbose_flag > 1)
+                if (verbose_flag > 0)
                 {
                     printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- Limiting spin frequency of star %d from %g to breakup rate %g\n",star1->index,OORB,Omega_crit);
                     print_system(particlesMap,*integration_flag);
@@ -883,21 +883,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         }
 
         /* Reset some parameters */
-        star1->RLOF_flag = 0;
-        star1->apply_kick = false;
-        star1->mass_dot_wind = 0.0;
-        star1->mass_dot_wind_accretion = 0.0;
-        star1->radius_dot = 0.0;
-        star1->ospin_dot = 0.0;
-        star1->instantaneous_perturbation_delta_mass = 0.0;
-
-        star2->RLOF_flag = 0;
-        star2->apply_kick = false;
-        star2->mass_dot_wind = 0.0;
-        star2->mass_dot_wind_accretion = 0.0;
-        star2->radius_dot = 0.0;
-        star2->ospin_dot = 0.0;
-        star2->instantaneous_perturbation_delta_mass = 0.0;
+        reset_ODE_mass_dot_quantities(star1);
+        reset_ODE_mass_dot_quantities(star2);
     }
     else if (COEL == true)
     {
@@ -987,14 +974,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         //printf("COEL %g Omega %g %d OORB %g Omega_crit %g\n",norm3(star1->spin_vec),Omega,binary_evolution_CE_spin_flag,OORB,Omega_crit);
         
         /* Reset some parameters */
-        star1->RLOF_flag = 0;
-        star1->apply_kick = false;
-        star1->mass_dot_wind = 0.0;
-        star1->mass_dot_wind_accretion = 0.0;
-        star1->radius_dot = 0.0;
-        star1->ospin_dot = 0.0;
-        star1->instantaneous_perturbation_delta_mass = 0.0;
-
+        reset_ODE_mass_dot_quantities(star1);
     }
 
     /* Special treatment for NSs */
@@ -1380,13 +1360,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
 
     /* Reset some simulation parameters for the tertiary star */
-    star3->RLOF_flag = 0;
-    star3->apply_kick = false;
-    star3->mass_dot_wind = 0.0;
-    star3->mass_dot_wind_accretion = 0.0;
-    star3->radius_dot = 0.0;
-    star3->ospin_dot = 0.0;
-    star3->instantaneous_perturbation_delta_mass = 0.0;
+    reset_ODE_mass_dot_quantities(star3);
 
     delete[] GB3;
     delete[] tscls3;

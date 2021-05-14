@@ -31,6 +31,7 @@ class MSE(object):
         self.__CONST_PARSEC = 206201.0
         self.__CONST_MJUP = 0.000954248
 
+        self.__system_index = 0
         self.__relative_tolerance = 1.0e-10
         self.__absolute_tolerance_eccentricity_vectors = 1.0e-8
         self.__absolute_tolerance_spin_vectors = 1.0e-3
@@ -268,7 +269,8 @@ class MSE(object):
             ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, ctypes.c_bool, \
             ctypes.c_bool, \
             ctypes.c_double, \
-            ctypes.c_int, ctypes.c_int)
+            ctypes.c_int, ctypes.c_int, \
+            ctypes.c_int)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -765,7 +767,8 @@ class MSE(object):
             self.__MSTAR_include_PN_acc_10,self.__MSTAR_include_PN_acc_20,self.__MSTAR_include_PN_acc_25,self.__MSTAR_include_PN_acc_30,self.__MSTAR_include_PN_acc_35,self.__MSTAR_include_PN_acc_SO,self.__MSTAR_include_PN_acc_SS,self.__MSTAR_include_PN_acc_Q,self.__MSTAR_include_PN_spin_SO,self.__MSTAR_include_PN_spin_SS,self.__MSTAR_include_PN_spin_Q, \
             self.__stop_after_root_found, \
             self.__wall_time_max_s, \
-            self.__NS_model, self.__ECSNe_model)
+            self.__NS_model, self.__ECSNe_model, \
+            self.__system_index)
 
     def reset(self):
         self.__init__()
@@ -1564,6 +1567,13 @@ class MSE(object):
         self.__ECSNe_model = value
         self.__set_parameters_in_code()
 
+    @property
+    def system_index(self):
+        return self.__system_index
+    @system_index.setter
+    def system_index(self, value):
+        self.__system_index = value
+        self.__set_parameters_in_code()
 
 class Particle(object):
     def __init__(self, is_binary, mass=None, mass_dot=0.0, radius=1.0e-10, radius_dot=0.0, child1=None, child2=None, a=None, e=None, TA=0.0, INCL=None, AP=None, LAN=None, \

@@ -39,5 +39,6 @@
 extern "C"
 {
 int initialize_code(ParticlesMap *particlesMap);
+void custom_segfault_handler(int s);
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag);
 }

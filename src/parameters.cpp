@@ -1,6 +1,8 @@
 #include "parameters.h"
 #include <math.h>
 
+jmp_buf jump_buf;
+
 // Constants //
 double CONST_G = 4.0*M_PI*M_PI; 
 double CONST_G_P2 = CONST_G*CONST_G;
@@ -36,6 +38,7 @@ bool check_numbers_internally = true;
 int error_code = 0;
 
 /* Description of error codes
+ * -1: segmentation fault (bad; please report immediately)
  * 0: no error 
  * 1: tools.cpp -- check_number() (NaN or INF)
  * 2: binary_evolution.cpp -- handle_wind_accretion()
@@ -76,6 +79,8 @@ int error_code = 0;
  * 37: stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun()
  * 38: stellar_evolution.cpp -- compute_moment_of_inertia()
  */
+
+int system_index = 0;
 
 double secular_integration_exclusion_safety_factor = 1.0e-5;
 double ODE_min_dt = 1.0;

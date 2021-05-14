@@ -2148,7 +2148,7 @@ int test_mass_accretion_events_with_degenerate_objects()
 
     
     /* Multiple events in a system (2+2) -- skip by default; uncomment the next line to include */
-    return flag;
+    //return flag;
     
     /* CO WD M>M_Ch */
     int N_bodies2 = 4;
@@ -2182,8 +2182,9 @@ int test_mass_accretion_events_with_degenerate_objects()
     star4->mass_dot_RLOF = 0.1;
 
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    //print_system(&particlesMap,integration_flag);
     
-    if (particlesMap.size() != 5) /* Check that two WDs were destroyed */
+    if (particlesMap.size() != 2) /* Check that two WDs were destroyed */
     {
         printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after two SNe\n",particlesMap.size());
         flag = 1;
@@ -2221,8 +2222,9 @@ int test_mass_accretion_events_with_degenerate_objects()
     star4->mass_dot_RLOF = 0.1;
 
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+    //print_system(&particlesMap,integration_flag);
     
-    if (particlesMap.size() != 7 or star2->stellar_type != 13 or star4->stellar_type != 13) /* Check that two NSs were formed */
+    if (particlesMap.size() != 4 or star2->stellar_type != 13 or star4->stellar_type != 13) /* Check that two NSs were formed */
     {
         printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after two ECSN or incorrect stellar types (%d; %d) \n",particlesMap.size(),star2->stellar_type,star4->stellar_type);
         flag = 1;

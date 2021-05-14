@@ -81,7 +81,7 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
                 printf("binary_evolution.cpp -- handle_wind_accretion -- companion->mass_dot_wind_accretion %g\n",companion->mass_dot_wind_accretion);
                 print_system(particlesMap,*integration_flag);
                 printf("p->mass %g parent->mass %g p->radius %g v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",p->mass,parent->mass,p->radius,v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
-                error_code = -2;
+                error_code = 2;
             }
         }
     }
@@ -153,9 +153,9 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     {
         *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
     }
-    
+
     update_structure(particlesMap, *integration_flag);
-    
+
     return flag;
     
 }
@@ -587,7 +587,8 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
 
     update_stellar_evolution_properties(accretor);
-    accretor->RLOF_flag = 0;
+    //accretor->RLOF_flag = 0;
+    reset_ODE_mass_dot_quantities(accretor);
     particlesMap->erase(donor_index);
     
     *integration_flag = 1;
@@ -726,7 +727,8 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     if (destroyed == false)
     {
         update_stellar_evolution_properties(accretor);
-        accretor->RLOF_flag = 0;
+        //accretor->RLOF_flag = 0;
+        reset_ODE_mass_dot_quantities(accretor);
         
         particlesMap->erase(donor_index);
     }
@@ -1314,6 +1316,10 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
 void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particlesMap, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     /* Special cases (in particular, when WDs become "too" massive) -- will potentially return before reaching the end of the current function. */
+    if (*integration_flag != 0)
+    {
+        return;
+    }
     
     double dt = t - t_old;
     
@@ -1327,7 +1333,8 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
 
     ParticlesMapIterator it_p;
     bool found_new_event = true;
-   
+    bool structure_change = false;
+    
     while (found_new_event == true)
     {
 
@@ -1341,7 +1348,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
             if (star2->is_binary == false and star2->is_bound == true and star2->object_type == 1 and kw2 >= 10 and kw2 <= 12)
             {
                 Particle *star1 = (*particlesMap)[star2->sibling];
-                Particle *parent = (*particlesMap)[star1->parent];
+                Particle *parent = (*particlesMap)[star2->parent];
                 if (star1->is_binary == false and star1->object_type == 1)
                 {
                     m1 = star1->mass;
@@ -1362,6 +1369,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                          /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
                          
                         found_new_event = true;
+                        structure_change = true;
                     
                         Delta_m1 = m1_new - m1;
                         Delta_m2 = -m2;
@@ -1397,7 +1405,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                     }
                     else if (kw1 <= 10 and kw2 == 11 and m2_new - star2->sse_initial_mass >= 0.15)
                     {
-                       
                         /* CO and ONeWDs accrete helium-rich material until the accumulated 
                         * material exceeds a mass of 0.15 when it ignites. For a COWD with 
                         * mass less than 0.95 the system will be destroyed as an ELD in a 
@@ -1406,6 +1413,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
 
                         found_new_event = true;
+                        structure_change = true;
                             
                         Delta_m1 = m1_new - m1;
                         Delta_m2 = -m2;
@@ -1448,6 +1456,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         * the stars are next updated. */
 
                         found_new_event = true;
+                        structure_change = true;
                         
                         //dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
                         Delta_m1 = m1_new - m1;
@@ -1491,6 +1500,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             /* If an ONeMg WD exceeds 1.38 MSun, assume an electron-capture SNe (ECSN) occurs. */
                         
                             found_new_event = true;
+                            structure_change = true;
 
                             Delta_m1 = m1_new - m1;
                             Delta_m2 = m2_new - m2;
@@ -1545,8 +1555,17 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
         }
         //printf("BF %d\n",found_new_event);
     }
+    
+    if (structure_change == true)
+    {
+        *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+    }
+
+    update_structure(particlesMap, *integration_flag);
+
     //printf("done\n");
     //print_system(particlesMap,1);
+    
 }
 
 void reset_ODE_mass_dot_quantities(Particle *p)

@@ -121,7 +121,8 @@ int determine_orbits_in_system_using_nbody(ParticlesMap *particlesMap)
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("nbody_evolution.cpp -- determine_orbits_in_system_using_nbody\n");
+        printf("nbody_evolution.cpp -- determine_orbits_in_system_using_nbody -- begin (setting integration_flag = 0 for print_system) \n");
+        print_system(particlesMap,1);
     }
     #endif
     int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
@@ -137,6 +138,14 @@ int determine_orbits_in_system_using_nbody(ParticlesMap *particlesMap)
     integration_flag = determine_new_integration_flag_using_nbody(R,particlesMap,&P_orb_min,&P_orb_max);
     
     free_data(R);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("nbody_evolution.cpp -- determine_orbits_in_system_using_nbody -- end\n");
+        print_system(particlesMap,integration_flag);
+    }
+    #endif
     
     return integration_flag;
 }

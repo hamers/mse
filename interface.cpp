@@ -897,10 +897,7 @@ int initialize_code_interface()
 
 int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
-    //printf("interface %g %g\n",start_time,time_step);
-    //srand(random_seed);
 
-    //printf("setting seed %d\n",random_seed);
     int result = evolve(&particlesMap, start_time, end_time, output_time, hamiltonian, state, CVODE_flag, CVODE_error_code, integration_flag);
     
     return result;
@@ -1023,7 +1020,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
     bool stop_after_root_found_, \
     double wall_time_max_s_, \
-    int NS_model_, int ECSNe_model_)
+    int NS_model_, int ECSNe_model_, \
+    int system_index_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1102,6 +1100,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     MSTAR_include_PN_spin_Q = MSTAR_include_PN_spin_Q_;
 
     stop_after_root_found = stop_after_root_found_;
+    system_index = system_index_;
      //printf("set_parm %d %d \n",flybys_reference_binary,flybys_reference_binary_);
      //printf("PARAMS %g %g %d %d %d %d %d\n",relative_tolerance,absolute_tolerance_eccentricity_vectors,include_quadrupole_order_terms,include_octupole_order_binary_pair_terms,include_octupole_order_binary_triplet_terms,include_hexadecupole_order_binary_pair_terms,include_dotriacontupole_order_binary_pair_terms);
 

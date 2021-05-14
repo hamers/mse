@@ -5,8 +5,12 @@
 #define __PARAMETERS
 #include <stdbool.h>
 #include <time.h>
+#include <signal.h>
+
+#include <setjmp.h>
 
 #define LOGGING
+extern jmp_buf jump_buf;
 
 // Constants //
 extern double CONST_G;
@@ -45,6 +49,7 @@ extern int error_code;
 extern time_t wall_time_start;
 extern double wall_time_max_s;
 
+extern int system_index;
 extern double secular_integration_exclusion_safety_factor;
 extern double ODE_min_dt;
 

@@ -39,11 +39,47 @@ int initialize_code(ParticlesMap *particlesMap)
     
     time(&wall_time_start);
 
+    signal(SIGSEGV, custom_segfault_handler); // set up custom handler for segfaults
+
     return 0;
+}
+
+void custom_segfault_handler(int s)
+{
+    switch(s)
+    {
+        case SIGSEGV:
+        error_code = -1;
+        printf("tools.cpp -- Segmentation fault signal caught! System index %d \n",system_index);
+        
+        FILE *fp;
+        fp = fopen("segfault.txt", "w+");
+        fprintf(fp,"Segmentation fault signal caught! System index %d \n",system_index);
+        fclose(fp);
+        
+        longjmp(jump_buf,1);
+        break;
+    }
 }
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
+    /* Segfault handling -- begin */
+    int setjmp_return_val = setjmp(jump_buf);
+    if (setjmp_return_val == 1) // segfault occurred somewhere in the code (error_code=-1); will return control to Python
+    {
+        return error_code;
+    }
+
+    /* Some lines to test segfault handling (should normally NEVER be enabled) */
+    //if (start_time > 1e4)
+    //{
+        //int *p = NULL;
+        //*p=0xdead; // DELIBERATE segfault
+    //}
+
+    /* Segfault handling -- end */
+    
     int N_bodies,N_binaries,N_root_finding,N_ODE_equations;
 
     #ifdef VERBOSE
@@ -262,7 +298,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         print_system(particlesMap,*integration_flag);
     }
     #endif
-    
+
+
     return error_code;
 }
 

@@ -164,7 +164,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool MSTAR_include_PN_acc_10_,bool MSTAR_include_PN_acc_20_,bool MSTAR_include_PN_acc_25_,bool MSTAR_include_PN_acc_30_,bool MSTAR_include_PN_acc_35_,bool MSTAR_include_PN_acc_SO_,bool MSTAR_include_PN_acc_SS_,bool MSTAR_include_PN_acc_Q_,bool MSTAR_include_PN_spin_SO_,bool MSTAR_include_PN_spin_SS_,bool MSTAR_include_PN_spin_Q_, \
     bool stop_after_root_found_, \
     double wall_time_max_s_, \
-    int NS_model_, int ECSNe_model);
+    int NS_model_, int ECSNe_model, \
+    int system_index_);
 
 int get_random_seed(int *value);
 int set_random_seed(int value);

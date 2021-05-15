@@ -396,6 +396,10 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                     /* New mass will be handled by handle_SNe_in_system(), but radius and spin have to be adjusted here */
                     p->radius = r*CONST_R_SUN;
+                    if (kw == 15) // SSE may return invalid spins for massless remnants; override with something arbitrary (the body will be removed later anyway in SNe.cpp -- remove_massless_remnants_from_system()
+                    {
+                        ospin = 1.0;
+                    }
                     rescale_vector(p->spin_vec, ospin/ospin_old);
                     
                     *apply_SNe_effects = true;

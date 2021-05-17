@@ -752,6 +752,7 @@ bool check_system_for_dynamical_stability(ParticlesMap *particlesMap, int *integ
                 printf("structure.cpp -- check_system_for_dynamical_stability -- p %d dynamical_instability_criterion %d not supported!\n",p->index,p->dynamical_instability_criterion);
                 //exit(-1);
                 error_code = 18;
+                longjmp(jump_buf,1);
             }
         }
     }

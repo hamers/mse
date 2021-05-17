@@ -1084,6 +1084,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     {
         printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- ERROR: tertiary should be a star, and companion a binary\n");
         error_code = 8;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 

@@ -66,7 +66,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 {
     /* Segfault handling -- begin */
     int setjmp_return_val = setjmp(jump_buf);
-    if (setjmp_return_val == 1) // segfault occurred somewhere in the code (error_code=-1); will return control to Python
+    if (setjmp_return_val == 1) // error occurred somewhere in the code; will return control to Python
     {
         return error_code;
     }

@@ -66,6 +66,7 @@ void compute_EOM_binary_pairs(ParticlesMap *particlesMap, int inner_binary_index
             printf("FATAL ERROR in newtonian.cpp: an outer orbit cannot be averaged if the inner one is not! inner_binary_index=%d; outer_binary_index=%d\n",inner_binary_index,outer_binary_index);
             //exit(-1);
             error_code = 19;
+            longjmp(jump_buf,1);
         }   
     }
     else if (inner_binary->integration_method==0)
@@ -414,6 +415,7 @@ void compute_EOM_binary_pairs_single_averaged(ParticlesMap *particlesMap, int in
                 printf("newtonian.cpp -- FATAL ERROR in constructing B-function \n");
                 //exit(-1);
                 error_code = 20;
+                longjmp(jump_buf,1);
             }
             
             B_n_m_i1_i2 += B_lookup * e_Peven;
@@ -1498,6 +1500,7 @@ void compute_EOM_binary_triplets(ParticlesMap *particlesMap, int binary_A_index,
         printf("FATAL ERROR in newtonian.cpp: invalid combination of integration methods %d %d %d for binary triplet combination with indices %d %d %d (note: an orbit that is averaged cannot have children orbits that are directly integrated. \n",binary_A->integration_method,binary_B->integration_method,binary_C->integration_method,binary_A->index,binary_B->index,binary_C->index);
         //exit(-1);
         error_code = 21;
+        longjmp(jump_buf,1);
     }
 
 }

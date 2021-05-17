@@ -67,6 +67,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                 printf("stellar_evolution.cpp -- ERROR: metallicity (given: z = %g for star with index %d and initial mass %g MSun) should be in the range 0.0001 < z < 0.03; terminating program\n",z,p->index,p->mass);
                 //exit(-1);
                 error_code = 17;
+                longjmp(jump_buf,1);
             }
 
             double *zpars;
@@ -649,6 +650,7 @@ double compute_moment_of_inertia(int stellar_type, double mass, double core_mass
     {
         printf("stellar_evolution.cpp -- compute_moment_of_inertia -- ERROR: stellar_type should not be %d\n",stellar_type);
         error_code = 38;
+        longjmp(jump_buf,1);
         return 0.0;
     }
 }
@@ -667,6 +669,7 @@ double compute_moment_of_inertia_dot(int stellar_type, double mass, double core_
     {
         printf("stellar_evolution.cpp -- compute_moment_of_inertia -- ERROR: stellar_type should not be %d\n",stellar_type);
         error_code = 38;
+        longjmp(jump_buf,1);
         return 0.0;
     }
 }
@@ -784,6 +787,7 @@ double determine_sse_compact_object_radius_RSun(int kw, double m)
     {
         printf("stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun -- ERROR: this function was called with invalid kw=%d and m=%g\n",kw,m);
         error_code = 37;
+        longjmp(jump_buf,1);
     }
     return radius;
 }

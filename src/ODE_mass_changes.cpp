@@ -59,6 +59,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     {
         printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- ERROR: donor %d should be star; inner binary %d should be a binary!\n",donor->index,inner_binary->index);
         error_code = 11;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 
@@ -133,6 +134,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     {
         printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- Omega_donor_dot %g\n",Omega_donor_dot);
         error_code = 10;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 
@@ -413,6 +415,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     {
         printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);
         error_code = 12;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 

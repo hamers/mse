@@ -668,6 +668,7 @@ double roche_radius_pericenter_sepinsky(double rp, double q, double e, double f)
         printf("rp %g q %g e %g f %g\n",rp,q,e,f);
         //exit(-1);
         error_code = 23;
+        longjmp(jump_buf,1);
     }
     
     return ratio*R_L_pericenter_eggleton;
@@ -943,6 +944,7 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
         #endif
 
         error_code = 24;
+        longjmp(jump_buf,1);
     }
 }
 

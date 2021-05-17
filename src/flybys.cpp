@@ -158,6 +158,7 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
             printf("flybys.cpp -- sample_next_flyby -- FATAL ERROR delta_time_encounter <= 0\n");
             //exit(-1);
             error_code = 14;
+            longjmp(jump_buf,1);
         }
         *t_next_encounter += delta_time_encounter;
 
@@ -222,6 +223,7 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
         printf("flybys.cpp -- flybys_velocity_distribution = %d is not supported -- exiting\n",flybys_velocity_distribution);
         //exit(-1);
         error_code = 15;
+        longjmp(jump_buf,1);
     }
         
     return 0;
@@ -490,6 +492,7 @@ double sample_flyby_mass_at_infinity()
         printf("flybys.cpp -- flybys_mass_distribution = %d is not supported; exiting\n",flybys_mass_distribution);
         //exit(-1);
         error_code = 16;
+        longjmp(jump_buf,1);
     }
     
     return M;

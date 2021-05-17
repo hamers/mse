@@ -100,6 +100,7 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
         {
             printf("merger.cpp -- error in handle_collisions: unable to find pair of colliding bodies; col_part_i %d col_part_j %d\n",col_part_i,col_part_j);
             error_code = 7;
+            longjmp(jump_buf,1);
             //exit(-1);
         }
         /* Reset Stopping_Condition_Partner */
@@ -454,6 +455,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     {
         printf("merger.cpp -- collision_product -- unknown outcome! Will ignore the collision. kw1 %d kw2 %d kw %d\n",kw1,kw2,kw);
         error_code = 6;
+        longjmp(jump_buf,1);
         return;
     }
     
@@ -461,6 +463,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     {
         printf("merger.cpp -- collision_product -- destroyed = false -- was not able to determine all properties of merged object! Will ignore the collision. \n");
         error_code = 6;
+        longjmp(jump_buf,1);
         return;
     }
 
@@ -547,12 +550,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 child1->spin_vec[i] = spin_vec[i];
             }
         }
-        child1->RLOF_flag = 0;
-        child1->apply_kick = false;
-        child1->mass_dot_wind = 0.0;
-        child1->mass_dot_wind_accretion = 0.0;
-        child1->radius_dot = 0.0;
-        child1->ospin_dot = 0.0;
+        reset_ODE_mass_dot_quantities(child1);
+        //child1->RLOF_flag = 0;
+        //child1->apply_kick = false;
+        //child1->mass_dot_wind = 0.0;
+        //child1->mass_dot_wind_accretion = 0.0;
+        //child1->radius_dot = 0.0;
+        //child1->ospin_dot = 0.0;
         
         if (NS_model == 1)
         {

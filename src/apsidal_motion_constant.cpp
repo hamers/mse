@@ -126,6 +126,7 @@ double compute_apsidal_motion_constant(Particle *star)
         printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
         //exit(0);
         error_code = 25;
+        longjmp(jump_buf,1);
     }
     #endif
 

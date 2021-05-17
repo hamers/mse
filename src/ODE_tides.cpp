@@ -381,6 +381,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         print_system(particlesMap,0);
         //exit(-1);
         error_code = 22;
+        longjmp(jump_buf,1);
     }
 
     double R_div_a = R/a;

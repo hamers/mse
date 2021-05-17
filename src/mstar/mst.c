@@ -434,6 +434,7 @@ void compute_U(struct RegularizedRegion *R) {
         printf("mst.c -- ERROR: U not finite.\n");
         //exit(0);
         error_code = 30;
+        longjmp(jump_buf,1);
     }
 
     R->U *= GCONST;
@@ -1222,8 +1223,9 @@ void run_integrator(struct RegularizedRegion *R, double time_interval, double *e
         double wall_time_diff_s = difftime(wall_time_current,wall_time_start);
         if (wall_time_diff_s > wall_time_max_s)
         {
-            //printf("mst.c -- wall time of %g s has exceeded allowed maximum of %g s -- initiating termination procedure \n",wall_time_diff_s,wall_time_max_s);
+            printf("mst.c -- wall time of %g s has exceeded allowed maximum of %g s -- system index %d \n",wall_time_diff_s,wall_time_max_s,system_index);
             error_code = 36;
+            longjmp(jump_buf,1);
             return;
         }
     

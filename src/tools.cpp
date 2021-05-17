@@ -135,6 +135,7 @@ double sample_from_Kroupa_93_imf()
         printf("tools.cpp -- ERROR in sample_from_Kroupa_93_imf\n");
         //exit(-1);
         error_code = 34;
+        longjmp(jump_buf,1);
     }
     
     return m;
@@ -902,6 +903,7 @@ void check_number(double x, char *source, char *description, bool exit_on_error)
     {
         //printf("Exiting on fatal error\n");
         error_code = 1;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 }

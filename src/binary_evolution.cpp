@@ -82,6 +82,7 @@ int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, do
                 print_system(particlesMap,*integration_flag);
                 printf("p->mass %g parent->mass %g p->radius %g v_orb_p2 %g v_wind_p2 %g parent->j %g parent->a %g\n",p->mass,parent->mass,p->radius,v_orb_p2,v_wind_p2,parent->j,parent->h_vec[0]);
                 error_code = 2;
+                longjmp(jump_buf,1);
             }
         }
     }
@@ -343,6 +344,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
         printf("binary_evolution.cpp -- handle_mass_transfer_cases -- ERROR: t_MT = %g; a %g e %g R_Lc %g x %g E_0 %g \n",t_MT,a,e,R_Lc,x,E_0);
         //exit(-1);
         error_code = 3;
+        longjmp(jump_buf,1);
     }
     
     #ifdef VERBOSE
@@ -415,6 +417,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     {
         printf("binary_evolution.cpp -- fatal error in handle_mass_transfer_cases, parent %d donor %d accretor %d \n",parent->index,donor->index,accretor->index);
         error_code = 3;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
     
@@ -711,6 +714,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     {
         printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor -- unknown case -- parent %d donor %d accretor %d\n",parent_index,donor_index,accretor_index);
         error_code = 4;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 
@@ -1155,6 +1159,7 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     {
         printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution() -- ERROR: donor should be a star, and accretor a binary\n");
         error_code = 5;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 

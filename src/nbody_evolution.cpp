@@ -211,6 +211,7 @@ void handle_collisions_nbody(struct RegularizedRegion *R, ParticlesMap *particle
     {
         printf("nbody_evolution.cpp -- error in handle_collisions_nbody: unable to find pair of colliding bodies\n");
         error_code = 9;
+        longjmp(jump_buf,1);
         //exit(-1);
     }
 

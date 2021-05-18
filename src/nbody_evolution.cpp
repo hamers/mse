@@ -858,6 +858,12 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
         for (auto it_dm = delta_masses.begin(); it_dm != delta_masses.end(); it_dm++)
         {
             R->Mass[i] += *it_dm/ ((double) Nsteps);
+
+            if (R->Mass[i] <= epsilon) // Make sure any of the masses do not become zero (MSTAR would crash)
+            {
+                R->Mass[i] = epsilon;
+            }
+            
             i++;
         }
     }

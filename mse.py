@@ -79,6 +79,7 @@ class MSE(object):
         self.__binary_evolution_mass_transfer_timestep_parameter = 0.05
         self.__binary_evolution_CE_recombination_fraction = 1.0
         self.__binary_evolution_use_eCAML_model = False
+        self.__binary_evolution_mass_transfer_model = 1
         self.__chandrasekhar_mass = 1.44
         self.__eddington_accretion_factor = 10.0
         self.__nova_accretion_factor = 1.0e-3
@@ -270,6 +271,7 @@ class MSE(object):
             ctypes.c_bool, \
             ctypes.c_double, \
             ctypes.c_int, ctypes.c_int, \
+            ctypes.c_int, \
             ctypes.c_int)
         self.lib.set_parameters.restype = ctypes.c_int
 
@@ -768,7 +770,8 @@ class MSE(object):
             self.__stop_after_root_found, \
             self.__wall_time_max_s, \
             self.__NS_model, self.__ECSNe_model, \
-            self.__system_index)
+            self.__system_index, \
+            self.__binary_evolution_mass_transfer_model)
 
     def reset(self):
         self.__init__()
@@ -1509,6 +1512,13 @@ class MSE(object):
         self.__beta_wind_accretion = value
         self.__set_parameters_in_code()
 
+    @property
+    def binary_evolution_mass_transfer_model(self):
+        return self.__binary_evolution_mass_transfer_model
+    @binary_evolution_mass_transfer_model.setter
+    def binary_evolution_mass_transfer_model(self, value):
+        self.__binary_evolution_mass_transfer_model = value
+        self.__set_parameters_in_code()
     
     ### Triple evolution ###
     @property

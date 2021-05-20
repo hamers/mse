@@ -44,6 +44,7 @@ int test_compute_Eddington_accretion_rate();
 int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
 int test_wind_accretion();
 int test_mass_accretion_events_with_degenerate_objects();
+int test_compute_bse_mass_transfer_amount_averaged();
 
 int test_collisions();
 

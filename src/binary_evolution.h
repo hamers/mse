@@ -23,7 +23,8 @@ int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index,
 int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution);
 int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution);
 
-double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor);
+double compute_bse_mass_transfer_amount_averaged(int kw1, double m_donor, double core_mass_donor, double R_donor, double m_accretor, double a, double e, double dt, double t_dyn_donor, double t_KH_donor);
+double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_donor, double dt, double t_dyn_donor, double t_KH_donor);
 
 void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particlesMap, double t_old, double t, int *integration_flag, double *dt_binary_evolution);
 void reset_ODE_mass_dot_quantities(Particle *p);

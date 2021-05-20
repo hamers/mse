@@ -1853,6 +1853,7 @@ int test_binary_evolution()
     flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
     flag += test_wind_accretion();
     flag += test_mass_accretion_events_with_degenerate_objects();
+    flag += test_compute_bse_mass_transfer_amount_averaged();
     
     if (flag == 0)
     {
@@ -2236,6 +2237,68 @@ int test_mass_accretion_events_with_degenerate_objects()
 
     ECSNe_model = ECSNe_model_old;
     NS_model = NS_model_old;
+
+    return flag;
+}
+
+int test_compute_bse_mass_transfer_amount_averaged()
+{
+    printf("test.cpp -- test_compute_bse_mass_transfer_amount_averaged\n");
+    
+    double m_donor = 20.0;
+    double m_accretor = 10.0;
+    double core_mass_donor = 1.0;
+    double R_donor = 1.0;
+    double a = 1.0;
+    double e = 1.0e-10;
+    double dt = 1.0;
+    double t_dyn_donor = 1.0;
+    double t_KH_donor = 1.0;
+    int kw1 = 1;
+    
+    int binary_evolution_numerical_mass_transfer_rate_number_of_points_old = binary_evolution_numerical_mass_transfer_rate_number_of_points;
+    
+    /* Test circular case with default value of binary_evolution_numerical_mass_transfer_rate_number_of_points */
+    double dm_av = compute_bse_mass_transfer_amount_averaged(kw1,m_donor,core_mass_donor,R_donor,m_accretor,a,e,dt,t_dyn_donor,t_KH_donor);
+    double q = m_donor/m_accretor;
+    double dm_av_circ = compute_bse_mass_transfer_amount(kw1, m_donor, core_mass_donor, R_donor, roche_radius_pericenter_eggleton(a*(1.0-e),q), dt, t_dyn_donor, t_KH_donor);
+
+    int flag = 0;
+    double tol = 1e-8;
+    if ( !equal_number(dm_av,dm_av_circ,tol) )
+    {
+        printf("test.cpp -- test_compute_bse_mass_transfer_amount_averaged -- error: dm_av %g dm_av_circ %g\n",dm_av,dm_av_circ);
+        flag = 1;
+    }
+
+    /* Test convergence (eccentric case, with different tolerances up to and including the default setting) */
+    e = 0.999;
+    int N_s = 7;
+    int N;
+    double fs[N_s] = {0.1,0.2,0.4,0.6,0.8,0.9,1.0};
+    double eps;
+    double dm_av_old;
+    for (int i=0; i<N_s; i++)
+    {
+        N = int(binary_evolution_numerical_mass_transfer_rate_number_of_points_old * fs[i] );
+        binary_evolution_numerical_mass_transfer_rate_number_of_points = N;
+        dm_av = compute_bse_mass_transfer_amount_averaged(kw1,m_donor,core_mass_donor,R_donor,m_accretor,a,e,dt,t_dyn_donor,t_KH_donor);
+
+        eps = fabs((dm_av_old-dm_av)/dm_av_old);
+        
+        dm_av_old = dm_av;
+       
+        //printf("N %d dm_av %g eps %g\n",N,dm_av,eps);
+    }
+    tol = 1e-4;
+    if ( eps > tol )
+    {
+        printf("test.cpp -- test_compute_bse_mass_transfer_amount_averaged -- error (convergence in eccentric case): eps %g\n",eps);
+        flag = 1;
+    }
+
+
+    binary_evolution_numerical_mass_transfer_rate_number_of_points = binary_evolution_numerical_mass_transfer_rate_number_of_points_old;
 
     return flag;
 }

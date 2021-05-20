@@ -844,7 +844,9 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
     /* Default value of dm1 -- transferred mass during this time-step */
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp,q);
-    double dm1 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    //double dm1 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    double dm1 = compute_bse_mass_transfer_amount_averaged(kw1, m_donor, donor->core_mass, R_donor, m_accretor, a, e, dt, t_dyn_donor, t_KH_donor);
+    //dm1 *= (1.0 - e);
     double dm2; /* amount of mass gained by accretor during dt (defined dm2>0) */
 
     double dms_donor = fabs(donor->mass_dot_wind * dt); /* absolute value of net mass change due to winds */
@@ -1219,7 +1221,8 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
     /* Default value of dm3 -- transferred mass during this time-step */
     double R_RL_av_donor = roche_radius_pericenter_eggleton(rp_out,q);
-    double dm3 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    //double dm3 = compute_bse_mass_transfer_amount(kw1,m_donor,donor->core_mass,R_donor,R_RL_av_donor,dt,t_dyn_donor,t_KH_donor);
+    double dm3 = compute_bse_mass_transfer_amount_averaged(kw1, m_donor, donor->core_mass, R_donor, m_inner_binary, a_out, e_out, dt, t_dyn_donor, t_KH_donor);
     
     donor->mass_dot_RLOF_triple = -dm3/dt;
     
@@ -1267,26 +1270,100 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
  
     return 0;
 }
- 
-double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_av_donor, double dt, double t_dyn_donor, double t_KH_donor)
+
+double compute_bse_mass_transfer_amount_averaged(int kw1, double m_donor, double core_mass_donor, double R_donor, double m_accretor, double a, double e, double dt, double t_dyn_donor, double t_KH_donor)
+{
+    double q = m_donor/m_accretor;
+    double R_Lc = roche_radius_pericenter_eggleton(a,q); /* with argument "a", actually computes circular Roche lobe radius */
+    double x = R_Lc/R_donor;
+    double E_0;
+    bool in_RLOF;
+    determine_E_0(e, x, &E_0, &in_RLOF);
+    
+    if (in_RLOF == false)
+    {
+        return 0.0;
+    }
+    if (E_0 <= epsilon)
+    {
+        E_0 = epsilon;
+    }
+    
+    int N_points = binary_evolution_numerical_mass_transfer_rate_number_of_points;
+    double dE = 2.0 * E_0/(double(N_points));
+    double integral = 0.0;
+    double E = -E_0;
+    double r_div_a,R_L,dm;
+    for (int i=0; i<N_points; i++)
+    {
+        r_div_a = 1.0 - e*cos(E);
+        R_L = R_Lc * r_div_a;
+        dm = compute_bse_mass_transfer_amount(kw1, m_donor, core_mass_donor, R_donor, R_L, dt, t_dyn_donor, t_KH_donor);
+        integral += dm * r_div_a * dE;
+        E += dE;
+        //printf("E %g dE %g E_0 %g R_L %g r_div_a %g dm %g integral %g\n",E,dE,E_0,R_L,r_div_a,dm,integral);
+    }
+    double dm_av = integral/(2.0*E_0);
+
+    #ifdef IGNORE
+    /* Same calculation but based on true anomaly (not used) */
+    N_points = 100;
+    double nu,dnu,cos_nu_0,sin_nu_0;
+    compute_true_anomaly_from_eccentric_anomaly(cos(E_0), sin(E_0), e, &cos_nu_0, &sin_nu_0);
+    double nu_0 = atan2(sin_nu_0,cos_nu_0);
+    dnu = 2.0 * nu_0/(double(N_points));
+    
+    nu = -nu_0;
+    integral = 0.0;
+    double omesq = 1.0 - e*e;
+    double one_div_sqomesq = 1.0/sqrt(omesq);
+    double jac;
+    for (int i=0; i<N_points; i++)
+    {
+        r_div_a = omesq/(1.0 + e*cos(nu));
+        jac = r_div_a*r_div_a*one_div_sqomesq;
+        R_L = R_Lc * r_div_a;
+        dm = compute_bse_mass_transfer_amount(kw1, m_donor, core_mass_donor, R_donor, R_L, dt, t_dyn_donor, t_KH_donor);
+        integral += jac * dm * dnu;
+        nu += dnu;
+        //printf("nu %g nu_0 %g R_L %g r_div_a %g dm %g integral %g\n",nu,nu_0,R_L,r_div_a,dm,integral);
+    }
+    dm_av = integral/(2.0*nu_0);
+    //printf("3 dm_av %g %g\n",dm_av, compute_bse_mass_transfer_amount(kw1, m_donor, core_mass_donor, R_donor, roche_radius_pericenter_eggleton(a*(1.0-e),q), dt, t_dyn_donor, t_KH_donor));
+    #endif
+    
+    check_number(dm_av,  "binary_evolution.cpp -- compute_bse_mass_transfer_amount_averaged","dm_av", true);
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("compute_bse_mass_transfer_amount_averaged kw1 %d  m_donor %g,  core_mass_donor %g,  R_donor %g,  m_accretor %g,  a %g,  e %g,  dt %g,  t_dyn_donor %g,  t_KH_donor %g E_0 %g dm_av %g dm_av_rp %g\n", kw1, m_donor, core_mass_donor, R_donor, m_accretor, a, e, dt, t_dyn_donor,  t_KH_donor, E_0, dm_av, compute_bse_mass_transfer_amount(kw1, m_donor, core_mass_donor, R_donor, roche_radius_pericenter_eggleton(a*(1.0-e),q), dt, t_dyn_donor, t_KH_donor));
+    }
+    #endif
+
+    return dm_av;
+}
+   
+
+double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mass_donor, double R_donor, double R_RL_donor, double dt, double t_dyn_donor, double t_KH_donor)
 {
     double m_fac = CV_min(m_donor, 5.0);
     m_fac *= m_fac;
 
-    if (R_donor < R_RL_av_donor)
+    if (R_donor < R_RL_donor)
     {
         
         #ifdef VERBOSE
         if (verbose_flag > 0)
         {
-            printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- skipping since R_donor < R_RL_av -- R_donor %g RL_av_donor %g\n",R_donor,R_RL_av_donor);
+            printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- skipping since R_donor < R_RL_av -- R_donor %g RL_av_donor %g\n",R_donor,R_RL_donor);
         }
         #endif
         
         return 0.0;
     }
     
-    double log_fac = log(R_donor/R_RL_av_donor);
+    double log_fac = log(R_donor/R_RL_donor);
     double dm1 = dt * fabs(3.0e-6 * m_fac * log_fac*log_fac*log_fac); /* HPT eq. 58-59 */
 
     if (kw1 == 2)
@@ -1311,7 +1388,7 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     #ifdef VERBOSE
     if (verbose_flag > 1)
     {
-        printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g RL_av_donor %g\n",dm1,R_donor,R_RL_av_donor);
+        printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g R_RL_donor %g\n",dm1,R_donor,R_RL_donor);
     }
     #endif
 

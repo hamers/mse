@@ -165,7 +165,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool stop_after_root_found_, \
     double wall_time_max_s_, \
     int NS_model_, int ECSNe_model, \
-    int system_index_);
+    int system_index_, \
+    int binary_evolution_mass_transfer_model_);
 
 int get_random_seed(int *value);
 int set_random_seed(int value);

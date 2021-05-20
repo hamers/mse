@@ -133,6 +133,8 @@ int binary_evolution_CE_mass_loss_Nsteps = 100;
 double binary_evolution_CE_recombination_fraction = 1.0;
 double binary_evolution_mass_transfer_timestep_parameter = 0.05;
 bool binary_evolution_use_eCAML_model = false;
+int binary_evolution_mass_transfer_model = 0;
+int binary_evolution_numerical_mass_transfer_rate_number_of_points = 100;
 
 double chandrasekhar_mass = 1.44;
 double eddington_accretion_factor = 10.0;

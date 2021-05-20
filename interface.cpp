@@ -1021,7 +1021,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     bool stop_after_root_found_, \
     double wall_time_max_s_, \
     int NS_model_, int ECSNe_model_, \
-    int system_index_)
+    int system_index_, \
+    int binary_evolution_mass_transfer_model_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1057,7 +1058,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     binary_evolution_CE_recombination_fraction = binary_evolution_CE_recombination_fraction_;
     binary_evolution_mass_transfer_timestep_parameter = binary_evolution_mass_transfer_timestep_parameter_;
     binary_evolution_use_eCAML_model = binary_evolution_use_eCAML_model_;
-
+    binary_evolution_mass_transfer_model = binary_evolution_mass_transfer_model_;
+    
     nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;
     nbody_analysis_fractional_integration_time = nbody_analysis_fractional_integration_time_;
     nbody_analysis_minimum_integration_time = nbody_analysis_minimum_integration_time_;

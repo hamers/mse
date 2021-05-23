@@ -937,7 +937,7 @@ int reset_interface()
     clear_particles(&particlesMap);
     logData.clear();
     flybys_t_next_encounter = 0.0;
-    
+        
     return 0;
 }
 

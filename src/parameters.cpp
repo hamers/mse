@@ -182,7 +182,7 @@ double kroupa_x3 = kroupa_x2 + (kroupa_C3/kroupa_alpha3_plus_1)*( kroupa_m4_pow_
 double pulsar_death_line_B_crit_const_G = 0.17e12;
 double MSP_defining_period_s = 0.03;
 
-double NS_model = 1;
+int NS_model = 1;
 double NS_Ye19_model_NS_MSP_P_s_def = 0.03;
 double NS_Ye19_model_NS_formation_single_P_s_lower = 0.03;
 double NS_Ye19_model_NS_formation_single_P_s_upper = 1.0;

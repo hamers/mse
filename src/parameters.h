@@ -145,7 +145,7 @@ extern double kroupa_x3;
 /* NSs/MSPs */
 extern double pulsar_death_line_B_crit_const_G;
 extern double MSP_defining_period_s;
-extern double NS_model;
+extern int NS_model;
 extern double NS_Ye19_model_NS_MSP_P_s_def;
 extern double NS_Ye19_model_NS_formation_single_P_s_lower;
 extern double NS_Ye19_model_NS_formation_single_P_s_upper;

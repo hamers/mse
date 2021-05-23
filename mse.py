@@ -776,6 +776,7 @@ class MSE(object):
     def reset(self):
         self.__init__()
         self.lib.reset_interface()
+        ctypes._reset_cache()
         
     def __set_random_seed(self):
         self.lib.set_random_seed(self.random_seed)

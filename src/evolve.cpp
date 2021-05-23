@@ -90,7 +90,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     }
     #endif
 
-
     if (start_time == end_time)
     {
         *output_time = start_time;

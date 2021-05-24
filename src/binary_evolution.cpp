@@ -544,7 +544,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         dm2 = dm1;
         m_accretor_new = accretor->mass + dm2;
         int kw = determine_merger_type(kw1,kw2);
-        
+
         if (kw == 4)
         {
             //accretor->age = accretor->age / (tms*Myr_to_yr); /* ASH: this line copied from BSE does not make sense to me (unit-wise); I am ignoring it. */
@@ -563,6 +563,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
             accretor->age = new_age*Myr_to_yr;
             accretor->epoch = t - accretor->age;
         }
+        accretor->stellar_type = kw;
     }
     else
     {
@@ -575,7 +576,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         dm2 = CV_min(dme*tau_donor/dt, dm1);
         m_accretor_new = accretor->mass + dm2;
     }
-    
+    print_system(particlesMap,*integration_flag);
     donor->apply_kick = false;
     accretor->apply_kick = false;
     

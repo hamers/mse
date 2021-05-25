@@ -23,7 +23,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
     double dt_reached;
     
     int N_bodies_eff = check_particlesMap_for_inclusion_in_MSTAR(particlesMap);
-    
+
     if (N_bodies_eff < 1)
     {
 
@@ -254,11 +254,11 @@ void update_stellar_evolution_quantities_directly(ParticlesMap *particlesMap, do
             #endif
 
             spin_vec_norm = norm3(p->spin_vec);
-            if (spin_vec_norm == 0.0)
+            if (spin_vec_norm <= epsilon)
             {
                 spin_vec_norm = epsilon;
             }
-            
+
             /* Spin changes according to SSE */
             for (i=0; i<3; i++)
             {

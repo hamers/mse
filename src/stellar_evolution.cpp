@@ -368,7 +368,12 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
                 }
                 #endif
-
+                if (ospin <= epsilon)
+                {
+                    ospin = epsilon;
+                }
+                //printf("kw %d kw_old %d ospin %g ospin_old %g\n",kw,kw_old,ospin,ospin_old);
+                
                 /* Write new stellar evolution parameters */
                 if (kw_old==kw or kw < 13)
                 {
@@ -377,6 +382,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->radius_dot = CONST_R_SUN*(r - r_old)/dt;
                     
                     p->ospin_dot = (ospin - ospin_old)/dt;
+
                     p->instantaneous_perturbation_delta_mass = 0.0;
                     p->apply_kick = false;
                     

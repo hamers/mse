@@ -1580,7 +1580,9 @@ class test_mse():
             fig=pyplot.figure()
             plot=fig.add_subplot(1,1,1,yscale="log")
             plot.hist(np.log10(ms),bins=np.linspace(-1.0,2.0,Nb),histtype='step',density=True,color='tab:red')
-            plot.set_xlabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
+            plot.set_xlabel("$\mathrm{log}_{10}(m/\mathrm{M}_\odot)$",fontsize=fontsize)
+            plot.set_ylabel("$\mathrm{PDF}$",fontsize=fontsize)        
+
             
             points=np.linspace(-1.0,2.0,Nb)
             PDF_an = [np.log(10.0)*pow(10.0,log10m)*kroupa_93_imf(pow(10.0,log10m)) for log10m in points]

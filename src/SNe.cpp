@@ -252,8 +252,6 @@ int sample_kick_velocity(Particle *p, double *vx, double *vy, double *vz)
     }
     #endif
     
-    
-
     *vx *= vnorm;
     *vy *= vnorm;
     *vz *= vnorm;

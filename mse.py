@@ -2859,10 +2859,11 @@ class Tools(object):
         CONST_KM = 1.0/(1.4966e9)
 
         s = 5 + 50*np.log10(radius/CONST_R_SUN)
-        if (stellar_type >= 7 and stellar_type <= 9):
+        if (stellar_type == 0):
+            s = 5 + 2*np.log10(radius/CONST_R_SUN)
+        elif (stellar_type >= 7 and stellar_type <= 9):
             s = 5 + 5*np.log10(radius/CONST_KM)
-
-        if (stellar_type >= 10):
+        elif (stellar_type >= 10):
             s = 5 + 20*np.log10(radius/CONST_KM)
 
         return color,s,description

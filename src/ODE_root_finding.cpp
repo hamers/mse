@@ -220,12 +220,20 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
                 Particle *P_child2 = (*particlesMap)[P_p->child2];
                 
                 double cross_section = 0.0;
-                cross_section_function(P_child1,&cross_section);
-                cross_section_function(P_child2,&cross_section);
+                if (P_child1->is_binary == false and P_child2->is_binary == false)
+                {
+                    
+                    cross_section_function(P_child1,&cross_section);
+                    cross_section_function(P_child2,&cross_section);
+                }
+                else
+                {
+                    cross_section = epsilon;
+                }
 
                 double periapse_distance = P_p->a*(1.0 - P_p->e);
                 f_root = 1.0 - periapse_distance/cross_section;
-
+                
                 #ifdef VERBOSE
                 if (verbose_flag > 2)
                 {

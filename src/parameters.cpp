@@ -78,6 +78,7 @@ int error_code = 0;
  * 36: mst.c -- wall time exceeded
  * 37: stellar_evolution.cpp -- determine_sse_compact_object_radius_RSun()
  * 38: stellar_evolution.cpp -- compute_moment_of_inertia()
+ * 39: common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- zero core mass 
  */
 
 int system_index = 0;

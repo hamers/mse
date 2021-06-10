@@ -31,7 +31,7 @@ int initialize_code(ParticlesMap *particlesMap)
     {
         handle_next_flyby(particlesMap,true,&integration_flag);
     }
-
+ 
     #ifdef LOGGING
     Log_info_type log_info;
     update_log_data(particlesMap, 0.0, 0, LOG_INIT, log_info);
@@ -217,6 +217,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Time step (phase 2) */
         if (t + dt >= end_time)
         {
+            //printf("AD t %g dt %g t+dt %g end_time %g\n",t,dt,t+dt,end_time);
             dt = end_time - t;
             last_iteration = true;
             
@@ -234,8 +235,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         dt = CV_max(dt,min_dt);
 
         t_old = t;
-        
-        if (t >= t_end)
+//        printf("dt %g dt_stev %g dt_binary_evolution %g\n",dt,dt_stev,dt_binary_evolution);
+        if (t >= end_time)
         {
             break;
         }

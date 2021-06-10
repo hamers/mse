@@ -114,9 +114,13 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
     {
         Particle *donor = (*it_p).second;
 
-        /* Reset some quantities (used in ODE_handle_NS_properties_Ye19_model()) */
+        /* Reset some quantities (some of which used in ODE_handle_NS_properties_Ye19_model()) -- could be updated below */
         donor->delta_mass_RLOF = 0.0;
         donor->RLOF_timescale = 0.0;
+
+        donor->mass_dot_RLOF = 0.0;
+        donor->mass_dot_RLOF_triple = 0.0;
+        donor->mass_dot_adiabatic_ejection = 0.0;
         
         /* Check donor and accretor conditions for RLOF */
         if (donor->is_binary == false and donor->is_bound == true)
@@ -124,9 +128,6 @@ int handle_mass_transfer(ParticlesMap *particlesMap, double t_old, double t, dou
             Particle *accretor = (*particlesMap)[donor->sibling];
             if (donor->object_type == 1 and accretor->object_type == 1) /* only allow star-star RLOF */
             {
-                donor->mass_dot_RLOF = 0.0; /* zero by default; could be updated below */
-                donor->mass_dot_RLOF_triple = 0.0;
-                
                 if (donor->RLOF_flag == 1 and std::count(parent_indices.begin(), parent_indices.end(), donor->parent) == 0)
                 {
                     parent_indices.push_back(donor->parent);
@@ -407,7 +408,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d\n",flag,*integration_flag);
+        printf("binary_evolution.cpp -- handle_mass_transfer_cases -- flag %d integration_flag %d dt_binary_evolution %g t %g\n",flag,*integration_flag,*dt_binary_evolution,t);
         print_system(particlesMap,*integration_flag);
     }
     #endif
@@ -561,7 +562,9 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
             double new_age;
             gntage_(&accretor->core_mass,&m_accretor_new,&kw,zpars,&accretor->sse_initial_mass,&new_age);
             accretor->age = new_age*Myr_to_yr;
+            accretor->stellar_type = kw;
             accretor->epoch = t - accretor->age;
+            
         }
         accretor->stellar_type = kw;
     }
@@ -576,7 +579,7 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         dm2 = CV_min(dme*tau_donor/dt, dm1);
         m_accretor_new = accretor->mass + dm2;
     }
-    print_system(particlesMap,*integration_flag);
+
     donor->apply_kick = false;
     accretor->apply_kick = false;
     
@@ -597,6 +600,15 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
     
     *integration_flag = 1;
 
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- dynamical_mass_transfer_low_mass_donor -- end\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+    
     delete[] GB;
     delete[] tscls;
     delete[] tscls_new;
@@ -695,6 +707,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
         }
         double accretor_age = accretor->age*yr_to_Myr;
         gntage_(&accretor_core_mass,&m_accretor,&kst,accretor->zpars,&accretor->sse_initial_mass,&accretor_age);
+        accretor->age = accretor_age * Myr_to_yr;
         accretor->stellar_type = kst;
         accretor->epoch = t - accretor_age * Myr_to_yr;
         
@@ -877,6 +890,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     double dme = m_dot_Eddington * dt;
 
     double taum = (m_accretor/dm1) * dt;
+    bool gntage_was_called = false;
     
     if (kw2 <= 2 or kw2 == 4)
     {
@@ -902,23 +916,50 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             {
                 int kst = CV_min(6, 2*kw2 - 10);
                 double mcx;
+                double accretor_age_Myr = accretor->age*yr_to_Myr;
                 if (kst == 4)
                 {
-                    /* ignoring the age adjustment -- units seem to be wrong? */
                     mcx = m_accretor;
+                    accretor_age_Myr /= tms_accretor_old;
                 }
                 else
                 {
                     mcx = accretor->core_mass;
                 }
         
-                double mt2 = m_accretor ; //+ (dt/P_orb)*(dm2 - dms_accretor);
-                double accretor_age;
+                double mt2 = m_accretor + (dm2 - dms_accretor);
                 
-                gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age);
-                accretor->epoch = t - accretor_age*Myr_to_yr;
-                accretor->age = accretor_age*Myr_to_yr;
+                gntage_(&mcx, &mt2, &kst, accretor->zpars, &accretor->sse_initial_mass, &accretor_age_Myr); /* The age passed on to gntage should actually be a fractional age, fage, of the CHeB lifetime -- see gntage.f lines 101-102 */
+                gntage_was_called = true;
+                
+                star_(&kst, &accretor->sse_initial_mass, &mt2, &tms, &tn, tscls, lums, GB, accretor->zpars);
+                
+                double r,lum,rc,menv,renv,k2;
+                //printf("BIN 1 tms %g tn %g tscls[0] %g accretor_age_Myr %g accretor->sse_initial_mass %g kst %d\n",tms,tn,tscls[0],accretor_age_Myr,accretor->sse_initial_mass,kst);
+                hrdiag_(&accretor->sse_initial_mass,&accretor_age_Myr,&mt2,&tms,&tn,tscls,lums,GB,accretor->zpars, \
+                    &r,&lum,&kst,&mcx,&rc,&menv,&renv,&k2);
+
                 accretor->stellar_type = kst; /* accretor becomes CHeB or AGB star; need to update stellar type */
+                //printf("BIN 2 tms %g tn %g tscls[0] %g accretor_age_Myr %g accretor->sse_initial_mass %g kst %d\n",tms,tn,tscls[0],accretor_age_Myr,accretor->sse_initial_mass,kst);
+                accretor->core_mass = mcx;
+
+                accretor->luminosity = lum*CONST_L_SUN;
+                accretor->radius = r*CONST_R_SUN;
+                accretor->core_radius = rc*CONST_R_SUN;
+                accretor->convective_envelope_mass = menv;
+                accretor->convective_envelope_radius = renv*CONST_R_SUN;
+                accretor->sse_k2 = k2;                
+
+                accretor->sse_main_sequence_timescale = tms*Myr_to_yr;
+
+                accretor->epoch = t - accretor_age_Myr*Myr_to_yr;
+                accretor->age = accretor_age_Myr*Myr_to_yr;
+
+                
+                check_number(accretor->radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- Naked helium star secondary swells up to a core helium burning star","accretor->radius", true);
+                check_number(accretor->core_radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- Naked helium star secondary swells up to a core helium burning star","accretor->core_radius", true);
+                check_number(accretor->age,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- Naked helium star secondary swells up to a core helium burning star","accretor->age", true);
+
             }
         }
     }
@@ -957,11 +998,34 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             {
                 kw = CV_min(6, 3*kw2 - 27);
 
-                double new_age;
+                double accretor_age_Myr = accretor->age*yr_to_Myr;
                 double mt2 = m_accretor + (dm2 - dms_accretor);
-                gntage_(&accretor->core_mass,&mt2,&kw,accretor->zpars,&accretor->sse_initial_mass,&new_age);
-                accretor->age = new_age*Myr_to_yr;
-                accretor->epoch = t - accretor->age;
+                gntage_(&accretor->core_mass,&mt2,&kw,accretor->zpars,&accretor->sse_initial_mass,&accretor_age_Myr);
+                gntage_was_called = true;
+                
+                star_(&kw, &accretor->sse_initial_mass, &mt2, &tms, &tn, tscls, lums, GB, accretor->zpars);
+                
+                double r,lum,rc,menv,renv,k2;
+                hrdiag_(&accretor->sse_initial_mass,&accretor_age_Myr,&mt2,&tms,&tn,tscls,lums,GB,accretor->zpars, \
+                    &r,&lum,&kw,&accretor->core_mass,&rc,&menv,&renv,&k2);
+
+                accretor->stellar_type = kw;
+
+                accretor->luminosity = lum*CONST_L_SUN;
+                accretor->radius = r*CONST_R_SUN;
+                accretor->core_radius = rc*CONST_R_SUN;
+                accretor->convective_envelope_mass = menv;
+                accretor->convective_envelope_radius = renv*CONST_R_SUN;
+                accretor->sse_k2 = k2;                
+
+                accretor->sse_main_sequence_timescale = tms*Myr_to_yr;
+
+                accretor->epoch = t - accretor_age_Myr*Myr_to_yr;
+                accretor->age = accretor_age_Myr*Myr_to_yr;
+                
+                check_number(accretor->radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD secondary -- make new giant envelope","accretor->radius", true);
+                check_number(accretor->core_radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD secondary -- make new giant envelope","accretor->core_radius", true);
+                check_number(accretor->age,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD secondary -- make new giant envelope","accretor->age", true);
             }
         }
     }
@@ -992,7 +1056,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     {
         donor->sse_initial_mass = m_donor_new;
     }
-    if (kw2 <= 1 or kw2 == 7)
+    if (kw2 <= 1 or kw2 == 7 and gntage_was_called == false)
     {
         accretor->sse_initial_mass = m_accretor_new;
     }
@@ -1052,7 +1116,10 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         }
         else
         {
-            accretor->age *= (tms/tms_accretor_old);
+            if (gntage_was_called == false)
+            {
+                accretor->age *= (tms/tms_accretor_old);
+            }
         }
         accretor->epoch = t - accretor->age;
     }

@@ -138,16 +138,26 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double MENV1,RENV1,K21;
     
     double AJ1 = star1->age * yr_to_Myr;
-    double *ZPARS1 = star1->zpars;    
-
+    double *ZPARS1 = star1->zpars;   
+    //printf("pre k %d AJ1 %g m01 %g m1 %g tm1 %g tn1 %g r1 %g l1 %g mc1 %g rc1 %g menv1 %g renv %g\n",KW1,AJ1,M01,M1,TM1,TN1,R1,L1,MC1,RC1,MENV1,RENV1);
     star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
+    //printf("TM1 %g TN1 %g TSCLS1 %g\n",TM1,TN1,TSCLS1[0]);
     hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
         &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-
+    //printf("post k %d AJ1 %g m01 %g m1 %g tm1 %g tn1 %g r1 %g l1 %g mc1 %g rc1 %g menv1 %g renv %g\n",KW1,AJ1,M01,M1,TM1,TN1,R1,L1,MC1,RC1,MENV1,RENV1);
     if (MC1 <= epsilon)
     {
-        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution -- no core present (MC1 = %g)! Setting MC1=M1=%g \n",MC1,M1);
-        MC1 = M1;
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution -- no core present (MC1 = %g)! M1 = %g; skipping\n",MC1,M1);
+        //error_code = 39;
+        //longjmp(jump_buf,1);
+        
+        delete[] GB1;
+        delete[] TSCLS1;
+        delete[] LUMS1;
+
+        return;
+            
+        //MC1 = M1;
     }
 
     double MENVD1 = MENV1 / (M1 - MC1);

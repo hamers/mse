@@ -480,7 +480,18 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 {
                     event_flag = LOG_MT_END;
                 }
-                update_log_data(particlesMap, t, integration_flag, event_flag, log_info);
+                
+                Log_type &last_entry = logData.back();
+                Log_info_type &last_log_info = last_entry.log_info;
+                
+                if ((last_entry.event_flag == LOG_MT_START or last_entry.event_flag == LOG_MT_END) and (last_log_info.index1 == p->index) and (last_log_info.index2 == p->sibling) and (last_log_info.binary_index == p->parent))
+                {
+                    //printf("Skipping log entry\n");
+                }
+                else
+                {
+                    update_log_data(particlesMap, t, integration_flag, event_flag, log_info);
+                }
                 #endif
 
                 #ifdef VERBOSE

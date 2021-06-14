@@ -5,6 +5,7 @@ extern "C"
 int initialize_stars(ParticlesMap *particlesMap);
 int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects, int *integration_flag);
 double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, double *zpars);
+void correct_stellar_properties_in_case_of_roots_found(ParticlesMap *particlesMap, double dt_stev_assumed, double t_old, double t_out);
 
 void check_for_critical_rotation(ParticlesMap *particlesMap);
 void update_stellar_evolution_properties(Particle *p);

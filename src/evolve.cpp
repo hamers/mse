@@ -162,6 +162,8 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Handle roots */
         if (*CVODE_flag==2)
         {
+            correct_stellar_properties_in_case_of_roots_found(particlesMap, dt, t_old, t_out);
+            
             if (stop_after_root_found == true) // Used for root finding implementation testing only
             {
                 *CVODE_flag = 2;

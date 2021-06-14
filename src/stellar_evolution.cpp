@@ -275,7 +275,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     std::vector<int>::iterator it_parent_p,it_parent_q;
 
     /* Go through all stars in the system and evolve them with SSE */
-    double sse_initial_mass,sse_time_step;
+    double sse_initial_mass,sse_initial_mass_old,sse_time_step;
     double mt,tphys,tphysf,dtp,epoch,ospin,ospin_old,age;
     double dt,dt_min;
     double r,lum,mc,rc,menv,renv,tms,k2;
@@ -310,7 +310,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
         {
             /* Extract stellar evolution parameters */
             mt = mt_old = p->mass;
-            sse_initial_mass = p->sse_initial_mass;
+            sse_initial_mass = sse_initial_mass_old = p->sse_initial_mass;
             kw = kw_old = p->stellar_type;
             r = r_old = p->radius/CONST_R_SUN;
             
@@ -335,6 +335,25 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             if (verbose_flag > 1)
             {
                 printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                
+#ifdef IGNORE
+                double *GB,*tscls,*lums;
+                GB = new double[10];
+                tscls = new double[20];
+                lums = new double[10];
+                double tms,tn;
+                star_(&kw,&sse_initial_mass,&mt,&tms,&tn,tscls,lums,GB,zpars);
+                double lum,rc,menv,renv,k2;
+                double mc;
+                //printf("BIN 1 tms %g tn %g tscls[0] %g accretor_age_Myr %g accretor->sse_initial_mass %g kst %d\n",tms,tn,tscls[0],accretor_age_Myr,accretor->sse_initial_mass,kst);
+                hrdiag_(&sse_initial_mass,&age,&mt,&tms,&tn,tscls,lums,GB,zpars, \
+                    &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+                //printf("BIN 1 tms %g tn %g tscls[0] %g accretor_age_Myr %g accretor->sse_initial_mass %g kst %d\n",tms,tn,tscls[0],accretor_age_Myr,accretor->sse_initial_mass,kst);
+
+                //printf("tscsls[0] %g kw %d age %g\n",tscls[0],kw,age);
+                
+#endif
+                
             }
             #endif
 
@@ -349,6 +368,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 if (verbose_flag > 1)
                 {
                     printf("stellar_evolution.cpp -- INPUT evolv1_ kw %d m0 %.15f mt %.15f epoch %.15f tphys %.15f tphysf %.15f dtp %.15f z %.15f zpars[0] %.15f \n",kw,sse_initial_mass,mt,epoch,tphys,tphysf,dtp,z,zpars[0]);
+
                 }
                 #endif
 
@@ -365,7 +385,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 #ifdef VERBOSE
                 if (verbose_flag > 1)
                 {
-                    printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                    printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g sse_initial_mass %.15f\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin,sse_initial_mass);
                 }
                 #endif
                 if (ospin <= epsilon)
@@ -393,8 +413,17 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                             p->ospin_dot = 0.0;
                         }
                     }
+                                       //if (kw_old == 1 and kw == 7) {exit(0);}
+                    /* dots needed in case of correction after root finding */
+                    p->sse_initial_mass_dot = (sse_initial_mass - sse_initial_mass_old)/dt;
+                    p->core_mass_dot = (mc - p->core_mass_old)/dt;
+                    
                     
                 }
+                //else if (kw < 13)
+                //{
+                    
+                
                 else /* kw change with new kw=13 or kw=14 */
                 {
                     p->mass_dot_wind = 0.0;
@@ -414,6 +443,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->apply_kick = true;
                     p->instantaneous_perturbation_delta_mass = mt - mt_old; /* Will be used by handle_SNe_in_system() */
                     p->RLOF_flag = 0;
+                    
+                    p->sse_initial_mass_dot = 0.0;
+                    p->core_mass_dot = 0.0;
 
                 }
                 
@@ -538,6 +570,39 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     
     return 0;
 }
+
+void correct_stellar_properties_in_case_of_roots_found(ParticlesMap *particlesMap, double dt_stev_assumed, double t_old, double t_out)
+{
+    double true_time_step = t_out - t_old;
+    double dt_dif = dt_stev_assumed - true_time_step;
+    double age_correction = dt_dif;
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("stellar_evolution.cpp -- correct_stellar_ages_in_case_of_roots_found -- dt_stev_assumed %g t_old %g t_out %g true_time_step %g age_correction %g\n",dt_stev_assumed,t_old,t_out,true_time_step,age_correction);
+    }
+    #endif
+    
+    ParticlesMapIterator it_p;
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->object_type == 1)
+        {
+            //printf("i %d old age %g minit %.15f mc %.15f\n",p->index,p->age,p->sse_initial_mass,p->core_mass);
+            p->age -= age_correction;
+            p->sse_initial_mass -= p->sse_initial_mass_dot * dt_dif;
+            p->core_mass_dot -= p->core_mass_dot * dt_dif;
+            //printf("i %d new age %g minit %.15f mc %.15f\n",p->index,p->age,p->sse_initial_mass,p->core_mass);
+            
+            
+        }
+    }
+    print_system(particlesMap,1);
+}
+
+    
 
 void check_for_critical_rotation(ParticlesMap *particlesMap)
 {

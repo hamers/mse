@@ -744,7 +744,12 @@ class Particle
     double apsidal_motion_constant, gyration_radius;
     double sse_k2,sse_k3;
     bool has_formed_MSP;
-    
+
+    /* dots needed in case of correction after root finding */
+    double sse_initial_mass_dot;
+    double core_mass_dot;
+
+
     double mass_dot_wind_accretion;
     
     double magnetic_field_strength_gauss;
@@ -1000,6 +1005,11 @@ class Particle
         time_of_NS_formation = 0.0;
         initial_NS_period_s = 0.0;
         has_formed_MSP = false;
+
+        /* dots needed in case of correction after root finding */
+        sse_initial_mass_dot = 0.0;
+        core_mass_dot = 0.0;
+
                 
         /* RLOF */
         include_mass_transfer_terms = true;

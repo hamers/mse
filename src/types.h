@@ -590,6 +590,11 @@ struct points__
         double pts1,pts2,pts3;
 };
 
+struct sse_error_output__ 
+{
+        int sse_error_code;
+};
+
 extern "C" void evolv1_(int *kw, double *mass,double *mt, double *r, double *lum, double *mc, double *rc, double *menv, double *renv, double *ospin, double *epoch, double *tms, double *tphys, double *tphysf, double *dtp, double *z, double *zpars, double *k2);
 extern "C" void zcnsts_(double* z, double *zpars);
 extern "C" void star_(int *kw, double *mass, double *mt, double *tm, double *tn, double *tscls, double *lums, double *GB, double *zpars); // Input: kw, mass, mt, zpars; Output: tm, tn, tscls, lums, GB
@@ -748,6 +753,13 @@ class Particle
     /* dots needed in case of correction after root finding */
     double sse_initial_mass_dot;
     double core_mass_dot;
+    double age_dot;
+    int new_stellar_type;
+    double core_radius_dot;
+    double luminosity_dot;
+    double convective_envelope_mass_dot;
+    double convective_envelope_radius_dot;
+    double sse_k2_dot;
 
 
     double mass_dot_wind_accretion;
@@ -1009,7 +1021,14 @@ class Particle
         /* dots needed in case of correction after root finding */
         sse_initial_mass_dot = 0.0;
         core_mass_dot = 0.0;
-
+        age_dot = 0.0;
+        new_stellar_type = 0;
+        core_radius_dot = 0;
+        luminosity_dot = 0;
+        convective_envelope_mass_dot = 0;
+        convective_envelope_radius_dot = 0;
+        sse_k2_dot = 0;
+        
                 
         /* RLOF */
         include_mass_transfer_terms = true;

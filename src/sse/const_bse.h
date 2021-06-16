@@ -10,6 +10,8 @@
       INTEGER ceflag,tflag,ifflag,nsflag,wdflag
       COMMON /FLAGS/ ceflag,tflag,ifflag,nsflag,wdflag
       INTEGER bhflag
+      INTEGER sse_error_code
+      COMMON /SSE_ERROR_OUTPUT/ sse_error_code
 *
       REAL*8 neta,bwind,hewind,mxns,alpha1,lambda
       REAL*8 sigma,beta,xi,acc2,epsnov,eddfac,gamma

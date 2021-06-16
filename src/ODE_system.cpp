@@ -206,6 +206,8 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     set_positions_and_velocities(particlesMap); /* update positions and velocities of all bound bodies based on updated binary e, h, and TA */
     update_positions_unbound_bodies(particlesMap, actual_time_step); /* update positions of unbound bodies, which are assumed (integration_flag = 0) to move unaccelerated */
 
+    update_stellar_evolution_quantities_directly_secular(particlesMap, end_time - start_time, start_time, integrator_end_time); /* update "other" stellar evolution quantities (cf. stellar_evolution.cpp -- evolve_stars()) */
+
     if (NS_model == 1)
     {
         ODE_Ye19_model_update_magnetic_field(particlesMap, actual_time_step);
@@ -639,7 +641,6 @@ void reset_ODE_dots(ParticlesMap *particlesMap, N_Vector &y, double delta_time)
             for (i=0; i<3; i++)
             {
                 p->dspin_vec_dt[i] = p->ospin_dot * (p->spin_vec[i]/spin_vec_norm);
-                //p->dspin_vec_dt[i] = 0.0;
             }
             p->dmass_dt = p->mass_dot_wind + p->mass_dot_wind_accretion;
             p->dradius_dt = p->radius_dot + p->radius_ddot*delta_time;
@@ -723,15 +724,22 @@ void write_ODE_variables_dots(ParticlesMap *particlesMap, N_Vector &y_dot)
 
             if (p->spin_vec_norm > Omega_crit)
             {
-                //f_breakup = 0.0;
-                f_breakup = exp( -100.0*(p->spin_vec_norm/Omega_crit - 1.0) ); /* Fast but smooth transition from f_breakup = 1 to f_breakup = 0 as p->spin_vec_norm > Omega_crit */
+                //f_breakup = 0.0; /* Sudden transition; yields poor numerical performance */
+                f_breakup = exp( -100.0*(p->spin_vec_norm/Omega_crit - 1.0) ); /* Fast but smooth transition from f_breakup = 1 to f_breakup = 0 as p->spin_vec_norm > Omega_crit; can significantly enhance performance */
+
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("ODE_system.cpp -- write_ODE_variables_dots -- f_breakup %g Omega %g Omega_crit %g\n",f_breakup,p->spin_vec_norm,Omega_crit);
+                }
+                #endif
             }
-            //printf("f_breakup %g %g %g\n",f_breakup,p->spin_vec_norm,Omega_crit);
-            if (p->stellar_type == 13)
-            {
+
+            //if (p->stellar_type == 13)
+            //{
                 //f_breakup = 1.0;
                 //printf("crt %g\n",compute_spin_period_from_spin_angular_frequency(Omega_crit)*yr_to_s);
-            }
+            //}
             
             for (k_component=0; k_component<3; k_component++)
             {

@@ -184,6 +184,7 @@ double compute_Omega_dot_from_J_dot_mass_transfer(int stellar_type, double J_spi
         I = compute_moment_of_inertia(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3);
         I_dot = compute_moment_of_inertia_dot(stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3, mass_dot, radius_dot);
         Omega_dot = (J_spin_dot - I_dot*Omega)/I;
+        //printf("compute_Omega_dot_from_J_dot_mass_transfer I %g I_dot %g Omega_dot %g J_spin_dot %g mass %g core_mass %g radius %g core_radius %g sse_k2 %g sse_k3 %g \n",I,I_dot,Omega_dot,J_spin_dot,stellar_type, mass, core_mass, radius, core_radius, sse_k2, sse_k3);
     }
     else /* BHs */
     {
@@ -418,7 +419,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
     }
     double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(accretor->stellar_type, J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
-    //printf("S %g %g %g\n",norm3(donor->spin_vec),norm3(accretor->spin_vec),compute_breakup_angular_frequency(accretor->mass,accretor->radius));
+    
     if (Omega_d_dot != Omega_d_dot or Omega_a_dot != Omega_a_dot or factor_h_vec!=factor_h_vec or de_dt!=de_dt or domega_dt!=domega_dt)
     {
         printf("mass_changes.cpp -- compute_RLOF_emt_model -- Omega_d_dot %g Omega_a_dot %g factor_h_vec %g de_dt %g domega_dt %g\n",Omega_d_dot,Omega_a_dot,factor_h_vec,de_dt,domega_dt);

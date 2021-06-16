@@ -7,6 +7,7 @@ extern "C"
 
 int initialize_code(ParticlesMap *particlesMap)
 {
+
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
@@ -36,10 +37,10 @@ int initialize_code(ParticlesMap *particlesMap)
     Log_info_type log_info;
     update_log_data(particlesMap, 0.0, 0, LOG_INIT, log_info);
     #endif
-    
-    time(&wall_time_start);
 
     signal(SIGSEGV, custom_segfault_handler); // set up custom handler for segfaults
+    
+    time(&wall_time_start);
 
     return 0;
 }
@@ -162,7 +163,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
         /* Handle roots */
         if (*CVODE_flag==2)
         {
-            correct_stellar_properties_in_case_of_roots_found(particlesMap, dt, t_old, t_out);
             
             if (stop_after_root_found == true) // Used for root finding implementation testing only
             {

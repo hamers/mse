@@ -1730,6 +1730,17 @@ void reset_ODE_mass_dot_quantities(Particle *p)
     p->radius_dot = 0.0;
     p->ospin_dot = 0.0;
     p->instantaneous_perturbation_delta_mass = 0.0;
+    
+    p->age_dot = 0.0;
+    p->sse_initial_mass_dot = 0.0;
+    p->core_mass_dot = 0.0;
+    p->core_radius_dot = 0.0;
+
+    p->luminosity_dot = 0.0;
+    p->core_radius_dot = 0.0;
+    p->convective_envelope_mass_dot = 0.0;
+    p->convective_envelope_radius_dot = 0.0;
+    p->sse_k2_dot = 0.0;
 }
 
 }

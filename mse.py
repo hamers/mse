@@ -2252,7 +2252,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0):
 
         np.random.seed(random_seed)
         
@@ -2290,8 +2290,8 @@ class Tools(object):
         for b in bodies:
             b.include_WD_kicks = include_WD_kicks
             b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
-            #b.kick_distribution_sigma_km_s_NS = 0.0
-            #b.kick_distribution_sigma_km_s_BH = 0.0
+            b.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
+            b.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
             b.common_envelope_timescale = 1.0e3
             
         N_bodies = len(bodies)
@@ -2515,7 +2515,7 @@ class Tools(object):
                     parsec_in_AU = code.CONST_PARSEC
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
                     
-                    plot_HRD.plot(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth)
+                    plot_HRD.scatter(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth,s=10)
                     #plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
                     plot4.plot(1.0e-6*t_print[i_status],3.15576e7*2.0*np.pi/np.array(spin_frequency_print[i_status][index]),color=color,linewidth=linewidth) 
                    
@@ -2547,7 +2547,7 @@ class Tools(object):
             plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
             plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
             #plot4.set_ylabel("$\Omega_\mathrm{spin}/\mathrm{yr^{-1}}$",fontsize=fontsize)
-            plot4.set_ylabel("$P_\mathrm{spin}/\mathrm{d}$",fontsize=fontsize)
+            plot4.set_ylabel("$P_\mathrm{spin}/\mathrm{s}$",fontsize=fontsize)
             plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
             plot2.set_ylim(1.0e-5,1.0e5)
             
@@ -2778,7 +2778,9 @@ class Tools(object):
 
         for index,body in enumerate(bodies):
             color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
-            plot.scatter([index],[y_ref],color=color,s=s)
+            body.plot_x = index
+            body.plot_y = y_ref
+            plot.scatter([index],[y_ref],color=color,s=s,zorder=10)
             text = "$\mathrm{%s}$"%(str(round(body.mass,1)))
             plot.annotate(text,xy=(index - dx,y_ref-dy),color='k',fontsize=fontsize)
             
@@ -2798,6 +2800,20 @@ class Tools(object):
                 plot.arrow(x, y, Adx, Ady,color=color,head_width=0.05, head_length=0.05)
             except AttributeError:
                 pass
+
+        event_bodies = [x for x in bodies if x.index in [index1,index2]]
+        if len(event_bodies)==2:
+
+            if event_flag in [4,6,8]:
+                child1=event_bodies[0]
+                child2=event_bodies[1]
+                #if body.index in [index1,index2] or body.index in [index1,index2]:
+                plot.plot([child1.plot_x,child2.plot_x],[child1.plot_y,child2.plot_y],color='r',zorder=8)
+                if child1.index == index1:
+                    plot.arrow(child1.plot_x, child1.plot_y, 0.5*(child2.plot_x-child1.plot_x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.plot_x-child1.plot_x),zorder=9, color='r')
+                else:
+                    plot.arrow(child2.plot_x, child2.plot_y, -0.5*np.fabs(child2.plot_x-child1.plot_x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.plot_x-child1.plot_x),zorder=9, color='r')
+
 
         plot.set_xlim([-2*dx,len(bodies)])
         plot.set_ylim([y_ref-2*dy,y_ref+2*dy])

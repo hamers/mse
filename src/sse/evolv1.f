@@ -36,7 +36,8 @@ c-------------------------------------------------------------c
       implicit none
 *
       integer kw,it,ip,jp,j,kwold,rflag
-      integer nv
+      integer nv,sse_error_code
+      COMMON /SSE_ERROR_OUTPUT/ sse_error_code
       parameter(nv=50000)
 *
       real*8 mass,z,aj
@@ -173,6 +174,7 @@ c-------------------------------------------------------------c
 * If mass loss has occurred and no type change then check that we
 * have indeed limited the radius change to 10%.
 *
+
          if(kw.eq.kwold.and.dms.gt.0.d0.and.rflag.ne.0)then
             mt2 = mt + dms
             dml = dms/dtm
@@ -184,8 +186,10 @@ c-------------------------------------------------------------c
                if(it.gt.30)then
                   WRITE(*,*)' DANGER1! ',it,kw,mass,dr,rm0
                   WRITE(*,*)' STOP: EVOLV1 FATAL ERROR '
-                  CALL exit(0)
-                  STOP 
+                  sse_error_code = 40
+                  RETURN
+*                  CALL exit(0)
+*                  STOP 
                endif
                dtdr = dtm/ABS(dr)
                dtm = alpha2*MAX(rm0,r)*dtdr
@@ -370,13 +374,17 @@ c-------------------------------------------------------------c
 *
 *      WRITE(*,*)' ip ',ip,' nv ',nv, mass,aj,mt,tm,tn,r,lum
       tphysf = tphys
+
       scm(ip+1,1) = -1.0
       spp(jp+1,1) = -1.0
       if(ip.ge.nv)then
          WRITE(99,*)' EVOLV1 ARRAY ERROR ',mass
          WRITE(*,*)' STOP: EVOLV1 ARRAY ERROR '
-         CALL exit(0)
-         STOP
+         sse_error_code = 41
+         RETURN
+
+*         CALL exit(0)
+*         STOP
       endif
 *
       RETURN

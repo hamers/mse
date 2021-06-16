@@ -13,6 +13,17 @@ struct value4__ value4_;
 struct value5__ value5_;
 struct flags__ flags_;
 struct points__ points_;
+struct sse_error_output__ sse_error_output_;
+
+void check_sse_error_codes()
+{
+    if (sse_error_output_.sse_error_code > 0)
+    {
+        error_code = sse_error_output_.sse_error_code;
+        printf("stellar_evolution.cpp -- check_sse_error_codes() -- nonzero SSE error code %d detected\n",error_code);
+        longjmp(jump_buf,1);
+    }
+}
 
 int initialize_stars(ParticlesMap *particlesMap)
 {
@@ -40,6 +51,7 @@ int initialize_stars(ParticlesMap *particlesMap)
     points_.pts1 = 0.05;
     points_.pts2 = 0.01;
     points_.pts3 = 0.02;
+    sse_error_output_.sse_error_code = 0;
     
     double sse_initial_mass,mass,mt;
     double z;
@@ -117,6 +129,7 @@ int initialize_stars(ParticlesMap *particlesMap)
                     #endif
 
                     evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
+                    check_sse_error_codes();
                     age = tphysf - epoch;
 
                     dt = get_new_dt_sse(kw,sse_initial_mass,mt,age,dt,zpars);
@@ -247,6 +260,9 @@ int initialize_stars(ParticlesMap *particlesMap)
 
 int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time, double *stellar_evolution_timestep, bool get_timestep_only, bool *apply_SNe_effects, int *integration_flag)
 {
+    /* Go through all stars in the system and evolve them with SSE */
+        
+    /* SSE global parameters that need to be set */
     value1_.neta = 0.5;
     value1_.bwind = 0.0;
     value1_.hewind = 0.5;
@@ -270,38 +286,27 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     points_.pts1 = 0.05;
     points_.pts2 = 0.01;
     points_.pts3 = 0.02;
+    sse_error_output_.sse_error_code = 0;
+
 
     ParticlesMapIterator it_p;
     std::vector<int>::iterator it_parent_p,it_parent_q;
 
-    /* Go through all stars in the system and evolve them with SSE */
     double sse_initial_mass,sse_initial_mass_old,sse_time_step;
-    double mt,tphys,tphysf,dtp,epoch,ospin,ospin_old,age;
-    double dt,dt_min;
-    double r,lum,mc,rc,menv,renv,tms,k2;
+    double mt,tphys,tphysf,dtp,epoch,ospin,ospin_old,age,age_old;
+    double dt,dt_min,one_div_dt;
+    double r,lum,lum_old,mc,rc,rc_old,menv,menv_old,renv,renv_old,tms,k2,k2_old;
     double r_old,mt_old;
     double rzams,fac,menv_fraction;
     int kw,kw_old;
     double spin_vec[3];
+    bool update_other_quantities_immediately;
     dt_min = 1.0e100;
     
     double z;
     double *zpars;
     
-    bool reset_h_vectors = false;
     *apply_SNe_effects = false;
-
-    #ifdef IGNORE
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == 1)
-        {
-            p->child1_mass_old = p->child1_mass;
-            p->child2_mass_old = p->child2_mass;
-        }
-    }
-    #endif
             
     for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
@@ -309,6 +314,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
         if (p->is_binary == false and p->object_type == 1)
         {
             /* Extract stellar evolution parameters */
+            /* Note the different units used in SSE vs. MSE */
             mt = mt_old = p->mass;
             sse_initial_mass = sse_initial_mass_old = p->sse_initial_mass;
             kw = kw_old = p->stellar_type;
@@ -319,7 +325,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             ospin_old = ospin = norm3(p->spin_vec);
 
             sse_time_step = p->sse_time_step*yr_to_Myr;
-            age = p->age*yr_to_Myr;
+            age = age_old = p->age*yr_to_Myr;
 
             p->core_mass_old = p->core_mass;
 
@@ -328,13 +334,20 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
             double desired_tphysf = tphysf;
 
             epoch = tphys - age;
+
+            lum_old = p->luminosity/CONST_L_SUN;
+            rc_old = p->core_radius/CONST_R_SUN;
+            renv_old = p->convective_envelope_radius/CONST_R_SUN;
+            menv_old = p->convective_envelope_mass;
+            k2_old = p->sse_k2;
+            
            
             dtp = 0.0;
             
             #ifdef VERBOSE
             if (verbose_flag > 1)
             {
-                printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                printf("stellar_evolution.cpp -- sse1 kw %d mt %g r %g sse_time_step %g epoch %g age %g tphys %g tphysf %g ospin %g sse_initial_mass %.15f\n",kw,mt,r,sse_time_step,epoch,age,tphys,tphysf,ospin,sse_initial_mass);
                 
 #ifdef IGNORE
                 double *GB,*tscls,*lums;
@@ -373,10 +386,11 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                 #endif
 
                 evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
+                check_sse_error_codes();
 
-                if (tphysf != desired_tphysf)
+                if ( fabs(tphysf - desired_tphysf)/desired_tphysf > epsilon)
                 {
-                    printf("stellar_evolution.cpp -- ERROR tphysf != desired_tphysf -- kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
+                    printf("stellar_evolution.cpp -- Warning tphysf != desired_tphysf -- kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin);
                 }
 
                 age = tphysf - epoch;
@@ -388,66 +402,119 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     printf("stellar_evolution.cpp -- sse2 kw %d mt %g r %g lum %g sse_time_step %g epoch %g age %g  tphys %g tphysf %g ospin %g sse_initial_mass %.15f\n",kw,mt,r,lum,sse_time_step,epoch,age,tphys,tphysf,ospin,sse_initial_mass);
                 }
                 #endif
+                
                 if (ospin <= epsilon)
                 {
                     ospin = epsilon;
                 }
-                //printf("kw %d kw_old %d ospin %g ospin_old %g\n",kw,kw_old,ospin,ospin_old);
-                
+
                 /* Write new stellar evolution parameters */
-                if (kw_old==kw or kw < 13)
+                dt = end_time - start_time;                
+                one_div_dt = 1.0/dt;
+
+                if (kw_old==kw) 
+                /* No stellar type change; let mass, radius and spin change smoothly during ODE integration *
+                 * Other parameters are updated only after ODE integration (which could involve a stopping condition, i.e., 
+                 * the actual timestep taken could be shorter than that assumed during stellar evolution, hence the need to use the
+                 * (first-order) time derivatives, instead of updating the quantities directly here. */
                 {
-                    dt = end_time - start_time;
-                    p->mass_dot_wind = (mt - mt_old)/dt;
-                    p->radius_dot = CONST_R_SUN*(r - r_old)/dt;
-                    
-                    p->ospin_dot = (ospin - ospin_old)/dt;
+                    p->mass_dot_wind = (mt - mt_old)*one_div_dt;
+                    p->radius_dot = CONST_R_SUN*(r - r_old)*one_div_dt;
+                    p->ospin_dot = (ospin - ospin_old)*one_div_dt;
 
                     p->instantaneous_perturbation_delta_mass = 0.0;
                     p->apply_kick = false;
                     
-                    if (kw == 13)
+                    if (kw == 13 or kw == 14)
                     {
-                        if (NS_model == 1) /* Ignore SSE changes in spins in this case */
-                        {
-                            p->ospin_dot = 0.0;
-                        }
+                        /* Ignore SSE changes in spins for NS/BHs */
+                        p->ospin_dot = 0.0;
                     }
-                                       //if (kw_old == 1 and kw == 7) {exit(0);}
-                    /* dots needed in case of correction after root finding */
-                    p->sse_initial_mass_dot = (sse_initial_mass - sse_initial_mass_old)/dt;
-                    p->core_mass_dot = (mc - p->core_mass_old)/dt;
+
+                    update_other_quantities_immediately = false;
+
+                    p->age_dot = Myr_to_yr * (age - age_old)*one_div_dt;
+                    p->sse_initial_mass_dot = (sse_initial_mass - sse_initial_mass_old)*one_div_dt;
+                    p->core_mass_dot = (mc - p->core_mass_old)*one_div_dt;
+                    p->core_radius_dot = CONST_R_SUN*(rc - rc_old)*one_div_dt;
                     
+                    p->luminosity_dot = CONST_L_SUN * (lum - lum_old)*one_div_dt;
+                    p->convective_envelope_mass_dot = (menv - menv_old)*one_div_dt;
+                    p->convective_envelope_radius_dot = CONST_R_SUN*(renv - renv_old)*one_div_dt;
+                    p->sse_k2_dot = (k2 - k2_old)*one_div_dt;
                     
                 }
-                //else if (kw < 13)
-                //{
+                else if (kw < 13)
+                /* kw change not involving NS/BH *
+                 * Let mass, radius and spin change smoothly (mass change will be handled assuming
+                 * adiabatic mass loss), but update other parameters immediately to avoid potential problems
+                 * with binary_evolution.cpp, common_envelope_evolution.cpp, collision.cpp, ODE_tides.cpp */
+                {
+                    p->mass_dot_wind = (mt - mt_old)*one_div_dt;
+                    p->radius_dot = CONST_R_SUN*(r - r_old)*one_div_dt;
+                    p->ospin_dot = (ospin - ospin_old)*one_div_dt;
                     
+                    p->instantaneous_perturbation_delta_mass = 0.0;
+                    p->apply_kick = false;
+                    
+                    update_other_quantities_immediately = true;
+                }
                 
-                else /* kw change with new kw=13 or kw=14 */
+                else 
+                /* kw change with new kw=13 or kw=14, i.e., NS/BH formation *
+                 * Update all parameters immediately, except for the mass, which will be handled
+                 * immediately after this function in SNe.cpp */
                 {
                     p->mass_dot_wind = 0.0;
                     p->radius_dot = 0.0;
                     p->ospin_dot = 0.0;
 
-                    /* New mass will be handled by handle_SNe_in_system(), but radius and spin have to be adjusted here */
+                    /* New mass will be handled by handle_SNe_in_system(), but radius and spin have to be updated here */
                     p->radius = r*CONST_R_SUN;
                     if (kw == 15) // SSE may return invalid spins for massless remnants; override with something arbitrary (the body will be removed later anyway in SNe.cpp -- remove_massless_remnants_from_system()
                     {
                         ospin = 1.0;
                     }
-                    rescale_vector(p->spin_vec, ospin/ospin_old);
+                    rescale_vector(p->spin_vec, ospin/ospin_old); /* update spin (scalar change only) */
                     
                     *apply_SNe_effects = true;
                     
                     p->apply_kick = true;
                     p->instantaneous_perturbation_delta_mass = mt - mt_old; /* Will be used by handle_SNe_in_system() */
                     p->RLOF_flag = 0;
-                    
+
+                    update_other_quantities_immediately = true;
+                }
+
+                if (update_other_quantities_immediately == true)
+                /* Update the "other" (everything except mass, radius and spin) stellar evolution quantities immediately *
+                 * The corresponding "dots" should be zero to avoid overupdating */
+                {
+                    p->age_dot = 0.0;
                     p->sse_initial_mass_dot = 0.0;
                     p->core_mass_dot = 0.0;
+                    p->core_radius_dot = 0.0;
 
+                    p->luminosity_dot = 0.0;
+                    p->convective_envelope_mass_dot = 0.0;
+                    p->convective_envelope_radius_dot = 0.0;
+                    p->sse_k2_dot = 0.0;
+                    
+                    p->stellar_type = kw;
+
+                    p->age = age*Myr_to_yr;
+                    p->epoch = epoch*Myr_to_yr;
+                    p->sse_initial_mass = sse_initial_mass;
+                    p->core_mass = mc;
+                    p->stellar_type = kw;
+                        
+                    p->luminosity = lum*CONST_L_SUN;
+                    p->core_radius = rc*CONST_R_SUN;
+                    p->convective_envelope_mass = menv;
+                    p->convective_envelope_radius = renv*CONST_R_SUN;
+                    p->sse_k2 = k2;
                 }
+
                 
                 /* WD kicks */
                 if (kw_old!=kw and kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
@@ -477,21 +544,9 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     }
                 }
 
-                p->sse_initial_mass = sse_initial_mass;
-                p->stellar_type = kw;
-                p->epoch = epoch*Myr_to_yr;
-                
-                p->age = age*Myr_to_yr;
                 p->sse_main_sequence_timescale = tms*Myr_to_yr;
-
-                p->luminosity = lum*CONST_L_SUN;
-                p->core_mass = mc;
-                p->core_radius = rc*CONST_R_SUN;
-                p->convective_envelope_mass = menv;
-                p->convective_envelope_radius = renv*CONST_R_SUN;
-
-                p->sse_k2 = k2;
                 p->sse_k3 = 0.21;
+
 
                 check_number(p->stellar_type,                  "stellar_evolution.cpp -- evolve_stars","stellar_type", true);
                 check_number(p->sse_initial_mass,              "stellar_evolution.cpp -- evolve_stars","sse_initial_mass", true);
@@ -571,16 +626,64 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
     return 0;
 }
 
-void correct_stellar_properties_in_case_of_roots_found(ParticlesMap *particlesMap, double dt_stev_assumed, double t_old, double t_out)
+void update_stellar_evolution_quantities_directly_secular(ParticlesMap *particlesMap, double dt_assumed, double t_old, double t_out)
 {
+    ParticlesMapIterator it_p;
     double true_time_step = t_out - t_old;
-    double dt_dif = dt_stev_assumed - true_time_step;
-    double age_correction = dt_dif;
+    double dt_dif = dt_assumed - true_time_step;
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("stellar_evolution.cpp -- update_stellar_evolution_quantities_directly_secular -- start -- dt_assumed %g t_old %g t_out %g true_time_step %g dt_dif %g\n",dt_assumed,t_old,t_out,true_time_step,dt_dif);
+        print_system(particlesMap,0);
+    }
+    #endif
+        
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+    {
+        Particle *p = (*it_p).second;
+        if (p->is_binary == false and p->object_type == 1)
+        {
+            //printf("=======UPDATE=========\n");
+            //printf("i %d old age %g minit %.15f mc %.15f sse_initial_mass_dot %g\n",p->index,p->age,p->sse_initial_mass,p->core_mass,p->sse_initial_mass_dot);
+
+            p->sse_initial_mass += p->sse_initial_mass_dot * true_time_step;
+            p->age += p->age_dot * true_time_step;
+            p->epoch = t_out - p->age;
+
+            p->core_mass += p->core_mass_dot * true_time_step;
+            p->core_radius += p->core_radius_dot * true_time_step;            
+
+            p->luminosity += p->luminosity_dot * true_time_step;
+            p->convective_envelope_mass += p->convective_envelope_mass_dot * true_time_step;
+            p->convective_envelope_radius += p->convective_envelope_radius_dot * true_time_step;
+            p->sse_k2 += p->sse_k2_dot * true_time_step;
+          
+            //printf("i %d old age %g minit %.15f mc %.15f sse_initial_mass_dot %g\n",p->index,p->age,p->sse_initial_mass,p->core_mass,p->sse_initial_mass_dot);
+        }
+    }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("stellar_evolution.cpp -- update_stellar_evolution_quantities_directly_secular -- end -- dt_assumed %g t_old %g t_out %g true_time_step %g dt_dif %g\n",dt_assumed,t_old,t_out,true_time_step,dt_dif);
+        print_system(particlesMap,0);
+    }
+    #endif
+
+}
+
+void update_stellar_evolution_quantities_directly_nbody(ParticlesMap *particlesMap, double t, double dt)
+{
+    int i;
+    double spin_vec_norm;
     
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
-        printf("stellar_evolution.cpp -- correct_stellar_ages_in_case_of_roots_found -- dt_stev_assumed %g t_old %g t_out %g true_time_step %g age_correction %g\n",dt_stev_assumed,t_old,t_out,true_time_step,age_correction);
+        printf("stellar_evolution.cpp -- update_stellar_evolution_quantities_directly_nbody -- start t %g dt %g\n",t,dt);
+        print_system(particlesMap,1);
     }
     #endif
     
@@ -590,19 +693,65 @@ void correct_stellar_properties_in_case_of_roots_found(ParticlesMap *particlesMa
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->object_type == 1)
         {
-            //printf("i %d old age %g minit %.15f mc %.15f\n",p->index,p->age,p->sse_initial_mass,p->core_mass);
-            p->age -= age_correction;
-            p->sse_initial_mass -= p->sse_initial_mass_dot * dt_dif;
-            p->core_mass_dot -= p->core_mass_dot * dt_dif;
-            //printf("i %d new age %g minit %.15f mc %.15f\n",p->index,p->age,p->sse_initial_mass,p->core_mass);
+            //printf("1 %g %g %g %g %g\n",p->core_radius,p->luminosity,p->convective_envelope_mass,p->convective_envelope_radius,p->sse_k2);
             
+            p->RLOF_flag = 0;
             
+            p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
+            p->radius += p->radius_dot * dt;
+
+
+            p->sse_initial_mass += p->sse_initial_mass_dot * dt;
+            p->age += p->age_dot * dt;
+            p->epoch = t - p->age;
+
+            p->core_mass += p->core_mass_dot * dt;
+            p->core_radius += p->core_radius_dot * dt;
+            
+            p->luminosity += p->luminosity_dot * dt;
+            p->convective_envelope_mass += p->convective_envelope_mass_dot * dt;
+            p->convective_envelope_radius += p->convective_envelope_radius_dot * dt;
+            p->sse_k2 += p->sse_k2_dot * dt;
+
+            //printf("2 %g %g %g %g %g\n",p->core_radius,p->luminosity,p->convective_envelope_mass,p->convective_envelope_radius,p->sse_k2);
+
+            #ifdef VERBOSE
+            if (verbose_flag > 1)
+            {
+                printf("nbody_evolution.cpp -- update_stellar_evolution_quantities_directly_nbody m %g r %g\n",p->mass,p->radius);
+            }
+            #endif
+
+            spin_vec_norm = norm3(p->spin_vec);
+            if (spin_vec_norm <= epsilon)
+            {
+                spin_vec_norm = epsilon;
+            }
+
+            /* Spin changes according to SSE */
+            for (i=0; i<3; i++)
+            {
+                p->spin_vec[i] += p->ospin_dot * (p->spin_vec[i]/spin_vec_norm) * dt;
+            }
+            
+            /* Spin changes due to NS spindown (not modelled in SSE) */
+            if (NS_model == 1)
+            {
+                nbody_handle_NS_properties_Ye19_model(p, spin_vec_norm, dt);
+            }
         }
     }
-    print_system(particlesMap,1);
-}
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("stellar_evolution.cpp -- update_stellar_evolution_quantities_directly_nbody -- end %g dt %g\n",t,dt);
+        print_system(particlesMap,1);
+    }
+    #endif
 
     
+}
 
 void check_for_critical_rotation(ParticlesMap *particlesMap)
 {
@@ -738,7 +887,7 @@ double compute_moment_of_inertia_dot(int stellar_type, double mass, double core_
     }
     else
     {
-        printf("stellar_evolution.cpp -- compute_moment_of_inertia -- ERROR: stellar_type should not be %d\n",stellar_type);
+        printf("stellar_evolution.cpp -- compute_moment_of_inertia_dot -- ERROR: stellar_type should not be %d\n",stellar_type);
         error_code = 38;
         longjmp(jump_buf,1);
         return 0.0;

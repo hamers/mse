@@ -501,7 +501,7 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         for (int i=0; i<3; i++)
         {

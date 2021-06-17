@@ -42,7 +42,7 @@ int handle_binary_evolution(ParticlesMap *particlesMap, double t_old, double t, 
 int handle_wind_accretion(ParticlesMap *particlesMap, double t_old, double t, double *dt_binary_evolution, int *integration_flag)
 {
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("binary_evolution.cpp -- handle_wind_accretion\n");
     }
@@ -677,7 +677,7 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     dm1 = m_donor;
     dm2 = dm1;
 
-    bool destroyed;;
+    bool destroyed;
     double v_kick_vec[3] = {0.0,0.0,0.0};
     
     int kw1 = donor->stellar_type;
@@ -745,7 +745,6 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     if (destroyed == false)
     {
         update_stellar_evolution_properties(accretor);
-        //accretor->RLOF_flag = 0;
         reset_ODE_mass_dot_quantities(accretor);
         
         particlesMap->erase(donor_index);
@@ -796,7 +795,6 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
 
 int stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
-    //Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
     
@@ -1470,6 +1468,14 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
     {
         return;
     }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- begin \n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
     
     double dt = t - t_old;
     
@@ -1488,13 +1494,12 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
     while (found_new_event == true)
     {
 
-        //printf("BI %d\n",found_new_event);
         found_new_event = false;
         for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
         {
             Particle *star2 = (*it_p).second;
             kw2 = star2->stellar_type;
-            //printf("B %d i %d %d\n",found_new_event,star2->index,particlesMap->size());
+
             if (star2->is_binary == false and star2->is_bound == true and star2->object_type == 1 and kw2 >= 10 and kw2 <= 12)
             {
                 Particle *star1 = (*particlesMap)[star2->sibling];
@@ -1506,14 +1511,11 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                     
                     mdot1 = star1->mass_dot_wind + star1->mass_dot_wind_accretion + star1->mass_dot_adiabatic_ejection + star1->mass_dot_RLOF + star1->mass_dot_RLOF_triple;
                     mdot2 = star2->mass_dot_wind + star2->mass_dot_wind_accretion + star2->mass_dot_adiabatic_ejection + star2->mass_dot_RLOF + star2->mass_dot_RLOF_triple;
-                    m1_new = m1 + mdot1 * dt;
+                    m1_new = m1 + mdot1 * dt; // new mass donor/accretor would have after this time-step (taking account wind mass losses)
                     m2_new = m2 + mdot2 * dt;
                     
                     kw1 = star1->stellar_type;
-  //                  printf("%g %g %g %g %g %g\n",m1,m2,mdot1,mdot2,m1_new,m2_new);
                                 
-                //double mt2 = m_accretor + (dm2 - dms_accretor); // new mass accretor would have after this time-step (taking account wind mass losses)
-
                     if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7)
                     {
                          /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
@@ -1703,7 +1705,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                 }
             }
         }
-        //printf("BF %d\n",found_new_event);
     }
     
     if (structure_change == true)
@@ -1713,8 +1714,13 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
 
     update_structure(particlesMap, *integration_flag);
 
-    //printf("done\n");
-    //print_system(particlesMap,1);
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- end \n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
     
 }
 

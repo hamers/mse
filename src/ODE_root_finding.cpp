@@ -775,7 +775,7 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
     determine_binary_parents_and_levels(particlesMap,&N_bodies,&N_binaries,&N_root_finding,&N_ODE_equations);
     
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("ODE_root_finding.cpp -- check_for_initial_roots -- start\n");
         print_system(particlesMap,0);
@@ -891,7 +891,7 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
     }
     
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("ODE_root_finding.cpp -- check_for_initial_roots -- done\n");
         print_system(particlesMap,0);

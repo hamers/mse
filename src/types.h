@@ -760,6 +760,7 @@ class Particle
     double convective_envelope_mass_dot;
     double convective_envelope_radius_dot;
     double sse_k2_dot;
+    double epoch_dot;
 
 
     double mass_dot_wind_accretion;

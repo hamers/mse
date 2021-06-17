@@ -211,7 +211,7 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("ODE_mass_changes.cpp -- ODE_handle_RLOF_emt -- child1->child2 R_lc %g a %g q %g M %g R %g x %g E_0 %g in_RLOF %d\n",R_Lc,a,q,child1->mass,child1->radius,x,E_0,in_RLOF);
         }
@@ -232,7 +232,7 @@ int ODE_handle_RLOF_emt(Particle *p, Particle *child1, Particle *child2)
         flag = determine_E_0(e, x, &E_0, &in_RLOF);
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("ODE_mass_changes.cpp -- ODE_handle_RLOF_emt -- child2->child1 R_lc %g a %g q %g M %g R %g x %g E_0 %g in_RLOF %d\n",R_Lc,a,q,child2->mass,child2->radius,x,E_0,in_RLOF);
         }

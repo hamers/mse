@@ -194,7 +194,7 @@ double AMC_data_function(double log_m, Particle *star)
     int T_HE_BURNING = 2;
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("apsidal_motion_constant.cpp -- AMC_data_function -- input log_m %g age %g tms %g\n",log_m, age, tms);
     }

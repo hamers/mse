@@ -226,7 +226,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
             #ifdef VERBOSE
             if (verbose_flag > 1)
             {
-                printf("evolve.cpp -- evolve -- adjust dt to reach end time \n");
+                printf("evolve.cpp -- evolve -- adjust dt to reach end time; t %g end_time %g new dt %g\n",t,end_time,dt);
                 print_system(particlesMap,*integration_flag);
             }
             #endif

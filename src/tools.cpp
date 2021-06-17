@@ -360,7 +360,7 @@ void compute_eccentric_anomaly_from_mean_anomaly(double mean_anomaly, double ecc
         error = fabs(eccentric_anomaly_next - eccentric_anomaly);
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("tools.cpp -- compute_eccentric_anomaly_from_mean_anomaly -- j %d eccentric_anomaly %g eccentric_anomaly_next %g error %g\n",j,eccentric_anomaly,eccentric_anomaly_next,error);
         }
@@ -529,7 +529,7 @@ void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, d
         v[i] = v_norm*( -sin_f*e_vec_unit[i] + (e + cos_f)*q_vec_unit[i] );
             
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("tools.cpp -- from_orbital_vectors_to_cartesian -- i %d r[i] %g v[i] %g e_unit[i] %g q_unit[i] %g\n",i,r[i],v[i],e_vec_unit[i],q_vec_unit[i]);
         }

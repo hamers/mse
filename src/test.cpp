@@ -1631,6 +1631,69 @@ int test_sse()
             printf("test.cpp -- error in test_sse(); non-matching ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
             flag = 1;
         }
+
+        test_sse_specific_model_stopping_conditions(masses[i],z,&kw_final,&m_init_final,&m_final,&R_final,&ospin_final,&L_final,&m_core_final,&m_env_final,&epoch_final);
+        if (1==0)
+        {
+            printf("==========================\n");
+            printf("kw_final %d %d\n",kw_final,ref_kw_final[i]);
+            printf("m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
+            printf("m_final %g %g\n",m_final,ref_m_final[i]);
+            printf("log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
+            printf("log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
+            printf("m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
+            printf("m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
+            printf("epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
+            printf("ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
+        }
+        if (kw_final != ref_kw_final[i])
+        {
+            printf("test.cpp -- error in test_sse(); non-matching stellar types %d %d\n",kw_final,ref_kw_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_init_final,ref_m_init_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_init_final %g %g\n",m_init_final,ref_m_init_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_final,ref_m_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_final %g %g\n",m_final,ref_m_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching log10_L_final_LSun %g %g\n",log10(L_final/CONST_L_SUN),ref_log10_L_final_LSun[i]);
+            flag = 1;
+        }
+        if ( !equal_number(log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching log10_R_final_RSun %g %g\n",log10(R_final/CONST_R_SUN),ref_log10_R_final_RSun[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_core_final,ref_m_core_final[i],1.0e-2) and i!=0)
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_core_final %g %g\n",m_core_final,ref_m_core_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(m_env_final,ref_m_env_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching m_env_final %g %g\n",m_env_final,ref_m_env_final[i]);
+            flag = 1;
+        }
+        if ( !equal_number(epoch_final*1e-6,ref_epoch_final[i],1.0e-2) and i!=0)
+        {
+            printf("test.cpp -- error in test_sse(); non-matching epoch_final/Myr %g %g\n",epoch_final*1e-6,ref_epoch_final[i]);
+            flag = 1;
+        }        
+        if ( !equal_number(ospin_final,ref_ospin_final[i],1.0e-2) )
+        {
+            printf("test.cpp -- error in test_sse(); non-matching ospin_final %g %g\n",ospin_final,ref_ospin_final[i]);
+            flag = 1;
+        }
+
+
+
     }
     
     NS_model = NS_model_old;
@@ -1639,6 +1702,7 @@ int test_sse()
 
 int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final)
 {
+
     int flag = 0;
     
     ParticlesMap particlesMap;
@@ -1696,6 +1760,7 @@ int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_fi
 
 int test_sse_specific_model_evolve_function(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final)
 {
+
     int flag = 0;
     
     ParticlesMap particlesMap;
@@ -1746,6 +1811,108 @@ int test_sse_specific_model_evolve_function(double m, double z, int *kw_final, d
     return flag;
 }
 
+int test_sse_specific_model_stopping_conditions(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final)
+{
+
+    int flag = 0;
+    
+    ParticlesMap particlesMap;
+    Particle *star = new Particle(0, false);
+    particlesMap[0] = star;
+    
+    star->object_type = 1;
+    star->mass = m;
+    star->sse_initial_mass = m;
+    star->metallicity = z;
+    star->stellar_type = 1;
+    
+    initialize_stars(&particlesMap);
+    double t_old,t;
+    t_old = t = 0.0;
+    double dt = 1.0;
+    
+    int sec_flag;
+    double t_max = 1.2e10;
+    int integration_flag=0;
+    bool unbound_orbits;
+    bool apply_SNe_effects;
+    double t_out;
+    double hamiltonian;
+    int CVODE_flag,CVODE_error_code;
+    double spin_vec_norm;
+    double dt_stev,dt_stev_new,dt_true;
+    double t_stev = 1.0;
+    int kw_old,kw_new;
+    
+    int k=0;
+    int k_max=4;
+    while (t_old < t_max)
+    {
+        kw_old = star->stellar_type;
+        evolve_stars(&particlesMap,t_old,t_stev,&dt_stev_new,false,&apply_SNe_effects,&integration_flag);
+        kw_new = star->stellar_type;
+
+        dt_stev = t_stev-t_old;
+
+        dt = dt_stev;
+        
+        if (kw_old == kw_new)
+        {
+            k += 1;
+        }
+        
+        if (kw_old == kw_new and kw_new < 10 and k == k_max)
+        {
+            dt = dt_stev * 0.1;
+            //printf("adjust dt %g k %d\n",dt,k);
+        }
+        if (k>k_max)
+        {
+            k=0;
+        }
+
+        if (apply_SNe_effects == true)
+        {
+            handle_SNe_in_system(&particlesMap,&unbound_orbits,&integration_flag);
+        }
+        else
+        {
+
+            star->mass += star->mass_dot_wind * dt;
+            star->radius += star->radius_dot * dt;
+
+            spin_vec_norm = norm3(star->spin_vec);
+            for (int i=0; i<3; i++)
+            {
+                star->spin_vec[i] += dt * star->ospin_dot * (star->spin_vec[i]/spin_vec_norm);
+            }
+            
+            update_stellar_evolution_quantities_directly_secular(&particlesMap, dt_stev, t_old, t_old + dt);
+        
+        }
+
+        t_old += dt;
+
+        dt = dt_stev_new;
+        t_stev+=dt;
+        
+        if (t_old>t_max)
+        {
+            break;
+        }
+    }
+    *kw_final = star->stellar_type;
+    *m_final = star->mass;
+    *m_init_final = star->sse_initial_mass;
+    *R_final = star->radius;
+    *ospin_final = norm3(star->spin_vec);
+    *L_final = star->luminosity;
+    *m_core_final = star->core_mass;
+    *m_env_final = star->convective_envelope_mass;
+    *epoch_final = star->epoch;
+    
+    return flag;
+}
 
 
 

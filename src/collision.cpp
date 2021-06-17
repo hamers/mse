@@ -1045,7 +1045,7 @@ double determine_effective_radius_for_collision(double radius, int stellar_type,
     }
     
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("collision.cpp -- determine_effective_radius_for_collision R %g st %d int flag %d R_eff %g\n",radius, stellar_type,integration_flag,effective_radius);
     }

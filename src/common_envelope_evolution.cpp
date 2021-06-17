@@ -139,25 +139,29 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     double AJ1 = star1->age * yr_to_Myr;
     double *ZPARS1 = star1->zpars;   
-    //printf("pre k %d AJ1 %g m01 %g m1 %g tm1 %g tn1 %g r1 %g l1 %g mc1 %g rc1 %g menv1 %g renv %g\n",KW1,AJ1,M01,M1,TM1,TN1,R1,L1,MC1,RC1,MENV1,RENV1);
+    
     star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
-    //printf("TM1 %g TN1 %g TSCLS1 %g\n",TM1,TN1,TSCLS1[0]);
-    hrdiag_(&M01,&AJ1,&M1,&TM1,&TN1,TSCLS1,LUMS1,GB1,ZPARS1, \
-        &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
-    //printf("post k %d AJ1 %g m01 %g m1 %g tm1 %g tn1 %g r1 %g l1 %g mc1 %g rc1 %g menv1 %g renv %g\n",KW1,AJ1,M01,M1,TM1,TN1,R1,L1,MC1,RC1,MENV1,RENV1);
+    MENV1 = star1->convective_envelope_mass;
+    RENV1 = star1->convective_envelope_radius/CONST_R_SUN;
+    K21 = star1->sse_k2;
+    
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- post STAR1 kw1 %d AJ1 %g m01 %g m1 %g tm1 %g tn1 %g r1 %g l1 %g mc1 %g rc1 %g menv1 %g renv %g\n",KW1,AJ1,M01,M1,TM1,TN1,R1,L1,MC1,RC1,MENV1,RENV1);
+    }
+    #endif
+    
     if (MC1 <= epsilon)
     {
-        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution -- no core present (MC1 = %g)! M1 = %g; skipping\n",MC1,M1);
-        //error_code = 39;
-        //longjmp(jump_buf,1);
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution -- no core present (MC1 = %g)! M1 = %g, KW1 = %d, M01 = %g; skipping\n",MC1,M1,KW1,M01);
         
         delete[] GB1;
         delete[] TSCLS1;
         delete[] LUMS1;
 
-        return;
-            
-        //MC1 = M1;
+        error_code = 39;
+        longjmp(jump_buf,1);
     }
 
     double MENVD1 = MENV1 / (M1 - MC1);
@@ -186,9 +190,9 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double *ZPARS2 = star2->zpars;    
 
     star_(&KW2, &M02, &M2, &TM2, &TN2, TSCLS2, LUMS2, GB2, ZPARS2);
-    hrdiag_(&M02,&AJ2,&M2,&TM2,&TN2,TSCLS2,LUMS2,GB2,ZPARS2, \
-        &R2,&L2,&KW2,&MC2,&RC2,&MENV2,&RENV2,&K22);
-
+    MENV2 = star2->convective_envelope_mass;
+    RENV2 = star2->convective_envelope_radius/CONST_R_SUN;
+    
     double MENVD2 = MENV2 / (M2 - MC2);
     double RZAMS2 = rzamsf_(&M02);
     double LAMB2 = celamf_(&KW2,&M02,&L2,&R2,&RZAMS2,&MENVD2,&fac);
@@ -634,12 +638,16 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
             if (KW == 2)
             {
+                //printf("0 AJ %g\n",AJ1);
                 star_(&KW,&M1,&M1,&TM2,&TN,TSCLS2,LUMS,GB,ZPARS2);
                 if(GB[8] >= MC1)
                 {
+                   //printf("1 AJ %g\n",AJ1);
+                   //printf("par TM2 %g TSCLS2[0] %g AJ1 %g TM1 %g TSCLS1[0] %g\n",TM2,TSCLS2[0],AJ1,TM1,TSCLS1[0]);
                    M01 = M1;
                    AJ1 = TM2 + (TSCLS2[0] - TM2) * (AJ1 - TM1) / (TSCLS1[0] - TM1);
                    star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
+                   //printf("2 AJ %g\n",AJ1);
                 }
             }
             else if (KW == 7)
@@ -665,11 +673,11 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             {
                 star_(&KW,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2);
             }
-            
-            //printf("HRDIAG0 M01 %g M1 %g AJ1 %g KW %d TN %g TM1 %g\n",M01,M1,AJ1,KW1,TN,TM1);
+            //printf("AJ1 %g TMS %g TSCLS1[0] %g\n",AJ1,TM1,TSCLS1[0]);
+            //printf("HRDIAG0 M01 %g M1 %g AJ1 %g KW %d TN %g TM1 %g\n",M01,M1,AJ1,KW,TN,TM1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS2, \
                 &R1,&L1,&KW,&MC1,&RC1,&MENV1,&RENV1,&K21);
-            //printf("HRDIAG1 M01 %g M1 %g AJ1 %g KW %d R1 %g L1 %g\n",M01,M1,AJ1,KW1,R1,L1);
+            //printf("HRDIAG1 M01 %g M1 %g AJ1 %g KW %d R1 %g L1 %g\n",M01,M1,AJ1,KW,R1,L1);
             KW1 = KW;
             ECC = 0.0;
         }
@@ -931,6 +939,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         }
 
         /* Merged star properties */
+        printf("KW1 %d KW %d\n",KW1,KW);
         star1->stellar_type = KW1;
         star1->mass = M1;
         star1->core_mass = MC1;
@@ -1143,15 +1152,13 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double R3 = star3->radius/CONST_R_SUN;
     double RC3 = star3->core_radius/CONST_R_SUN;
     double L3 = star3->luminosity/CONST_L_SUN;
-    double M_env3,R_env3,k2_3;
+    double M_env3,R_env3;
     
     double age3 = star3->age * yr_to_Myr;
     double *zpars3 = star3->zpars;    
 
     star_(&kw3, &M3_sse_init, &M3, &tm3, &tn3, tscls3, lums3, GB3, zpars3);
-    hrdiag_(&M3_sse_init,&age3,&M3,&tm3,&tm3,tscls3,lums3,GB3,zpars3, \
-        &R3,&L3,&kw3,&MC3,&RC3,&M_env3,&R_env3,&k2_3);
-
+    
     double fac = binary_evolution_CE_recombination_fraction;
     double M_envd3 = M_env3 / (M3 - MC3);
     double R_ZAMS3 = rzamsf_(&M3_sse_init);

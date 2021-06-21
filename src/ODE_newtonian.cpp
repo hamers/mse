@@ -15,7 +15,7 @@ void compute_EOM_Newtonian_for_particle(ParticlesMap *particlesMap, Particle *p,
     if (p->exclude_for_secular_integration == true)
     {
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("ODE_newtonian.cpp -- compute_EOM_Newtonian_for_particle -- not applying terms for particle %d\n",p->index);
         }

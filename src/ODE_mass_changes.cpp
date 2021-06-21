@@ -51,125 +51,6 @@ int ODE_handle_RLOF(ParticlesMap *particlesMap, Particle *p)
     return 0;
 }
 
-int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *outer_binary, Particle *donor, Particle *inner_binary)
-{
-    /* Mass transfer from tertiary star to inner binary. */
-    
-    if (donor->is_binary == true or inner_binary->is_binary == false)
-    {
-        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- ERROR: donor %d should be star; inner binary %d should be a binary!\n",donor->index,inner_binary->index);
-        error_code = 11;
-        longjmp(jump_buf,1);
-        //exit(-1);
-    }
-
-    if (donor->include_mass_transfer_terms==false)
-    {
-        return 0;
-    }
-    if (donor->object_type != 1)
-    {
-        return 0;
-    }
-    
-    Particle *child1 = (*particlesMap)[inner_binary->child1];
-    Particle *child2 = (*particlesMap)[inner_binary->child2];
-    
-    double m_donor = donor->mass;
-    double m_inner_binary = inner_binary->mass;
-
-    double R_donor = donor->radius;
-       
-    double a_in = inner_binary->a;
-    double a_out = outer_binary->a;
-
-    double q = m_donor/m_inner_binary;
-    double R_Lc = roche_radius_pericenter_eggleton(a_out,q); /* with argument "a", actually computes circular Roche lobe radius */
-    if (R_donor < R_Lc)
-    {
-        /* There is no RLOF of tertiary star; do nothing. */
-        return 0;
-    }
-
-    #ifdef VERBOSE
-    if (verbose_flag > 1)
-    {
-        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
-    }
-    #endif
-   
-    double m_C1 = child1->mass;
-    double m_C2 = child2->mass;
-
-    double e_in = inner_binary->e;
-    double e_out = outer_binary->e;
-
-    double m_donor_dot = donor->mass_dot_RLOF_triple;
-    double m_C1_dot = child1->mass_dot_RLOF_triple;
-    double m_C2_dot = child2->mass_dot_RLOF_triple;
-
-    if (fabs(m_donor_dot) <= epsilon)
-    {
-        return 0;
-    }
-        
-    /* Effect on inner orbit -- CE-like behavior. */
-    double a_in_dot = inner_binary->triple_mass_transfer_a_in_dot; /* This was computed beforehand in binary_evolution.cpp -- triple_stable_mass_transfer_evolution() */
-    double e_in_dot = 0.0;
-    
-    /* Effect on outer orbit -- non-conservative mass transfer. */
-    double beta = -(m_C1_dot+m_C2_dot)/m_donor_dot;
-    double gamma = m_donor/m_inner_binary; /* Isotropic re-emission (Pols, lecture notes on binary evolution, Chapter 7) */
-    double a_out_dot = compute_a_dot_circular_non_conservative_mass_transfer(a_out,m_donor,m_donor_dot,m_inner_binary,beta,gamma);
-    double e_out_dot = 0.0;
-
-    /* Effect on spins. */
-    double Omega_donor = donor->spin_vec_norm;
-    double J_spin_donor_dot = m_donor*R_donor*R_donor*Omega_donor;
-    double Omega_donor_dot = compute_Omega_dot_from_J_dot_mass_transfer(donor->stellar_type, J_spin_donor_dot, Omega_donor, m_donor, m_donor_dot, donor->core_mass, R_donor, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
-    
-    /* Assume the spins in the inner binary are unaffected. */
-
-    if (Omega_donor_dot != Omega_donor_dot)
-    {
-        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- Omega_donor_dot %g\n",Omega_donor_dot);
-        error_code = 10;
-        longjmp(jump_buf,1);
-        //exit(-1);
-    }
-
-    #ifdef VERBOSE
-    if (verbose_flag > 1)
-    {
-        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d a_in_dot %g beta %g gamma %g a_out_dot %g a_out %g m_donor %g m_donor_dot %g m_inner_binary %g \n",outer_binary->index,donor->index,inner_binary->index,a_in_dot,beta,gamma,a_out_dot,a_out,m_donor,m_donor_dot,m_inner_binary);
-    }
-    #endif
-    
-
-    /* Update dmass_dt. */
-    donor->dmass_dt += m_donor_dot;
-    child1->dmass_dt += m_C1_dot;
-    child2->dmass_dt += m_C2_dot;
-    
-    /* Update h,e, and spin vectors. */
-    double h_in_dot_div_h_in = compute_h_dot_div_h(m_C1, m_C1_dot, m_C2, m_C2_dot, a_in, a_in_dot, e_in, e_in_dot);
-    double h_out_dot_div_h_out = compute_h_dot_div_h(m_donor, m_donor_dot, m_inner_binary, m_C1_dot+m_C2_dot, a_out, a_out_dot, e_out, e_out_dot);
- 
-    check_number(h_in_dot_div_h_in,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_in_dot_div_h_in", true);
-    check_number(h_out_dot_div_h_out,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_out_dot_div_h_out", true);
- 
-    for (int i=0; i<3; i++)
-    {
-        inner_binary->dh_vec_dt[i] += inner_binary->h_vec[i] * h_in_dot_div_h_in;
-        outer_binary->dh_vec_dt[i] += outer_binary->h_vec[i] * h_out_dot_div_h_out;
-
-        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_donor_dot;
-    }
-    
-    
-    return 0;
-}
-
 double compute_a_dot_circular_non_conservative_mass_transfer(double a, double m_donor, double m_donor_dot, double m_accretor, double beta, double gamma)
 {
     /* O.R. Pols, lecture notes on binary evolution, Chapter 7, eq. (7.14). */
@@ -386,7 +267,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     //double da_dt_ex = a*-2.0*(M_d_dot_av/M_d)*(1.0 - M_d/M_a);
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("ODE_mass_changes.cpp -- e %g x %g E_0 %g m_d %g m_a %g fm %g md %g da_dt %g de_dt %g domega_dt %g\n",e,x,E_0,M_d,M_a,fm,M_d_dot_av,da_dt,de_dt,domega_dt);
     }
@@ -410,6 +291,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
     if (accretor->accretion_disk_is_present == true)
     {
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * R_a);
+        //printf("kws %d %d accretion_disk_is_present %d M_a %g R_a %g M_a_dot_av %g\n",donor->stellar_type,accretor->stellar_type,accretor->accretion_disk_is_present,M_a,R_a,M_a_dot_av);
     }
     else
     {
@@ -417,6 +299,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         double accretion_disk_r_min =  0.0425 * a*(1.0-e) * pow(q_accretor*(1.0 + q_accretor), 0.25); /* Taking rp instead of separation */
         double r_disk = 1.7 * accretion_disk_r_min;
         J_spin_accretor_dot = M_a_dot_av*sqrt(CONST_G * M_a * r_disk);
+        //printf("kws %d %d accretion_disk_is_present %d M_a %g R_a %g M_a_dot_av %g accretion_disk_r_min %g r_disk %g\n",donor->stellar_type,accretor->stellar_type,accretor->accretion_disk_is_present,M_a,R_a,M_a_dot_av,accretion_disk_r_min,r_disk);
     }
     double Omega_a_dot = compute_Omega_dot_from_J_dot_mass_transfer(accretor->stellar_type, J_spin_accretor_dot, Omega_a, M_a, M_a_dot_av, accretor->core_mass, R_a, accretor->radius_dot, accretor->core_radius, accretor->sse_k2, accretor->sse_k3);
     
@@ -438,7 +321,7 @@ int compute_RLOF_emt_model(Particle *p, Particle *donor, Particle *accretor, dou
         accretor->dspin_vec_dt[i] += accretor->spin_vec_unit[i] * Omega_a_dot;
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 2)
         {
             printf("ODE_mass_changes.cpp -- p->a %g p->dh_vec_dt[i] %g p->de_vec_dt[i] %g da_dt %g de_dt %g domega_dt %g \n",p->a,p->dh_vec_dt[i],p->de_vec_dt[i],da_dt,de_dt,domega_dt);
         }
@@ -492,6 +375,126 @@ int determine_E_0(double e, double x, double *E_0, bool *in_RLOF)
         printf("ODE_mass_changes.cpp -- determine_E_0 -- x %g e %g E_0... %g\n",x,e,*E_0);
     }
     #endif
+    
+    return 0;
+}
+
+
+int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *outer_binary, Particle *donor, Particle *inner_binary)
+{
+    /* Mass transfer from tertiary star to inner binary. */
+    
+    if (donor->is_binary == true or inner_binary->is_binary == false)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- ERROR: donor %d should be star; inner binary %d should be a binary!\n",donor->index,inner_binary->index);
+        error_code = 11;
+        longjmp(jump_buf,1);
+        //exit(-1);
+    }
+
+    if (donor->include_mass_transfer_terms==false)
+    {
+        return 0;
+    }
+    if (donor->object_type != 1)
+    {
+        return 0;
+    }
+    
+    Particle *child1 = (*particlesMap)[inner_binary->child1];
+    Particle *child2 = (*particlesMap)[inner_binary->child2];
+    
+    double m_donor = donor->mass;
+    double m_inner_binary = inner_binary->mass;
+
+    double R_donor = donor->radius;
+       
+    double a_in = inner_binary->a;
+    double a_out = outer_binary->a;
+
+    double q = m_donor/m_inner_binary;
+    double R_Lc = roche_radius_pericenter_eggleton(a_out,q); /* with argument "a", actually computes circular Roche lobe radius */
+    if (R_donor < R_Lc)
+    {
+        /* There is no RLOF of tertiary star; do nothing. */
+        return 0;
+    }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
+    }
+    #endif
+   
+    double m_C1 = child1->mass;
+    double m_C2 = child2->mass;
+
+    double e_in = inner_binary->e;
+    double e_out = outer_binary->e;
+
+    double m_donor_dot = donor->mass_dot_RLOF_triple;
+    double m_C1_dot = child1->mass_dot_RLOF_triple;
+    double m_C2_dot = child2->mass_dot_RLOF_triple;
+
+    if (fabs(m_donor_dot) <= epsilon)
+    {
+        return 0;
+    }
+        
+    /* Effect on inner orbit -- CE-like behavior. */
+    double a_in_dot = inner_binary->triple_mass_transfer_a_in_dot; /* This was computed beforehand in binary_evolution.cpp -- triple_stable_mass_transfer_evolution() */
+    double e_in_dot = 0.0;
+    
+    /* Effect on outer orbit -- non-conservative mass transfer. */
+    double beta = -(m_C1_dot+m_C2_dot)/m_donor_dot;
+    double gamma = m_donor/m_inner_binary; /* Isotropic re-emission (Pols, lecture notes on binary evolution, Chapter 7) */
+    double a_out_dot = compute_a_dot_circular_non_conservative_mass_transfer(a_out,m_donor,m_donor_dot,m_inner_binary,beta,gamma);
+    double e_out_dot = 0.0;
+
+    /* Effect on spins. */
+    double Omega_donor = donor->spin_vec_norm;
+    double J_spin_donor_dot = m_donor*R_donor*R_donor*Omega_donor;
+    double Omega_donor_dot = compute_Omega_dot_from_J_dot_mass_transfer(donor->stellar_type, J_spin_donor_dot, Omega_donor, m_donor, m_donor_dot, donor->core_mass, R_donor, donor->radius_dot, donor->core_radius, donor->sse_k2, donor->sse_k3);
+    
+    /* Assume the spins in the inner binary are unaffected. */
+
+    if (Omega_donor_dot != Omega_donor_dot)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- Omega_donor_dot %g\n",Omega_donor_dot);
+        error_code = 10;
+        longjmp(jump_buf,1);
+        //exit(-1);
+    }
+
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d a_in_dot %g beta %g gamma %g a_out_dot %g a_out %g m_donor %g m_donor_dot %g m_inner_binary %g \n",outer_binary->index,donor->index,inner_binary->index,a_in_dot,beta,gamma,a_out_dot,a_out,m_donor,m_donor_dot,m_inner_binary);
+    }
+    #endif
+    
+
+    /* Update dmass_dt. */
+    donor->dmass_dt += m_donor_dot;
+    child1->dmass_dt += m_C1_dot;
+    child2->dmass_dt += m_C2_dot;
+    
+    /* Update h,e, and spin vectors. */
+    double h_in_dot_div_h_in = compute_h_dot_div_h(m_C1, m_C1_dot, m_C2, m_C2_dot, a_in, a_in_dot, e_in, e_in_dot);
+    double h_out_dot_div_h_out = compute_h_dot_div_h(m_donor, m_donor_dot, m_inner_binary, m_C1_dot+m_C2_dot, a_out, a_out_dot, e_out, e_out_dot);
+ 
+    check_number(h_in_dot_div_h_in,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_in_dot_div_h_in", true);
+    check_number(h_out_dot_div_h_out,                  "mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer","h_out_dot_div_h_out", true);
+ 
+    for (int i=0; i<3; i++)
+    {
+        inner_binary->dh_vec_dt[i] += inner_binary->h_vec[i] * h_in_dot_div_h_in;
+        outer_binary->dh_vec_dt[i] += outer_binary->h_vec[i] * h_out_dot_div_h_out;
+
+        donor->dspin_vec_dt[i] += donor->spin_vec_unit[i] * Omega_donor_dot;
+    }
+    
     
     return 0;
 }

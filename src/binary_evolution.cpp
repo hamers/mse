@@ -952,7 +952,20 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
                 accretor->epoch = t - accretor_age_Myr*Myr_to_yr;
                 accretor->age = accretor_age_Myr*Myr_to_yr;
+                
+                accretor->mass_dot_wind = 0.0;
+                accretor->radius_dot = 0.0;
+                accretor->ospin_dot = 0.0;
+                
+                accretor->age_dot = 0.0;
+                accretor->sse_initial_mass_dot = 0.0;
+                accretor->core_mass_dot = 0.0;
+                accretor->core_radius_dot = 0.0;
 
+                accretor->luminosity_dot = 0.0;
+                accretor->convective_envelope_mass_dot = 0.0;
+                accretor->convective_envelope_radius_dot = 0.0;
+                accretor->sse_k2_dot = 0.0;
                 
                 check_number(accretor->radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- Naked helium star secondary swells up to a core helium burning star","accretor->radius", true);
                 check_number(accretor->core_radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- Naked helium star secondary swells up to a core helium burning star","accretor->core_radius", true);
@@ -1020,6 +1033,21 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
                 accretor->epoch = t - accretor_age_Myr*Myr_to_yr;
                 accretor->age = accretor_age_Myr*Myr_to_yr;
+                
+                accretor->mass_dot_wind = 0.0;
+                accretor->radius_dot = 0.0;
+                accretor->ospin_dot = 0.0;
+                
+                accretor->age_dot = 0.0;
+                accretor->sse_initial_mass_dot = 0.0;
+                accretor->core_mass_dot = 0.0;
+                accretor->core_radius_dot = 0.0;
+
+                accretor->luminosity_dot = 0.0;
+                accretor->convective_envelope_mass_dot = 0.0;
+                accretor->convective_envelope_radius_dot = 0.0;
+                accretor->sse_k2_dot = 0.0;
+
                 
                 check_number(accretor->radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD secondary -- make new giant envelope","accretor->radius", true);
                 check_number(accretor->core_radius,                   "binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD secondary -- make new giant envelope","accretor->core_radius", true);
@@ -1452,7 +1480,7 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("binary_evolution.cpp -- compute_bse_mass_transfer_amount -- dm1 %g R_donor %g R_RL_donor %g\n",dm1,R_donor,R_RL_donor);
     }

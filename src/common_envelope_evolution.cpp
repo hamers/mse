@@ -311,9 +311,11 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         {
             MF = M1;
             M1 = MC1;
+            //printf("1 %d %g %g %g %g AJ1 %g\n",KW1,M01,M1,TM1,TN,AJ1);
             star_(&KW1,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
+            //printf("2 %d %g %g %g %g MC %g AJ1 %g\n",KW1,M01,M1,TM1,TN,MC1,AJ1);
 
             if (KW1 != KW1_old)
             {
@@ -939,7 +941,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         }
 
         /* Merged star properties */
-        printf("KW1 %d KW %d\n",KW1,KW);
         star1->stellar_type = KW1;
         star1->mass = M1;
         star1->core_mass = MC1;

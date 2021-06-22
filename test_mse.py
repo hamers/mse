@@ -1470,7 +1470,7 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         
-        N = 10000
+        N = 20000
         
         m2 = 1.0
         h_vec_unit = np.array( [0.0,0.0,1.0] )
@@ -1543,7 +1543,7 @@ class test_mse():
         CONST_G = code.CONST_G
         CONST_C = code.CONST_C
         
-        N = 40000
+        N = 80000
         N2 = 20000
 
         seed = 0

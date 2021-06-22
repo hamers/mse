@@ -1378,6 +1378,90 @@ class test_mse():
         code.reset()
 
     def test13(self,args):
+        print("Test flybys module: using analytic formulae and with single perturber")
+
+        code = MSE()
+        CONST_G = code.CONST_G
+        
+        ### binary orbit ###
+        a = 1.0
+        e = 0.1
+        m1 = 1.0
+        m2 = 0.8
+        M_per = 1.0
+        E = 2.0
+        Q = 100.0
+        INCL = 0.4*np.pi
+        AP = 0.25*np.pi
+        LAN = 0.25*np.pi
+        
+        masses = [m1,m2]
+        m = m1 + m2
+        particles = Tools.create_fully_nested_multiple(2,masses, [a], [e], [INCL], [AP], [LAN], metallicities=[0.02,0.02],stellar_types=[1,1],object_types=[1,1])
+        bodies = [x for x in particles if x.is_binary==False]
+        binaries = [x for x in particles if x.is_binary==True]
+        binary = particles[2]
+
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+
+        t_ref = 1.0e5 ### not actually used in this case, but needs to be specified for external particles
+
+        #external_particle = Particle(mass = M_per, is_binary=True, is_external=True, external_t_ref=t_ref, e=E, external_r_p = Q, INCL = 1.0e-10, AP = 1.0e-10, LAN = 1.0e-10)
+        INCL_per = 1.0e-10
+        AP_per = 1.0e-10
+        LAN_per = 1.0e-10
+        e_vec_hat,j_vec_hat = compute_e_and_j_hat_vectors(INCL_per,AP_per,LAN_per)
+        
+        code = MSE()
+        code.add_particles(particles)
+
+        code.include_quadrupole_order_terms = True
+        code.include_octupole_order_binary_pair_terms = True
+        code.include_hexadecupole_order_binary_pair_terms = False
+        code.include_dotriacontupole_order_binary_pair_terms = False
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
+        
+        code.apply_external_perturbation_assuming_integrated_orbits_single_perturber(M_per, E, Q, e_vec_hat[0], e_vec_hat[1], e_vec_hat[2], j_vec_hat[0], j_vec_hat[1], j_vec_hat[2])
+        Delta_e = binary.e-e
+
+        ### compute analytic result (https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.5630H/abstract) ###
+        e_vec_hat,j_vec_hat = compute_e_and_j_hat_vectors(INCL,AP,LAN)
+        e_vec = e_vec_hat*e
+        j_vec = j_vec_hat*np.sqrt(1.0-e**2)
+        ex = e_vec[0]
+        ey = e_vec[1]
+        ez = e_vec[2]
+        jx = j_vec[0]
+        jy = j_vec[1]
+        jz = j_vec[2]
+
+        eps_SA = (M_per/np.sqrt(m*(m+M_per)))*pow(a/Q,3.0/2.0)*pow(1.0 + E,-3.0/2.0)
+        eps_oct = (a/Q)*(m1-m2)/((1.0+E)*m)
+        Delta_e_an = (5*eps_SA*(np.sqrt(1 - E**(-2))*((1 + 2*E**2)*ey*ez*jx + (1 - 4*E**2)*ex*ez*jy + 2*(-1 + E**2)*ex*ey*jz) + 3*E*ez*(ey*jx - ex*jy)*np.arccos(-1.0/E)))/(2.*E*np.sqrt(ex**2 + ey**2 + ez**2))
+        
+        Delta_e_an += -(5*eps_oct*eps_SA*(np.sqrt(1 - E**(-2))*(ez*jy*(14*ey**2 + 6*jx**2 - 2*jy**2 + 8*E**4*(-1 + ey**2 + 8*ez**2 + 2*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 - 7*jx**2 + 9*jy**2)) - ey*(2*(7*ey**2 + jx**2 - jy**2) + 8*E**4*(-1 + ey**2 + 8*ez**2 + 4*jx**2 + jy**2) + E**2*(-4 - 31*ey**2 + 32*ez**2 + 11*jx**2 + 9*jy**2))*jz + ex**2*(-((14 + 45*E**2 + 160*E**4)*ez*jy) + 3*(14 - 27*E**2 + 16*E**4)*ey*jz) + 2*(-2 + 9*E**2 + 8*E**4)*ex*jx*(7*ey*ez + jy*jz)) + 3*E**3*(ez*jy*(-4 - 3*ey**2 + 32*ez**2 + 5*jx**2 + 5*jy**2) + ey*(4 + 3*ey**2 - 32*ez**2 - 15*jx**2 - 5*jy**2)*jz + ex**2*(-73*ez*jy + 3*ey*jz) + 10*ex*jx*(7*ey*ez + jy*jz))*np.arccos(-1.0/E)))/(32.*E**2*np.sqrt(ex**2 + ey**2 + ez**2))
+
+        if args.verbose==True:
+            print( 'SecularMultiple Delta e = ',Delta_e,'; analytic expression: Delta e = ',Delta_e_an)
+
+        N_r = 8
+        assert round(Delta_e,N_r) == round(Delta_e_an,N_r)
+
+        print("Test passed")
+
+        code.reset()
+
+
+    def test14(self,args):
         print('Test compact object merger remnant properties')
         
         code = MSE()
@@ -1451,7 +1535,7 @@ class test_mse():
 
             pyplot.show()
         
-    def test14(self,args):
+    def test15(self,args):
         print('Test sample elementary distributions')
         
         code = MSE()
@@ -1549,7 +1633,7 @@ class test_mse():
             pyplot.show()
 
 
-    def test15(self,args):
+    def test16(self,args):
         print('Test sample Kroupa 93 IMF')
         
         code = MSE()
@@ -1590,7 +1674,7 @@ class test_mse():
 
             pyplot.show()
 
-    def test16(self,args):
+    def test17(self,args):
         print('Test kick velocity recipes')
         
         code = MSE()
@@ -1687,7 +1771,7 @@ class test_mse():
             fig.savefig("kick_distributions.pdf")
             pyplot.show()
 
-    def test17(self,args):
+    def test18(self,args):
         print('Test flybys sampling')
         
         code = MSE()
@@ -1837,7 +1921,7 @@ def compute_e_and_j_hat_vectors(INCL,AP,LAN):
 if __name__ == '__main__':
     args = parse_arguments()
     
-    N_tests = 17
+    N_tests = 18
     if args.test==0:
         tests = list(range(1,N_tests+1)) + [100]
     else:

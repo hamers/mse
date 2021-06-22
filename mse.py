@@ -113,6 +113,7 @@ class MSE(object):
         
         self.__include_flybys = True
         self.__flybys_correct_for_gravitational_focussing = True
+        self.__flybys_include_secular_encounters = False
         self.__flybys_reference_binary = -1
         self.__flybys_velocity_distribution = 0
         self.__flybys_mass_distribution = 0
@@ -257,7 +258,7 @@ class MSE(object):
         self.lib.set_parameters.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double, \
             ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
             ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,\
-            ctypes.c_bool,ctypes.c_int,ctypes.c_bool, ctypes.c_int,ctypes.c_int, \
+            ctypes.c_bool,ctypes.c_int,ctypes.c_bool, ctypes.c_int,ctypes.c_int, ctypes.c_bool, \
             ctypes.c_double, ctypes.c_double, ctypes.c_double, \
             ctypes.c_double, ctypes.c_double, \
             ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_bool, \
@@ -287,6 +288,9 @@ class MSE(object):
 
         self.lib.apply_external_perturbation_assuming_integrated_orbits_interface.argtypes = ()
         self.lib.apply_external_perturbation_assuming_integrated_orbits_interface.restype = ctypes.c_int
+
+        self.lib.apply_external_perturbation_assuming_integrated_orbits_single_perturber_interface.argtypes = (ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double)
+        self.lib.apply_external_perturbation_assuming_integrated_orbits_single_perturber_interface.restype = ctypes.c_int
 
         self.lib.apply_user_specified_instantaneous_perturbation_interface.argtypes = ()
         self.lib.apply_user_specified_instantaneous_perturbation_interface.restype = ctypes.c_int
@@ -483,6 +487,11 @@ class MSE(object):
     def apply_external_perturbation_assuming_integrated_orbits(self):
         self.__update_particles_in_code()
         self.lib.apply_external_perturbation_assuming_integrated_orbits_interface()
+        self.__update_particles_from_code()
+
+    def apply_external_perturbation_assuming_integrated_orbits_single_perturber(self, M_per, e_per, Q_per, e_vec_unit_per_x, e_vec_unit_per_y, e_vec_unit_per_z, h_vec_unit_per_x, h_vec_unit_per_y, h_vec_unit_per_z):
+        self.__update_particles_in_code()
+        self.lib.apply_external_perturbation_assuming_integrated_orbits_single_perturber_interface(M_per, e_per, Q_per, e_vec_unit_per_x, e_vec_unit_per_y, e_vec_unit_per_z, h_vec_unit_per_x, h_vec_unit_per_y, h_vec_unit_per_z)
         self.__update_particles_from_code()
         
     def apply_user_specified_instantaneous_perturbation(self):
@@ -756,7 +765,7 @@ class MSE(object):
         self.lib.set_parameters(self.__relative_tolerance,self.__absolute_tolerance_eccentricity_vectors,self.__absolute_tolerance_spin_vectors,self.__absolute_tolerance_angular_momentum_vectors,self.__include_quadrupole_order_terms, \
             self.__include_octupole_order_binary_pair_terms,self.__include_octupole_order_binary_triplet_terms, \
             self.__include_hexadecupole_order_binary_pair_terms,self.__include_dotriacontupole_order_binary_pair_terms, self.__include_double_averaging_corrections, \
-            self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, \
+            self.__include_flybys, self.__flybys_reference_binary, self.__flybys_correct_for_gravitational_focussing, self.__flybys_velocity_distribution, self.__flybys_mass_distribution, self.__flybys_include_secular_encounters, \
             self.__flybys_mass_distribution_lower_value, self.__flybys_mass_distribution_upper_value, self.__flybys_encounter_sphere_radius, \
             self.__flybys_stellar_density, self.__flybys_stellar_relative_velocity_dispersion, \
             self.__binary_evolution_CE_energy_flag, self.__binary_evolution_CE_spin_flag, self.__binary_evolution_mass_transfer_timestep_parameter, self.__binary_evolution_CE_recombination_fraction, self.__binary_evolution_use_eCAML_model, \
@@ -1228,6 +1237,15 @@ class MSE(object):
         self.__flybys_stellar_relative_velocity_dispersion = value
         self.__set_parameters_in_code()
 
+    
+    @property
+    def flybys_include_secular_encounters(self):
+        return self.__flybys_include_secular_encounters
+    @flybys_include_secular_encounters.setter
+    def flybys_include_secular_encounters(self, value):
+        self.__flybys_include_secular_encounters = value
+        self.__set_parameters_in_code()
+
 
     ### N-body ###
     @property
@@ -1602,7 +1620,7 @@ class Particle(object):
             check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
             secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, \
             is_external=False, external_t_ref=0.0, external_r_p=0.0, \
-            sample_orbital_phase_randomly=True, instantaneous_perturbation_delta_mass=0.0, instantaneous_perturbation_delta_X=0.0, instantaneous_perturbation_delta_Y=0.0, instantaneous_perturbation_delta_Z=0.0, \
+            sample_orbital_phase_randomly=False, instantaneous_perturbation_delta_mass=0.0, instantaneous_perturbation_delta_X=0.0, instantaneous_perturbation_delta_Y=0.0, instantaneous_perturbation_delta_Z=0.0, \
             instantaneous_perturbation_delta_VX=0.0, instantaneous_perturbation_delta_VY=0.0, instantaneous_perturbation_delta_VZ=0.0, \
             VRR_model=0, VRR_include_mass_precession=0, VRR_mass_precession_rate=0.0, VRR_Omega_vec_x=0.0, VRR_Omega_vec_y=0.0, VRR_Omega_vec_z=0.0, \
             VRR_eta_20_init=0.0, VRR_eta_a_22_init=0.0, VRR_eta_b_22_init=0.0, VRR_eta_a_21_init=0.0, VRR_eta_b_21_init=0.0, \
@@ -2252,7 +2270,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True):
 
         np.random.seed(random_seed)
         
@@ -2305,9 +2323,12 @@ class Tools(object):
         code.random_seed = random_seed
         code.verbose_flag = verbose_flag
 
-        code.include_flybys = True
-        code.flybys_stellar_density = 0.1*code.CONST_PER_PC3
-        code.flybys_encounter_sphere_radius = 1.0e5
+        code.include_flybys = include_flybys
+        code.flybys_include_secular_encounters = flybys_include_secular_encounters
+        code.flybys_stellar_density = flybys_stellar_density_per_cubic_pc*code.CONST_PER_PC3
+        code.flybys_encounter_sphere_radius = flybys_encounter_sphere_radius_au
+        code.flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_km_s * code.CONST_KM_PER_S
+
         code.binary_evolution_use_eCAML_model = False
         code.NS_model = NS_model
         code.ECSNe_model = ECSNe_model

@@ -592,6 +592,73 @@ void compute_semimajor_axis_and_eccentricity_from_orbital_vectors(double m1, dou
     *semimajor_axis = h_P2*(m1 + m2)/( CONST_G* m1 * m1 * m2 * m2 * j_P2 );
 }
 
+bool compute_hyperbolic_orbit_properties_from_position_and_velocity(double M_tot, double R_vec[3], double V_vec[3], double *e_per, double *Q_per, double e_vec_unit_per[3], double h_vec_unit_per[3])
+{
+    int i;
+    
+    double mu = CONST_G*M_tot;
+    double R = norm3(R_vec);
+    double R_div = 1.0/R;
+
+    double V_vec_sq = norm3_squared(V_vec);
+    double energy = c_1div2*V_vec_sq - mu*R_div;
+    
+    bool is_hyperbolic = true;
+    if (energy <= 0.0)
+    {
+        is_hyperbolic = false;
+        return is_hyperbolic;
+    }
+    
+    double R_vec_dot_V_vec = dot3(R_vec,V_vec);
+    double E_vec[3]; // eccentricity vector
+    for (i=0; i<3; i++)
+    {
+        E_vec[i] = (1.0/mu)*(V_vec_sq*R_vec[i] - R_vec_dot_V_vec*V_vec[i]) - R_vec[i]*R_div;
+    }
+    double E = norm3(E_vec);
+    if (E - 1.0 <= epsilon)
+    {
+        E = 1.0 + epsilon;
+    }
+    double E_div = 1.0/E;
+    for (i=0; i<3; i++)
+    {
+        e_vec_unit_per[i] = E_vec[i]*E_div;
+    }
+    *e_per = E;
+    *Q_per = (E-1.0)*mu*R/(R*V_vec_sq - 2.0*mu);
+    
+    double R_vec_cross_V_vec[3];
+    cross3(R_vec,V_vec,R_vec_cross_V_vec);
+    double R_vec_cross_V_vec_norm_div = 1.0/norm3(R_vec_cross_V_vec);
+    for (i=0; i<3; i++)
+    {
+        h_vec_unit_per[i] = R_vec_cross_V_vec[i] * R_vec_cross_V_vec_norm_div;
+    }
+    
+    return is_hyperbolic;
+    
+    #ifdef IGNORE
+    //cos_f = (R*V_vec_sq - (1.0 + E**2)*mu)/(E*(2.0*mu - R*V_vec_sq))
+    //sin_f = -numpy.sqrt(1.0 - cos_f**2) ### assuming f<0 always
+
+    sinh_H = numpy.sqrt(E**2 - 1.0)*sin_f/(1.0 + E*cos_f)
+    #cosh_H = (e + cos_f)/(1.0 + e*cos_f)
+    H = numpy.arcsinh(sinh_H)
+    M = E*sinh_H - H
+    if M!=M:
+        print py_name,'--  error in function compute_hyperbolic_orbit_properties_from_position_and_velocity'
+        print 'sin_f',sin_f,'cos_f',cos_f
+        print 'energy',energy
+    abs_A = Q/(E-1.0)
+    N = numpy.sqrt(mu/(abs_A**3))
+    Delta_t = M/N
+        
+    return is_hyperbolic,Delta_t,Q,E,E_vec_hat,J_vec_hat,energy
+    #endif
+}
+
 void get_position_and_velocity_vectors_from_particle(Particle *p, double r[3], double v[3])
 {
     r[0] = p->R_vec[0];

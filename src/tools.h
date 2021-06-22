@@ -29,6 +29,8 @@ void from_orbital_vectors_to_cartesian(double child1_mass, double child2_mass, d
 void from_cartesian_to_orbital_vectors(double child1_mass, double child2_mass, double r[3], double v[3], double e_vec[3], double h_vec[3], double *true_anomaly);
 void compute_semimajor_axis_and_eccentricity_from_orbital_vectors(double m1, double m2, double e_vec[3], double h_vec[3], double *semimajor_axis, double *eccentricity);
 
+bool compute_hyperbolic_orbit_properties_from_position_and_velocity(double M_tot, double R_vec[3], double V_vec[3], double *e_per, double *Q_per, double e_vec_unit_per[3], double h_vec_unit_per[3]);
+
 void get_position_and_velocity_vectors_from_particle(Particle *p, double r[3], double v[3]);
 void set_position_and_velocity_vectors_in_particle(Particle *p,  double r[3], double v[3]);
 

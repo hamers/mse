@@ -324,7 +324,7 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 {
                     continue;
                 }
-                
+
                 if (parent->sample_orbital_phase_randomly == false)
                 {
                     true_anomaly = parent->true_anomaly;

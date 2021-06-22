@@ -134,6 +134,7 @@ int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool
 int evolve_interface(double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag);
 int determine_binary_parents_levels_and_masses_interface();
 int apply_external_perturbation_assuming_integrated_orbits_interface();
+int apply_external_perturbation_assuming_integrated_orbits_single_perturber_interface(double M_per, double e_per, double Q_per, double e_vec_unit_per_x, double e_vec_unit_per_y, double e_vec_unit_per_z, double h_vec_unit_per_x, double h_vec_unit_per_y, double h_vec_unit_per_z);
 int apply_user_specified_instantaneous_perturbation_interface();
 int set_positions_and_velocities_interface();
 int reset_interface();
@@ -151,7 +152,7 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, double absolute_tolerance_spin_vectors_, double absolute_tolerance_angular_momentum_vectors_,
     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
-    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
+    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_, bool flybys_include_secular_encounters_,
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, double binary_evolution_CE_recombination_fraction_, bool binary_evolution_use_eCAML_model_, \

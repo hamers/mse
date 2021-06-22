@@ -20,4 +20,10 @@ void apply_external_perturbation_assuming_integrated_orbits_binary_pair(Particle
 
 double retrieve_D_function(int function_index, double ep, double ep_p2, double ef, double ef_p2, double ef_p4, double one_div_ef_p1, double one_div_ef_p2, double one_div_ef_p3, double ef_p2_minus_one, double sqrt_ef_p2_minus_one, double asec_minus_ef);
 double retrieve_D_function_e_derivative(int function_index, double ep, double ep_p2, double ef, double ef_p2, double ef_p4, double one_div_ef_p1, double one_div_ef_p2, double one_div_ef_p3, double ef_p2_minus_one, double sqrt_ef_p2_minus_one, double asec_minus_ef);
+
+
+
+int apply_external_perturbation_assuming_integrated_orbits_single_perturber(ParticlesMap *particlesMap, double M_per, double e_per, double Q_per, double e_vec_unit_per[3], double h_vec_unit_per[3]);
+void apply_external_perturbation_assuming_integrated_orbits_binary_pair_single_perturber(ParticlesMap *particlesMap, int binary_index, double M_per, double e_f, double q_f, double e_f_hat_vec[3], double j_f_hat_vec[3]);
+
 }

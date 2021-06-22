@@ -1275,11 +1275,14 @@ int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma_rel
 
     bool apply_flyby;
     double t_next_encounter;
-    double b_vec[3],V_vec[3];
+    double b_vec[3],V_vec[3],e_vec_unit_per[3],h_vec_unit_per[3];
     int N_enc=0;
     int N_not_impulsive=0;
     
-    sample_next_flyby(&particlesMap, &apply_flyby, &t_next_encounter, &N_enc, &N_not_impulsive, M_per, b_vec, V_vec);
+    //sample_next_flyby(&particlesMap, &apply_flyby, &t_next_encounter, &N_enc, &N_not_impulsive, M_per, b_vec, V_vec);
+    int flyby_type;
+    double e_per,Q_per;
+    sample_next_flyby(&particlesMap, &apply_flyby, &flyby_type, &flybys_t_next_encounter, &N_enc, &N_not_impulsive, M_per, b_vec, V_vec, &e_per, &Q_per, e_vec_unit_per, h_vec_unit_per);
     *b_vec_x = b_vec[0];
     *b_vec_y = b_vec[1];
     *b_vec_z = b_vec[2];
@@ -1337,7 +1340,11 @@ int test_flybys_compute_effects_of_flyby_on_system()
     double V_per_vec[3] = {10.0*CONST_KM_PER_S,5.0*CONST_KM_PER_S,15.0*CONST_KM_PER_S};
     bool unbound_orbits;
     int integration_flag;
-    compute_effects_of_flyby_on_system(&particlesMap, M_per,b_per_vec,V_per_vec,&unbound_orbits,false,&integration_flag);
+    int flyby_type = 1; /* impulsive */
+    double e_per,Q_per;
+    double e_vec_unit_per[3],h_vec_unit_per[3];
+    
+    compute_effects_of_flyby_on_system(&particlesMap, flyby_type, M_per,b_per_vec,V_per_vec,e_per,Q_per,e_vec_unit_per,h_vec_unit_per,&unbound_orbits,false,&integration_flag);
     
     double tol = 1.0e-2; /* Note: smaller tolerance than 1e-2 yields discrepancies; most likely due to slightly different values of constants used */
     if (!equal_number(s1->instantaneous_perturbation_delta_VX,0.818813,tol))

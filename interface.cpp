@@ -923,6 +923,18 @@ int apply_external_perturbation_assuming_integrated_orbits_interface()
     return 0;
 }
 
+int apply_external_perturbation_assuming_integrated_orbits_single_perturber_interface(double M_per, double e_per, double Q_per, double e_vec_unit_per_x, double e_vec_unit_per_y, double e_vec_unit_per_z, double h_vec_unit_per_x, double h_vec_unit_per_y, double h_vec_unit_per_z)
+{
+    //printf("apply_external_perturbation_assuming_integrated_orbits_interface M_per %g e_per %g  Q_per %g e_vec_unit_per %g %g %g h_vec_unit_per %g %g %g\n",M_per,e_per,Q_per,e_vec_unit_per_x,e_vec_unit_per_y,e_vec_unit_per_z,h_vec_unit_per_x,h_vec_unit_per_y,h_vec_unit_per_z);
+    double e_vec_unit_per[3] = {e_vec_unit_per_x,e_vec_unit_per_y,e_vec_unit_per_z};
+    double h_vec_unit_per[3] = {h_vec_unit_per_x,h_vec_unit_per_y,h_vec_unit_per_z};
+    determine_internal_mass_and_semimajor_axis(&particlesMap);
+    apply_external_perturbation_assuming_integrated_orbits_single_perturber(&particlesMap, M_per, e_per, Q_per, e_vec_unit_per, h_vec_unit_per);
+
+    return 0;
+}
+
+
 int apply_user_specified_instantaneous_perturbation_interface()
 {
     //printf("apply_user_specified_instantaneous_perturbation\n");
@@ -1007,7 +1019,7 @@ int set_constants(double CONST_G_, double CONST_C_, double CONST_MSUN_, double C
 int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentricity_vectors_, double absolute_tolerance_spin_vectors_, double absolute_tolerance_angular_momentum_vectors_,
     bool include_quadrupole_order_terms_, bool include_octupole_order_binary_pair_terms_, bool include_octupole_order_binary_triplet_terms_,
     bool include_hexadecupole_order_binary_pair_terms_, bool include_dotriacontupole_order_binary_pair_terms_,  bool include_double_averaging_corrections_,
-    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_,
+    bool include_flybys_, int flybys_reference_binary_, bool flybys_correct_for_gravitational_focussing_, int flybys_velocity_distribution_, int flybys_mass_distribution_, bool flybys_include_secular_encounters_,
     double flybys_mass_distribution_lower_value_, double flybys_mass_distribution_upper_value_, double flybys_encounter_sphere_radius_, 
     double flybys_stellar_density_, double flybys_stellar_relative_velocity_dispersion_,
     int binary_evolution_CE_energy_flag_, int binary_evolution_CE_spin_flag_, double binary_evolution_mass_transfer_timestep_parameter_, double binary_evolution_CE_recombination_fraction_, bool binary_evolution_use_eCAML_model_, \
@@ -1040,6 +1052,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     include_flybys = include_flybys_;
     flybys_correct_for_gravitational_focussing = flybys_correct_for_gravitational_focussing_;
     flybys_velocity_distribution = flybys_velocity_distribution_;
+    flybys_include_secular_encounters = flybys_include_secular_encounters_;
     flybys_mass_distribution = flybys_mass_distribution_;
     flybys_reference_binary = flybys_reference_binary_;
     flybys_mass_distribution_lower_value = flybys_mass_distribution_lower_value_;

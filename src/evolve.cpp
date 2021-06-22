@@ -119,7 +119,7 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
     dt = CV_min(min_dt,max_dt);
     dt_binary_evolution = max_dt;
-    
+
     /* Time loop */
 
     int i=0;

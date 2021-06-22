@@ -53,16 +53,17 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
         flybys_W_max = compute_W_max();
     }
 
-    double b_vec[3], V_vec[3];
-    double M_per;
+    double b_vec[3], V_vec[3],e_vec_unit_per[3],h_vec_unit_per[3];
+    double M_per,e_per,Q_per;
     bool apply_flyby;
+    int flyby_type;
     
-    sample_next_flyby(particlesMap, &apply_flyby, &flybys_t_next_encounter, &flybys_N_enc, &flybys_N_not_impulsive, &M_per, b_vec, V_vec);
+    sample_next_flyby(particlesMap, &apply_flyby, &flyby_type, &flybys_t_next_encounter, &flybys_N_enc, &flybys_N_not_impulsive, &M_per, b_vec, V_vec, &e_per, &Q_per, e_vec_unit_per, h_vec_unit_per);
     
     bool unbound_orbits = false;
     if (initialize == false and apply_flyby == true)
     {
-        compute_effects_of_flyby_on_system(particlesMap, M_per, b_vec, V_vec, &unbound_orbits, true, integration_flag);
+        compute_effects_of_flyby_on_system(particlesMap, flyby_type, M_per, b_vec, V_vec, e_per, Q_per, e_vec_unit_per, h_vec_unit_per, &unbound_orbits, true, integration_flag);
     }
 
     if (unbound_orbits == true)
@@ -80,22 +81,28 @@ int handle_next_flyby(ParticlesMap *particlesMap, bool initialize, int *integrat
     return 0;
 }
 
-int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_next_encounter, int *N_enc, int *N_not_impulsive, double *M_per, double b_vec[3], double V_vec[3])
+int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, int *flyby_type, double *t_next_encounter, int *N_enc, int *N_not_impulsive, double *M_per, double b_vec[3], double V_vec[3], double *e_per, double *Q_per, double e_vec_unit_per[3], double h_vec_unit_per[3])
 {
 
-    double minimum_angular_speed_ratio = 1.0;
+    double minimum_angular_speed_ratio_for_impulsive_encounters = 1.0;
+    double maximum_angular_speed_ratio_for_secular_encounters = 0.5;
 
     bool satisfied_criteria = false;
     double R_vec[3];
     double M_tot,mu;
     int k;
     double V_vec_unit[3];
-    double V,R_vec_dot_V_vec_unit;
-    double Q,V_infty,E;
+    double V,V_div,R_vec_dot_V_vec_unit,b,E;
     double theta_dot_peri,n_internal,angular_speed_ratio;
     
     double delta_time_encounter,u;
     
+    bool is_hyperbolic;
+    double theta_dot_peri_with_focussing;
+    double angular_speed_ratio_with_focussing;
+
+    
+    *flyby_type = -1; /* undetermined */
     int i = 0;
     while (satisfied_criteria == false)
     {
@@ -124,12 +131,13 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         }
         #endif
         
-        /* Compute impact parameter for perturber orbit */
+        /* Compute impact parameter b for perturber orbit */
         V = norm3(V_vec);
+        V_div = 1.0/V;
 
         for (k=0; k<3; k++)
         {
-            V_vec_unit[k] = V_vec[k]/V;
+            V_vec_unit[k] = V_vec[k]*V_div;
         }
         
         double R_vec_dot_V_vec_unit = dot3(R_vec,V_vec_unit);
@@ -139,13 +147,12 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
             b_vec[k] = R_vec[k] - V_vec_unit[k]*R_vec_dot_V_vec_unit;
         }
 
-        /* Compute angular speed ratio and reject unsuitable cases */
-        Q = norm3(b_vec); /* effective Q */
-        V_infty = V; /* effective V_infty */
-        E = 1.0 + Q*V_infty*V_infty/mu;
+        /* Compute angular speed ratio (without gravitational focussing) and reject unsuitable cases */
+        b = norm3(b_vec);
+        E = 1.0 + b*V*V/mu;
         
-        theta_dot_peri = sqrt((1.0 + E)*mu/(Q*Q*Q));
-        n_internal = sqrt( CONST_G*flybys_internal_mass/(flybys_internal_semimajor_axis*flybys_internal_semimajor_axis*flybys_internal_semimajor_axis));
+        theta_dot_peri = sqrt((1.0 + E)*mu/(b*b*b)); /* perturber angular speed at periapsis */
+        n_internal = sqrt( CONST_G*flybys_internal_mass/(flybys_internal_semimajor_axis*flybys_internal_semimajor_axis*flybys_internal_semimajor_axis)); /* mean motion of widest orbit in multiple system */
         angular_speed_ratio = theta_dot_peri/n_internal;
         
         /* Compute time of next encounter */
@@ -156,41 +163,76 @@ int sample_next_flyby(ParticlesMap *particlesMap, bool *apply_flyby, double *t_n
         if (delta_time_encounter <= 0.0)
         {
             printf("flybys.cpp -- sample_next_flyby -- FATAL ERROR delta_time_encounter <= 0\n");
-            //exit(-1);
             error_code = 14;
             longjmp(jump_buf,1);
         }
         *t_next_encounter += delta_time_encounter;
 
-        if (angular_speed_ratio < minimum_angular_speed_ratio)
+        if (flybys_include_secular_encounters == false)
         {
-            *N_not_impulsive += 1;
-            *apply_flyby = false;
-            
-            #ifdef VERBOSE
-            if (verbose_flag > 1)
+            if (angular_speed_ratio < minimum_angular_speed_ratio_for_impulsive_encounters)
             {
-                printf("flybys.cpp -- sample_next_flyby -- not impulsive; angular_speed_ratio = %g; i=%d\n",angular_speed_ratio,i);
+                *N_not_impulsive += 1;
+                *apply_flyby = false;
+                
+                #ifdef VERBOSE
+                if (verbose_flag > 1)
+                {
+                    printf("flybys.cpp -- sample_next_flyby -- not impulsive; angular_speed_ratio = %g; i=%d\n",angular_speed_ratio,i);
+                }
+                #endif            
+                
+                break;
             }
-            #endif            
-            
-            break;
         }
+        else
+        {
+            /* When secular encounters are included, take into account gravitational focussing, both for determining the encounter type (angular speed ratio), and the effect on the orbits itself */
+            is_hyperbolic = compute_hyperbolic_orbit_properties_from_position_and_velocity(M_tot, R_vec, V_vec, e_per, Q_per, e_vec_unit_per, h_vec_unit_per);
+            theta_dot_peri_with_focussing = sqrt((1.0 + *e_per)*mu/( (*Q_per) * (*Q_per) * (*Q_per)));
+            angular_speed_ratio_with_focussing = theta_dot_peri_with_focussing/n_internal;
+            
+            
+            #ifdef IGNORE
+            double rel_dif = fabs(angular_speed_ratio-angular_speed_ratio_with_focussing)/angular_speed_ratio;
+            printf("angular_speed_ratio %g angular_speed_ratio_with_focussing %g rel dif %g \n",angular_speed_ratio,angular_speed_ratio_with_focussing,rel_dif);
+
+            if (is_hyperbolic == false)
+            {
+                printf("angular_speed_ratio %g angular_speed_ratio_with_focussing %g rel dif %g \n",angular_speed_ratio,angular_speed_ratio_with_focussing,rel_dif);
+                printf("M_per %g e_per %g Q_per %g b %g V_per %g\n",*M_per,*e_per,*Q_per,norm3(b_vec),norm3(V_vec));
+            }
+            #endif
+                
+            
+            if (angular_speed_ratio_with_focussing < maximum_angular_speed_ratio_for_secular_encounters and is_hyperbolic == true)
+            {
+                 //printf("angular_speed_ratio %g angular_speed_ratio_with_focussing %g rel dif %g \n",angular_speed_ratio,angular_speed_ratio_with_focussing,rel_dif);                
+                //printf("secular encounter R %g b %g Q %g e %g e_vec %g %g %g h_vec %g %g %g\n",angular_speed_ratio,norm3(b_vec),*Q_per,*e_per,e_vec_unit_per[0],e_vec_unit_per[1],e_vec_unit_per[2],h_vec_unit_per[0],h_vec_unit_per[1],h_vec_unit_per[2]);
+
+                *apply_flyby = true;
+                *flyby_type = 2; /* secular */
+
+                break;
+            }
+        }
+        
 
         #ifdef VERBOSE
         if (verbose_flag > 1)
         {
-            printf("flybys.cpp -- sample_next_flyby -- V %g M_per %g Q %g t_next_encounter %g\n",V,*M_per,Q,*t_next_encounter);
+            printf("flybys.cpp -- sample_next_flyby -- V %g M_per %g b %g t_next_encounter %g\n",V,*M_per,b,*t_next_encounter);
             print_system(particlesMap,0);
         }
         #endif
         
 
         *apply_flyby = true;
-       
+        *flyby_type = 1; /* impulsive */
+        
         satisfied_criteria = true;
     }
-    
+    //printf(" %d\n",*flyby_type);
     *N_enc += 1;
     
     return 0;
@@ -221,7 +263,6 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
     else
     {
         printf("flybys.cpp -- flybys_velocity_distribution = %d is not supported -- exiting\n",flybys_velocity_distribution);
-        //exit(-1);
         error_code = 15;
         longjmp(jump_buf,1);
     }
@@ -229,98 +270,128 @@ int sample_flyby_position_and_velocity_at_R_enc(ParticlesMap *particlesMap, doub
     return 0;
 }
 
-
-int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, double M_per, double b_per_vec[3], double V_per_vec[3], bool *unbound_orbits, bool reset, int *integration_flag)
+int compute_effects_of_flyby_on_system(ParticlesMap *particlesMap, int flyby_type, double M_per, double b_per_vec[3], double V_per_vec[3], double e_per, double Q_per, double e_vec_unit_per[3], double h_vec_unit_per[3], bool *unbound_orbits, bool reset, int *integration_flag)
 {
     ParticlesMapIterator it_p;
     int k;
     
-    double V_per = norm3(V_per_vec);
-    double V_per_vec_unit[3];
-    for (k=0; k<3; k++)
+    if (flyby_type == 1) // impulsive
     {
-        V_per_vec_unit[k] = V_per_vec[k]/V_per;
-    }
-    
-    double b_i_vec[3],Delta_V_vec[3];
-    double b_per_vec_minus_R_vec[3];
-    double b_per_vec_minus_R_vec_dot_V_per_vec_unit,b_i_temp;
-    
-    double R_ref[3] = {0.0,0.0,0.0};
-    if (flybys_reference_binary != -1) /* Default value -1: use center of mass (center R_vec and V_vec around origin) */
-    {
+        //printf("imp\n");
         
-        Particle *p = (*particlesMap)[flybys_reference_binary];
+        double V_per = norm3(V_per_vec);
+        double V_per_vec_unit[3];
         for (k=0; k<3; k++)
         {
-            R_ref[k] = p->R_vec[k];
-            
+            V_per_vec_unit[k] = V_per_vec[k]/V_per;
         }
-    }
-    
-    #ifdef VERBOSE
-    if (verbose_flag > 1)
-    {
-        printf("flybys.cpp -- compute_effects_of_flyby_on_system -- R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
-        print_system(particlesMap,0);
-    }
-    #endif
-    
-    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
-    {
-        Particle *p = (*it_p).second;
-        if (p->is_binary == false and p->is_bound == true)
+        
+        double b_i_vec[3],Delta_V_vec[3];
+        double b_per_vec_minus_R_vec[3];
+        double b_per_vec_minus_R_vec_dot_V_per_vec_unit,b_i_temp;
+        
+        double R_ref[3] = {0.0,0.0,0.0};
+        if (flybys_reference_binary != -1) /* Default value -1: use center of mass (center R_vec and V_vec around origin) */
         {
-            p->instantaneous_perturbation_delta_mass = 0.0;
-            p->instantaneous_perturbation_delta_X = 0.0;
-            p->instantaneous_perturbation_delta_Y = 0.0;
-            p->instantaneous_perturbation_delta_Z = 0.0;
+            
+            Particle *p = (*particlesMap)[flybys_reference_binary];
+            for (k=0; k<3; k++)
+            {
+                R_ref[k] = p->R_vec[k];
+                
+            }
+        }
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 1)
+        {
+            printf("flybys.cpp -- compute_effects_of_flyby_on_system -- R_ref %g %g %g\n",R_ref[0],R_ref[1],R_ref[2]);
+            print_system(particlesMap,0);
+        }
+        #endif
+        
+        for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+        {
+            Particle *p = (*it_p).second;
+            if (p->is_binary == false and p->is_bound == true)
+            {
+                p->instantaneous_perturbation_delta_mass = 0.0;
+                p->instantaneous_perturbation_delta_X = 0.0;
+                p->instantaneous_perturbation_delta_Y = 0.0;
+                p->instantaneous_perturbation_delta_Z = 0.0;
 
-            if (*integration_flag == 0)
-            {
-                set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used in secular case */
-            }
+                if (*integration_flag == 0)
+                {
+                    set_positions_and_velocities(particlesMap); /* To make sure the latest positions are used in secular case */
+                }
 
-            for (k=0; k<3; k++)
-            {
-                b_per_vec_minus_R_vec[k] = b_per_vec[k] - p->R_vec[k] - R_ref[k];
+                for (k=0; k<3; k++)
+                {
+                    b_per_vec_minus_R_vec[k] = b_per_vec[k] - p->R_vec[k] - R_ref[k];
+                }
+                b_per_vec_minus_R_vec_dot_V_per_vec_unit = dot3(b_per_vec_minus_R_vec,V_per_vec_unit);
+                
+                for (k=0; k<3; k++)
+                {
+                    b_i_vec[k] = b_per_vec_minus_R_vec[k] - V_per_vec_unit[k]*b_per_vec_minus_R_vec_dot_V_per_vec_unit;
+                }
+                
+                b_i_temp = 2.0*(CONST_G*M_per/V_per)/norm3_squared(b_i_vec);
+                for (k=0; k<3; k++)
+                {
+                    Delta_V_vec[k] = b_i_temp*b_i_vec[k];
+                }
+                
+                p->instantaneous_perturbation_delta_VX = Delta_V_vec[0];
+                p->instantaneous_perturbation_delta_VY = Delta_V_vec[1];
+                p->instantaneous_perturbation_delta_VZ = Delta_V_vec[2];
+                
             }
-            b_per_vec_minus_R_vec_dot_V_per_vec_unit = dot3(b_per_vec_minus_R_vec,V_per_vec_unit);
-            
-            for (k=0; k<3; k++)
-            {
-                b_i_vec[k] = b_per_vec_minus_R_vec[k] - V_per_vec_unit[k]*b_per_vec_minus_R_vec_dot_V_per_vec_unit;
-            }
-            
-            b_i_temp = 2.0*(CONST_G*M_per/V_per)/norm3_squared(b_i_vec);
-            for (k=0; k<3; k++)
-            {
-                Delta_V_vec[k] = b_i_temp*b_i_vec[k];
-            }
-            
-            p->instantaneous_perturbation_delta_VX = Delta_V_vec[0];
-            p->instantaneous_perturbation_delta_VY = Delta_V_vec[1];
-            p->instantaneous_perturbation_delta_VZ = Delta_V_vec[2];
-            
+        }
+        
+        if (*integration_flag == 0)
+        {
+            apply_user_specified_instantaneous_perturbation(particlesMap);
+        }
+        else
+        {
+            apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
+        }
+
+        *unbound_orbits = check_for_unbound_orbits(particlesMap);
+                
+        if (reset == true)
+        {
+            reset_instantaneous_perturbation_quantities(particlesMap);
         }
     }
-    
-    if (*integration_flag == 0)
+    else if (flyby_type == 2) // secular
     {
-        apply_user_specified_instantaneous_perturbation(particlesMap);
+        
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- flybys.cpp -- compute_effects_of_flyby_on_system -- secular encounter -- pre\n");
+            print_system(particlesMap,0);
+        }
+        #endif
+
+        apply_external_perturbation_assuming_integrated_orbits_single_perturber(particlesMap, M_per, e_per, Q_per, e_vec_unit_per, h_vec_unit_per);
+
+        #ifdef VERBOSE
+        if (verbose_flag > 2)
+        {
+            printf("ODE_tides.cpp -- flybys.cpp -- compute_effects_of_flyby_on_system -- secular encounter -- post\n");
+            print_system(particlesMap,0);
+        }
+        #endif
+        
     }
     else
     {
-        apply_user_specified_instantaneous_perturbation_nbody(particlesMap);
+        printf("flybys.cpp -- unknown flyby_type %d; skipping this fly-by \n",flyby_type);
     }
-
-    *unbound_orbits = check_for_unbound_orbits(particlesMap);
-            
-    if (reset == true)
-    {
-        reset_instantaneous_perturbation_quantities(particlesMap);
-    }
-
+    
     return 0;
 }
 

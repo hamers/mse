@@ -58,6 +58,7 @@ extern double effective_radius_multiplication_factor_for_collisions_compact_obje
 
 extern bool include_flybys;
 extern bool flybys_correct_for_gravitational_focussing;
+extern bool flybys_include_secular_encounters;
 extern int flybys_velocity_distribution;
 extern int flybys_mass_distribution;
 extern int flybys_N_enc;

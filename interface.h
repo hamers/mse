@@ -215,5 +215,6 @@ int get_binary_properties_from_log_entry(int log_index, int particle_index, int 
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN, \
     double *h_vec_x, double *h_vec_y, double *h_vec_z, \
     double *e_vec_x, double *e_vec_y, double *e_vec_z);
+int write_final_log_entry_interface(double t, int integration_flag);
 
 }

@@ -262,24 +262,6 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
                 log_info.index1 = last_entry_info.index1;
                 update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_END, log_info);
             }
-            #ifdef IGNORE
-            if (last_entry.event_flag == LOG_CE_START and *integration_flag == 0) // end of CE phase
-            {
-                Log_info_type log_info;
-                log_info.binary_index = last_entry_info.binary_index;
-                log_info.index1 = last_entry_info.index1;
-                log_info.index2 = last_entry_info.index2;
-                update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
-            }
-            if (last_entry.event_flag == LOG_COL_START and *integration_flag == 0) // end of collision phase
-            {
-                Log_info_type log_info;
-                log_info.binary_index = last_entry_info.binary_index;
-                log_info.index1 = last_entry_info.index1;
-                log_info.index2 = last_entry_info.index2;
-                update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
-            }
-            #endif
         }
         #endif
         

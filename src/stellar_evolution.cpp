@@ -415,7 +415,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->convective_envelope_mass_dot = (menv - menv_old)*one_div_dt;
                     p->convective_envelope_radius_dot = CONST_R_SUN*(renv - renv_old)*one_div_dt;
                     p->sse_k2_dot = (k2 - k2_old)*one_div_dt;
-                    
+
                 }
                 else if (kw < 13)
                 /* kw change not involving NS/BH *
@@ -487,7 +487,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     p->convective_envelope_radius = renv*CONST_R_SUN;
                     p->sse_k2 = k2;
                 }
-
+                p->mass_dot_wind_accretion = 0.0; /* need to reset this since it is only determined in binary_evolution.cpp in secular integration mode, so errorenous results could occur when the integration flag switches */
                 
                 /* WD kicks */
                 if (kw_old!=kw and kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
@@ -663,7 +663,7 @@ void update_stellar_evolution_quantities_directly_nbody(ParticlesMap *particlesM
         {
             p->RLOF_flag = 0;
             
-            p->mass += (p->mass_dot_wind + p->mass_dot_wind_accretion) * dt;
+            p->mass += p->mass_dot_wind * dt;
             p->radius += p->radius_dot * dt;
 
             p->sse_initial_mass += p->sse_initial_mass_dot * dt;

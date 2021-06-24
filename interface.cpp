@@ -1402,5 +1402,15 @@ int get_binary_properties_from_log_entry(int log_index, int particle_index, int 
     return 0;
 }
 
- 
+
+int write_final_log_entry_interface(double t, int integration_flag)
+{
+    #ifdef LOGGING
+    Log_info_type log_info;
+    update_log_data(&particlesMap, t, integration_flag, LOG_FIN, log_info);
+    #endif
+    
+    return 0;
+}
+
 }

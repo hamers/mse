@@ -344,7 +344,8 @@ class MSE(object):
                         ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_binary_properties_from_log_entry.restype = ctypes.c_int
 
-
+        self.lib.write_final_log_entry_interface.argtypes = (ctypes.c_double, ctypes.c_int)
+        self.lib.write_final_log_entry_interface.restype = ctypes.c_int
        
         ### tests ###
         self.lib.unit_tests_interface.argtypes = (ctypes.c_int,)
@@ -885,6 +886,9 @@ class MSE(object):
             log.append(entry)
         #print("log done")
         return log
+
+    def write_final_log_entry(self):
+        self.lib.write_final_log_entry_interface(self.model_time, self.integration_flag)
 
     @property
     def log(self):
@@ -2436,6 +2440,8 @@ class Tools(object):
 
             i += 1
 
+        code.write_final_log_entry() ### This has to be done within Python, since the C++ code does not know if the desired Python simulation end time has been reached!
+
         N_status = i_status+1
         
         for i_status in range(N_status):
@@ -2943,6 +2949,8 @@ class Tools(object):
             text = "$\mathrm{Triple\,CE\,end}$"
         elif event_flag == 16:
             text = "$\mathrm{MSP\,formation}$"
+        elif event_flag == 17:
+            text = "$\mathrm{Final\,state}$"
         else:
             text = ""
         return text

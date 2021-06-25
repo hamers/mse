@@ -3,6 +3,7 @@ import numpy as np
 import ctypes
 import ast
 import copy
+import time
 
 """
 # Multiple Stellar Evolution (MSE) -- A Population Synthesis Code for Multiple-Star Systems #
@@ -2274,185 +2275,277 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True,save_data=False,plot_only=False,wall_time_max_s=1.8e4):
 
         np.random.seed(random_seed)
         
-        if configuration == "fully_nested":
-            particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
-        elif configuration == "2+2_quadruple":
-            particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
-        else:
-            particles = Tools.create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
+        if plot_only==True: ### load previously-generated data from disk; do not run the system
+            import pickle
+            try:
+                with open(plot_filename + ".pkl",'rb') as file:
+                    data = pickle.load(file)
+            except IOError:
+                print("Could not load pickle file ",plot_filename + ".pkl" + "; please make sure you run the system with the same filename first and with the --save_data argument enabled.")
+                exit(0)
 
-        print("="*50)
-        print("mse.py -- evolve_system() -- running system with parameters:")
-        print("Configuration: ",configuration)
-        print("N_bodies: ",N_bodies)
-        print("Object types:",object_types)
-        print("Stellar types:",stellar_types)
-        print("Masses/MSun: ",masses)
-        print("Metallicities: ",metallicities)
-        print("Semimajor axes (au): ",semimajor_axes)
-        print("Eccentricities: ",eccentricities)
-        print("Inclinations (rad): ",inclinations)
-        print("Longitudes of the ascending node (rad): ",longitudes_of_ascending_node)
-        print("Arguments of periapsis (rad): ",inclinations)
-        print("Integration time (yr): ",tend)
-        print("Number of plot output steps: ",N_steps)
+            log_copy = data["log"]
 
-        print("="*50)
-        print("Starting evolution")
-        
-        from mse import MSE
-
-        orbits = [x for x in particles if x.is_binary==True]
-        bodies = [x for x in particles if x.is_binary==False]
-
-        for b in bodies:
-            b.include_WD_kicks = include_WD_kicks
-            b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
-            b.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
-            b.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
-            b.common_envelope_timescale = 1.0e3
+            N_orbits_status = data['N_orbits_status']
+            N_bodies_status = data['N_bodies_status']
+            N_status = data['N_status']
+            t_print = data['t_print']
+            m_print = data['m_print']
+            mc_print = data['mc_print']
+            k_print = data['k_print']
+            R_print = data['R_print']
+            Rc_print = data['Rc_print']
+            X_print = data['X_print']
+            Y_print = data['Y_print']
+            Z_print = data['Z_print']
+            a_print = data['a_print']
+            e_print = data['e_print']
+            T_eff_print = data['T_eff_print']
+            L_print = data['L_print']
+            rel_INCL_print = data['rel_INCL_print']
+            spin_frequency_print = data['spin_frequency_print']
             
-        N_bodies = len(bodies)
-        N_orbits = len(orbits)
+        else: ### run the system
 
-        code = MSE()
-        code.enable_root_finding = True
-        code.add_particles(particles)
-        code.orbital_phases_random_seed = 1
+            ### set up the system ###
+            if configuration == "fully_nested":
+                particles = Tools.create_fully_nested_multiple(N_bodies, masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
+            elif configuration == "2+2_quadruple":
+                particles = Tools.create_2p2_quadruple_system(masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
+            else:
+                particles = Tools.create_hierarchy(N_bodies,configuration,masses,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,radii=None,metallicities=metallicities,stellar_types=stellar_types,object_types=object_types)
 
-        code.random_seed = random_seed
-        code.verbose_flag = verbose_flag
+            print("="*50)
+            print("mse.py -- evolve_system() -- running system with parameters:")
+            print("Configuration: ",configuration)
+            print("N_bodies: ",N_bodies)
+            print("Object types:",object_types)
+            print("Stellar types:",stellar_types)
+            print("Masses/MSun: ",masses)
+            print("Metallicities: ",metallicities)
+            print("Semimajor axes (au): ",semimajor_axes)
+            print("Eccentricities: ",eccentricities)
+            print("Inclinations (rad): ",inclinations)
+            print("Longitudes of the ascending node (rad): ",longitudes_of_ascending_node)
+            print("Arguments of periapsis (rad): ",inclinations)
+            print("Integration time (yr): ",tend)
+            print("Number of plot output steps: ",N_steps)
 
-        code.include_flybys = include_flybys
-        code.flybys_include_secular_encounters = flybys_include_secular_encounters
-        code.flybys_stellar_density = flybys_stellar_density_per_cubic_pc*code.CONST_PER_PC3
-        code.flybys_encounter_sphere_radius = flybys_encounter_sphere_radius_au
-        code.flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_km_s * code.CONST_KM_PER_S
-
-        code.binary_evolution_use_eCAML_model = False
-        code.NS_model = NS_model
-        code.ECSNe_model = ECSNe_model
-
-        t_print = [[]]
-        internal_indices_print = [[[] for x in range(N_bodies)]]
-        k_print = [[[] for x in range(N_bodies)]]
-        m_print = [[[] for x in range(N_bodies)]]
-        L_print = [[[] for x in range(N_bodies)]]
-        T_eff_print = [[[] for x in range(N_bodies)]]
-        R_print = [[[] for x in range(N_bodies)]]
-        X_print = [[[] for x in range(N_bodies)]]
-        Y_print = [[[] for x in range(N_bodies)]]
-        Z_print = [[[] for x in range(N_bodies)]]
-        Rc_print = [[[] for x in range(N_bodies)]]
-        R_L_print = [[[] for x in range(N_bodies)]]
-        t_V_print = [[[] for x in range(N_bodies)]]
-        mc_print = [[[] for x in range(N_bodies)]]
-        a_print = [[[] for x in range(N_orbits)]]
-        e_print = [[[] for x in range(N_orbits)]]
-        rel_INCL_print = [[[] for x in range(N_orbits)]]
-        spin_frequency_print = [[[] for x in range(N_bodies)]]
-        
-        N_orbits_status = [N_orbits]
-        N_bodies_status = [N_bodies]
-        t = 0.0
-        integration_flags = [[]]
-
-        i_status = 0
-
-        dt = tend/float(N_steps)
-        i = 0
-        
-        while t<tend:
-
-            t+=dt
-            code.evolve_model(t)
+            print("="*50)
+            print("Starting evolution")
             
-            error_code = code.error_code
-            if error_code != 0:
-                print("mse.py -- Internal error with code ",error_code,"occurred -- stopping simulation.")
-                return error_code,code.log
-                
-            CVODE_flag = code.CVODE_flag
-            state = code.state
-
-            particles = code.particles
             orbits = [x for x in particles if x.is_binary==True]
             bodies = [x for x in particles if x.is_binary==False]
-            N_orbits = len(orbits)
+
+            for b in bodies:
+                b.include_WD_kicks = include_WD_kicks
+                b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
+                b.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
+                b.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
+                b.common_envelope_timescale = 1.0e3
+                
             N_bodies = len(bodies)
-               
-            if code.structure_change == True:
-                #print("Python restruct")#,children1,children1_old,children2,children2_old)
-                t_print.append([])
-                integration_flags.append([])
-                internal_indices_print.append([[] for x in range(N_bodies)])
-                k_print.append([[] for x in range(N_bodies)])
-                m_print.append([[] for x in range(N_bodies)])
-                L_print.append([[] for x in range(N_bodies)])
-                T_eff_print.append([[] for x in range(N_bodies)])
-                R_print.append([[] for x in range(N_bodies)])
-                X_print.append([[] for x in range(N_bodies)])
-                Y_print.append([[] for x in range(N_bodies)])
-                Z_print.append([[] for x in range(N_bodies)])
-                Rc_print.append([[] for x in range(N_bodies)])
-                R_L_print.append([[] for x in range(N_bodies)])
-                t_V_print.append([[] for x in range(N_bodies)])
-                mc_print.append([[] for x in range(N_bodies)])
-                a_print.append([[] for x in range(N_orbits)])
-                e_print.append([[] for x in range(N_orbits)])
-                rel_INCL_print.append([[] for x in range(N_orbits)])
-                spin_frequency_print.append([[] for x in range(N_bodies)])
-                
-                N_orbits_status.append(N_orbits)
-                N_bodies_status.append(N_bodies)
-                
-                i_status += 1
-                
-            print( 't/Myr',t*1e-6,'masses/MSun',[b.mass for b in bodies],'es',[o.e for o in orbits],'smas/au',[o.a for o in orbits],'integration_flag',code.integration_flag)
+            N_orbits = len(orbits)
+
+            ### set up the code ###
+            from mse import MSE
             
-            for index in range(N_orbits):
-                rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
-                e_print[i_status][index].append(orbits[index].e)
-                a_print[i_status][index].append(orbits[index].a)
-            for index in range(N_bodies):
-                internal_indices_print[i_status][index].append(bodies[index].index)
-                m_print[i_status][index].append(bodies[index].mass)
-                L_print[i_status][index].append(bodies[index].luminosity)
-                k_print[i_status][index].append(bodies[index].stellar_type)
-                R_print[i_status][index].append(bodies[index].radius)
-                X_print[i_status][index].append(bodies[index].X)
-                Y_print[i_status][index].append(bodies[index].Y)
-                Z_print[i_status][index].append(bodies[index].Z)
-                t_V_print[i_status][index].append(bodies[index].tides_viscous_time_scale)
-                Rc_print[i_status][index].append(bodies[index].convective_envelope_radius)
-                R_L_print[i_status][index].append(bodies[index].roche_lobe_radius_pericenter)
-                mc_print[i_status][index].append(bodies[index].convective_envelope_mass)
-                T_eff = Tools.compute_effective_temperature(bodies[index].luminosity, bodies[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
-                T_eff_print[i_status][index].append(T_eff)
-                spin_frequency_print[i_status][index].append( np.sqrt( bodies[index].spin_vec_x**2 + bodies[index].spin_vec_y**2 + bodies[index].spin_vec_z**2) )
+            code = MSE()
+            code.add_particles(particles)
 
-            t_print[i_status].append(t)        
-            integration_flags[i_status].append(code.integration_flag)
+            code.random_seed = random_seed
+            code.verbose_flag = verbose_flag
+            code.wall_time_max_s = wall_time_max_s
 
-            i += 1
+            code.include_flybys = include_flybys
+            code.flybys_include_secular_encounters = flybys_include_secular_encounters
+            code.flybys_stellar_density = flybys_stellar_density_per_cubic_pc*code.CONST_PER_PC3
+            code.flybys_encounter_sphere_radius = flybys_encounter_sphere_radius_au
+            code.flybys_stellar_relative_velocity_dispersion = flybys_stellar_relative_velocity_dispersion_km_s * code.CONST_KM_PER_S
 
-        code.write_final_log_entry() ### This has to be done within Python, since the C++ code does not know if the desired Python simulation end time has been reached!
+            code.binary_evolution_use_eCAML_model = False
+            code.NS_model = NS_model
+            code.ECSNe_model = ECSNe_model
 
-        N_status = i_status+1
-        
-        for i_status in range(N_status):
-            t_print[i_status] = np.array(t_print[i_status])
+            ### set up custom output printing arrays ###
+            t_print = [[]]
+            internal_indices_print = [[[] for x in range(N_bodies)]]
+            k_print = [[[] for x in range(N_bodies)]]
+            m_print = [[[] for x in range(N_bodies)]]
+            L_print = [[[] for x in range(N_bodies)]]
+            T_eff_print = [[[] for x in range(N_bodies)]]
+            R_print = [[[] for x in range(N_bodies)]]
+            X_print = [[[] for x in range(N_bodies)]]
+            Y_print = [[[] for x in range(N_bodies)]]
+            Z_print = [[[] for x in range(N_bodies)]]
+            Rc_print = [[[] for x in range(N_bodies)]]
+            R_L_print = [[[] for x in range(N_bodies)]]
+            t_V_print = [[[] for x in range(N_bodies)]]
+            mc_print = [[[] for x in range(N_bodies)]]
+            a_print = [[[] for x in range(N_orbits)]]
+            e_print = [[[] for x in range(N_orbits)]]
+            rel_INCL_print = [[[] for x in range(N_orbits)]]
+            spin_frequency_print = [[[] for x in range(N_bodies)]]
+            
+            N_orbits_status = [N_orbits]
+            N_bodies_status = [N_bodies]
+            
+            ### start time loop within Python ###
+            t = 0.0
+            integration_flags = [[]]
 
-        print("Final properties -- ","masses/MSun",[m_print[-1][i][-1] for i in range(N_bodies)])
+            i_status = 0
 
-        if verbose_flag > 0:
-            print("log",code.log)
+            dt = tend/float(N_steps)
+            i = 0
+           
+            Python_wall_start = time.time()
+            
+            while t<tend:
+
+                t+=dt
+                code.evolve_model(t)
+                
+                ### check for errors/wall time ###
+                error_code = code.error_code
+                if error_code not in [0,35,36]:
+                    print("="*50)
+                    print("WARNING -- mse.py -- Internal error with code ",error_code,"occurred -- -- stopping the simulation but saving data/making plots if specified in command line arguments.")
+                    print("="*50)
+                    break
+
+                wall_time_s = time.time() - Python_wall_start
+                if wall_time_s > wall_time_max_s or error_code in [35,36]:
+                    error_code = -35
+                    print("="*50)
+                    print("WARNING -- mse.py -- maximum wall time of ",wall_time_max_s," s exceeded -- stopping the simulation but saving data/making plots if specified in command line arguments.")
+                    print("Python wall_time_s",wall_time_s,"error_code",error_code)
+                    print("="*50)
+                    break
+
+                CVODE_flag = code.CVODE_flag
+                state = code.state
+
+                print( 't/Myr',t*1e-6,'masses/MSun',[b.mass for b in bodies],'smas/au',[o.a for o in orbits],'es',[o.e for o in orbits],'integration_flag',code.integration_flag)
+                
+                ### custom output printing ###
+
+                particles = code.particles
+                orbits = [x for x in particles if x.is_binary==True]
+                bodies = [x for x in particles if x.is_binary==False]
+                N_orbits = len(orbits)
+                N_bodies = len(bodies)
+                   
+                if code.structure_change == True:
+                    #print("Python restruct")#,children1,children1_old,children2,children2_old)
+                    t_print.append([])
+                    integration_flags.append([])
+                    internal_indices_print.append([[] for x in range(N_bodies)])
+                    k_print.append([[] for x in range(N_bodies)])
+                    m_print.append([[] for x in range(N_bodies)])
+                    L_print.append([[] for x in range(N_bodies)])
+                    T_eff_print.append([[] for x in range(N_bodies)])
+                    R_print.append([[] for x in range(N_bodies)])
+                    X_print.append([[] for x in range(N_bodies)])
+                    Y_print.append([[] for x in range(N_bodies)])
+                    Z_print.append([[] for x in range(N_bodies)])
+                    Rc_print.append([[] for x in range(N_bodies)])
+                    R_L_print.append([[] for x in range(N_bodies)])
+                    t_V_print.append([[] for x in range(N_bodies)])
+                    mc_print.append([[] for x in range(N_bodies)])
+                    a_print.append([[] for x in range(N_orbits)])
+                    e_print.append([[] for x in range(N_orbits)])
+                    rel_INCL_print.append([[] for x in range(N_orbits)])
+                    spin_frequency_print.append([[] for x in range(N_bodies)])
+                    
+                    N_orbits_status.append(N_orbits)
+                    N_bodies_status.append(N_bodies)
+                    
+                    i_status += 1
+                    
+                for index in range(N_orbits):
+                    rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
+                    e_print[i_status][index].append(orbits[index].e)
+                    a_print[i_status][index].append(orbits[index].a)
+                for index in range(N_bodies):
+                    internal_indices_print[i_status][index].append(bodies[index].index)
+                    m_print[i_status][index].append(bodies[index].mass)
+                    L_print[i_status][index].append(bodies[index].luminosity)
+                    k_print[i_status][index].append(bodies[index].stellar_type)
+                    R_print[i_status][index].append(bodies[index].radius)
+                    X_print[i_status][index].append(bodies[index].X)
+                    Y_print[i_status][index].append(bodies[index].Y)
+                    Z_print[i_status][index].append(bodies[index].Z)
+                    t_V_print[i_status][index].append(bodies[index].tides_viscous_time_scale)
+                    Rc_print[i_status][index].append(bodies[index].convective_envelope_radius)
+                    R_L_print[i_status][index].append(bodies[index].roche_lobe_radius_pericenter)
+                    mc_print[i_status][index].append(bodies[index].convective_envelope_mass)
+                    T_eff = Tools.compute_effective_temperature(bodies[index].luminosity, bodies[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
+                    T_eff_print[i_status][index].append(T_eff)
+                    spin_frequency_print[i_status][index].append( np.sqrt( bodies[index].spin_vec_x**2 + bodies[index].spin_vec_y**2 + bodies[index].spin_vec_z**2) )
+
+                t_print[i_status].append(t)        
+                integration_flags[i_status].append(code.integration_flag)
+
+                i += 1
+
+            code.write_final_log_entry() ### This has to be done within Python, since the C++ code does not know if the desired Python simulation end time has been reached!
+
+            N_status = i_status+1
+            
+            for i_status in range(N_status):
+                t_print[i_status] = np.array(t_print[i_status])
+
+            print("Final properties -- ","masses/MSun",[m_print[-1][i][-1] for i in range(N_bodies)],"smas/au",[a_print[-1][i][-1] for i in range(N_orbits)],"es",[e_print[-1][i][-1] for i in range(N_orbits)])
+
+            if verbose_flag > 0:
+                print("Number of log entries:",len(code.log))
+                print("log",code.log)
+                
+            error_code_copy = copy.deepcopy(code.error_code)
+            log_copy = copy.deepcopy(code.log)
+
+            code.reset()
+
+            if save_data==True: ### save code log and custom output data to disk for later analysis/replotting
+                
+                wall_time_s = time.time() - Python_wall_start
+                data = {"log":log_copy,'error_code':error_code_copy,"wall_time_s":wall_time_s}
+
+                data['N_orbits_status'] = N_orbits_status
+                data['N_bodies_status'] = N_bodies_status
+                data['N_status'] = N_status
+                data['t_print'] = t_print
+                data['m_print'] = m_print
+                data['mc_print'] = mc_print
+                data['k_print'] = k_print
+                data['R_print'] = R_print
+                data['Rc_print'] = Rc_print
+                data['X_print'] = X_print
+                data['Y_print'] = Y_print
+                data['Z_print'] = Z_print
+                data['a_print'] = a_print
+                data['e_print'] = e_print
+                data['T_eff_print'] = T_eff_print
+                data['L_print'] = L_print
+                data['rel_INCL_print'] = rel_INCL_print
+                data['spin_frequency_print'] = spin_frequency_print
+                
+                import pickle
+                print("Saving output data to ",plot_filename + ".pkl")
+                try:
+                    with open(plot_filename + ".pkl",'wb') as file:
+                        data = pickle.dump(data,file)
+                except IOError:
+                    print("Error saving output data to ",plot_filename + ".pkl; make sure the path exists and/or enough disk space is available.")
+                    exit(0)
             
         if make_plots==True:
+            print("Making plots...") 
             
             try:
                 from matplotlib import pyplot
@@ -2466,11 +2559,12 @@ class Tools(object):
                 pyplot.rc('text',usetex=True)
                 pyplot.rc('legend',fancybox=True)  
         
-            print("Number of log entries:",len(code.log))
-            
+            parsec_in_AU = 206201.0
+            CONST_L_SUN = 0.0002710404109745588
+
             plot_log = []
             previous_event_flag = -1
-            for index_log,log in enumerate(code.log):
+            for index_log,log in enumerate(log_copy):
                 event_flag = log["event_flag"]
                 if previous_event_flag == event_flag and (event_flag == 4 or event_flag == 10):
                     continue
@@ -2481,14 +2575,14 @@ class Tools(object):
             N_r = int(np.ceil(np.sqrt(N_l)))#+1
             N_c = N_r
             panel_length = 3
-            #fontsize=N_l
+
             fontsize=10
             fig=pyplot.figure(figsize=(N_r*panel_length,N_r*panel_length))
             
             legend_elements = []
             for k in range(15):
                 color,s,description = Tools.get_color_and_size_and_description_for_star(k,1.0)
-                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label="$\mathrm{%s}$"%description))#label = "$\mathrm{%s}$"%description) )
+                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label="$\mathrm{%s}$"%description))
 
             for index_log,log in enumerate(plot_log):
                 plot=fig.add_subplot(N_r,N_c,index_log+1)
@@ -2502,7 +2596,6 @@ class Tools(object):
                 text = Tools.get_description_for_event_flag(event_flag)
                 plot.set_title(text,fontsize=fontsize)
                 plot.annotate("$t\simeq %s\,\mathrm{Myr}$"%round(log["time"]*1e-6,2),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
-                #if index_log>0: break
 
                 if index_log == 0:
                     plot.legend(handles = legend_elements, bbox_to_anchor = (-0.05, 1.50), loc = 'upper left', ncol = 5,fontsize=0.85*fontsize)
@@ -2539,10 +2632,9 @@ class Tools(object):
                     plot2.plot(1.0e-6*t_print[i_status],R_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
                     plot2.plot(1.0e-6*t_print[i_status],Rc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
                     
-                    parsec_in_AU = code.CONST_PARSEC
                     plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
                     
-                    plot_HRD.scatter(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/code.CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth,s=10)
+                    plot_HRD.scatter(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth,s=10)
                     #plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
                     plot4.plot(1.0e-6*t_print[i_status],3.15576e7*2.0*np.pi/np.array(spin_frequency_print[i_status][index]),color=color,linewidth=linewidth) 
                    
@@ -2563,7 +2655,7 @@ class Tools(object):
             for plot in plots:
                 plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
 
-            log_CEs = [x for x in code.log if x["event_flag"] == 6]
+            log_CEs = [x for x in plot_log if x["event_flag"] == 6]
             t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
             
             for k,t in enumerate(t_CEs_Myr):
@@ -2593,13 +2685,11 @@ class Tools(object):
             fig_pos.savefig(plot_filename + "_pos.pdf")
             fig_HRD.savefig(plot_filename + "_HRD.pdf")
             
+            print("Plots generated and written to disk.") 
+            
             if show_plots == True:
                 pyplot.show()
     
-        error_code_copy = copy.deepcopy(code.error_code)
-        log_copy = copy.deepcopy(code.log)
-
-        code.reset()
       
         return error_code_copy, log_copy
 

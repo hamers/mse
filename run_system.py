@@ -44,25 +44,33 @@ def parse_arguments():
     
     parser.add_argument("--plot_filename",                  type=str,       dest="plot_filename",               default="test1",           help="Plot filename")
     
-    parser.add_argument("--kick_distribution_sigma_km_s_NS",type=float,     dest="kick_distribution_sigma_km_s_NS", default=265.0,           help="NS kick sigma in km/s (assuming Maxwellian distribution)")
+    parser.add_argument("--kick_distribution_sigma_km_s_NS",type=float,     dest="kick_distribution_sigma_km_s_NS", default=265.0,         help="NS kick sigma in km/s (assuming Maxwellian distribution)")
 
-    parser.add_argument("--kick_distribution_sigma_km_s_BH",type=float,     dest="kick_distribution_sigma_km_s_BH", default=50.0,           help="BH kick sigma in km/s (assuming Maxwellian distribution)")
+    parser.add_argument("--kick_distribution_sigma_km_s_BH",type=float,     dest="kick_distribution_sigma_km_s_BH", default=50.0,          help="BH kick sigma in km/s (assuming Maxwellian distribution)")
 
     parser.add_argument("--kick_distribution_sigma_km_s_WD",type=float,     dest="kick_distribution_sigma_km_s_WD", default=1.0,           help="WD kick sigma in km/s (assuming Maxwellian distribution); NOTE: include_WD_kicks should be toggled on to enable")
     parser.add_argument("--NS_model",                       type=int,       dest="NS_model",                    default=0,                 help="Model assumed for NSs: default (0), or Ye+19 (1)")
     parser.add_argument("--ECSNe_model",                    type=int,       dest="ECSNe_model",                 default=0,                 help="Model assumed for electron-capture SNe: default (0), or Ye+19 (1)")
-    parser.add_argument("--flybys_stellar_density_per_cubic_pc",                    type=float,       dest="flybys_stellar_density_per_cubic_pc",                 default=0.1,                 help="Density assumed for fly-bys (units: per cubic pc)")
-    parser.add_argument("--flybys_encounter_sphere_radius_au",                    type=float,       dest="flybys_encounter_sphere_radius_au",                 default=1.0e5,                 help="Encounter sphere radius assumed for fly-bys (au)")
-    parser.add_argument("--flybys_stellar_relative_velocity_dispersion_km_s",                    type=float,       dest="flybys_stellar_relative_velocity_dispersion_km_s",                 default=30.0,                 help="Relative velocity dispersion assumed for fly-bys (km/s)")
+    
+    parser.add_argument("--flybys_stellar_density_per_cubic_pc",              type=float,       dest="flybys_stellar_density_per_cubic_pc",              default=0.1,        help="Density assumed for fly-bys (units: per cubic pc)")
+    parser.add_argument("--flybys_encounter_sphere_radius_au",                type=float,       dest="flybys_encounter_sphere_radius_au",                default=1.0e5,      help="Encounter sphere radius assumed for fly-bys (au)")
+    parser.add_argument("--flybys_stellar_relative_velocity_dispersion_km_s", type=float,       dest="flybys_stellar_relative_velocity_dispersion_km_s", default=30.0,       help="Relative velocity dispersion assumed for fly-bys (km/s)")
+    
+    parser.add_argument("--wall_time_max_s",                type=float,      dest="wall_time_max_s", default=1.8e4,       help="Maximum wall time allowed for the simulation (in s). Increase if needed.")
+
+    
     
     ### boolean arguments ###
     add_bool_arg(parser, 'verbose',                         default=False,         help="Verbose terminal output (Python)")
-    add_bool_arg(parser, 'plot',                            default=False,         help="Make plots")
+    add_bool_arg(parser, 'make_plots',                      default=True,         help="Make plots")
+    add_bool_arg(parser, 'plot_only',                       default=False,         help="Make plots by loading previously-generated data from disk; will not run the simulation")
+    add_bool_arg(parser, 'save_data',                       default=True,          help="Save output data to pickle file for later replotting. Turn off if you do not use this feature and the pickle files are large.")
     add_bool_arg(parser, 'show_plots',                      default=True,          help="Display plots")
-    add_bool_arg(parser, 'fancy_plots',                     default=False,         help="Use LaTeX fonts for plots (slow)")
+    add_bool_arg(parser, 'fancy_plots',                     default=False,         help="Use LaTeX fonts for plots (slower)")
+
     add_bool_arg(parser, 'include_WD_kicks',                default=False,         help="Let WDs receive a natal kick at birth. Assumes a Maxwellian distribution with \sigma = 1 km/s by default (can be changed).")
-    add_bool_arg(parser, 'include_flybys',                  default=True,         help="Take into account fly-bys")
-    add_bool_arg(parser, 'flybys_include_secular_encounters',                default=False,         help="Include secular fly-bys")
+    add_bool_arg(parser, 'include_flybys',                  default=True,          help="Take into account fly-bys")
+    add_bool_arg(parser, 'flybys_include_secular_encounters',default=False,        help="Include secular fly-bys")
 
     args = parser.parse_args()
 
@@ -91,4 +99,4 @@ if __name__ == '__main__':
 
     print("="*50)
     
-    error_code, log = Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag,include_WD_kicks=args.include_WD_kicks,kick_distribution_sigma_km_s_WD=args.kick_distribution_sigma_km_s_WD,NS_model=args.NS_model,ECSNe_model=args.ECSNe_model,kick_distribution_sigma_km_s_NS=args.kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH=args.kick_distribution_sigma_km_s_BH,flybys_stellar_density_per_cubic_pc=args.flybys_stellar_density_per_cubic_pc,flybys_encounter_sphere_radius_au=args.flybys_encounter_sphere_radius_au,flybys_stellar_relative_velocity_dispersion_km_s=args.flybys_stellar_relative_velocity_dispersion_km_s,flybys_include_secular_encounters=args.flybys_include_secular_encounters,include_flybys=args.include_flybys)
+    error_code, log = Tools.evolve_system(args.configuration,N_bodies,args.masses,args.metallicities,args.semimajor_axes,args.eccentricities,args.inclinations,args.arguments_of_pericentre,args.longitudes_of_ascending_node,args.end_time,args.N_steps,stellar_types=args.stellar_types,plot_filename=args.plot_filename,object_types=args.object_types,fancy_plots=args.fancy_plots,show_plots=args.show_plots,random_seed=args.random_seed,verbose_flag=args.verbose_flag,include_WD_kicks=args.include_WD_kicks,kick_distribution_sigma_km_s_WD=args.kick_distribution_sigma_km_s_WD,NS_model=args.NS_model,ECSNe_model=args.ECSNe_model,kick_distribution_sigma_km_s_NS=args.kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH=args.kick_distribution_sigma_km_s_BH,flybys_stellar_density_per_cubic_pc=args.flybys_stellar_density_per_cubic_pc,flybys_encounter_sphere_radius_au=args.flybys_encounter_sphere_radius_au,flybys_stellar_relative_velocity_dispersion_km_s=args.flybys_stellar_relative_velocity_dispersion_km_s,flybys_include_secular_encounters=args.flybys_include_secular_encounters,include_flybys=args.include_flybys,plot_only=args.plot_only,save_data=args.save_data,make_plots=args.make_plots,wall_time_max_s=args.wall_time_max_s)

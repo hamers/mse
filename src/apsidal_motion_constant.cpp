@@ -118,23 +118,24 @@ double compute_apsidal_motion_constant(Particle *star)
         val = 0.14327923;
     }
 	
-    #ifdef IGNORE
     check_number(val, "apsidal_motion_constant.cpp", "k_AM", true);
     
-    if (val<0)
+    if (val<=0.0)
     {
-        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g\n",val,star->index,stellar_type,star->mass,star->age);
+        printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g; setting AMC to default value of 0.08\n",val,star->index,stellar_type,star->mass,star->age);
         //exit(0);
-        error_code = 25;
-        longjmp(jump_buf,1);
+        //error_code = 25;
+        //longjmp(jump_buf,1);
+        val = 0.08;
     }
-    #endif
-
+    
+    #ifdef IGNORE
     if (isnan(val) or isinf(val))
     {
         printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g; setting AMC to default value of 0.08 \n",val,star->index,stellar_type,star->mass,star->age);
         val = 0.08;
     }
+    #endif
 
     return val;
 }

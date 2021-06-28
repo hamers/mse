@@ -814,6 +814,12 @@ void update_stellar_evolution_properties(Particle *p)
 
 double compute_moment_of_inertia(int stellar_type, double mass, double core_mass, double radius, double core_radius, double k2, double k3)
 {
+    //printf("compute_moment_of_inertia k %d m %g mc %g r %g rc %g kw %g k3 %g",stellar_type,mass,core_mass,radius,core_radius,k2,k3);
+    if (core_mass > mass) /* This can happen in edge cases when the core mass is updated immediately after stellar type change, but the mass is changed linearly during ODE integration; circumvent by setting mc=c */
+    {
+        core_mass = mass;
+    }
+    
     if (stellar_type < 10) // stars
     {
         return k2*(mass - core_mass)*radius*radius + k3*core_mass*core_radius*core_radius;

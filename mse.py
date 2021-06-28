@@ -128,7 +128,7 @@ class MSE(object):
         lib_path = os.path.join(__current_dir__, 'libmse.so')
 
         if not os.path.isfile(lib_path):
-            print('Library libmse.so not exist -- trying to compile')
+            print('Library libmse.so does not exist -- trying to compile')
             os.system('make')
         
         self.lib = ctypes.cdll.LoadLibrary(lib_path)

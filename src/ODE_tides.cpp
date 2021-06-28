@@ -358,6 +358,10 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     }
     #endif
 
+    if (k_AM <= 0.0 or I <= 0.0)
+    {
+        printf("ODE_tides.cpp -- compute_EOM_equilibrium_tide_BO_full -- k_AM <= 0.0 or I <= 0.0 -- binary_index %d star_index %d companion_index %d t_V %.15g rg %.15g kAM %.15g R %.15g I %.15g\n",binary_index,star_index,companion_index,t_V,star->gyration_radius,k_AM,star->radius,I);
+    }    
     
     if (t_V!=t_V)
     {
@@ -379,7 +383,6 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
         printf("star->luminosity %g\n",star->luminosity);
         printf("k_AM %g\n",k_AM);
         print_system(particlesMap,0);
-        //exit(-1);
         error_code = 22;
         longjmp(jump_buf,1);
     }
@@ -406,6 +409,8 @@ double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int bina
     double mu = m*M/(m+M);
     double C = m*k_AM*R_div_a_p5/(mu*n);
     
+    check_number(I,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","I", true);
+    check_number(k_AM,"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","k_AM", true);
     check_number(spin_vec[0],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[0]", true);
     check_number(spin_vec[1],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[1]", true);
     check_number(spin_vec[2],"tides.cpp -- compute_EOM_equilibrium_tide_BO_full","spin_vec[2]", true);

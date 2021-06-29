@@ -120,7 +120,7 @@ double compute_apsidal_motion_constant(Particle *star)
 	
     check_number(val, "apsidal_motion_constant.cpp", "k_AM", true);
     
-    if (val<=0.0)
+    if (val<=0.0 and stellar_type != 14 and stellar_type != 15)
     {
         printf("apsidal_motion_constant.cpp -- ERROR: AMC is %g index %d kw %d m %g age %g; setting AMC to default value of 0.08\n",val,star->index,stellar_type,star->mass,star->age);
         //exit(0);

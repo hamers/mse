@@ -2892,7 +2892,6 @@ class Tools(object):
 
     @staticmethod
     def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5,index1=-1,index2=-1,event_flag=-1):
-
         for index,body in enumerate(bodies):
             color,s,description = Tools.get_color_and_size_and_description_for_star(body.stellar_type,body.radius)
             body.plot_x = index
@@ -3001,6 +3000,8 @@ class Tools(object):
         elif (stellar_type >= 10):
             s = 5 + 20*np.log10(radius/CONST_KM)
 
+        s = np.fabs(s)
+        
         return color,s,description
         
     @staticmethod

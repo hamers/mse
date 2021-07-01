@@ -12,7 +12,7 @@ int test_BH_spin_conversion();
 
 int test_nbody(int mode);
 int test_nbody_two_body_stopping_conditions();
-struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance);
+struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode1, int stopping_condition_mode2, double gbs_tolerance, double stopping_condition_tolerance);
 double test_nbody_compute_time_of_collision(double CONST_G, double M, double r_col, double a, double e);
 int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, double *a, double *e);
 int test_nbody_two_body_kick();

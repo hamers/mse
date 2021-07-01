@@ -1573,10 +1573,21 @@ void stopping_condition_function(struct RegularizedRegion *R, int *possible_stop
                 r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
                 r_crit = CV_max( r_criti, r_critj );
             }
+            else if (modei == 1 && modej == 0) // RLOF + col
+            {
+                r_criti = radiusi / fq_RLOF_Eggleton(mi,mj);
+                r_critj = radiusj;
+                r_crit = CV_max( r_criti, r_critj );
+            }
+            else if (modei == 0 && modej == 1) // col + RLOF
+            {
+                r_criti = radiusi;
+                r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
+                r_crit = CV_max( r_criti, r_critj );
+            }
             else
             {
-                printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
-                //exit(-1);
+                printf("mst.c -- stopping_condition_function -- invalid (combination) of Stopping_Condition_Mode %d and %d for particles %d and %d, respectively\n",modei,modej,i,j);
                 error_code = 31;
             }
             
@@ -1775,10 +1786,21 @@ int check_for_initial_stopping_condition(struct RegularizedRegion *R)
                 r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
                 r_crit = CV_max( r_criti, r_critj );
             }
+            else if (modei == 1 && modej == 0) // RLOF + col
+            {
+                r_criti = radiusi / fq_RLOF_Eggleton(mi,mj);
+                r_critj = radiusj;
+                r_crit = CV_max( r_criti, r_critj );
+            }
+            else if (modei == 0 && modej == 1) // col + RLOF
+            {
+                r_criti = radiusi;
+                r_critj = radiusj / fq_RLOF_Eggleton(mj,mi);
+                r_crit = CV_max( r_criti, r_critj );
+            }
             else
             {
-                printf("Mixed Stopping_Condition_Mode not (yet) allowed!\n");
-                //exit(-1);
+                printf("mst.c -- check_for_initial_stopping_condition -- invalid (combination) of Stopping_Condition_Mode %d and %d for particles %d and %d, respectively\n",modei,modej,i,j);
                 error_code = 32;
             }
             

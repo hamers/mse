@@ -254,9 +254,9 @@ int test_nbody_two_body_stopping_conditions()
     printf("test.cpp -- test_nbody_two_body_stopping_conditions\n");
 
     int flag = 0;    
-    for (int stopping_condition_mode = 0; stopping_condition_mode < 2; stopping_condition_mode++)
+    for (int stopping_condition_mode = 0; stopping_condition_mode < 4; stopping_condition_mode++)
     {
-    
+        printf("stopping_condition_mode %d\n",stopping_condition_mode);
         initialize_mpi_or_serial(); 
         int N_bodies = 2;
 
@@ -286,9 +286,28 @@ int test_nbody_two_body_stopping_conditions()
         
         double gbs_tolerance = 1.0e-12;
         double stopping_condition_tolerance = 1.0e-12;
-        struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
-
-
+        struct RegularizedRegion *R;
+        if (stopping_condition_mode < 2)
+        {
+            
+            R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+        }
+        else
+        {
+            if (stopping_condition_mode==2)
+            {
+                int stopping_condition_mode1 = 0;
+                int stopping_condition_mode2 = 1;
+                R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode1,stopping_condition_mode2,gbs_tolerance,stopping_condition_tolerance);
+            }
+            if (stopping_condition_mode==3)
+            {
+                int stopping_condition_mode1 = 1;
+                int stopping_condition_mode2 = 0;
+                R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode1,stopping_condition_mode2,gbs_tolerance,stopping_condition_tolerance);
+            }
+        }
+        
         double E_init = compute_nbody_total_energy(R);
 
         int split_integration = 0;
@@ -346,7 +365,7 @@ int test_nbody_two_body_stopping_conditions()
         
         test_nbody_compute_elements(GCONST,M,r,v,&a,&e);
         double r_norm = norm3(r);
-        //printf("Final a %.15f e %.15f sep %.15f r_col %g r_RLOF1 %g r_RLOF2 %g\n",a,e,r_norm,R1+R2,r_RLOF1,r_RLOF2);
+        //printf("Final a %.15f e %.15f sep %.15f R1 %g R2 %g R1+R2 %g r_RLOF1 %g r_RLOF2 %g\n",a,e,r_norm,R1,R2,R1+R2,r_RLOF1,r_RLOF2);
 
         free_data(R);
 
@@ -389,6 +408,22 @@ int test_nbody_two_body_stopping_conditions()
                 flag = 1;
             }
         }
+        else if (stopping_condition_mode == 2) // col + RLOF
+        {
+            if (!equal_number(r_norm,CV_max(R1,r_RLOF2),tol))
+            {
+                printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g max(R1,r_RLOF2) %g\n",r_norm,CV_max(R1,r_RLOF2));
+                flag = 1;
+            }
+        }
+        else if (stopping_condition_mode == 3) // RLOF + col
+        {
+            if (!equal_number(r_norm,CV_max(r_RLOF1,R2),tol))
+            {
+                printf("test.cpp -- error in test_nbody_two_body_stopping_conditions -- r_norm %g max(R1,r_RLOF2) %g\n",r_norm,CV_max(r_RLOF1,R2));
+                flag = 1;
+            }
+        }
         
     }
     
@@ -427,7 +462,7 @@ int test_nbody_compute_elements(double CONST_G, double M, double *r, double *v, 
     return 0;
 }
 
-struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode, double gbs_tolerance, double stopping_condition_tolerance)
+struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, double R2, double a, double e, int stopping_condition_mode1, int stopping_condition_mode2, double gbs_tolerance, double stopping_condition_tolerance)
 {
      
     struct RegularizedRegion *R;
@@ -478,8 +513,8 @@ struct RegularizedRegion *generate_binary_ICs(double m1, double m2, double R1, d
     R->Radius[0] = R1;
     R->Radius[1] = R2;
 
-    R->Stopping_Condition_Mode[0] = stopping_condition_mode;
-    R->Stopping_Condition_Mode[1] = stopping_condition_mode;
+    R->Stopping_Condition_Mode[0] = stopping_condition_mode1;
+    R->Stopping_Condition_Mode[1] = stopping_condition_mode2;
     R->gbs_tolerance = gbs_tolerance;
     R->stopping_condition_tolerance = stopping_condition_tolerance;
     
@@ -520,7 +555,7 @@ int test_nbody_two_body_kick()
     
     double gbs_tolerance = 1.0e-8;
     double stopping_condition_tolerance = 1.0e-6;
-    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
 
     
     /* Give kick to *2 */
@@ -756,7 +791,7 @@ int test_nbody_inspiral(int mode)
     
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-12;
-    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
     
     double E_init = compute_nbody_total_energy(R);
     double P_orb = compute_orbital_period_from_semimajor_axis(m1+m2,a);
@@ -866,7 +901,7 @@ int test_nbody_spin_orbit(int mode)
     
     double gbs_tolerance = 1.0e-12;
     double stopping_condition_tolerance = 1.0e-12;
-    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
+    struct RegularizedRegion *R = generate_binary_ICs(m1,m2,R1,R2,a,e,stopping_condition_mode,stopping_condition_mode,gbs_tolerance,stopping_condition_tolerance);
     
     double eps = 1.0e-3;
     double spin1[3] = {eps,0.0,eps};

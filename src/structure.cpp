@@ -1028,8 +1028,8 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
     std::vector<std::vector<double>> R_vecs;
     std::vector<std::vector<double>> V_vecs;
     
-    masses.push_back( M3_old );
-    delta_masses.push_back( (M3) - (M3_old) );
+    masses.push_back( companion1->mass + companion2->mass + M3_old );
+    delta_masses.push_back( M3 - M3_old );
     R_vecs.push_back( {initial_R_CM[0],initial_R_CM[1],initial_R_CM[2]} );
     V_vecs.push_back( {initial_V_CM[0],initial_V_CM[1],initial_V_CM[2]} );
 
@@ -1058,7 +1058,7 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
                 #ifdef VERBOSE
                 if (verbose_flag > 0)
                 {
-                    printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- excluding %d %g %g %g %g %g %g %g\n",p->mass,p->index,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
+                    printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- including index %d m %g R_vec %g %g %g V_vec %g %g %g\n",p->index,p->mass,p->R_vec[0],p->R_vec[1],p->R_vec[2],p->V_vec[0],p->V_vec[1],p->V_vec[2]);
                 }
                 #endif
             }
@@ -1070,6 +1070,13 @@ void handle_gradual_mass_loss_event_in_system_triple_CE(ParticlesMap *particlesM
     }
     else
     {
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("structure.cpp -- handle_gradual_mass_loss_event_in_system_triple_CE -- no bodies external to triple interaction subsystem -- skipping\n"); 
+        }
+        #endif
+        
         return;
     }
     

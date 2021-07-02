@@ -85,7 +85,7 @@ void integrate_nbody_system(ParticlesMap *particlesMap, int *integration_flag, d
         #endif
        
         update_pos_vel_from_mstar_system(R,particlesMap);
-        handle_collisions_nbody(R, particlesMap, t, integration_flag);
+        handle_collisions_nbody(R, particlesMap, *t_out, integration_flag);
         *integration_flag = 1; // continue with direct N-body after the collision, at least initially
 
         return;
@@ -785,7 +785,7 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
         }
         
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 0)
         {
             printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
         }
@@ -835,7 +835,7 @@ void integrate_nbody_system_with_mass_loss(double end_time, int Nsteps, std::vec
         }
 
         #ifdef VERBOSE
-        if (verbose_flag > 1)
+        if (verbose_flag > 0)
         {
             printf("nbody_evolution.cpp -- integrate_nbody_system_with_mass_loss -- done m %g R %g %g %g V %g %g %g\n",R->Mass[i],R->Pos[3 * i + 0],R->Pos[3 * i + 1],R->Pos[3 * i + 2],R->Vel[3 * i + 0],R->Vel[3 * i + 1],R->Vel[3 * i + 2]);
         }

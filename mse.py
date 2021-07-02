@@ -72,7 +72,7 @@ class MSE(object):
         self.__nbody_supernovae_direct_integration_time_multiplier = 1.5
         self.__nbody_other_direct_integration_time_multiplier = 1.5
         
-        self.__effective_radius_multiplication_factor_for_collisions_stars = 3.0
+        self.__effective_radius_multiplication_factor_for_collisions_stars = 1.0
         self.__effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e2
         
         self.__binary_evolution_CE_energy_flag = 0

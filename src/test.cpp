@@ -256,7 +256,7 @@ int test_nbody_two_body_stopping_conditions()
     int flag = 0;    
     for (int stopping_condition_mode = 0; stopping_condition_mode < 4; stopping_condition_mode++)
     {
-        printf("stopping_condition_mode %d\n",stopping_condition_mode);
+        //printf("stopping_condition_mode %d\n",stopping_condition_mode);
         initialize_mpi_or_serial(); 
         int N_bodies = 2;
 
@@ -2181,6 +2181,7 @@ int test_binary_evolution()
     flag += test_wind_accretion();
     flag += test_mass_accretion_events_with_degenerate_objects();
     flag += test_compute_bse_mass_transfer_amount_averaged();
+    flag += test_binary_common_envelope_evolution();
     
     if (flag == 0)
     {
@@ -2854,7 +2855,627 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
 }
 
 
+int test_binary_common_envelope_evolution()
+{
+    printf("test.cpp -- test_binary_common_envelope_evolution\n");
+    
+    bool verbose_testing = false;
+    if (verbose_testing == true)
+    {
+        verbose_flag = 1;
+    }
+    
+    int flag = 0;
+    
+    for (int i=0; i<2; i++)
+    {
+        //printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+        if (i==0)
+        {
+            //effective_radius_multiplication_factor_for_collisions_stars = 3.0;
+            
+            ParticlesMap particlesMap;
+            int N_bodies = 3;
+            double masses[3] = {5.0,0.8,1.0};
+            int stellar_types[3] = {5,1,1};
+            int object_types[3] = {1,1,1};
+            double smas[2] = {0.1,5.0};
+            double es[2] = {0.01,0.01};
+            double TAs[2] = {0.01,0.01};
+            double INCLs[2] = {0.01,0.01};
+            double APs[2] = {0.01,0.01};
+            double LANs[2] = {0.01,0.01};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            int integration_flag = 0;
+            
+            if (verbose_testing == true)
+            {
+                printf("test_binary_common_envelope_evolution -- pre CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            Particle *star1 = particlesMap[0];
+            double M1 = star1->mass;
+            double M2 = particlesMap[1]->mass;
+
+            int KW1 = star1->stellar_type;
+            double M01 = star1->sse_initial_mass;
+            double MC1 = star1->core_mass;
+            double R1 = star1->radius;
+            double R1_RSUN = star1->radius/CONST_R_SUN;
+
+            double TM1,TN1;
+            double *GB1,*TSCLS1,*LUMS1;
+            GB1 = new double[10];
+            TSCLS1 = new double[20];
+            LUMS1 = new double[10];    
+            double *ZPARS1 = star1->zpars;   
+            
+            star_(&KW1, &M01, &M1, &TM1, &TN1, TSCLS1, LUMS1, GB1, ZPARS1);
+
+            double MENV1 = star1->convective_envelope_mass;
+            
+            double MENVD1 = MENV1 / (M1 - MC1);
+            double RZAMS1 = rzamsf_(&M01);
+            double fac = binary_evolution_CE_recombination_fraction;
+            double L1 = star1->luminosity/CONST_L_SUN;
+            double LAMB1 = celamf_(&KW1,&M01,&L1,&R1_RSUN,&RZAMS1,&MENVD1,&fac);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_binary_common_envelope_evolution -- pre CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double start_time = 0.0;
+            double end_time = 1.0e3;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            double alpha=2.0;
+            particlesMap[0]->common_envelope_alpha = alpha;
+            particlesMap[0]->common_envelope_timescale = 10.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
 
 
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 3;
+            int index1 = 0;
+            int index2 = 1;
+            binary_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+
+            if (verbose_testing == true)
+            {
+                printf("test_binary_common_envelope_evolution -- post CE; pre evolve\n");
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+                printf("test_binary_common_envelope_evolution --post evolve\n");
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double num = particlesMap[3]->a;
+            
+            double EBINDI = M1 * (M1 - MC1)/(LAMB1 * R1);
+            double EORBI = MC1 * M2/(2.0 * (smas[0] ));
+            double EORBF = EORBI + EBINDI/alpha;
+            double a_f =  MC1 * M2/(2.0 * EORBF); // secondary does not have a core; assume it did not lose mass
+            
+            double tol = 1e-4;
+            if ( !equal_number(a_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_binary_common_envelope_evolution! %g %g\n",a_f,num);
+                flag = 1;
+            }
+
+            
+            clear_particles(&particlesMap);
+        }
+            
+    }
+        
+    return 0;
+
+
+}
+
+
+/*********************
+ * Triple interactions
+**********************/
+
+int test_triple_interactions()
+{
+    printf("test.cpp -- test_triple_interactions\n");
+    
+    int flag=0;
+    flag += test_triple_common_envelope_evolution();
+    
+    if (flag == 0)
+    {
+        printf("test.cpp -- test_triple_interactions -- passed\n");
+    }
+    
+    return flag;
+}
+
+
+int test_triple_common_envelope_evolution()
+{
+    printf("test.cpp -- test_triple_common_envelope_evolution\n");
+    
+    int flag = 0;
+    
+    bool verbose_testing = false;
+    if (verbose_testing == true)
+    {
+        verbose_flag = 1;
+    }
+    
+    for (int i=0; i<4; i++)
+    {
+        if (verbose_testing == true)
+        {
+            printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+        }
+        if (i==0) // new outer orbit stable
+        {
+            ParticlesMap particlesMap;
+            int N_bodies = 3;
+            double masses[3] = {1.0,0.8,4.0};
+            int stellar_types[3] = {1,1,5};
+            int object_types[3] = {1,1,1};
+            double smas[2] = {0.1,5.0};
+            double es[2] = {0.01,0.01};
+            double TAs[2] = {0.01,0.01};
+            double INCLs[2] = {0.01,0.01};
+            double APs[2] = {0.01,0.01};
+            double LANs[2] = {0.01,0.01};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            
+            int integration_flag = 0;
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- pre triple CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+
+            double start_time = 0.0;
+            double end_time = 1.0e-10;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            particlesMap[2]->triple_common_envelope_alpha = 100.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
+
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 4;
+            int index1 = 2;
+            int index2 = 3;
+            triple_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- post triple CE\n");
+                print_system(&particlesMap,integration_flag);
+                printf("test_triple_common_envelope_evolution -- pre evolve\n");
+            }
+            
+
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+
+                printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double a1_f = particlesMap[3]->a;
+            double a2_f = particlesMap[4]->a;
+            
+            double tol = 1e-4;
+            double num = smas[0];
+
+            if ( !equal_number(a1_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a1_f,num);
+                flag = 1;
+            }
+
+            num = 0.367243;
+
+            if ( !equal_number(a2_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a2_f,num);
+                flag = 1;
+            }
+            
+            clear_particles(&particlesMap);
+        }
+        else if (i==1) // new outer orbit unstable
+        {
+            ParticlesMap particlesMap;
+            int N_bodies = 3;
+            double masses[3] = {1.0,0.8,4.0};
+            int stellar_types[3] = {1,1,5};
+            int object_types[3] = {1,1,1};
+            double smas[2] = {0.1,5.0};
+            double es[2] = {0.01,0.01};
+            double TAs[2] = {0.01,0.01};
+            double INCLs[2] = {0.01,0.01};
+            double APs[2] = {0.01,0.01};
+            double LANs[2] = {0.01,0.01};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            
+            int integration_flag = 0;
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- pre triple CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+
+            double start_time = 0.0;
+            double end_time = 1.0e-10;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            particlesMap[2]->triple_common_envelope_alpha = 1.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
+
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 4;
+            int index1 = 2;
+            int index2 = 3;
+            triple_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- post triple CE\n");
+                print_system(&particlesMap,integration_flag);
+                printf("test_triple_common_envelope_evolution -- pre evolve\n");
+            }
+            
+
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+
+                printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double a1_f = particlesMap[3]->a;
+            double a2_f = particlesMap[4]->a;
+            
+            double tol = 1e-4;
+            double num = smas[0];
+
+            if ( !equal_number(a1_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a1_f,num);
+                flag = 1;
+            }
+
+            num = 0.329554;
+
+            if ( !equal_number(a2_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a2_f,num);
+                flag = 1;
+            }
+            
+            clear_particles(&particlesMap);
+        }
+
+        else if (i==2) // with external (fourth) body; stable
+        {
+            ParticlesMap particlesMap;
+            int N_bodies = 4;
+            double masses[4] = {1.0,0.8,4.0,2.0};
+            int stellar_types[4] = {1,1,5,1};
+            int object_types[4] = {1,1,1,1};
+            double smas[3] = {0.1,5.0,100.0};
+            double es[3] = {0.01,0.01,0.1};
+            double TAs[3] = {0.01,0.01,0.1};
+            double INCLs[3] = {0.01,0.01,0.1};
+            double APs[3] = {0.01,0.01,0.1};
+            double LANs[3] = {0.01,0.01,0.1};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            
+            int integration_flag = 0;
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- pre triple CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+
+            double start_time = 0.0;
+            double end_time = 1.0e-10;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            particlesMap[2]->triple_common_envelope_alpha = 100.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
+
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 5;
+            int index1 = 2;
+            int index2 = 4;
+            triple_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- post triple CE\n");
+                print_system(&particlesMap,integration_flag);
+                printf("test_triple_common_envelope_evolution -- pre evolve\n");
+            }
+            
+
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+
+                printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double a1_f = particlesMap[4]->a;
+            double a2_f = particlesMap[5]->a;
+            
+            double tol = 1e-4;
+            double num = smas[0];
+
+            if ( !equal_number(a1_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a1_f,num);
+                flag = 1;
+            }
+
+            num = 0.367243;
+
+            if ( !equal_number(a2_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a2_f,num);
+                flag = 1;
+            }
+            
+            clear_particles(&particlesMap);
+        }
+
+        else if (i==3) // with external (fourth) body; unstable
+        {
+            ParticlesMap particlesMap;
+            int N_bodies = 4;
+            double masses[4] = {1.0,0.8,4.0,2.0};
+            int stellar_types[4] = {1,1,5,1};
+            int object_types[4] = {1,1,1,1};
+            double smas[3] = {0.1,5.0,100.0};
+            double es[3] = {0.01,0.01,0.1};
+            double TAs[3] = {0.01,0.01,0.1};
+            double INCLs[3] = {0.01,0.01,0.1};
+            double APs[3] = {0.01,0.01,0.1};
+            double LANs[3] = {0.01,0.01,0.1};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            
+            int integration_flag = 0;
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- pre triple CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+
+            double start_time = 0.0;
+            double end_time = 1.0e-4;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            particlesMap[2]->triple_common_envelope_alpha = 1.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
+
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 5;
+            int index1 = 2;
+            int index2 = 4;
+            triple_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- post triple CE\n");
+                print_system(&particlesMap,integration_flag);
+                printf("test_triple_common_envelope_evolution -- pre evolve\n");
+            }
+            
+
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+
+                printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double a1_f = particlesMap[4]->a;
+            double a2_f = particlesMap[5]->a;
+            
+            double tol = 1e-4;
+            double num = smas[0];
+
+            if ( !equal_number(a1_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a1_f,num);
+                flag = 1;
+            }
+
+            num = 0.329554;
+
+            if ( !equal_number(a2_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a2_f,num);
+                flag = 1;
+            }
+            
+            clear_particles(&particlesMap);
+        }
+
+
+        else if (i==4) // custom
+        {
+            ParticlesMap particlesMap;
+            int N_bodies = 4;
+            double masses[4] = {1.0,1.8,4.0,2.0};
+            int stellar_types[4] = {1,1,5,1};
+            int object_types[4] = {1,1,1,1};
+            double smas[3] = {0.2,20.0,1000.0};
+            double es[3] = {0.01,0.01,0.1};
+            double TAs[3] = {0.01,0.01,0.1};
+            double INCLs[3] = {0.01,0.01,0.1};
+            double APs[3] = {0.01,0.01,0.1};
+            double LANs[3] = {0.01,0.01,0.1};
+            random_seed=6;
+            
+            create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+            initialize_code(&particlesMap);
+
+            
+            int integration_flag = 0;
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- pre triple CE\n");
+                print_system(&particlesMap,integration_flag);
+            }
+
+            double start_time = 0.0;
+            double end_time = 1.0e0;
+            double output_time,hamiltonian;
+            int state,CVODE_flag,CVODE_error_code;
+
+            particlesMap[2]->triple_common_envelope_alpha = 10000.0;
+            particlesMap[2]->common_envelope_timescale = 1000.0;
+            int kw = particlesMap[0]->stellar_type;
+            double t_old=0.0;
+            double t = 0.0;
+            double dt;
+            double dt_stev;
+            bool apply_SNe_effects;
+            bool unbound_orbits;
+
+            int N_binaries,N_root_finding,N_ODE_equations;
+
+            int binary_index = 5;
+            int index1 = 2;
+            int index2 = 4;
+            triple_common_envelope_evolution(&particlesMap, binary_index, index1, index2, t, &integration_flag);
+            
+            if (verbose_testing == true)
+            {
+                printf("test_triple_common_envelope_evolution -- post triple CE\n");
+                print_system(&particlesMap,integration_flag);
+                printf("test_triple_common_envelope_evolution -- pre evolve\n");
+            }
+            
+
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+            if (verbose_testing == true)
+            {
+
+                printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
+                print_system(&particlesMap,integration_flag);
+            }
+            
+            double a1_f = particlesMap[4]->a;
+            double a2_f = particlesMap[5]->a;
+            
+            double tol = 1e-4;
+            double num = smas[0];
+
+            if ( !equal_number(a1_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a1_f,num);
+                flag = 1;
+            }
+
+            num = 0.367243;
+
+            if ( !equal_number(a2_f,num,tol) )
+            {
+                printf("test.cpp -- error in test_triple_common_envelope_evolution! %g %g\n",a2_f,num);
+                flag = 1;
+            }
+            
+            clear_particles(&particlesMap);
+        }
+
+            
+    }
+       
+    
+    return flag;
+
+
+}
 
 }

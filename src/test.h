@@ -47,9 +47,13 @@ int test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
 int test_wind_accretion();
 int test_mass_accretion_events_with_degenerate_objects();
 int test_compute_bse_mass_transfer_amount_averaged();
+int test_binary_common_envelope_evolution();
 
 int test_collisions();
 
 int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration_flag);
+
+int test_triple_interactions();
+int test_triple_common_envelope_evolution();
 
 }

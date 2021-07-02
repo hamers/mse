@@ -1159,6 +1159,7 @@ int unit_tests_interface(int mode)
     flag += test_flybys();
     flag += test_stellar_evolution(mode);
     flag += test_binary_evolution();
+    flag += test_triple_interactions();
     if (mode == 1)
     {
         flag += test_collisions();

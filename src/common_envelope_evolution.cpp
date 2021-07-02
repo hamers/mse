@@ -168,7 +168,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     double RZAMS1 = rzamsf_(&M01);
     double LAMB1 = celamf_(&KW1,&M01,&L1,&R1,&RZAMS1,&MENVD1,&fac);
     double spin_vec_1_norm = norm3(star1->spin_vec);
-    
+
     /* Get current state of star 2 (secondary) */
     double TM2,TN2;
     double *GB2,*TSCLS2,*LUMS2;
@@ -205,6 +205,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     */
 
     double EBINDI = M1 * (M1 - MC1)/(LAMB1 * R1);
+
     double EORBI = M1 * M2/(2.0 * SEP); // use primary total mass and secondary total mass (HTP02 eq. 69)
 
     /*
@@ -1073,11 +1074,12 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
      * orbital energy of the outer orbit (for a given alpha_CE parameter of the tertiary star). 
      * Assume that the inner binary orbit does not change due to the CE (a big assumption!). 
      * Also, the tertiary star always simply loses its envelope, and the inner binary stars are not affected in their evolution. 
-     * If the new outer orbital separation is too small for dynamical stability, envoke N-body integration in the future.
+     * If the new outer orbital separation is too small for dynamical stability, invoke N-body integration in the future.
      * This may lead to (two-body) collisions later due to multi-body dynamical interactions. 
-     * Otherwise, adjust the outer orbit, and take into account mass changes on the entire system.
+     * Otherwise, adjust the outer orbit *
+     * Take into account loss mass changes on the entire system (exterior bodies).
      * SNe from the tertiary star (if it becomes a neutron star) might still disrupt the system.
-    /* Units used here: length: RSun; time: Myr */
+    /* Units used in the first part of this function: length: RSun; time: Myr */
 
     #ifdef VERBOSE
     if (verbose_flag > 0)
@@ -1105,7 +1107,6 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- ERROR: tertiary should be a star, and companion a binary\n");
         error_code = 8;
         longjmp(jump_buf,1);
-        //exit(-1);
     }
 
     Particle *c1 = (*particlesMap)[inner_binary->child1];
@@ -1172,6 +1173,12 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         
     double e_out_i = outer_binary->e;
 
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- lambda3 %g alpha3 %g\n",lambda3,alpha3);
+    }
+    #endif
 
     /* Calculate the binding energy of the tertiary star's envelope (multiplied by lambda).
     * Also, calculate initial orbital energy.
@@ -1219,6 +1226,12 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         stable = true;
     }
 
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- stability evaluation -- M3_CE_eff %g a_out_f %g e_out_f %g rp_out_f %g rp_out_f_crit %g stable %d\n",M3_CE_eff,a_out_f*CONST_R_SUN,e_out_f,rp_out_f*CONST_R_SUN,rp_out_f_crit*CONST_R_SUN,stable);
+    }
+    #endif
 
     /* Regardless of the outcome, assume the tertiary star is always stripped of its envelope.
      * Get properties of stripped tertiary star.
@@ -1239,7 +1252,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         
         #ifdef LOGGING
         log_info.index1 = star1->index;
-        update_log_data(particlesMap, t, *integration_flag, LOG_WD_KICK_START, log_info);
+        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
         #endif
         
         if (NS_model == 1)
@@ -1258,8 +1271,8 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     }
 
-    /* Update the tertiary star. 
-     * Its mass will be updated later. */
+    /* Update the tertiary star.  */
+    star3->mass = M3_f;
     star3->stellar_type = kw3_f;
     
     star3->core_mass = MC3_f;
@@ -1275,11 +1288,20 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     star3->luminosity = L3_f * CONST_L_SUN;
     
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- post strip donor \n");
+        printf("e_out_vec %g %g %g h_out_vec %g %g %g\n",outer_binary->e_vec[0],outer_binary->e_vec[1],outer_binary->e_vec[2],outer_binary->h_vec[0],outer_binary->h_vec[1],outer_binary->h_vec[2]);
+        //print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
     
     /* Adjust e & h vectors of the outer binary. 
-     * Note the different units that were used in the above. */
+     * Note the different units that were used in the above (RSun/Myr; now switching to au/yr). */
 
-    double a,e; /* The new outer orbit a & e */
+    double a,e; /* The new outer orbit a & e (a in au) */
 
     if (stable == true)
     {
@@ -1290,9 +1312,9 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     else
     {
         /* Unstable; for the the N-body integration, park the inner binary
-         * at the unstable boundary in a circular orbit. */
-        a = rp_out_f_crit * CONST_R_SUN;
-        e = epsilon;
+         * at the unstable boundary (with previous eccentricity) */
+        a = rp_out_f_crit * CONST_R_SUN/(1.0-e_out_f);
+        e = e_out_f;
     }
     
     double h = compute_h_from_a(M3_f,M_inner_binary,a,e);
@@ -1302,32 +1324,48 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         outer_binary->h_vec[i] = h * outer_binary->h_vec_unit[i];
     }
 
-
     set_binary_masses_from_body_masses(particlesMap);
     set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
 
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- post adjust outer e & h vecs \n");
+        printf("e_out_vec %g %g %g h_out_vec %g %g %g a_out %g\n",outer_binary->e_vec[0],outer_binary->e_vec[1],outer_binary->e_vec[2],outer_binary->h_vec[0],outer_binary->h_vec[1],outer_binary->h_vec[2],compute_a_from_h(outer_binary->child1_mass,outer_binary->child2_mass,norm3(outer_binary->h_vec),norm3(outer_binary->e_vec)));
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
+
+    /* Take into account mass loss from the CE on orbits exterior to the triple subsystem, depending on the CE mass loss times-scale. */
+    /* Note: only the positions & velocities of exterior bodies are updated in handle_gradual_mass_loss_event_in_system_triple_CE(); orbits need to be updated manually when integration flag = 0; this is done in the "stable" case below */
+    
+    double final_R_CM[3], final_V_CM[3], final_momentum[3];
+    handle_gradual_mass_loss_event_in_system_triple_CE(particlesMap, star3, c1, c2, M3_f, M3, star3->common_envelope_timescale, \
+        star3->R_vec,star3->V_vec,final_R_CM, final_V_CM, final_momentum);
 
     if (stable == true)
     {
-
-        /* Assume the binary true anomaly is not affected */
-        
-//        set_binary_masses_from_body_masses(particlesMap);
-//        set_positions_and_velocities(particlesMap); /* update positions and velocities of all bodies based on updated binary e and h vectors */
-
         /* Set spin of tertiary star. 
          * Assume it is either unaffected (binary_evolution_CE_spin_flag=0, or, alternatively,
          * it corotates and aligns with outer orbit (binary_evolution_CE_spin_flag=1).
          * Assume the spins of the inner binary stars are unaffected. */
 
         double P_orb_out_f = compute_orbital_period_from_semimajor_axis(M3_f+M_inner_binary,a);
-         //double P_orb_out_f = TWOPI * (a_out_f * CONST_R_SUN) * sqrt( a_out_f * CONST_R_SUN / (CONST_G * (MC3 + M_inner_binary) ) );
         double Omega_orb_out_f = TWOPI/P_orb_out_f;
 
         if (binary_evolution_CE_spin_flag == 1)
         {
-            double Omega_crit = compute_breakup_angular_frequency(star1->mass,star1->radius);
+
+            double Omega_crit = compute_breakup_angular_frequency(star3->mass,star3->radius);
             double Omega = Omega_orb_out_f;
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("common_envelope_evolution.cpp -- triple_common_envelope_evolution() -- Omega_orb_out_f %g Omega_crit %g star3->common_envelope_timescale %g\n",Omega_orb_out_f,Omega_crit,star3->common_envelope_timescale);
+            }
+            #endif
+            
             if (Omega_orb_out_f >= Omega_crit)
             {
                 #ifdef VERBOSE
@@ -1340,39 +1378,25 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 
                 Omega = Omega_crit;
             }
-            
+
             for (int i=0; i<3; i++)
             {
                 star3->spin_vec[i] = Omega * outer_binary->h_vec_unit[i];
             }
         }
 
-        double final_R_CM[3], final_V_CM[3], final_momentum[3];
-        handle_gradual_mass_loss_event_in_system_triple_CE(particlesMap, star3, c1, c2, M3_f, M3, star3->common_envelope_timescale, \
-            star3->R_vec,star3->V_vec,final_R_CM, final_V_CM, final_momentum);
-
-        /* Ab initio, the new triple subsystem is dynamically stable. */
-        /* However, mass loss from the CE might affect orbits exterior to the triple subsystem. 
-         * Take this into account depending on the mass loss times-scale. 
-         * This could change the integration flag to non-zero. */
-
-        #ifdef IGNORE
-        double Delta_M_in = 0.0;
-        double Delta_M3 = M3_f - M3;
-
-        outer_binary->apply_kick = false;
-        handle_instantaneous_and_adiabatic_mass_changes_in_orbit(particlesMap, inner_binary, star3, Delta_M_in, Delta_M3, outer_binary->common_envelope_timescale, integration_flag); /* Will update mass of tertiary star; inner binary should be unaffected. */
-        #endif
+        update_orbital_vectors_in_binaries_from_positions_and_velocities(particlesMap); // Update orbits of exterior bodies (when integration_flag = 1, this will be done automatically)
     }
     else
     {
         *integration_flag = 1;
-        star3->mass = M3_f;
     }
 
     /* Finally, apply a possible kick of the tertiary star (which could unbind the system if it were stable before). */
     star1->apply_kick = false;
     star2->apply_kick = false;
+    star1->instantaneous_perturbation_delta_mass = 0.0;
+    star2->instantaneous_perturbation_delta_mass = 0.0;
     star3->instantaneous_perturbation_delta_mass = 0.0;
 
     bool unbound_orbits;
@@ -1391,7 +1415,6 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     log_info.index2 = index2;
     update_log_data(particlesMap, t, *integration_flag, LOG_TRIPLE_CE_END, log_info);
     #endif
-    
     
 
     #ifdef VERBOSE

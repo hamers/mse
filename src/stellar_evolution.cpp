@@ -551,17 +551,17 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
 
                     if (kw < 13)
                     {
-                        update_log_data(particlesMap, end_time, *integration_flag, LOG_ST_CHANGE, log_info);
+                        update_log_data(particlesMap, start_time, *integration_flag, LOG_ST_CHANGE, log_info);
                         
                         if (kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
                         {
-                            update_log_data(particlesMap, end_time, *integration_flag, LOG_WD_KICK_START, log_info);
+                            update_log_data(particlesMap, start_time, *integration_flag, LOG_WD_KICK_START, log_info);
                         }                        
                     }
                     else
                     {
                         
-                        update_log_data(particlesMap, end_time, *integration_flag, LOG_SNE_START, log_info);
+                        update_log_data(particlesMap, start_time, *integration_flag, LOG_SNE_START, log_info);
                     }
                 }
                 if (NS_model == 1 and p->stellar_type == 13)
@@ -573,7 +573,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                             Log_info_type log_info2;
                             log_info2.index1 = p->index;
 
-                            update_log_data(particlesMap, end_time, *integration_flag, LOG_MSP_FORMATION, log_info2);
+                            update_log_data(particlesMap, start_time, *integration_flag, LOG_MSP_FORMATION, log_info2);
                             p->has_formed_MSP = true;
                         }
                     }

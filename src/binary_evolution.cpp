@@ -269,11 +269,11 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             flag = 6;
             if (kw >= 2 and kw <= 9 and kw != 7) /* Take donor to be CE donor, irrespective of accretor */
             {
-                common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+                common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, integration_flag);
             }
             else /* Accretor must be CE donor */
             {
-                common_envelope_evolution(particlesMap, parent->index, accretor->index, donor->index, t, integration_flag);
+                common_envelope_evolution(particlesMap, parent->index, accretor->index, donor->index, t_old, integration_flag);
             }
             *dt_binary_evolution = ODE_min_dt;
             return flag;
@@ -289,7 +289,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             #endif
 
             flag = 7;
-            collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
+            collision_product(particlesMap, parent_index, donor_index, accretor_index, t_old, integration_flag);
             *dt_binary_evolution = ODE_min_dt;
             return flag;
         }
@@ -309,7 +309,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             #endif
 
             flag = 6;
-            common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+            common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, integration_flag);
             *dt_binary_evolution = ODE_min_dt;
             return flag;
         }
@@ -324,7 +324,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
             #endif
 
             flag = 7;
-            collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
+            collision_product(particlesMap, parent_index, donor_index, accretor_index, t_old, integration_flag);
             *dt_binary_evolution = ODE_min_dt;
             return flag;
         }
@@ -380,7 +380,7 @@ int handle_mass_transfer_cases(ParticlesMap *particlesMap, int parent_index, int
     {
         /* `Standard CE evolution. */
         flag = 2;
-        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t, integration_flag);
+        common_envelope_evolution(particlesMap, parent->index, donor->index, accretor->index, t_old, integration_flag);
         *dt_binary_evolution = ODE_min_dt;
     }
     else if (kw >= 10 and kw <= 12 and q > q_crit_WD_donor)
@@ -785,7 +785,7 @@ int mass_transfer_NS_BH_donor(ParticlesMap *particlesMap, int parent_index, int 
         return 0;
     }
 
-    collision_product(particlesMap, parent_index, donor_index, accretor_index, t, integration_flag);
+    collision_product(particlesMap, parent_index, donor_index, accretor_index, t_old, integration_flag);
 
     *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
     

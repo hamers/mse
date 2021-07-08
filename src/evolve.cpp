@@ -69,6 +69,12 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
     int setjmp_return_val = setjmp(jump_buf);
     if (setjmp_return_val == 1) // error occurred somewhere in the code; will return control to Python
     {
+        *output_time = start_time;
+        *hamiltonian = 0.0;
+        *state = -1;
+        *CVODE_flag = -1;
+        *CVODE_error_code = -1;
+        *integration_flag = 0;
         return error_code;
     }
 

@@ -1431,6 +1431,7 @@ int test_stellar_evolution(int mode)
     flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
+    //flag += test_sse_custom();
     flag += test_remove_massless_remnants_from_system();
     flag += test_NS_models(mode);
     flag += test_determine_sse_compact_object_radius(mode);
@@ -1956,9 +1957,94 @@ int test_sse_specific_model_stopping_conditions(double m, double z, int *kw_fina
     return flag;
 }
 
+int test_sse_custom()
+{
+    printf("test.cpp -- test_sse_custom\n");
+    struct value1__ value1_;
+    struct value2__ value2_;
+    struct value3__ value3_;
+    struct value4__ value4_;
+    struct value5__ value5_;
+    struct flags__ flags_;
+    struct points__ points_;
+    struct sse_error_output__ sse_error_output_;
 
+    
+    value1_.neta = 0.5;
+    value1_.bwind = 0.0;
+    value1_.hewind = 0.5;
+    value1_.mxns = 3.0;
+    value2_.alpha1 = 1.0;
+    value2_.lambda = 1.0;
+    value3_.idum = 0;
+    value4_.sigma = 190.0;
+    value4_.bhflag = 1;
+    //        value5_.beta = 0.0;
+    //        value5_.xi = 0.0;
+    //        value5_.acc2 = 0.0;
+    //        value5_.epsnov = 0.0;
+    //        value5_.eddfac = 0.0;
+    //        value5_.gamma = 0.0;
+    flags_.ceflag = binary_evolution_CE_energy_flag;
+    flags_.tflag = 0;
+    flags_.ifflag = 0;
+    flags_.nsflag = 1;
+    flags_.wdflag = 1;
+    points_.pts1 = 0.05;
+    points_.pts2 = 0.01;
+    points_.pts3 = 0.02;
+    sse_error_output_.sse_error_code = 0;
+    
 
+    int i;
+    int kw,kw_desired;
+    double tm,tn;
+    double age;
+    double *GB,*tscls,*lums;
+    double r,lum,mc,rc,menv,renv,k2;
+            
+    double z = 0.02;
+            
+    double *zpars;
+    zpars = new double[20];
+    //double zpars[20];
+    zcnsts_(&z,zpars);
+    
+    double mt = 12.385436420676200;
+    //double sse_initial_mass = 6.125196978052001;
+    double sse_initial_mass = 6.125196978052001;
+    double epoch = 22.550149349880343;
+    //double epoch = 0;
+    //age = 107.105369463623362;
+    age = 0;
+    
+    GB = new double[10];
+    tscls = new double[20];
+    lums = new double[10];    
+    
+//            star_(&kw, &mass, &mt, &tm, &tn, tscls, lums, GB, zpars);
+//            hrdiag_(&mass,&age,&mt,&tm,&tn,tscls,lums,GB,zpars,
+//                &r,&lum,&kw,&mc,&rc,&menv,&renv,&k2);
+    
+    double dtp=0.0;
+    double ospin=1490.002987504306020;
+    double tms;
+    double tphys = 129.655518813503704;
+    double tphysf = 129.657412089438111;
+    //double tphysf = 1500;
+    double dt;
+    
+    kw = 2;
 
+    printf("pre evolv1_() call --  kw %d mt %.15f sse_initial_mass %.15f r %.15f epoch %.15f age %.15f tphys %.15f tphysf %.15f ospin %.15f tms %.15f epoch %.15f k2 %.15f rc %.15f mc %.15f menv %.15f renv %.15f \n",kw,mt,sse_initial_mass,r,epoch,age,tphys,tphysf,ospin,tms,epoch,k2,rc,mc,menv,renv);
+
+    evolv1_(&kw,&sse_initial_mass,&mt,&r,&lum,&mc,&rc,&menv,&renv,&ospin,&epoch,&tms,&tphys,&tphysf,&dtp,&z,zpars,&k2);
+    
+    printf("post evolv1_() call --  kw %d mt %.15f sse_initial_mass %.15f r %.15f epoch %.15f age %.15f tphys %.15f tphysf %.15f ospin %.15f tms %.15f epoch %.15f k2 %.15f rc %.15f mc %.15f menv %.15f renv %.15f \n",kw,mt,sse_initial_mass,r,epoch,age,tphys,tphysf,ospin,tms,epoch,k2,rc,mc,menv,renv);
+
+    
+    return 0;
+}
 
 int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm)
 {
@@ -3100,7 +3186,7 @@ int test_triple_common_envelope_evolution()
             double a1_f = particlesMap[3]->a;
             double a2_f = particlesMap[4]->a;
             
-            double tol = 1e-4;
+            double tol = 1e-3;
             double num = smas[0];
 
             if ( !equal_number(a1_f,num,tol) )

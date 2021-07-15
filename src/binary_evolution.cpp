@@ -726,10 +726,15 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     }
     else
     {
-        printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor -- unknown case -- parent %d donor %d accretor %d\n",parent_index,donor_index,accretor_index);
-        error_code = 4;
-        longjmp(jump_buf,1);
+        //printf("binary_evolution.cpp -- dynamical_mass_transfer_WD_donor -- unknown case -- parent %d donor %d accretor %d\n",parent_index,donor_index,accretor_index);
+        //error_code = 4;
+        //longjmp(jump_buf,1);
         //exit(-1);
+        collision_product(particlesMap, parent_index, donor_index, accretor_index, t_old, integration_flag);
+
+        *integration_flag = determine_orbits_in_system_using_nbody(particlesMap);
+
+        return 0;
     }
 
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
@@ -1090,7 +1095,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     /* For a HG star check if the initial mass can be reduced. */    
     if (kw1 == 2 and donor->sse_initial_mass <= donor->zpars[2])
     {
-        double m0 = m_donor_new;
+        double m0 = donor->sse_initial_mass;
         donor->sse_initial_mass = m_donor;
 
         star_(&kw1,&donor->sse_initial_mass,&donor->mass,&tms,&tn,tscls,lums,GB,donor->zpars);
@@ -1239,9 +1244,10 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 0)
     {
-        printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution\n");
+        printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution -- start\n");
+        print_system(particlesMap,*integration_flag);
     }
     #endif
     
@@ -1301,8 +1307,27 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     int kw1 = donor->stellar_type;
 
     double t_KH_donor = compute_Kelvin_Helmholtz_timescale(kw1,m_donor,donor->core_mass,R_donor,donor->luminosity);
-
     double t_dyn_donor = compute_stellar_dynamical_timescale(m_donor, R_donor);
+
+    /* These quantities are used below to determine aging */
+    double tms,tn;
+    double *GB,*tscls,*lums;
+    GB = new double[10];
+    tscls = new double[20];
+    lums = new double[10];  
+
+    star_(&kw1,&donor->sse_initial_mass,&m_donor,&tms,&tn,tscls,lums,GB,donor->zpars);
+    double tms_donor_old = tms;
+    double tbgb_donor_old = tscls[0];
+    
+    star_(&star1->stellar_type,&star1->sse_initial_mass,&m1,&tms,&tn,tscls,lums,GB,star1->zpars);
+    double tms_star1_old = tms;
+    double tbgb_star1_old = tscls[0];
+    
+    star_(&star2->stellar_type,&star2->sse_initial_mass,&m2,&tms,&tn,tscls,lums,GB,star2->zpars);
+    double tms_star2_old = tms;
+    double tbgb_star2_old = tscls[0];
+
     double a_out = outer_binary->a;
     double e_out = outer_binary->e;
     double rp_out = a_out*(1.0-e_out);
@@ -1349,6 +1374,110 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     star1->mass_dot_RLOF_triple = dm1/dt;
     star2->mass_dot_RLOF_triple = dm2/dt;
     
+    
+    /****************************
+     *  Aging and rejuvenation *
+     ***************************/
+
+    double m1_new = m1 + dm1;
+    double m2_new = m2 + dm2;
+    double m_donor_new = m_donor + dm3;
+    
+    /* MS stars: simply set m_init = m_new */
+    if (kw1 <= 1 or kw1 == 7)
+    {
+        donor->sse_initial_mass = m_donor_new;
+    }
+    if (star1->stellar_type <= 1 or star1->stellar_type == 7)
+    {
+        star1->sse_initial_mass = m1_new;
+    }
+    if (star2->stellar_type <= 1 or star2->stellar_type == 7)
+    {
+        star2->sse_initial_mass = m2_new;
+    }
+    
+    /* For HG stars check if the initial mass can be reduced. */    
+    if (kw1 == 2 and donor->sse_initial_mass <= donor->zpars[2])
+    {
+        double m0 = donor->sse_initial_mass;
+        donor->sse_initial_mass = m_donor;
+
+        star_(&kw1,&donor->sse_initial_mass,&donor->mass,&tms,&tn,tscls,lums,GB,donor->zpars);
+        if (GB[8] < donor->core_mass)
+        {
+            donor->sse_initial_mass = m0;
+        }
+    }
+    if (star1->stellar_type == 2 and star1->sse_initial_mass <= star1->zpars[2])
+    {
+        double m0 = star1->sse_initial_mass;
+        star1->sse_initial_mass = m1;
+
+        star_(&star1->stellar_type,&star1->sse_initial_mass,&star1->mass,&tms,&tn,tscls,lums,GB,star1->zpars);
+        if (GB[8] < star1->core_mass)
+        {
+            star1->sse_initial_mass = m0;
+        }
+    }
+    if (star2->stellar_type == 2 and star2->sse_initial_mass <= star2->zpars[2])
+    {
+        double m0 = star2->sse_initial_mass;
+        star2->sse_initial_mass = m2;
+
+        star_(&star2->stellar_type,&star2->sse_initial_mass,&star2->mass,&tms,&tn,tscls,lums,GB,star2->zpars);
+        if (GB[8] < star2->core_mass)
+        {
+            star2->sse_initial_mass = m0;
+        }
+    }
+
+    /* Always rejuvenate the accretors and age the donor if they are on the main sequence. */
+    if (kw1 <= 2 or kw1 == 7)
+    {
+        star_(&kw1,&donor->sse_initial_mass,&m_donor_new,&tms,&tn,tscls,lums,GB,donor->zpars);
+
+        if (kw1 == 2)
+        {
+            double age = tms + (donor->age*yr_to_Myr - tms_donor_old) * (tscls[0] - tms)/(tbgb_donor_old - tms_donor_old);
+            donor->age = age*Myr_to_yr;
+        }
+        else
+        {
+            donor->age *= (tms/tms_donor_old);
+            //printf("age %g %g %.15f m_donor_new %g m_donor %g\n",tms,tms_donor_old,tms/tms_donor_old,m_donor_new,m_donor);
+        }
+        donor->epoch = t - donor->age;
+    }
+    if (star1->stellar_type <= 2 or star1->stellar_type == 7)
+    {
+        star_(&star1->stellar_type,&star1->sse_initial_mass,&m1_new,&tms,&tn,tscls,lums,GB,star1->zpars);
+        if (star1->stellar_type == 2)
+        {
+            double age = tms + (star1->age*yr_to_Myr - tms_star1_old) * (tscls[0] - tms)/(tbgb_star1_old - tms_star1_old);
+            star1->age = age*Myr_to_yr;
+        }
+        else if ((m1_new < 0.35 or m1_new > 1.25) and (star1->stellar_type != 7))
+        {
+            star1->age *= (tms/tms_star1_old) * ((m1_new - dm1)/m1_new);
+        }
+        star1->epoch = t - star1->age;
+    }
+    if (star2->stellar_type <= 2 or star2->stellar_type == 7)
+    {
+        star_(&star2->stellar_type,&star2->sse_initial_mass,&m2_new,&tms,&tn,tscls,lums,GB,star2->zpars);
+        if (star2->stellar_type == 2)
+        {
+            double age = tms + (star2->age*yr_to_Myr - tms_star2_old) * (tscls[0] - tms)/(tbgb_star2_old - tms_star2_old);
+            star2->age = age*Myr_to_yr;
+        }
+        else if ((m2_new < 0.35 or m2_new > 1.25) and (star2->stellar_type != 7))
+        {
+            star2->age *= (tms/tms_star2_old) * ((m2_new - dm2)/m2_new);
+        }
+        star2->epoch = t - star2->age;
+    }
+    
     double a_in_f = a_in * ( (m1 + dm1)*(m2 + dm2) / (m1*m2 + 2.0*(m1+m2)*dm3/triple_mass_transfer_inner_binary_alpha_times_lambda) );
     inner_binary->triple_mass_transfer_a_in_dot = (a_in_f - a_in)/dt;
     
@@ -1361,6 +1490,18 @@ int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     check_number(star2->mass_dot_RLOF_triple,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","star2->mass_dot_RLOF_triple", true);
     check_number(inner_binary->triple_mass_transfer_a_in_dot,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","inner_binary->triple_mass_transfer_a_in_dot", true);
     check_number(inner_binary->mass_dot_wind,                  "binary_evolution.cpp -- triple_stable_mass_transfer_evolution()","inner_binary->mass_dot_wind", true);
+ 
+    delete[] GB;
+    delete[] tscls;
+    delete[] lums;
+
+    #ifdef VERBOSE
+    if (verbose_flag > 0)
+    {
+        printf("binary_evolution.cpp -- triple_stable_mass_transfer_evolution -- end\n");
+        print_system(particlesMap,*integration_flag);
+    }
+    #endif
  
     return 0;
 }

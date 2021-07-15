@@ -35,6 +35,7 @@ int test_sse();
 int test_sse_specific_model(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final);
 int test_sse_specific_model_evolve_function(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final);
 int test_sse_specific_model_stopping_conditions(double m, double z, int *kw_final, double *m_init_final, double *m_final, double *R_final, double *ospin_final, double *L_final, double *m_core_final, double *m_env_final, double *epoch_final);
+int test_sse_custom();
 int test_kick_velocity(int kick_distribution, double m, int *kw, double *v_norm);
 int test_remove_massless_remnants_from_system();
 int test_NS_models(int mode);

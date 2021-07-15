@@ -421,7 +421,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d\n",outer_binary->index,donor->index,inner_binary->index);
     }
@@ -468,7 +468,7 @@ int ODE_handle_RLOF_triple_mass_transfer(ParticlesMap *particlesMap, Particle *o
     }
 
     #ifdef VERBOSE
-    if (verbose_flag > 1)
+    if (verbose_flag > 2)
     {
         printf("mass_changes.cpp -- ODE_handle_RLOF_triple_mass_transfer -- outer_binary %d donor %d inner_binary %d a_in_dot %g beta %g gamma %g a_out_dot %g a_out %g m_donor %g m_donor_dot %g m_inner_binary %g \n",outer_binary->index,donor->index,inner_binary->index,a_in_dot,beta,gamma,a_out_dot,a_out,m_donor,m_donor_dot,m_inner_binary);
     }

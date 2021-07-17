@@ -977,6 +977,11 @@ void check_number(double x, char *source, char *description, bool exit_on_error)
 
 int clear_particles(ParticlesMap *particlesMap)
 {
+    for (auto it = particlesMap->begin(); it != particlesMap->end(); )
+    {
+        delete it->second;
+        it = particlesMap->erase(it);
+    }
 
     (*particlesMap).clear();
 

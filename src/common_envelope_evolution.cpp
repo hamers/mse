@@ -1062,6 +1062,8 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     delete[] GB;
     delete[] TSCLS;
     delete[] LUMS;
+    
+    delete[] zpars_new;
 
     return;
 }

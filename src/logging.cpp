@@ -105,4 +105,17 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
     return log_particlesMap;
 }
 
+void clear_logdata(LogData *logData)
+{
+    for(auto it = logData->begin(); it != logData->end(); ++it)
+    {
+        Log_type entry = *it;
+        ParticlesMap pm = entry.particlesMap;
+        clear_particles(&pm);
+    }
+    logData->clear();
+
+    return;
+}
+
 }

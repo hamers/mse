@@ -23,7 +23,6 @@ int add_particle(int *index, bool is_binary, bool is_external)
     particlesMap[*index] = p;
 
     p->is_external = is_external;
-    //highest_particle_index = *index;
        
     return 0;
 }
@@ -947,7 +946,8 @@ int apply_user_specified_instantaneous_perturbation_interface()
 int reset_interface()
 {
     clear_particles(&particlesMap);
-    logData.clear();
+    clear_logdata(&logData);
+
     flybys_t_next_encounter = 0.0;
         
     return 0;

@@ -19,7 +19,7 @@ double compute_apsidal_motion_constant(Particle *star)
     {
         
         #ifdef VERBOSE
-        if (verbose_flag > 0)
+        if (verbose_flag > 1)
         {
             printf("apsidal_motion_constant.cpp -- WARNING: input mass %g exceeds maximum; setting effective mass to %g; index %d kw %d m %g age %g\n",mass,pow(10.0,2.10),star->index,stellar_type,star->mass,star->age);
         }

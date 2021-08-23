@@ -148,8 +148,8 @@ double beta_wind_accretion = 0.125;
 
 double triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1;
 double triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1;
-double triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.9;
-double triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.9;
+double triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.6;
+double triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.3;
 double triple_mass_transfer_inner_binary_alpha_times_lambda = 5.0;
 
 double kroupa_alpha1 = -1.3;

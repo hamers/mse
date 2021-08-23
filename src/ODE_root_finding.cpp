@@ -472,7 +472,7 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                 log_info.index1 = p->index;
                 log_info.index2 = p->sibling;
                 int event_flag;
-                if (p->RLOF_flag = 1)
+                if (p->RLOF_flag == 1)
                 {
                     event_flag = LOG_MT_START;
                 }

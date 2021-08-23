@@ -91,8 +91,8 @@ class MSE(object):
 
         self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1
         self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1
-        self.__triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.9
-        self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.9
+        self.__triple_mass_transfer_primary_star_accretion_efficiency_disk = 0.6
+        self.__triple_mass_transfer_secondary_star_accretion_efficiency_disk = 0.3
         self.__triple_mass_transfer_inner_binary_alpha_times_lambda = 5.0
 
         self.__particles_committed = False
@@ -2420,7 +2420,8 @@ class Tools(object):
 
                 wall_time_s = time.time() - Python_wall_start
                 if wall_time_s > wall_time_max_s or error_code in [35,36]:
-                    error_code = -35
+                    if error_code not in [35,36]: ### Wall time was exceeded in Python layer (otherwise, within MSE)
+                        error_code = -35
                     print("="*50)
                     print("WARNING -- mse.py -- maximum wall time of ",wall_time_max_s," s exceeded -- stopping the simulation but saving data/making plots if specified in command line arguments.")
                     print("Python wall_time_s",wall_time_s,"error_code",error_code)
@@ -2432,7 +2433,7 @@ class Tools(object):
 
                 print( 't/Myr',t*1e-6,'masses/MSun',[b.mass for b in bodies],'smas/au',[o.a for o in orbits],'es',[o.e for o in orbits],'integration_flag',code.integration_flag)
                 
-                ### custom output printing ###
+                ### Custom output printing ###
 
                 particles = code.particles
                 orbits = [x for x in particles if x.is_binary==True]
@@ -2567,6 +2568,7 @@ class Tools(object):
             for index_log,log in enumerate(log_copy):
                 event_flag = log["event_flag"]
                 if previous_event_flag == event_flag and (event_flag == 4 or event_flag == 10):
+                    
                     continue
                 plot_log.append(log)
                 previous_event_flag = event_flag
@@ -2674,7 +2676,7 @@ class Tools(object):
             plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
             plot_pos.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
             
-            
+
             plot_HRD.set_xlim(5.0,3.0)
             plot_HRD.set_ylim(-4.0,6.0)
             plot_HRD.set_xlabel("$\mathrm{log}_{10}(T_\mathrm{eff}/\mathrm{K})$",fontsize=fontsize)

@@ -468,12 +468,14 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             /*
             * The cores do not coalesce - assign the correct masses and ages.
             */
-            
+
             MF = M1;
             M1 = MC1;
+
             star_(&KW1,&M01,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1);
             hrdiag_(&M01,&AJ1,&M1,&TM1,&TN,TSCLS1,LUMS,GB,ZPARS1, \
                 &R1,&L1,&KW1,&MC1,&RC1,&MENV1,&RENV1,&K21);
+
             if (KW1 != KW1_old)
             {
                 if (KW1 >= 13 or (KW1 >= 10 and KW1 <= 12 and star1->include_WD_kicks == true))
@@ -1034,6 +1036,13 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
 
     remove_massless_remnants_from_system(particlesMap, integration_flag);
     reset_RLOF_flags(particlesMap);
+
+    //double t_eps = 1e0;
+    //double dt_stev;
+    //bool apply_SNe_effects;
+    //evolve_stars(particlesMap,t,t+t_eps,&dt_stev,false,&apply_SNe_effects,integration_flag);
+    
+    //printf("NO COEL2 %d %d\n",star1->stellar_type,star2->stellar_type);
 
     #ifdef LOGGING
     //Log_info_type log_info;

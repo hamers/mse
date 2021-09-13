@@ -561,6 +561,7 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     else
                     {
                         
+                        log_info.SNe_type = 2;                        
                         update_log_data(particlesMap, start_time, *integration_flag, LOG_SNE_START, log_info);
                     }
                 }

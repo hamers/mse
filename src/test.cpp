@@ -2512,6 +2512,9 @@ int test_mass_accretion_events_with_degenerate_objects()
     star2->mass_dot_RLOF = 0.1;
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
     
+    //Log_type &last_entry = logData.back();
+    //printf("log %d\n",last_entry.log_info.SNe_type);    
+    
     double start_time = 0.0;
     double end_time = 1.0e1;
     double output_time,hamiltonian;
@@ -2523,7 +2526,7 @@ int test_mass_accretion_events_with_degenerate_objects()
         printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects -- error: incorrect number (%d) of particles after SNe \n",particlesMap.size());
         flag = 1;
     }
-    
+
     reset_interface();
 
     /* ONe WD electron capture SNe */

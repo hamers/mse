@@ -319,7 +319,7 @@ class MSE(object):
         self.lib.get_size_of_log_data.argtypes = ()
         self.lib.get_size_of_log_data.restype = ctypes.c_int
         
-        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int))
         self.lib.get_log_entry_properties.restype = ctypes.c_int
         
         self.lib.get_internal_index_in_particlesMap_log.argtypes = (ctypes.c_int,ctypes.c_int)
@@ -806,9 +806,9 @@ class MSE(object):
             #N_particles = self.lib.get_number_of_particles()
             
             time = ctypes.c_double(0.0)
-            N_particles,event_flag,integration_flag,index1,index2,binary_index,kick_speed_km_s = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_double(0.0)
-            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(integration_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index),ctypes.byref(kick_speed_km_s))
-            entry.update({'time':time.value,'event_flag':event_flag.value,'integration_flag':integration_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value,'kick_speed_km_s':kick_speed_km_s.value})
+            N_particles,event_flag,integration_flag,index1,index2,binary_index,kick_speed_km_s,SNe_type = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(integration_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index),ctypes.byref(kick_speed_km_s),ctypes.byref(SNe_type))
+            entry.update({'time':time.value,'event_flag':event_flag.value,'integration_flag':integration_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value,'kick_speed_km_s':kick_speed_km_s.value,"SNe_type":SNe_type.value})
             #print("log i ",index_log,"N",N_log,"integration_flag",integration_flag.value)
             for index_particle in range(N_particles.value):
                 internal_index = self.lib.get_internal_index_in_particlesMap_log(index_log,index_particle)
@@ -2275,7 +2275,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True,save_data=False,plot_only=False,wall_time_max_s=1.8e4):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True,save_data=False,plot_only=False,wall_time_max_s=1.8e4,common_envelope_timescale=1.0e3):
 
         np.random.seed(random_seed)
         
@@ -2346,8 +2346,8 @@ class Tools(object):
                 b.kick_distribution_sigma_km_s_WD = kick_distribution_sigma_km_s_WD
                 b.kick_distribution_sigma_km_s_NS = kick_distribution_sigma_km_s_NS
                 b.kick_distribution_sigma_km_s_BH = kick_distribution_sigma_km_s_BH
-                b.common_envelope_timescale = 1.0e3
-                
+                b.common_envelope_timescale = common_envelope_timescale
+
             N_bodies = len(bodies)
             N_orbits = len(orbits)
 
@@ -2595,7 +2595,7 @@ class Tools(object):
 
                 Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize,index1=index1,index2=index2,event_flag=event_flag)
 
-                text = Tools.get_description_for_event_flag(event_flag)
+                text = Tools.get_description_for_event_flag(event_flag,log["SNe_type"])
                 plot.set_title(text,fontsize=fontsize)
                 plot.annotate("$t\simeq %s\,\mathrm{Myr}$"%round(log["time"]*1e-6,2),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
 
@@ -3007,13 +3007,22 @@ class Tools(object):
         return color,s,description
         
     @staticmethod
-    def get_description_for_event_flag(event_flag):
+    def get_description_for_event_flag(event_flag, SNe_type = None):
         if event_flag == 0:
             text = "$\mathrm{Initial\,system}$"
         elif event_flag == 1:
             text = "$\mathrm{Stellar\,type\,change}$"
         elif event_flag == 2:
-            text = "$\mathrm{SNe\,start}$"
+            if SNe_type != None:
+                if SNe_type == 1:
+                    SNe_type_string = "Type\,Ia"
+                if SNe_type == 2:
+                    SNe_type_string = "Type\,II"
+                if SNe_type == 3:
+                    SNe_type_string = "Electron\,capture"
+                text = "$\mathrm{SNe\,start\,(%s)}$"%SNe_type_string
+            else:
+                text = "$\mathrm{SNe\,start}$"
         elif event_flag == 3:
             text = "$\mathrm{SNe\,end}$"
         elif event_flag == 4:

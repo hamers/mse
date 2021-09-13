@@ -27,6 +27,15 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 16: MSP formation
  * 17: final state (written when write_final_log_entry is called within Python)
  */
+ 
+ /* SNe types
+  * -1: undefined/NA
+  * 0: not used
+  * 1: Type Ia
+  * 2: Type II
+  * 3: electron capture
+ */
+ 
 {
     Log_type new_entry;
     new_entry.index = logData.size();

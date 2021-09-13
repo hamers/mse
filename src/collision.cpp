@@ -315,6 +315,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         Log_info_type log_info;
         log_info.index1 = child1->index;
         log_info.index2 = child2->index;
+        log_info.SNe_type = 1;
         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
         #endif
         
@@ -346,6 +347,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             Log_info_type log_info;
             log_info.index1 = child1->index;
             log_info.index2 = child2->index;
+            log_info.SNe_type = 1;
             update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             #endif
            

@@ -1706,6 +1706,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         #ifdef LOGGING
                         Log_info_type log_info;
                         log_info.index1 = star2->index;
+                        log_info.SNe_type = 1;
                         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                         #endif
             
@@ -1750,6 +1751,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         #ifdef LOGGING
                         Log_info_type log_info;
                         log_info.index1 = star2->index;
+                        log_info.SNe_type = 1;
                         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                         #endif
 
@@ -1794,6 +1796,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         #ifdef LOGGING
                         Log_info_type log_info;
                         log_info.index1 = star2->index;
+                        log_info.SNe_type = 1;
                         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                         #endif
 
@@ -1837,6 +1840,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             #ifdef LOGGING
                             Log_info_type log_info;
                             log_info.index1 = star2->index;
+                            log_info.SNe_type = 3;
                             update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                             #endif
 

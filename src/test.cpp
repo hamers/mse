@@ -2513,7 +2513,7 @@ int test_mass_accretion_events_with_degenerate_objects()
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
     
     //Log_type &last_entry = logData.back();
-    //printf("log %d\n",last_entry.log_info.SNe_type);    
+    //printf("log SNe type %d info %d\n",last_entry.log_info.SNe_type,last_entry.log_info.SNe_info);
     
     double start_time = 0.0;
     double end_time = 1.0e1;

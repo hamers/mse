@@ -36,6 +36,13 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
   * 3: electron capture
  */
  
+/* SNe info
+ * -1: undefined/NA
+ * 0: not used
+ * 1: single degenerate
+ * 2: double degenerate
+ */
+ 
 {
     Log_type new_entry;
     new_entry.index = logData.size();

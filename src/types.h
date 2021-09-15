@@ -1144,6 +1144,7 @@ class Log_info_type
     int binary_index;
     double kick_speed_km_s = -1;
     int SNe_type = -1;
+    int SNe_info = -1;
     
     Log_info_type()
     {

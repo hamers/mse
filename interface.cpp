@@ -1249,7 +1249,7 @@ int get_size_of_log_data()
     return logData.size();
 }
  
-int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index, double *kick_speed_km_s, int *SNe_type)
+int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index, double *kick_speed_km_s, int *SNe_type, int *SNe_info)
 {
     Log_type entry = logData[log_index];
     *time = entry.time;
@@ -1267,6 +1267,7 @@ int get_log_entry_properties(int log_index, double *time, int *event_flag, int *
     *kick_speed_km_s = log_info.kick_speed_km_s;
     
     *SNe_type = log_info.SNe_type;
+    *SNe_info = log_info.SNe_info;
     
     return 0;
 }

@@ -84,6 +84,9 @@ extern double binary_evolution_mass_transfer_timestep_parameter;
 extern bool binary_evolution_use_eCAML_model;
 extern int binary_evolution_mass_transfer_model;
 extern int binary_evolution_numerical_mass_transfer_rate_number_of_points;
+extern int binary_evolution_SNe_Ia_single_degenerate_model;
+extern int binary_evolution_SNe_Ia_double_degenerate_model;
+
 
 extern double chandrasekhar_mass;
 extern double eddington_accretion_factor;

@@ -1070,6 +1070,17 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         dm2 = dm1;
     }
     
+    if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
+    {
+        /* Model for He accretion onto CO WDs */
+        if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+        {
+            /* Not yet implemented */
+        }
+    }
+   
+    
+    
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {

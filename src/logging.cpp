@@ -34,13 +34,15 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
   * 1: Type Ia
   * 2: Type II
   * 3: electron capture
+  * 4: Type Ib
  */
  
 /* SNe info
  * -1: undefined/NA
  * 0: not used
- * 1: single degenerate
+ * 1: single degenerate (binary_evolution_SNe_Ia_single_degenerate_model = 0)
  * 2: double degenerate
+ * 3: single degenerate He donor (binary_evolution_SNe_Ia_single_degenerate_model = 1)
  */
  
 {

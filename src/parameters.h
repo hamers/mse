@@ -86,7 +86,8 @@ extern int binary_evolution_mass_transfer_model;
 extern int binary_evolution_numerical_mass_transfer_rate_number_of_points;
 extern int binary_evolution_SNe_Ia_single_degenerate_model;
 extern int binary_evolution_SNe_Ia_double_degenerate_model;
-
+extern double binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision;
+extern double binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO;
 
 extern double chandrasekhar_mass;
 extern double eddington_accretion_factor;

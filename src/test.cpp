@@ -1428,6 +1428,8 @@ int test_stellar_evolution(int mode)
     printf("test.cpp -- test_stellar_evolution\n");
     
     int flag = 0;
+    
+    //flag += test_SNe_Ia_single_and_double_degenerate_model_1();
     flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
@@ -1442,6 +1444,47 @@ int test_stellar_evolution(int mode)
     }
     
     return flag;
+}
+
+int test_SNe_Ia_single_and_double_degenerate_model_1()
+{
+    printf("test.cpp -- test_SNe_Ia_single_and_double_degenerate_model_1\n");
+    //determine_if_He_accreting_WD_explodes(1.05, 1.0e-8, 0.02, 0.5*CONST_L_SUN);
+    //determine_if_He_accreting_WD_explodes(0.95, 1.0e-8, 0.03, 0.5*CONST_L_SUN);
+    
+    //white_dwarf_helium_mass_accumulation_efficiency_KH04(1.32,1.0e-8);
+    double eta,m_dot_KH_min,m_dot_KH_max;
+    
+    //white_dwarf_helium_mass_accumulation_efficiency_KH04(1.32, 1.0e-8, &eta, &m_dot_KH_min, &m_dot_KH_max);
+    
+    if (1==0)
+    {
+    determine_WK11_max_accretion_rate(1.32, 0.01*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(1.02, 0.01*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(0.92, 0.01*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(0.72, 0.01*CONST_L_SUN);
+    
+    determine_WK11_max_accretion_rate(1.32, 0.51*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(1.02, 0.51*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(0.92, 0.51*CONST_L_SUN);
+    determine_WK11_max_accretion_rate(0.72, 0.51*CONST_L_SUN);
+    }
+        
+    int WD_accretion_mode;
+    //white_dwarf_helium_mass_accumulation_efficiency(1.42, 1.0e-8, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
+    white_dwarf_helium_mass_accumulation_efficiency(1.12, 1.0e-8, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
+    white_dwarf_helium_mass_accumulation_efficiency(1.11, 5.0e-6, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
+        
+    //determine_if_He_accreting_WD_explodes(1.05, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
+    //determine_if_He_accreting_WD_explodes(0.95, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
+    //determine_if_He_accreting_WD_explodes(0.85, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
+
+    //determine_if_He_accreting_WD_explodes(1.05, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
+    //determine_if_He_accreting_WD_explodes(0.95, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
+    //determine_if_He_accreting_WD_explodes(0.85, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
+    
+    
+    return 0;
 }
 
 int test_spin_conversion()
@@ -2261,6 +2304,7 @@ int test_binary_evolution()
     printf("test.cpp -- test_binary_evolution\n");
     
     int flag=0;
+    
     flag += test_compute_Kelvin_Helmholtz_timescale();
     flag += test_compute_Eddington_accretion_rate();
     flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
@@ -2268,7 +2312,8 @@ int test_binary_evolution()
     flag += test_mass_accretion_events_with_degenerate_objects();
     flag += test_compute_bse_mass_transfer_amount_averaged();
     flag += test_binary_common_envelope_evolution();
-    
+    flag += test_binary_evolution_emt_model_optimised_functions();
+        
     if (flag == 0)
     {
         printf("test.cpp -- test_binary_evolution -- passed\n");
@@ -2720,7 +2765,19 @@ int test_compute_bse_mass_transfer_amount_averaged()
     return flag;
 }
 
+int test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(double M_WD, double accretion_rate, double luminosity, double *eta, int *WD_accretion_mode)
+{
+    white_dwarf_helium_mass_accumulation_efficiency(M_WD, accretion_rate, luminosity, eta, WD_accretion_mode);
+    
+    return 0;
+}
 
+int test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(double M_WD, double accretion_rate, double M_He, double luminosity, bool *explosion)
+{
+    *explosion = determine_if_He_accreting_WD_explodes(M_WD, accretion_rate, M_He, luminosity);
+    
+    return 0;
+}
 
 int test_mass_transfer_special_cases_old()
 {
@@ -2817,7 +2874,96 @@ int test_mass_transfer_special_cases_old()
     return flag;
 }
 
+int test_binary_evolution_emt_model_optimised_functions()
+{
+    printf("test.cpp -- test_binary_evolution_emt_model_optimised_functions\n");
+    
+    int flag = 0;
 
+    double e = 0.4;
+    double x = 1.1;
+    double E0 = 1.3;
+    double Etau = 1.2;
+    double q = 0.143;
+    
+    double fm_new = fm_function(e,x,E0,Etau);
+    double fm_old = fm_function_old(e,x,E0,Etau);
+
+    double fa_new = fa_function(e,x,E0,Etau);
+    double fa_old = fa_function_old(e,x,E0,Etau);
+
+    double fe_new = fe_function(e,x,E0,Etau);
+    double fe_old = fe_function_old(e,x,E0,Etau);
+
+    double fomega_new = fomega_function(e,x,E0,Etau);
+    double fomega_old = fomega_function_old(e,x,E0,Etau);
+
+    double ga_new = ga_function(e,x,E0);
+    double ga_old = ga_function_old(e,x,E0);
+
+    double ge_new = ge_function(e,x,E0);
+    double ge_old = ge_function_old(e,x,E0);
+    
+    double ha_new = ha_function(e,x,E0);
+    double ha_old = ha_function_old(e,x,E0);
+
+    double he_new = he_function(e,x,E0);
+    double he_old = he_function_old(e,x,E0);
+    
+    double XL0_q_new = XL0_q_function(q);
+    double XL0_q_old = XL0_q_function_old(q);
+    
+    //printf("TA %g %g\n",fm_old,fa_old);
+    
+    double tol=1.0e-14;
+    if (!equal_number(fm_new,fm_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions fm_old %g fm_new %g\n",fm_old,fm_new);
+        flag = 1;
+    }
+    if (!equal_number(fa_new,fa_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions fa_old %g fa_new %g\n",fa_old,fa_new);
+        flag = 1;
+    }
+    if (!equal_number(fe_new,fe_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions fe_old %g fe_new %g\n",fe_old,fe_new);
+        flag = 1;
+    }
+    if (!equal_number(fomega_new,fomega_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions fomega_old %g fomega_new %g\n",fomega_old,fomega_new);
+        flag = 1;
+    }
+    if (!equal_number(ga_new,ga_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions ga_old %g ga_new %g\n",ga_old,ga_new);
+        flag = 1;
+    }
+    if (!equal_number(ge_new,ge_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions ge_old %g ge_new %g\n",ge_old,ge_new);
+        flag = 1;
+    }
+    if (!equal_number(ha_new,ha_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions ha_old %g ha_new %g\n",ha_old,ha_new);
+        flag = 1;
+    }
+    if (!equal_number(he_new,he_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions he_old %g he_new %g\n",he_old,he_new);
+        flag = 1;
+    }
+    if (!equal_number(XL0_q_new,XL0_q_old,tol))
+    {
+        printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions XL0_q_old %g XL0_q_new %g\n",XL0_q_old,XL0_q_new);
+        flag = 1;
+    }
+
+    return flag;
+}
 
 
 int test_collisions()

@@ -81,6 +81,8 @@ int error_code = 0;
  * 39: common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- zero core mass 
  * 40: SSE evolv1.f -- radius convergence error
  * 41: SSE evolv1.f -- timestep convergence error
+ * 42: binary_evolution.cpp -- white_dwarf_helium_mass_accumulation_efficiency()
+ * 43: binary_evolulion.cpp -- determine_if_He_accreting_WD_explodes()
  */
 
 int system_index = 0;
@@ -141,6 +143,8 @@ int binary_evolution_mass_transfer_model = 0;
 int binary_evolution_numerical_mass_transfer_rate_number_of_points = 100;
 int binary_evolution_SNe_Ia_single_degenerate_model = 0;
 int binary_evolution_SNe_Ia_double_degenerate_model = 0;
+double binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision = 0.9;
+double binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO = 0.9;
 
 double chandrasekhar_mass = 1.44;
 double eddington_accretion_factor = 10.0;

@@ -29,6 +29,9 @@ int test_flybys_compute_effects_of_flyby_on_system();
 int test_flybys_perturber_sampling(double R_enc, double n_star, double sigma, double M_int, double *M_per, double *b_vec_x, double *b_vec_y, double *b_vec_z, double *V_vec_x, double *V_vec_y, double *V_vec_z);
 
 int test_stellar_evolution(int mode);
+int test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(double M_WD, double accretion_rate, double luminosity, double *eta, int *WD_accretion_mode);
+int test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(double M_WD, double accretion_rate, double M_He, double luminosity, bool *explosion);
+int test_SNe_Ia_single_and_double_degenerate_model_1();
 int test_spin_conversion();
 int test_apsidal_motion_constant();
 int test_sse();
@@ -49,6 +52,7 @@ int test_wind_accretion();
 int test_mass_accretion_events_with_degenerate_objects();
 int test_compute_bse_mass_transfer_amount_averaged();
 int test_binary_common_envelope_evolution();
+int test_binary_evolution_emt_model_optimised_functions();
 
 int test_collisions();
 

@@ -627,6 +627,79 @@ const int MERGER_TABLE[15][15] =
    {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14}
 };
 
+#define SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN (double) 0.01
+#define SINGLE_DEGENERATE_WK_DATA_HOT_LUMINOSITY_LSUN (double) 1.0
+#define SINGLE_DEGENERATE_WK_DATA_TABLEWIDTH (int) 3
+#define SINGLE_DEGENERATE_WK_DATA_COLD_TABLELENGTH (int) 25
+#define SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD (int) 7
+#define SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD (double) 0.1
+
+const double SINGLE_DEGENERATE_WK_DATA_COLD[SINGLE_DEGENERATE_WK_DATA_COLD_TABLELENGTH][SINGLE_DEGENERATE_WK_DATA_TABLEWIDTH] = 
+{
+    {1.1,          8,      0.043}, \
+    {1.1,          7,      0.051}, \
+    {1.1,          6,     0.0568}, \
+    {1.1,          5,      0.062}, \
+    {1.1,          4,     0.0881}, \
+    {1.1,          3,      0.133}, \
+    {1.1,          2,        0.2}, \
+    {1.0,          7,      0.052}, \
+    {1.0,          6,      0.064}, \
+    {1.0,          5,     0.0819}, \
+    {1.0,          4,     0.0905}, \
+    {1.0,          3,      0.116}, \
+    {1.0,          2,      0.178}, \
+    {0.9,          6,     0.0794}, \
+    {0.9,          5,      0.099}, \
+    {0.9,        4.5,      0.109}, \
+    {0.9,          4,       0.12}, \
+    {0.9,          3,      0.126}, \
+    {0.9,          2,      0.154}, \
+    {0.8,          6,     0.0839}, \
+    {0.8,          5,      0.106}, \
+    {0.8,          4,      0.142}, \
+    {0.8,          3,      0.157}, \
+    {0.8,          2,      0.175}, \
+    {0.8,          1,       0.28}
+};
+
+#define SINGLE_DEGENERATE_WK_DATA_HOT_TABLELENGTH (int) 15
+const double SINGLE_DEGENERATE_WK_DATA_HOT[SINGLE_DEGENERATE_WK_DATA_HOT_TABLELENGTH][SINGLE_DEGENERATE_WK_DATA_TABLEWIDTH] = 
+{
+    {1.1,          5,      0.015}, \
+    {1.1,          4,      0.027}, \
+    {1.0,          5,      0.022}, \
+    {1.0,        4.5,     0.0288}, \
+    {1.0,          4,     0.0445}, \
+    {1.0,        3.5,     0.0638}, \
+    {1.0,          3,     0.0772}, \
+    {0.9,          5,      0.028}, \
+    {0.9,        4.5,      0.037}, \
+    {0.9,          4,      0.055}, \
+    {0.9,          3,      0.108}, \
+    {0.8,          5,      0.033}, \
+    {0.8,          4,      0.059}, \
+    {0.8,        3.5,      0.097}, \
+    {0.8,          3,      0.139}, \
+};
+
+#define SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH (int) 4
+#define SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLEWIDTH (int) 2
+const double SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_COLD[SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH][SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLEWIDTH] =
+{
+    {1.1,   8.0}, \
+    {1.0,   7.0}, \
+    {0.9,   6.0}, \
+    {0.8,   6.0}
+};
+const double SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_HOT[SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH][SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLEWIDTH] =
+{
+    {1.1,   5.0}, \
+    {1.0,   5.0}, \
+    {0.9,   5.0}, \
+    {0.8,   5.0}
+};
+
 #endif
 
 /* Used in apsidal_motion_constant.cpp */
@@ -750,6 +823,7 @@ class Particle
     double apsidal_motion_constant, gyration_radius;
     double sse_k2,sse_k3;
     bool has_formed_MSP;
+    double WD_He_layer_mass;
 
     /* dots needed in case of correction after root finding */
     double sse_initial_mass_dot;
@@ -1019,6 +1093,7 @@ class Particle
         time_of_NS_formation = 0.0;
         initial_NS_period_s = 0.0;
         has_formed_MSP = false;
+        WD_He_layer_mass = 0.0;
 
         /* dots needed in case of correction after root finding */
         sse_initial_mass_dot = 0.0;

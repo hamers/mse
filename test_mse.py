@@ -1685,7 +1685,7 @@ class test_mse():
         CONST_KM_PER_S = code.CONST_KM_PER_S
         N = 100
         if args.mode == 1:
-            N = 5000
+            N = 500
         
         seed = 0
         np.random.seed(seed)
@@ -1853,6 +1853,130 @@ class test_mse():
 
             pyplot.show()
 
+    def test19(self,args):
+        print('Test white dwarf SNe single degenerate model 1')
+        
+        code = MSE()
+
+        CONST_G = code.CONST_G
+        CONST_C = code.CONST_C
+
+        luminosities = [0.03 * code.CONST_L_SUN,0.95 * code.CONST_L_SUN]
+
+        #M_WDs = np.linspace(0.5,1.5,5)
+        M_WDs = np.linspace(0.73,1.12,6)
+        accretion_rates = pow(10.0,np.linspace(-9,-6,400))
+        M_Hes = np.linspace(0.01,0.3,100)
+        
+        etas = [[[] for x in range(len(M_WDs))] for x in range(len(luminosities))]
+        accretion_modes = [[[] for x in range(len(M_WDs))] for x in range(len(luminosities))]
+        
+        explosions = [[[[] for x in range(len(accretion_rates))] for x in range(len(M_WDs))] for x in range(len(luminosities))]
+        all_etas = []
+        for k,luminosity in enumerate(luminosities):
+            for i,M_WD in enumerate(M_WDs):
+                for j,m_dot in enumerate(accretion_rates):
+                    eta,WD_accretion_mode = code.test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(M_WD, m_dot, luminosity)
+                    etas[k][i].append(eta)
+                    all_etas.append(eta)
+                    accretion_modes[k][i].append(WD_accretion_mode)
+
+
+                    for l,M_He in enumerate(M_Hes):
+                        explosion = code.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(M_WD, m_dot, M_He, luminosity)
+
+                        explosions[k][i][j].append(int(explosion))
+
+        ### Sanity checks ###
+        all_etas = np.array(all_etas)
+        assert( np.amin(all_etas) >= 0.0 and np.amax(all_etas) <= 1.0)
+        
+        if args.verbose==True:
+            print("np.amin(all_etas)",np.amin(all_etas),"np.amax(all_etas)",np.amax(all_etas),"np.mean(all_etas)",np.mean(all_etas))
+
+        if args.plot == True:
+            Nb=50
+            fontsize=16
+            labelsize=12
+            from matplotlib import pyplot
+            if args.fancy_plots == True:
+                pyplot.rc('text',usetex=True)
+                pyplot.rc('legend',fancybox=True)
+                
+            fig=pyplot.figure(figsize=(8,10))
+            fige=pyplot.figure(figsize=(12,12))
+            
+            colors = ['k','tab:blue','tab:red','tab:green','tab:cyan','tab:brown']
+            linestyles = ['solid','dotted','dashed','-.','solid','dotted']
+            
+            plot1=fig.add_subplot(2,1,1,xscale="log")
+            plot2=fig.add_subplot(2,1,2,xscale="log")
+            
+            N_r=2
+            plot1e=fige.add_subplot(N_r,N_r,1,xscale="linear",yscale="log")
+            plot2e=fige.add_subplot(N_r,N_r,2,xscale="linear",yscale="log")
+            plot3e=fige.add_subplot(N_r,N_r,3,xscale="linear",yscale="log")
+            plot4e=fige.add_subplot(N_r,N_r,4,xscale="linear",yscale="log")
+
+            linewidth=1.5
+            for i,M_WD in enumerate(M_WDs):
+                plot1.plot(accretion_rates,etas[0][i],label="$M_\mathrm{WD}=%s \, \mathrm{M}_\odot$"%round(M_WD,2),color=colors[i],linestyle=linestyles[i],linewidth=linewidth)
+                plot2.plot(accretion_rates,etas[1][i],label="$M_\mathrm{WD}=%s \, \mathrm{M}_\odot$"%round(M_WD,2),color=colors[i],linestyle=linestyles[i],linewidth=linewidth)
+            
+            xs = M_Hes
+            ys = accretion_rates
+            
+            i=1
+            j=0
+            zs = explosions[j][i]
+            plot1e.pcolormesh(xs,ys,zs,cmap = 'Reds')
+            plot1e.set_title("$M_\mathrm{WD} = %s\,\mathrm{M}_\odot; \, L=%s\,\mathrm{L}_\odot$"%(round(M_WDs[i],2),round(luminosities[j]/code.CONST_L_SUN,2)))
+
+            i=4
+            j=0
+            zs = explosions[j][i]
+            plot2e.pcolormesh(xs,ys,zs,cmap = 'Reds')
+            plot2e.set_title("$M_\mathrm{WD} = %s\,\mathrm{M}_\odot; \, L=%s\,\mathrm{L}_\odot$"%(round(M_WDs[i],2),round(luminosities[j]/code.CONST_L_SUN,2)))
+
+            i=1
+            j=1
+            zs = explosions[j][i]
+            plot3e.pcolormesh(xs,ys,zs,cmap = 'Reds')
+            plot3e.set_title("$M_\mathrm{WD} = %s\,\mathrm{M}_\odot; \, L=%s\,\mathrm{L}_\odot$"%(round(M_WDs[i],2),round(luminosities[j]/code.CONST_L_SUN,2)))
+
+            i=4
+            j=1
+            zs = explosions[j][i]
+            plot4e.pcolormesh(xs,ys,zs,cmap = 'Reds')
+            plot4e.set_title("$M_\mathrm{WD} = %s\,\mathrm{M}_\odot; \, L=%s\,\mathrm{L}_\odot$"%(round(M_WDs[i],2),round(luminosities[j]/code.CONST_L_SUN,2)))
+
+            plot2.set_xlabel("$\log_{10}[\dot{M}/(\mathrm{M}_\odot/\mathrm{yr^{-1}})]$",fontsize=fontsize)
+            plots = [plot1,plot2]
+            for i,plot in enumerate(plots):
+                plot.set_ylabel("$\eta$",fontsize=fontsize)
+
+                handles,labels = plot.get_legend_handles_labels()
+                plot.legend(handles,labels,loc="best",fontsize=0.85*fontsize)
+
+                plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+                plot.set_title("$L=%s \, \mathrm{L}_\odot$"%(round(luminosities[i]/code.CONST_L_SUN,2)))
+
+
+            plots = [plot1e,plot2e,plot3e,plot4e]
+            for i,plot in enumerate(plots):
+                plot.set_ylabel("$\log_{10}[\dot{M}/(\mathrm{M}_\odot/\mathrm{yr^{-1}})]$",fontsize=fontsize)
+
+                plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            plot3e.set_xlabel("$M_\mathrm{He\,layer}/\mathrm{M}_\odot$",fontsize=fontsize)
+            plot4e.set_xlabel("$M_\mathrm{He\,layer}/\mathrm{M}_\odot$",fontsize=fontsize)
+
+            fig.savefig("white_dwarf_SNe_single_degenerate_model_1_eta.pdf")
+            fige.savefig("white_dwarf_SNe_single_degenerate_model_1_explosion.pdf")
+    
+            pyplot.show()
+
+
+
     def test100(self,args):
         print('Unit tests')
         
@@ -1921,7 +2045,7 @@ def compute_e_and_j_hat_vectors(INCL,AP,LAN):
 if __name__ == '__main__':
     args = parse_arguments()
     
-    N_tests = 18
+    N_tests = 19
     if args.test==0:
         tests = list(range(1,N_tests+1)) + [100]
     else:

@@ -23,4 +23,14 @@ double ge_function(double e, double x, double E0);
 double ha_function(double e, double x, double E0);
 double he_function(double e, double x, double E0);
 double XL0_q_function(double q);
+
+double fm_function_old(double e, double x, double E0, double Etau);
+double fa_function_old(double e, double x, double E0, double Etau);
+double fe_function_old(double e, double x, double E0, double Etau);
+double fomega_function_old(double e, double x, double E0, double Etau);
+double ga_function_old(double e, double x, double E0);
+double ge_function_old(double e, double x, double E0);
+double ha_function_old(double e, double x, double E0);
+double he_function_old(double e, double x, double E0);
+double XL0_q_function_old(double q);
 }

@@ -90,6 +90,8 @@ class MSE(object):
         self.__ECSNe_model = 0
         self.__binary_evolution_SNe_Ia_single_degenerate_model = 0
         self.__binary_evolution_SNe_Ia_double_degenerate_model = 0
+        self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision = 0.9
+        self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO = 0.9
 
         self.__triple_mass_transfer_primary_star_accretion_efficiency_no_disk = 0.1
         self.__triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = 0.1
@@ -276,7 +278,7 @@ class MSE(object):
             ctypes.c_double, \
             ctypes.c_int, ctypes.c_int, \
             ctypes.c_int, \
-            ctypes.c_int, ctypes.c_int, ctypes.c_int)
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -385,7 +387,13 @@ class MSE(object):
             ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.test_flybys_perturber_sampling.restype = ctypes.c_int
 
-    ###############
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency.argtypes = (ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int))
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency.restype = ctypes.c_int
+
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion.argtypes = (ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.POINTER(ctypes.c_bool))
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion.restype = ctypes.c_int
+        
+     ###############
     
     def add_particle(self,particle):
         index = ctypes.c_int(0)
@@ -784,7 +792,7 @@ class MSE(object):
             self.__wall_time_max_s, \
             self.__NS_model, self.__ECSNe_model, \
             self.__system_index, \
-            self.__binary_evolution_mass_transfer_model, self.__binary_evolution_SNe_Ia_single_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model)
+            self.__binary_evolution_mass_transfer_model, self.__binary_evolution_SNe_Ia_single_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO)
 
     def reset(self):
         self.__init__()
@@ -954,6 +962,17 @@ class MSE(object):
         b_vec = np.array( [ b_vec_x.value,b_vec_y.value,b_vec_z.value] )
         V_vec = np.array( [ V_vec_x.value,V_vec_y.value,V_vec_z.value] )
         return M_per.value,b_vec,V_vec
+
+    def test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(self, M_WD, accretion_rate, luminosity):
+        eta,WD_accretion_mode = ctypes.c_double(0.0), ctypes.c_int(0)
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(M_WD, accretion_rate, luminosity, ctypes.byref(eta), ctypes.byref(WD_accretion_mode))
+        return eta.value, WD_accretion_mode.value
+
+    def test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(self, M_WD, accretion_rate, M_He, luminosity):
+        explosion = ctypes.c_bool(False)
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(M_WD, accretion_rate, M_He, luminosity, ctypes.byref(explosion))
+        return explosion.value
+
 
     ### Constants ###
     @property
@@ -1562,6 +1581,22 @@ class MSE(object):
         self.__binary_evolution_SNe_Ia_double_degenerate_model = value
         self.__set_parameters_in_code()
 
+    @property
+    def binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision(self):
+        return self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision
+    @binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision.setter
+    def binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision(self, value):
+        self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision = value
+        self.__set_parameters_in_code()
+        
+    @property
+    def binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO(self):
+        return self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO
+    @binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO.setter
+    def binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO(self, value):
+        self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO = value
+        self.__set_parameters_in_code()
+        
     
     ### Triple evolution ###
     @property

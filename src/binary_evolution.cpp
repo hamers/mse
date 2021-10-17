@@ -1072,10 +1072,29 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     
     if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
     {
-        /* Model for He accretion onto CO WDs */
+        /* Model for He accretion onto CO WDs *
+         * Based on Neunteufel+ 2016, 2016A&A...589A..43N */
         if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
         {
-            /* Not yet implemented */
+            double eta;
+            int WD_accretion_mode = -1;
+            double m_dot_mass_transfer_SD = dm1/dt; // always positive
+            white_dwarf_helium_mass_accumulation_efficiency(m_accretor, m_dot_mass_transfer_SD, accretor->luminosity, &eta, &WD_accretion_mode);
+            double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+            
+            if (WD_accretion_mode == 1) // mass gets added in the form of a He layer on top of the CO core (tracked with the parameter "WD_He_layer_mass"); do not change the SSE CO WD mass
+            {
+                accretor->WD_He_layer_mass += eta * dm1;
+                dm2 = 0.0;
+            }
+            if (WD_accretion_mode == 2) // no retention
+            {
+                dm2 = 0.0;
+            }
+            if (WD_accretion_mode == 3) // burning of accreted He to C; add to SSE CO WD mass (only represents CO core mass)
+            {
+                dm2 = eta * dm1;
+            }
         }
     }
    
@@ -1239,7 +1258,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     #ifdef VERBOSE
     if (verbose_flag > 1)
     {
-        printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- dt_binary_evolution new %g\n",*dt_binary_evolution);
+        printf("binary_evolution.cpp -- stable_mass_transfer_evolution -- dt_binary_evolution new %g dm1 %g dm2 %g\n",*dt_binary_evolution,dm1,dm2);
     }
     #endif
 
@@ -1250,7 +1269,467 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     return 0;
 }
 
+void white_dwarf_helium_mass_accumulation_efficiency(double m_WD, double m_dot, double WD_luminosity, double *eta, int *WD_accretion_mode)
+{
+    double m_dot_WK_max = determine_WK11_max_accretion_rate(m_WD, WD_luminosity);
+    double m_dot_KH_min = 0.0;
+    double m_dot_KH_max = 0.0;
+    double eta_ret = -1;
+    white_dwarf_helium_mass_accumulation_efficiency_KH04(m_WD,m_dot,&eta_ret,&m_dot_KH_min,&m_dot_KH_max);
 
+    if (m_dot > 0.0 and m_dot < m_dot_WK_max)
+    {
+        eta_ret = 1.0;
+        *WD_accretion_mode = 1; // accumulation of He onto the WD
+    }
+    else if (m_dot >= m_dot_WK_max and m_dot <= m_dot_KH_min)
+    {
+        eta_ret = 0.0;
+        *WD_accretion_mode = 2; // no retention
+    }
+    else if (m_dot > m_dot_KH_min and m_dot < m_dot_KH_max)
+    {
+        *WD_accretion_mode = 3; // burning of accreted He to C; simply add to SSE WD mass; non-trivial efficiency
+    }
+    else if (m_dot >= m_dot_KH_max)
+    {
+        eta_ret = 1.0;
+        *WD_accretion_mode = 3; // burning of accreted He to C; simply add to SSE WD mass
+    }
+    
+    if (eta_ret == -1)// or m_dot_WK_max > m_dot_KH_min or m_dot_WK_max > m_dot_KH_max)
+    {
+        printf("binary_evolution.cpp -- white_dwarf_helium_mass_accumulation_efficiency() -- error in determining eta=%g; m_WD=%g; m_dot=%g m_dot_WK_max=%g m_dot_KH_min=%g m_dot_KH_max=%g\n",eta_ret,m_WD,m_dot,m_dot_WK_max,m_dot_KH_min,m_dot_KH_max);
+        error_code = 42;
+        longjmp(jump_buf,1);
+    }
+    
+    //printf("binary_evolution.cpp -- white_dwarf_helium_mass_accumulation_efficiency -- eta %g m_dot_WK_max %g m_dot_KH_min %g m_dot_KH_max %g\n",eta_ret,m_dot_WK_max,m_dot_KH_min,m_dot_KH_max);
+    
+    *eta = eta_ret;
+    
+}
+
+
+void white_dwarf_helium_mass_accumulation_efficiency_KH04(double m_WD, double m_dot, double *eta, double *m_dot_KH_min, double *m_dot_KH_max)
+{
+    /* Based on Kato & Hachisu (2004; https://ui.adsabs.harvard.edu/abs/2004ApJ...613L.129K/abstract) */
+    double log_m_dot = log10(m_dot); // Log 10 of Helium accretion rate
+    
+    int KH04_WD_masses_length = 6;
+    double KH04_WD_masses[KH04_WD_masses_length] = {0.8,0.9,1.0,1.2,1.3,1.35};
+
+    int i,i_low,i_up;
+    double log_m_dot_KH_min,log_m_dot_KH_max;
+
+    /* First check if m_WD exceeds boundary values of KH04 */
+    if (m_WD < KH04_WD_masses[0])
+    {
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index0(log_m_dot,eta,&log_m_dot_KH_min,&log_m_dot_KH_max);
+        *m_dot_KH_min = pow(10.0,log_m_dot_KH_min);
+        *m_dot_KH_max = pow(10.0,log_m_dot_KH_max);
+        return;
+    }
+    else if (m_WD > KH04_WD_masses[KH04_WD_masses_length-1])
+    {
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index5(log_m_dot,eta,&log_m_dot_KH_min,&log_m_dot_KH_max);
+        *m_dot_KH_min = pow(10.0,log_m_dot_KH_min);
+        *m_dot_KH_max = pow(10.0,log_m_dot_KH_max);
+        return;
+    }
+
+    typedef void (*functionarray) (double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+    functionarray KH04_functions[] = 
+    {
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index0, \
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index1, \
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index2, \
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index3, \
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index4, \
+        white_dwarf_helium_mass_accumulation_efficiency_KH04_index5
+    };
+
+    /* Determine which mass bin applies */
+    double m_low,m_up;
+    for (i=0; i<KH04_WD_masses_length-1; i++)
+    {
+        m_low = KH04_WD_masses[i];
+        m_up = KH04_WD_masses[i+1];
+        if (m_WD >= m_low and m_WD < m_up)
+        {
+            i_low = i;
+            i_up = i+1;
+            break;
+        }
+    }
+    
+    /* Determine efficiencies and critical m_dots for the boundaries in the mass bins, and interpolate linearly */
+    double eta_low,log_m_dot_min_low,log_m_dot_max_low;
+    double eta_up,log_m_dot_min_up,log_m_dot_max_up;
+    KH04_functions[i_low](log_m_dot, &eta_low, &log_m_dot_min_low, &log_m_dot_max_low);
+    KH04_functions[i_up](log_m_dot, &eta_up, &log_m_dot_min_up, &log_m_dot_max_up);
+    
+    *eta = (eta_up - eta_low) * (m_WD - m_low) / (m_up - m_low) + eta_low;
+    *m_dot_KH_min = pow(10.0, (log_m_dot_min_up - log_m_dot_min_low) * (m_WD - m_low) / (m_up - m_low) + log_m_dot_min_low);
+    *m_dot_KH_max = pow(10.0, (log_m_dot_max_up - log_m_dot_max_low) * (m_WD - m_low) / (m_up - m_low) + log_m_dot_max_low);
+    
+    //printf("KH04 log_m_dot %g i_low %d i_up %d m_low %g m_up %g m_WD %g eta %g m_dot_KH_min %g m_dot_KH_max %g eta_low %g eta_up %g\n",log_m_dot,i_low,i_up,m_low,m_up,m_WD,*eta,*m_dot_KH_min,*m_dot_KH_max,eta_low,eta_up);
+}
+
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index0(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -6.5;
+    *log_m_dot_max = -6.34;
+    
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot > *log_m_dot_min)
+    {
+        *eta = -0.35 * (log_m_dot + 6.1)*(log_m_dot + 6.1) + 1.02;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index1(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -6.88;
+    *log_m_dot_max = -6.05;
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot > *log_m_dot_min)
+    {
+        *eta = -0.35 * (log_m_dot + 5.6)*(log_m_dot + 5.6) + 1.07;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index2(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -6.92;
+    *log_m_dot_max = -5.93;
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot > *log_m_dot_min)
+    {
+        *eta = -0.35 * (log_m_dot + 5.6)*(log_m_dot + 5.6) + 1.01;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index3(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -7.06;
+    *log_m_dot_max = -5.76;
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot >= -5.95)
+    {
+        *eta = -0.54 * (log_m_dot + 5.6)*(log_m_dot + 5.6) + 1.01;
+    }
+    else if (log_m_dot < -5.95 and log_m_dot > *log_m_dot_min)
+    {
+        *eta = 0.54 * log_m_dot + 4.16;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index4(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -7.35;
+    *log_m_dot_max = -5.83;
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot > *log_m_dot_min)
+    {
+        *eta = -0.175 * (log_m_dot + 5.35)*(log_m_dot + 5.35) + 1.03;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index5(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max)
+{
+    *log_m_dot_min = -7.4;
+    *log_m_dot_max = -6.05;
+    if (log_m_dot >= *log_m_dot_max)
+    {
+        *eta = 1.0;
+    }
+    else if (log_m_dot < *log_m_dot_max and log_m_dot > *log_m_dot_min)
+    {
+        *eta = -0.115 * (log_m_dot + 5.7)*(log_m_dot + 5.7) + 1.01;
+    }
+    else
+    {
+        *eta = 0.0;
+    }
+}
+
+double determine_WK11_max_accretion_rate(double M_WD, double WD_luminosity)
+{
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- determine_WK11_max_accretion_rate -- M_WD %g WD_luminosity %g\n",M_WD,WD_luminosity/CONST_L_SUN);
+    }
+    #endif
+    
+   
+    double L_LSun = WD_luminosity/CONST_L_SUN;
+   
+    /* First check the luminosity for boundary excession, and interpolate if necessary over luminosity */
+    if (L_LSun < SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN)
+    {
+        return determine_WK11_max_accretion_rate_for_given_luminosity(M_WD, WD_luminosity, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_COLD, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH);
+    }
+    else if (L_LSun > SINGLE_DEGENERATE_WK_DATA_HOT_LUMINOSITY_LSUN)
+    {
+        return determine_WK11_max_accretion_rate_for_given_luminosity(M_WD, WD_luminosity, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_HOT, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH);
+    }
+    else
+    {
+        double m_dot1 = determine_WK11_max_accretion_rate_for_given_luminosity(M_WD, WD_luminosity, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_COLD, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH);
+        double m_dot2 = determine_WK11_max_accretion_rate_for_given_luminosity(M_WD, WD_luminosity, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_HOT, SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLELENGTH);
+
+        double m_dot = (m_dot2 - m_dot1) * (L_LSun - SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN) / (SINGLE_DEGENERATE_WK_DATA_HOT_LUMINOSITY_LSUN-SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN) + m_dot1;
+
+        return m_dot;
+    }
+}
+
+double determine_WK11_max_accretion_rate_for_given_luminosity(double M_WD, double WD_luminosity, const double (*SD_table)[SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLEWIDTH], int SD_table_length)
+{
+
+    double tab_m_max = SD_table[0][0];
+    double tab_m_min = SD_table[SD_table_length-1][0];
+    
+    double ret_val;
+    
+    /* If the WD mass is beyond the range in the table, assume the boundary accretion rate value */
+    if (M_WD > tab_m_max)
+    {
+        ret_val = SD_table[0][1] * 1.0e-8;
+    }
+    else if (M_WD < tab_m_min)
+    {
+        ret_val = SD_table[SD_table_length-1][1] * 1.0e-8;
+    }
+    else
+    {
+        double m_low,m_up,acc_low,acc_up;
+        int i;
+        
+        for (i=0; i<SD_table_length-1; i++)
+        {
+            m_low = SD_table[i+1][0];
+            acc_low = SD_table[i+1][1];
+            m_up = SD_table[i][0];
+            acc_up = SD_table[i][1];
+            
+            if (M_WD >= m_low and M_WD < m_up)
+            {
+                break;
+            }
+        }
+        double acc = (acc_up - acc_low) * (M_WD - m_low) / (m_up - m_low) + acc_low;
+        
+        ret_val = acc * 1.0e-8;
+    }
+
+    //printf("binary_evolution.cpp -- determine_WK11_max_accretion_rate -- ret_val %g\n",ret_val);
+    
+    return ret_val;
+}
+
+bool determine_if_He_accreting_WD_explodes(double M_WD, double M_dot_acc, double M_He, double WD_luminosity)
+{
+    #ifdef VERBOSE
+    if (verbose_flag > 1)
+    {
+        printf("binary_evolution.cpp -- determine_if_He_accreting_WD_explodes -- M_WD %g M_dot_acc %g  M_He %g WD_luminosity %g\n",M_WD,M_dot_acc,M_He,WD_luminosity/CONST_L_SUN);
+    }
+    #endif
+   
+    double L_LSun = WD_luminosity/CONST_L_SUN;
+
+    double ret_val = -1;
+    
+    /* First check the luminosity for boundary excession, and interpolate if necessary over luminosity */
+    if (L_LSun < SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN)
+    {
+        ret_val = determine_if_He_accreting_WD_explodes_for_given_luminosity(M_WD, M_dot_acc, M_He, SINGLE_DEGENERATE_WK_DATA_COLD, SINGLE_DEGENERATE_WK_DATA_COLD_TABLELENGTH);
+    }
+    else if (L_LSun > SINGLE_DEGENERATE_WK_DATA_HOT_LUMINOSITY_LSUN)
+    {
+        ret_val = determine_if_He_accreting_WD_explodes_for_given_luminosity(M_WD, M_dot_acc, M_He, SINGLE_DEGENERATE_WK_DATA_HOT, SINGLE_DEGENERATE_WK_DATA_HOT_TABLELENGTH);
+    }
+    else
+    {
+        double ret_val1 = determine_if_He_accreting_WD_explodes_for_given_luminosity(M_WD, M_dot_acc, M_He, SINGLE_DEGENERATE_WK_DATA_COLD, SINGLE_DEGENERATE_WK_DATA_COLD_TABLELENGTH);
+        double ret_val2 = determine_if_He_accreting_WD_explodes_for_given_luminosity(M_WD, M_dot_acc, M_He, SINGLE_DEGENERATE_WK_DATA_HOT, SINGLE_DEGENERATE_WK_DATA_HOT_TABLELENGTH);
+        
+        ret_val = (ret_val2 - ret_val1) * (L_LSun - SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN) / (SINGLE_DEGENERATE_WK_DATA_HOT_LUMINOSITY_LSUN-SINGLE_DEGENERATE_WK_DATA_COLD_LUMINOSITY_LSUN) + ret_val1;
+    }
+
+    bool explosion = false;
+
+    if (ret_val == -1 or ret_val != ret_val)
+    {
+        printf("binary_evolution.cpp -- determine_if_He_accreting_WD_explodes() -- ERROR: ret_val=%g\n",ret_val);
+        error_code = 43;
+        longjmp(jump_buf,1);
+    }
+    else
+    {
+        /* ret_val interpolates between 0 and 1, but ultimately a binary decision needs to be made; make the "split" at ret_val = 0.5 */
+        if (ret_val < 0.5)
+        {
+            explosion = false;
+        }
+        else
+        {
+            explosion = true;
+        }
+    }
+    
+    return explosion;
+}
+
+double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, double M_dot_acc, double M_He, const double (*SD_table)[SINGLE_DEGENERATE_WK_DATA_TABLEWIDTH], int SD_table_length)
+{
+
+    /* Minimum and maximum WD masses in the data table */
+    double tab_m_max = SD_table[0][0];
+    double tab_m_min = SD_table[SD_table_length-1][0];
+    double M_dot_acc_1e8 = M_dot_acc*1.0e8;
+        
+    int i;
+    double tab_m, tab_acc, tab_He;
+
+    double ret_val;
+    
+    if (M_WD > tab_m_max or M_WD < tab_m_min) /* If the WD mass is beyond the range in the table, assume no explosion occurs */
+    {
+        ret_val = 0.0;
+    }
+    else
+    {
+        /* Extract (M_dot_acc,M_He) data for the two WD masses nearest to M_WD in the data table; this will later be interpolated over both M_WD and M_He. */
+        
+        double acc_data1[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
+        double He_data1[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
+        int data_length1 = 0;
+
+        double acc_data2[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
+        double He_data2[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
+        int data_length2 = 0;
+
+        double M_WD1 = -1;
+        double M_WD2 = -1;
+        
+        for (i=0; i<SD_table_length; i++)
+        {
+            tab_m = SD_table[i][0];
+            tab_acc = SD_table[i][1]; // unit: 1e-8 MSun/yr
+            tab_He = SD_table[i][2];
+
+            if (M_WD <= tab_m and M_WD > tab_m - SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
+            {
+                He_data1[data_length1] = tab_He;
+                acc_data1[data_length1] = tab_acc;
+                data_length1++;
+                if (M_WD1 == -1)
+                {
+                    M_WD1 = tab_m;
+                }
+            }
+            else if (M_WD > tab_m and M_WD < tab_m + SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
+            {
+                He_data2[data_length2] = tab_He;
+                acc_data2[data_length2] = tab_acc;
+                data_length2++;
+                if (M_WD2 == -1)
+                {
+                    M_WD2 = tab_m;
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+        if (M_WD1 == -1 or M_WD2 == -1)
+        {
+            printf("binary_evolution.cpp -- determine_if_He_accreting_WD_explodes_for_given_luminosity() -- ERROR: M_WD=%g M_WD1 = %g; M_WD2 = %g\n",M_WD,M_WD1,M_WD2);
+            error_code = 43;
+            longjmp(jump_buf,1);
+        }
+        
+        /* Interpolate over WD mass */
+        double ret_val1 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data1,He_data1,data_length1);
+        double ret_val2 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data2,He_data2,data_length2);
+        
+        ret_val = (ret_val2 - ret_val1) * (M_WD - M_WD1) / (M_WD2 - M_WD1) + ret_val1;
+    }
+    
+    return ret_val;
+}
+
+double determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(double M_He, double M_dot_acc_1e8, double acc_data[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD], double He_data[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD], int data_length)
+{
+    /* If the He layer mass lies within available data range, interpolate linearly. Otherwise, assume an explosion never occurs. */
+    int i;
+    double He_low,He_up,acc_low,acc_up;
+    double acc_crit = -1;
+    double ret_val;
+    
+    for (i=0; i<data_length-1; i++)
+    {
+        He_low = He_data[i];
+        He_up = He_data[i+1];
+        acc_low = acc_data[i];
+        acc_up = acc_data[i+1];
+
+        if (M_He > He_low and M_He <= He_up)
+        {
+            //printf("M_He %g He_low %g He_up %g\n",M_He,He_low,He_up);
+            acc_crit = (acc_up - acc_low) * (M_He - He_low) / (He_up - He_low) + acc_low;
+            break;
+        }
+    }
+    
+    if (acc_crit != -1 and M_dot_acc_1e8 < acc_crit)
+    {
+        /* He layer mass lies within valid range and the corresponding accretion rate is below the critical value for an explosion. */
+        ret_val = 1.0;
+    }
+    else
+    {
+        ret_val = 0.0;
+    }
+
+    return ret_val;
+}
 
 int triple_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent_index, int donor_index, int accretor_index, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
@@ -1695,93 +2174,153 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                     m2_new = m2 + mdot2 * dt;
                     
                     kw1 = star1->stellar_type;
-                                
+
                     if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7)
                     {
-                         /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
-                         
-                        found_new_event = true;
-                        structure_change = true;
-                    
-                        Delta_m1 = m1_new - m1;
-                        Delta_m2 = -m2;
-
-                        #ifdef VERBOSE
-                        if (verbose_flag > 0)
+                        if (binary_evolution_SNe_Ia_single_degenerate_model == 0 or binary_evolution_SNe_Ia_single_degenerate_model == 1)
                         {
-                            printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects --  HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN  -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                            print_system(particlesMap,*integration_flag);
+                             /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
+                             
+                            found_new_event = true;
+                            structure_change = true;
+                        
+                            Delta_m1 = m1_new - m1;
+                            Delta_m2 = -m2;
+
+                            #ifdef VERBOSE
+                            if (verbose_flag > 0)
+                            {
+                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects --  HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN  -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                print_system(particlesMap,*integration_flag);
+                            }
+                            #endif
+
+                            #ifdef LOGGING
+                            Log_info_type log_info;
+                            log_info.index1 = star2->index;
+                            log_info.SNe_type = 1;
+                            log_info.SNe_info = 1;
+                            update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                            #endif
+                
+                            get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                
+                            handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
+                                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+                            star1->mass += Delta_m1;
+                            update_stellar_evolution_properties(star1);
+                            reset_ODE_mass_dot_quantities(star1);
+
+                            particlesMap->erase(star2->index);
+
+                            *integration_flag = 1;
+                            break;
                         }
-                        #endif
-
-                        #ifdef LOGGING
-                        Log_info_type log_info;
-                        log_info.index1 = star2->index;
-                        log_info.SNe_type = 1;
-                        log_info.SNe_info = 1;
-                        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                        #endif
-            
-                        get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                            r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-            
-                        handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
-                            r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-
-                        star1->mass += Delta_m1;
-                        update_stellar_evolution_properties(star1);
-                        reset_ODE_mass_dot_quantities(star1);
-
-                        particlesMap->erase(star2->index);
-
-                        *integration_flag = 1;
-                        break;
                     }
                     else if (kw1 <= 10 and kw2 == 11 and m2_new - star2->sse_initial_mass >= 0.15)
                     {
-                        /* CO and ONeWDs accrete helium-rich material until the accumulated 
-                        * material exceeds a mass of 0.15 when it ignites. For a COWD with 
-                        * mass less than 0.95 the system will be destroyed as an ELD in a 
-                        * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-                        * will survive with all the material converted to ONe (JH 30/09/99). 
-                        * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
-
-                        found_new_event = true;
-                        structure_change = true;
-                            
-                        Delta_m1 = m1_new - m1;
-                        Delta_m2 = -m2;
-
-                        #ifdef VERBOSE
-                        if (verbose_flag > 0)
+                        if (binary_evolution_SNe_Ia_single_degenerate_model == 0)
                         {
-                            printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                            print_system(particlesMap,*integration_flag);
-                        }
-                        #endif
+                            /* CO and ONeWDs accrete helium-rich material until the accumulated 
+                            * material exceeds a mass of 0.15 when it ignites. For a COWD with 
+                            * mass less than 0.95 the system will be destroyed as an ELD in a 
+                            * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
+                            * will survive with all the material converted to ONe (JH 30/09/99). 
+                            * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
 
-                        #ifdef LOGGING
-                        Log_info_type log_info;
-                        log_info.index1 = star2->index;
-                        log_info.SNe_type = 1;
-                        log_info.SNe_info = 1;
-                        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                        #endif
+                            found_new_event = true;
+                            structure_change = true;
+                                
+                            Delta_m1 = m1_new - m1;
+                            Delta_m2 = -m2;
 
-                        get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                            r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                    
-                        handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
-                            r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-    
-                        star1->mass += Delta_m1;
-                        update_stellar_evolution_properties(star1);
-                        reset_ODE_mass_dot_quantities(star1);
+                            #ifdef VERBOSE
+                            if (verbose_flag > 0)
+                            {
+                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                print_system(particlesMap,*integration_flag);
+                            }
+                            #endif
+
+                            #ifdef LOGGING
+                            Log_info_type log_info;
+                            log_info.index1 = star2->index;
+                            log_info.SNe_type = 1;
+                            log_info.SNe_info = 1;
+                            update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                            #endif
+
+                            get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
                         
-                        particlesMap->erase(star2->index);
+                            handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+        
+                            star1->mass += Delta_m1;
+                            update_stellar_evolution_properties(star1);
+                            reset_ODE_mass_dot_quantities(star1);
+                            
+                            particlesMap->erase(star2->index);
 
-                        *integration_flag = 1;
-                        break;
+                            *integration_flag = 1;
+                            break;
+                        }
+                        else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
+                        {
+                            /* Model for He accretion onto CO WDs */
+                            if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+                            {
+                                double eta;
+                                int WD_accretion_mode = -1;
+                                double m_dot_mass_transfer_SD = star1->mass_dot_RLOF;
+                                white_dwarf_helium_mass_accumulation_efficiency(m2, m_dot_mass_transfer_SD, star2->luminosity, &eta, &WD_accretion_mode);
+                                double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+
+                                bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
+                                
+                                if (SNe_explosion == true)
+                                {
+                                    found_new_event = true;
+                                    structure_change = true;
+                                        
+                                    Delta_m1 = m1_new - m1;
+                                    Delta_m2 = -m2;
+
+                                    #ifdef VERBOSE
+                                    if (verbose_flag > 0)
+                                    {
+                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                        print_system(particlesMap,*integration_flag);
+                                    }
+                                    #endif
+
+                                    #ifdef LOGGING
+                                    Log_info_type log_info;
+                                    log_info.index1 = star2->index;
+                                    log_info.SNe_type = 1;
+                                    log_info.SNe_info = 3;
+                                    update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                                    #endif
+
+                                    get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                                
+                                    handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                                        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+                
+                                    star1->mass += Delta_m1;
+                                    update_stellar_evolution_properties(star1);
+                                    reset_ODE_mass_dot_quantities(star1);
+                                    
+                                    particlesMap->erase(star2->index);
+
+                                    *integration_flag = 1;
+                                    break;
+                                }
+                            }
+                        }
                     }
                     else if ((kw2 == 10 or kw2 == 11) and m2_new >= chandrasekhar_mass)
                     {
@@ -1829,7 +2368,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         *integration_flag = 1;
                         break;
                     }
-       
                     else if (kw2 == 12 and m2_new > 1.38)
                     {
 
@@ -1935,6 +2473,8 @@ void reset_ODE_mass_dot_quantities(Particle *p)
     p->convective_envelope_mass_dot = 0.0;
     p->convective_envelope_radius_dot = 0.0;
     p->sse_k2_dot = 0.0;
+    
+    p->WD_He_layer_mass = 0.0;
 }
 
 }

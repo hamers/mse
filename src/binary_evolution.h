@@ -28,4 +28,20 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
 
 void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particlesMap, double t_old, double t, int *integration_flag, double *dt_binary_evolution);
 void reset_ODE_mass_dot_quantities(Particle *p);
+
+void white_dwarf_helium_mass_accumulation_efficiency(double m_WD, double m_dot, double WD_luminosity, double *eta, int *WD_accretion_mode);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04(double m_WD, double m_dot, double *eta, double *m_dot_KH_min, double *m_dot_KH_max);
+double determine_WK11_max_accretion_rate(double M_WD, double WD_luminosity);
+double determine_WK11_max_accretion_rate_for_given_luminosity(double M_WD, double WD_luminosity, const double (*SD_table)[SINGLE_DEGENERATE_WK_DATA_MAX_ACCRETION_RATE_TABLEWIDTH], int SD_table_length);
+bool determine_if_He_accreting_WD_explodes(double M_WD, double M_dot_acc, double M_He, double WD_luminosity);
+double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, double M_dot_acc, double M_He, const double (*SD_table)[SINGLE_DEGENERATE_WK_DATA_TABLEWIDTH], int SD_table_length);
+double determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(double M_He, double M_dot_acc_1e8, double acc_data[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD], double He_data[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD], int data_length);
+
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index0(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index1(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index2(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index3(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index4(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+void white_dwarf_helium_mass_accumulation_efficiency_KH04_index5(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
+
 }

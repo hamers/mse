@@ -1034,7 +1034,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double wall_time_max_s_, \
     int NS_model_, int ECSNe_model_, \
     int system_index_, \
-    int binary_evolution_mass_transfer_model_, int binary_evolution_SNe_Ia_single_degenerate_model_, int binary_evolution_SNe_Ia_double_degenerate_model_)
+    int binary_evolution_mass_transfer_model_, int binary_evolution_SNe_Ia_single_degenerate_model_, int binary_evolution_SNe_Ia_double_degenerate_model_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1074,6 +1074,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     binary_evolution_mass_transfer_model = binary_evolution_mass_transfer_model_;
     binary_evolution_SNe_Ia_single_degenerate_model = binary_evolution_SNe_Ia_single_degenerate_model_;
     binary_evolution_SNe_Ia_double_degenerate_model = binary_evolution_SNe_Ia_double_degenerate_model_;
+    binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision = binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision_;
+    binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO = binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO_;
     
     nbody_analysis_fractional_semimajor_axis_change_parameter = nbody_analysis_fractional_semimajor_axis_change_parameter_;
     nbody_analysis_fractional_integration_time = nbody_analysis_fractional_integration_time_;
@@ -1153,7 +1155,6 @@ int set_verbose_flag(int value)
 int unit_tests_interface(int mode)
 {
     time(&wall_time_start);
-        
     verbose_flag = 0;
     int flag=0;
     flag += test_tools();

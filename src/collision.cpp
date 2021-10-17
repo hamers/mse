@@ -183,6 +183,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     double m2 = child2->mass;
     double m = m1 + m2;
 
+    double m_primary = m1;
+    double m_secondary = m2;
+    if (m1 < m2)
+    {
+        m_primary = m2;
+        m_secondary = m1;
+    }
+
     int i;
 
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
@@ -194,6 +202,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     get_unit_vector(e_vec,e_vec_unit);
 
     double a_old = compute_a_from_h(m1,m2,norm3(h_vec),norm3(e_vec));
+    double e_old = norm3(e_vec);
     if (a_old <= epsilon) /* Take instantenous separation if semimajor axis not well defined */
     {
         double r[3];
@@ -205,6 +214,21 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     }
     double P_old = compute_orbital_period_from_semimajor_axis(m,a_old);
     double n_old = TWOPI/P_old;
+    
+    /* Determine whether or not the collision should be considered to be "eccentric" */
+    bool eccentric_collision = false;
+    if (e_old >= 0.0 and e_old < 1.0)
+    {
+        if (e_old > binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision)
+        {
+            eccentric_collision = true;
+        }
+    }
+    else
+    {
+        /* Unbound relative orbit; assume head-on collision */
+        eccentric_collision = true;
+    }
     
     #ifdef VERBOSE
     if (verbose_flag > 0)
@@ -261,6 +285,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     double M_final; /* used for compact objects */
     double alpha_vec_final[3]; /* used for compact objects */
 
+
     /* Two H/He MS stars forming new MS star */
     if ((kw1 >= 0 and kw1 <= 1 or kw1 == 7) and (kw2 >= 0 and kw2 <= 1 or kw2 == 7)) 
     {
@@ -307,52 +332,204 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         mc = m1;
         gntage_(&mc,&m,&kw,zpars,&m0,&age);
     }
-        
+
+    /* WD-WD collisions *
+     * binary_evolution_SNe_Ia_double_degenerate_model = 0: original Hurley prescription 
+     * binary_evolution_SNe_Ia_double_degenerate_model = 1: updated prescription */
+
     /* He WD + He WD */
     else if (kw1 == 10 and kw2 == 10)
     {
-        #ifdef LOGGING
-        Log_info_type log_info;
-        log_info.index1 = child1->index;
-        log_info.index2 = child2->index;
-        log_info.SNe_type = 1;
-        log_info.SNe_info = 2;
-        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-        #endif
-        
-        destroyed = true;
-    }
-    
-    /* He WD + CO/ONe WD: make new evolved He star */
-    else if (kw1 == 10 and kw2 >= 11 and kw2 <= 12)
-    {
-        mc = m2;
-        gntage_(&mc,&m,&kw,zpars,&m0,&age);
-    }
-    else if (kw2 == 10 and kw1 >= 11 and kw1 <= 12)
-    {
-        mc = m1;
-        gntage_(&mc,&m,&kw,zpars,&m0,&age);
-    }
-    
-    /* CO WD + CO WD */
-    else if (kw1 == 11 and kw2 == 11)
-    {
-        m0 = m;
-        age = 0.0;
-        if (m >= chandrasekhar_mass)
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 0)
         {
-            destroyed = true; /* SNe Ia */
-
             #ifdef LOGGING
             Log_info_type log_info;
             log_info.index1 = child1->index;
             log_info.index2 = child2->index;
             log_info.SNe_type = 1;
-            log_info.SNe_info = 2;
+            log_info.SNe_info = 2; /* Ia */
             update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             #endif
-           
+        
+            destroyed = true;
+        }
+        else if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            if (eccentric_collision == true)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 4; /* Ib */
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+            
+                destroyed = true;
+            }
+            else
+            {
+                /* Make evolved He star */
+                kw = 7;
+                m0 = m;
+                mc = 0.0;
+                age = 0.0;
+            }
+        }
+    }
+    
+    /* He WD + CO/ONe WD */
+    else if (kw1 == 10 and kw2 >= 11 and kw2 <= 12)
+    {
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 0)
+        {
+            /* Make new evolved He star */
+            mc = m2;
+            gntage_(&mc,&m,&kw,zpars,&m0,&age);
+        }
+        else if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            
+            if (kw2 == 11)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+                
+                destroyed = true;
+            }
+            else if (kw2 == 12)
+            {
+                if (m < chandrasekhar_mass)
+                {
+                    /* Make new evolved He star */
+                    mc = m2;
+                    gntage_(&mc,&m,&kw,zpars,&m0,&age);
+                }
+                else
+                {
+                    kw = 13;
+                    m0 = m;
+                    mc = m;
+                    age = 0.0;
+                }
+            }
+        }
+    }
+    else if (kw2 == 10 and kw1 >= 11 and kw1 <= 12)
+    {
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 0)
+        {
+            mc = m1;
+            gntage_(&mc,&m,&kw,zpars,&m0,&age);
+        }
+        else if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            if (kw1 == 11)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+                
+                destroyed = true;
+            }
+            else if (kw1 == 12)
+            {
+                if (m < chandrasekhar_mass)
+                {
+                    /* Make new evolved He star */
+                    mc = m1;
+                    gntage_(&mc,&m,&kw,zpars,&m0,&age);
+                }
+                else
+                {
+                    kw = 13;
+                    m0 = m;
+                    mc = m;
+                    age = 0.0;
+                }
+            }
+        }
+    }
+    
+    /* CO WD + CO WD */
+    else if (kw1 == 11 and kw2 == 11)
+    {
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 0)
+        {
+            /* Assume SNe Ia if m>m_Ch */
+            m0 = m;
+            age = 0.0;
+            if (m >= chandrasekhar_mass)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+
+                destroyed = true;
+            }
+        }
+        else if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            if (eccentric_collision == true)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 4;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+            
+                destroyed = true;
+            }
+            else
+            {
+                if (m_primary > binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO)
+                {
+                    /* SNe Ia but secondary survives */
+                    
+                    #ifdef LOGGING
+                    Log_info_type log_info;
+                    log_info.index1 = child1->index;
+                    log_info.index2 = child2->index;
+                    log_info.SNe_type = 1;
+                    log_info.SNe_info = 2;
+                    update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                    #endif
+                    
+                    destroyed = false;
+
+                    kw = 11;
+                    m0 = m_secondary;
+                    mc = m_secondary;
+                    age = 0.0;
+                }
+                else /* Merge quietly into new CO WD */
+                {
+                    kw = 11;
+                    m0 = m;
+                    mc = m;
+                    age = 0.0;
+                }
+            }
         }
     }
     
@@ -369,6 +546,23 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         {
             kw = 13; /* AIC to NS */
         }
+        
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            if (eccentric_collision == true)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+            
+                destroyed = true;
+            }
+        }
     }
     else if (kw2 == 12 and kw1 >= 11 and kw1 <= 12)
     {
@@ -382,7 +576,25 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         {
             kw = 13; /* AIC to NS */
         }
+
+        if (binary_evolution_SNe_Ia_double_degenerate_model == 1)
+        {
+            if (eccentric_collision == true)
+            {
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.index1 = child1->index;
+                log_info.index2 = child2->index;
+                log_info.SNe_type = 1;
+                log_info.SNe_info = 2;
+                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                #endif
+            
+                destroyed = true;
+            }
+        }
     }
+    
     
     /* Thorne-Zytkow object */
     else if ((kw1 >= 13 and kw1 <= 14) and (kw2 == 0 or kw2 == 1 or kw2 == 7) )
@@ -401,7 +613,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     }
     
     /* Other compact object mergers */
-    else if (kw1 >= 13 and kw1 <= 14 and kw2 >= 10 and kw2 <= 14)
+    else if (kw1 >= 13 and kw1 <= 14 and kw2 >= 13 and kw2 <= 14)
     {
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
@@ -432,7 +644,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         #endif
         
     }
-    else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14)
+    else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 13 and kw1 <= 14)
     {
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
@@ -462,6 +674,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         longjmp(jump_buf,1);
         return;
     }
+    
+    
     
     if (destroyed == false and (m0 == -1 or age == -1))
     {

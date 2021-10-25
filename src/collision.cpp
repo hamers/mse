@@ -141,14 +141,6 @@ void handle_collisions(ParticlesMap *particlesMap, double t, int *integration_fl
 void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_index, int child2_index, double t, int *integration_flag)
 {
     
-    #ifdef LOGGING
-    Log_info_type log_info;
-    log_info.binary_index = binary_index;
-    log_info.index1 = child1_index;
-    log_info.index2 = child2_index;
-    update_log_data(particlesMap, t, *integration_flag, LOG_COL_START, log_info);
-    #endif
-
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
@@ -229,7 +221,17 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         /* Unbound relative orbit; assume head-on collision */
         eccentric_collision = true;
     }
-    
+
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = binary_index;
+    log_info.index1 = child1_index;
+    log_info.index2 = child2_index;
+    log_info.eccentric_collision = int(eccentric_collision);
+    update_log_data(particlesMap, t, *integration_flag, LOG_COL_START, log_info);
+    #endif
+
+
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
@@ -348,6 +350,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
             log_info.index2 = child2->index;
             log_info.SNe_type = 1;
             log_info.SNe_info = 2; /* Ia */
+            log_info.eccentric_collision = int(eccentric_collision);
             update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             #endif
         
@@ -362,7 +365,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index1 = child1->index;
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
-                log_info.SNe_info = 4; /* Ib */
+                log_info.SNe_info = 4; /* Ib for two colliding He WDs */
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
             
@@ -399,6 +403,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
                 log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
                 
@@ -439,6 +444,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
                 log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
                 
@@ -479,6 +485,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
                 log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
 
@@ -494,7 +501,8 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index1 = child1->index;
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
-                log_info.SNe_info = 4;
+                log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
             
@@ -512,6 +520,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                     log_info.index2 = child2->index;
                     log_info.SNe_type = 1;
                     log_info.SNe_info = 2;
+                    log_info.eccentric_collision = int(eccentric_collision);
                     update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                     #endif
                     
@@ -557,6 +566,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
                 log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
             
@@ -587,6 +597,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.index2 = child2->index;
                 log_info.SNe_type = 1;
                 log_info.SNe_info = 2;
+                log_info.eccentric_collision = int(eccentric_collision);
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
             

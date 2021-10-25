@@ -323,7 +323,7 @@ class MSE(object):
         self.lib.get_size_of_log_data.argtypes = ()
         self.lib.get_size_of_log_data.restype = ctypes.c_int
         
-        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int))
+        self.lib.get_log_entry_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int))
         self.lib.get_log_entry_properties.restype = ctypes.c_int
         
         self.lib.get_internal_index_in_particlesMap_log.argtypes = (ctypes.c_int,ctypes.c_int)
@@ -816,9 +816,9 @@ class MSE(object):
             #N_particles = self.lib.get_number_of_particles()
             
             time = ctypes.c_double(0.0)
-            N_particles,event_flag,integration_flag,index1,index2,binary_index,kick_speed_km_s,SNe_type,SNe_info = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0)
-            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(integration_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index),ctypes.byref(kick_speed_km_s),ctypes.byref(SNe_type),ctypes.byref(SNe_info))
-            entry.update({'time':time.value,'event_flag':event_flag.value,'integration_flag':integration_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value,'kick_speed_km_s':kick_speed_km_s.value,"SNe_type":SNe_type.value,"SNe_info":SNe_info.value})
+            N_particles,event_flag,integration_flag,index1,index2,binary_index,kick_speed_km_s,SNe_type,SNe_info,eccentric_collision = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
+            flag = self.lib.get_log_entry_properties(index_log,ctypes.byref(time),ctypes.byref(event_flag),ctypes.byref(integration_flag),ctypes.byref(N_particles),ctypes.byref(index1),ctypes.byref(index2),ctypes.byref(binary_index),ctypes.byref(kick_speed_km_s),ctypes.byref(SNe_type),ctypes.byref(SNe_info),ctypes.byref(eccentric_collision))
+            entry.update({'time':time.value,'event_flag':event_flag.value,'integration_flag':integration_flag.value,'index1':index1.value,'index2':index2.value,'binary_index':binary_index.value,'N_particles':N_particles.value,'kick_speed_km_s':kick_speed_km_s.value,"SNe_type":SNe_type.value,"SNe_info":SNe_info.value,"eccentric_collision":eccentric_collision.value})
             #print("log i ",index_log,"N",N_log,"integration_flag",integration_flag.value)
             for index_particle in range(N_particles.value):
                 internal_index = self.lib.get_internal_index_in_particlesMap_log(index_log,index_particle)

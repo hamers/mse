@@ -404,9 +404,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                 }
                 if (KW1 == 15) /* SNe occurred */
                 {
+                    #ifdef LOGGING
                     log_info.index1 = star1->index;
                     log_info.index2 = star2->index;
+                    log_info.SNe_type = -2; 
                     update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                    #endif
                 }
                 skip_final_age_and_mass_determination = true;
                //goto label30;
@@ -450,9 +453,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
                             }
                             if (KW1 == 15) /* SNe occurred */
                             {
+                                #ifdef LOGGING
                                 log_info.index1 = star1->index;
                                 log_info.index2 = star2->index;
+                                log_info.SNe_type = -2; // Assume the SNe is of Type II since the donor had a hydrogen-rich envelope
                                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                                #endif
                             }
 
                             skip_final_age_and_mass_determination = true;
@@ -758,6 +764,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             }
             else
             {
+                log_info.SNe_type = 2; 
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             }
             #endif
@@ -783,6 +790,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             }
             else
             {
+                log_info.SNe_type = 2; 
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             }
             #endif

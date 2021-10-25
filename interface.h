@@ -207,7 +207,7 @@ int sample_spherical_coordinates_unit_vectors_from_isotropic_distribution_interf
 int get_size_of_log_data();
 int get_internal_index_in_particlesMap_log(int log_index, int absolute_index);
 bool get_is_binary_log(int log_index, int particle_index);
-int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index, double *kick_speed_km_s, int *SNe_type, int *SNe_info);
+int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index, double *kick_speed_km_s, int *SNe_type, int *SNe_info, int *eccentric_collision);
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
     double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity, 
     double *spin_vec_x, double *spin_vec_y, double *spin_vec_z);

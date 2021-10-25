@@ -45,6 +45,12 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 3: single degenerate He donor (binary_evolution_SNe_Ia_single_degenerate_model = 1)
  */
  
+/* eccentric_collision
+ * -1: NA
+ * 0: not eccentric
+ * 1: eccentric
+ */
+ 
 {
     Log_type new_entry;
     new_entry.index = logData.size();

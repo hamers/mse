@@ -1220,6 +1220,7 @@ class Log_info_type
     double kick_speed_km_s = -1;
     int SNe_type = -1;
     int SNe_info = -1;
+    int eccentric_collision = -1;
     
     Log_info_type()
     {

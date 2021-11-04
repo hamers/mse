@@ -369,7 +369,6 @@ void set_positions_and_velocities(ParticlesMap *particlesMap) /* TO DO: add to n
                 }
                 set_position_and_velocity_vectors_in_particle(child1,r_child1,v_child1);
                 set_position_and_velocity_vectors_in_particle(child2,r_child2,v_child2);
-
                 parent->true_anomaly = true_anomaly;
             }
         }
@@ -866,6 +865,7 @@ void compute_new_positions_and_velocities_given_new_semimajor_axis_and_eccentric
     for (i=0; i<3; i++)
     {
         R_CM_vec[i] = (R1_vec_old[i]*M1_old + R2_vec_old[i]*M2_old) / M_old;
+        V_CM_vec[i] = (V1_vec_old[i]*M1_old + V2_vec_old[i]*M2_old) / M_old;
         r_vec_old[i] = R1_vec_old[i] - R2_vec_old[i];
         v_vec_old[i] = V1_vec_old[i] - V2_vec_old[i];
     }

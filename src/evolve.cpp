@@ -160,6 +160,30 @@ int evolve(ParticlesMap *particlesMap, double start_time, double end_time, doubl
 
         t = t_out;
 
+        #ifdef LOGGING
+        Log_type &last_entry = logData.back();
+        if (last_entry.event_flag == LOG_CE_START)
+        {
+            Log_info_type &last_log_info = last_entry.log_info;
+            Log_info_type log_info;
+            
+            log_info.binary_index = last_log_info.binary_index;
+            log_info.index1 = last_log_info.index1;
+            log_info.index2 = last_log_info.index2;
+            update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
+        }
+        if (last_entry.event_flag == LOG_COL_START)
+        {
+            Log_info_type &last_log_info = last_entry.log_info;
+            Log_info_type log_info;
+
+            log_info.binary_index = last_log_info.binary_index;
+            log_info.index1 = last_log_info.index1;
+            log_info.index2 = last_log_info.index2;
+            update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
+        }
+        #endif
+
         #ifdef VERBOSE
         if (verbose_flag > 1)
         {

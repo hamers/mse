@@ -1052,13 +1052,12 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     
     //printf("NO COEL2 %d %d\n",star1->stellar_type,star2->stellar_type);
 
-    #ifdef LOGGING
-    //Log_info_type log_info;
-    log_info.binary_index = binary_index;
-    log_info.index1 = index1;
-    log_info.index2 = index2;
-    update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
-    #endif
+//    #ifdef LOGGING
+    //log_info.binary_index = binary_index;
+    //log_info.index1 = index1;
+    //log_info.index2 = index2;
+    //update_log_data(particlesMap, t, *integration_flag, LOG_CE_END, log_info);
+    //#endif
 
     #ifdef VERBOSE
     if (verbose_flag > 0)

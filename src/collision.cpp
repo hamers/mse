@@ -624,7 +624,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     }
     
     /* Other compact object mergers */
-    else if (kw1 >= 13 and kw1 <= 14 and kw2 >= 13 and kw2 <= 14)
+    else if (kw1 >= 13 and kw1 <= 14 and kw2 >= 10 and kw2 <= 14)
     {
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m1,m2,chi1,chi2,spin_vec_1_unit,spin_vec_2_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
@@ -655,7 +655,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         #endif
         
     }
-    else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 13 and kw1 <= 14)
+    else if (kw2 >= 13 and kw2 <= 14 and kw1 >= 10 and kw1 <= 14)
     {
         double v_recoil_vec[3];
         determine_compact_object_merger_properties(m2,m1,chi2,chi1,spin_vec_2_unit,spin_vec_1_unit,h_vec_unit,e_vec_unit,v_recoil_vec,alpha_vec_final,&M_final);
@@ -829,13 +829,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
 
     reset_RLOF_flags(particlesMap);
 
-    #ifdef LOGGING
+    //#ifdef LOGGING
     //Log_info_type log_info;
-    log_info.binary_index = binary_index;
-    log_info.index1 = child1_index;
-    log_info.index2 = child2_index;
-    update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
-    #endif
+    //log_info.binary_index = binary_index;
+    //log_info.index1 = child1_index;
+    //log_info.index2 = child2_index;
+    //update_log_data(particlesMap, t, *integration_flag, LOG_COL_END, log_info);
+    //#endif
 
     #ifdef VERBOSE
     if (verbose_flag > 0)

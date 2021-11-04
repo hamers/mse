@@ -501,6 +501,7 @@ void find_binaries_in_system(ParticlesMap *particlesMap, double *P_orb_min, doub
         p->has_found_parent = false;
     }
     new_index += 1;
+    new_index *= 2; /* Make sure the indices of any binaries (starting with "new_index") added will not conflict with indices in the ORIGINAL particlesMap, i.e., that also contains bodies that were excluded in the MSTAR integration. Since the number of new binaries should be less than the original number of bodies, a multiplication by two should ensure that new_index is large enough. */
     
     bool found_new_orbit = true;
     while (found_new_orbit == true)

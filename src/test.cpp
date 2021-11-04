@@ -3101,7 +3101,7 @@ int test_binary_common_envelope_evolution()
     }
     
     int flag = 0;
-    
+
     for (int i=0; i<2; i++)
     {
         //printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
@@ -3165,7 +3165,7 @@ int test_binary_common_envelope_evolution()
                 printf("test_binary_common_envelope_evolution -- pre CE\n");
                 print_system(&particlesMap,integration_flag);
             }
-            
+
             double start_time = 0.0;
             double end_time = 1.0e3;
             double output_time,hamiltonian;
@@ -3195,16 +3195,15 @@ int test_binary_common_envelope_evolution()
                 printf("test_binary_common_envelope_evolution -- post CE; pre evolve\n");
                 print_system(&particlesMap,integration_flag);
             }
-            
-            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
 
+            evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
             if (verbose_testing == true)
             {
                 printf("test_binary_common_envelope_evolution --post evolve\n");
                 print_system(&particlesMap,integration_flag);
             }
-            
-            double num = particlesMap[3]->a;
+
+            double num = particlesMap[6]->a; // the post-CE binary will have index 6 in this case
             
             double EBINDI = M1 * (M1 - MC1)/(LAMB1 * R1);
             double EORBI = MC1 * M2/(2.0 * (smas[0] ));
@@ -3218,12 +3217,10 @@ int test_binary_common_envelope_evolution()
                 flag = 1;
             }
 
-            
             clear_particles(&particlesMap);
         }
             
     }
-        
     return 0;
 
 
@@ -3331,7 +3328,7 @@ int test_triple_common_envelope_evolution()
                 printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
                 print_system(&particlesMap,integration_flag);
             }
-            
+
             double a1_f = particlesMap[3]->a;
             double a2_f = particlesMap[4]->a;
             
@@ -3417,9 +3414,9 @@ int test_triple_common_envelope_evolution()
                 printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
                 print_system(&particlesMap,integration_flag);
             }
-            
-            double a1_f = particlesMap[3]->a;
-            double a2_f = particlesMap[4]->a;
+
+            double a1_f = particlesMap[6]->a;
+            double a2_f = particlesMap[7]->a;
             
             double tol = 1e-4;
             double num = smas[0];
@@ -3504,9 +3501,9 @@ int test_triple_common_envelope_evolution()
                 printf("test_triple_common_envelope_evolution -- done evolve output_time %g\n",output_time);
                 print_system(&particlesMap,integration_flag);
             }
-            
-            double a1_f = particlesMap[4]->a;
-            double a2_f = particlesMap[5]->a;
+
+            double a1_f = particlesMap[8]->a;
+            double a2_f = particlesMap[9]->a;
             
             double tol = 1e-4;
             double num = smas[0];
@@ -3592,8 +3589,8 @@ int test_triple_common_envelope_evolution()
                 print_system(&particlesMap,integration_flag);
             }
             
-            double a1_f = particlesMap[4]->a;
-            double a2_f = particlesMap[5]->a;
+            double a1_f = particlesMap[8]->a;
+            double a2_f = particlesMap[9]->a;
             
             double tol = 1e-4;
             double num = smas[0];

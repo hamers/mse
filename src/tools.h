@@ -64,4 +64,6 @@ double find_nearest_neighbor_separation(ParticlesMap *particlesMap, int primary_
 void remove_binaries_from_system(ParticlesMap *particlesMap);
 
 void rescale_vector(double v[3], double factor);
+
+double interpolate_1D_data_table_linear(double x, const double (*data_table)[2], int table_length, bool use_constant_extrapolation);
 }

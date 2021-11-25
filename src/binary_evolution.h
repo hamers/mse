@@ -44,4 +44,6 @@ void white_dwarf_helium_mass_accumulation_efficiency_KH04_index3(double log_m_do
 void white_dwarf_helium_mass_accumulation_efficiency_KH04_index4(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
 void white_dwarf_helium_mass_accumulation_efficiency_KH04_index5(double log_m_dot, double *eta, double *log_m_dot_min, double *log_m_dot_max);
 
+void white_dwarf_hydrogen_accretion_boundaries_WBBP13(double m_WD, double *m_dot_lower, double *m_dot_upper);
+
 }

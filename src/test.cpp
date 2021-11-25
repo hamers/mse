@@ -25,6 +25,7 @@ int test_tools()
     flag += test_kepler_equation_solver();
     flag += test_orbital_vectors_cartesian_conversion();
     flag += test_BH_spin_conversion();
+    flag += test_interpolate_1D_data_table_linear();
     
     if (flag == 0)
     {
@@ -216,6 +217,33 @@ int test_BH_spin_conversion()
 //    double J = chi * CONST_G * m * m / CONST_C_LIGHT;
 //    double J_dot = 1.0e-5 * J;
 //    double Omega_dot = compute_spin_frequency_dot_BHs(m,Omega,J_dot,m_dot);
+    
+    return flag;
+}
+
+int test_interpolate_1D_data_table_linear()
+{
+    printf("test.cpp -- test_interpolate_1D_data_table_linear\n");
+    
+    int flag = 0;
+    double test_table[2][2] = {{1.0,1.0},{2.0,2.0}};
+
+    /* Assume linear extrapolation outside of the data range */
+    double t1 = interpolate_1D_data_table_linear(0.8, test_table,2,false);
+    double t2 = interpolate_1D_data_table_linear(1.4, test_table,2,false);
+    double t3 = interpolate_1D_data_table_linear(2.4, test_table,2,false);
+    
+    /* Assume constant extrapolation outside of the data range */
+    double t4 = interpolate_1D_data_table_linear(0.8, test_table,2,true);
+    double t5 = interpolate_1D_data_table_linear(1.4, test_table,2,true);
+    double t6 = interpolate_1D_data_table_linear(2.4, test_table,2,true);
+
+    double tol = 1e-15;
+    if ( !equal_number(t1,0.8,tol) or !equal_number(t2,1.4,tol) or !equal_number(t3,2.4,tol) or !equal_number(t4,1.0,tol) or !equal_number(t5,1.4,tol) or !equal_number(t6,2.0,tol))
+    {
+        printf("test.cpp -- error in test_interpolate_1D_data_table_linear! test numbers %g %g %g %g %g %g\n",t1,t2,t3,t4,t5,t6);
+        flag = 1;
+    }
     
     return flag;
 }
@@ -2775,6 +2803,13 @@ int test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficien
 int test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(double M_WD, double accretion_rate, double M_He, double luminosity, bool *explosion)
 {
     *explosion = determine_if_He_accreting_WD_explodes(M_WD, accretion_rate, M_He, luminosity);
+    
+    return 0;
+}
+
+int test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries(double m_WD, double *m_dot_lower, double *m_dot_upper)
+{
+    white_dwarf_hydrogen_accretion_boundaries_WBBP13(m_WD, m_dot_lower, m_dot_upper);
     
     return 0;
 }

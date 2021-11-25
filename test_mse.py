@@ -1863,6 +1863,7 @@ class test_mse():
 
         luminosities = [0.03 * code.CONST_L_SUN,0.95 * code.CONST_L_SUN]
 
+        ### He donor case ###
         #M_WDs = np.linspace(0.5,1.5,5)
         M_WDs = np.linspace(0.73,1.12,6)
         accretion_rates = pow(10.0,np.linspace(-9,-6,400))
@@ -1887,6 +1888,16 @@ class test_mse():
 
                         explosions[k][i][j].append(int(explosion))
 
+        ### Hydrogen donor case ###
+        H_donor_m_dot_lower_boundaries = []
+        H_donor_m_dot_upper_boundaries = []
+        
+        M_WDs2 = np.linspace(0.5,1.4,100)
+        for i,M_WD in enumerate(M_WDs2):
+            m_dot_lower,m_dot_upper = code.test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries(M_WD)
+            H_donor_m_dot_lower_boundaries.append(m_dot_lower)
+            H_donor_m_dot_upper_boundaries.append(m_dot_upper)
+
         ### Sanity checks ###
         all_etas = np.array(all_etas)
         assert( np.amin(all_etas) >= 0.0 and np.amax(all_etas) <= 1.0)
@@ -1905,6 +1916,7 @@ class test_mse():
                 
             fig=pyplot.figure(figsize=(8,10))
             fige=pyplot.figure(figsize=(12,12))
+            figh=pyplot.figure(figsize=(8,6))
             
             colors = ['k','tab:blue','tab:red','tab:green','tab:cyan','tab:brown']
             linestyles = ['solid','dotted','dashed','-.','solid','dotted']
@@ -1917,11 +1929,16 @@ class test_mse():
             plot2e=fige.add_subplot(N_r,N_r,2,xscale="linear",yscale="log")
             plot3e=fige.add_subplot(N_r,N_r,3,xscale="linear",yscale="log")
             plot4e=fige.add_subplot(N_r,N_r,4,xscale="linear",yscale="log")
+            
+            plot1h=figh.add_subplot(1,1,1,xscale="linear",yscale="log")
 
             linewidth=1.5
             for i,M_WD in enumerate(M_WDs):
                 plot1.plot(accretion_rates,etas[0][i],label="$M_\mathrm{WD}=%s \, \mathrm{M}_\odot$"%round(M_WD,2),color=colors[i],linestyle=linestyles[i],linewidth=linewidth)
                 plot2.plot(accretion_rates,etas[1][i],label="$M_\mathrm{WD}=%s \, \mathrm{M}_\odot$"%round(M_WD,2),color=colors[i],linestyle=linestyles[i],linewidth=linewidth)
+            
+            plot1h.plot(M_WDs2,H_donor_m_dot_lower_boundaries,color='tab:red')
+            plot1h.plot(M_WDs2,H_donor_m_dot_upper_boundaries,color='tab:red')
             
             xs = M_Hes
             ys = accretion_rates
@@ -1970,8 +1987,15 @@ class test_mse():
             plot3e.set_xlabel("$M_\mathrm{He\,layer}/\mathrm{M}_\odot$",fontsize=fontsize)
             plot4e.set_xlabel("$M_\mathrm{He\,layer}/\mathrm{M}_\odot$",fontsize=fontsize)
 
+            plot1h.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            plot1h.set_xlabel("$M_\mathrm{WD}/\mathrm{M}_\odot$",fontsize=fontsize)
+            plot1h.set_ylabel("$\dot{M}/(\mathrm{M}_\odot/\mathrm{yr})$",fontsize=fontsize)
+
+            plot1h.set_ylim(1e-8,1e-6)
+
             fig.savefig("white_dwarf_SNe_single_degenerate_model_1_eta.pdf")
             fige.savefig("white_dwarf_SNe_single_degenerate_model_1_explosion.pdf")
+            figh.savefig("white_dwarf_SNe_single_degenerate_model_1_hydrogen_m_dot.pdf")
     
             pyplot.show()
 

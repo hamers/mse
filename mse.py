@@ -392,6 +392,9 @@ class MSE(object):
 
         self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion.argtypes = (ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.POINTER(ctypes.c_bool))
         self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion.restype = ctypes.c_int
+
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries.argtypes = (ctypes.c_double, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double))
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries.restype = ctypes.c_int
         
      ###############
     
@@ -972,6 +975,11 @@ class MSE(object):
         explosion = ctypes.c_bool(False)
         self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(M_WD, accretion_rate, M_He, luminosity, ctypes.byref(explosion))
         return explosion.value
+
+    def test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries(self, M_WD):
+        m_dot_lower,m_dot_upper = ctypes.c_double(0.0), ctypes.c_double(0.0)
+        self.lib.test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries(M_WD, ctypes.byref(m_dot_lower), ctypes.byref(m_dot_upper))
+        return m_dot_lower.value,m_dot_upper.value
 
 
     ### Constants ###

@@ -983,9 +983,20 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     {
         /* White dwarf secondary. */
 
-        if (dm1/dt < 2.71e-7) 
+
+        /* The default boundary values are adopted from HTP02 */
+        double m_dot_upper = 2.71e-7; /* Above this accretion rate, the WD will swell up to a giant star */
+        double m_dot_lower = 1.03e-7; /* Below this accretion rate, nova outbursts will occur that blow away most of the accreted material */
+        
+        if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
         {
-            if (dm1/dt < 1.03e-7)
+            
+            white_dwarf_hydrogen_accretion_boundaries_WBBP13(m_accretor, &m_dot_lower, &m_dot_upper);
+        }
+
+        if (dm1/dt < m_dot_upper) 
+        {
+            if (dm1/dt < m_dot_lower)
             {
                 /* Accrete until a nova explosion blows away most of the accreted material. */
                 nova = true;
@@ -1268,6 +1279,28 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
 
     return 0;
 }
+
+
+void white_dwarf_hydrogen_accretion_boundaries_WBBP13(double m_WD, double *m_dot_lower, double *m_dot_upper)
+{
+    /* Based on the simulations of Wolf, Bildsten, Brooks, and Paxton (2013; https://ui.adsabs.harvard.edu/abs/2013ApJ...777..136W/abstract) 
+     * Extrapolates the two boundaries for giant star formation (m_dot > m_dot_upper), and for nova flashes (m_dot < m_dot_lower) */
+    
+    /* When extrapolation is called for, use linear extrapolation (last argument given to interpolation function is "false") */
+    *m_dot_lower = interpolate_1D_data_table_linear(m_WD, SINGLE_DEGENERATE_WBBP_DATA_LOWER_ACCRETION_RATE, SINGLE_DEGENERATE_WBBP_DATA_LOWER_ACCRETION_RATE_TABLELENGTH,false);
+    *m_dot_upper = interpolate_1D_data_table_linear(m_WD, SINGLE_DEGENERATE_WBBP_DATA_UPPER_ACCRETION_RATE, SINGLE_DEGENERATE_WBBP_DATA_UPPER_ACCRETION_RATE_TABLELENGTH,false);
+    
+    /* Make sure that extrapolation does not cause unphysical results (i.e., negative accretion rates) */
+    if (*m_dot_lower <= 0.0)
+    {
+        *m_dot_lower = 0.0;
+    }
+    if (*m_dot_upper <= 0.0)
+    {
+        *m_dot_upper = 0.0;
+    }
+}
+
 
 void white_dwarf_helium_mass_accumulation_efficiency(double m_WD, double m_dot, double WD_luminosity, double *eta, int *WD_accretion_mode)
 {

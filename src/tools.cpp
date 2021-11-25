@@ -1111,4 +1111,64 @@ void rescale_vector(double v[3], double factor)
     }
 }
 
+double interpolate_1D_data_table_linear(double x, const double (*data_table)[2], int table_length, bool use_constant_extrapolation)
+{
+    int i,i_low,i_up;
+    double x_min = data_table[0][0];
+    double x_max = data_table[table_length-1][0];
+
+    double x_low,x_up,y_low,y_up;    
+    
+    if (x < x_min)
+    {
+        if (use_constant_extrapolation == true)
+        {
+            return data_table[0][1];
+        }
+        else
+        {
+            x_low = data_table[0][0];
+            x_up = data_table[1][0];
+            y_low = data_table[0][1];
+            y_up = data_table[1][1];
+            
+            return (y_up - y_low) * (x - x_low) / (x_up - x_low) + y_low;
+        }
+    }
+    else if (x > x_max)
+    {
+        if (use_constant_extrapolation == true)
+        {
+            return data_table[table_length-1][1];
+        }
+        else
+        {
+            x_low = data_table[table_length-2][0];
+            x_up = data_table[table_length-1][0];
+            y_low = data_table[table_length-2][1];
+            y_up = data_table[table_length-1][1];
+            
+            return (y_up - y_low) * (x - x_low) / (x_up - x_low) + y_low;
+        }
+    }
+    else
+    {
+        
+        for (int i=0; i<table_length-1; i++)
+        {
+            x_low = data_table[i][0];
+            y_low = data_table[i][1];
+            x_up = data_table[i+1][0];
+            y_up = data_table[i+1][1];
+
+            if (x >= x_low and x < x_up)
+            {
+                break;
+            }
+        }
+        
+        return (y_up - y_low) * (x - x_low) / (x_up - x_low) + y_low;
+    }
+}
+
 }

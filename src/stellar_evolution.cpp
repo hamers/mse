@@ -767,7 +767,7 @@ double get_new_dt_sse(int kw, double mass, double mt, double age, double dt, dou
     deltat_(&kw,&age,&tm,&tn,tscls,&dt,&dtr);
 
     dtm = CV_min(dtr, dt);
-    dtm = CV_max(dtm,1.0d-07*age);
+    dtm = CV_max(dtm,1.0e-07*age);
 
     dtm = CV_max(dtm,1.0e-6);
     

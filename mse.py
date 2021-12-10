@@ -2337,7 +2337,7 @@ class Tools(object):
                             parent = particle_2.parent
                      
     @staticmethod
-    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True,save_data=False,plot_only=False,wall_time_max_s=1.8e4,common_envelope_timescale=1.0e3):
+    def evolve_system(configuration,N_bodies,masses,metallicities,semimajor_axes,eccentricities,inclinations,arguments_of_pericentre,longitudes_of_ascending_node,tend,N_steps,stellar_types=[],make_plots=True,fancy_plots=False,plot_filename="test1",show_plots=True,object_types=[],random_seed=0,verbose_flag=0,include_WD_kicks=False,kick_distribution_sigma_km_s_WD=1.0,NS_model=0,ECSNe_model=0,kick_distribution_sigma_km_s_NS=265.0,kick_distribution_sigma_km_s_BH=50.0,flybys_stellar_density_per_cubic_pc=0.1,flybys_encounter_sphere_radius_au=1.0e5,flybys_stellar_relative_velocity_dispersion_km_s=30.0,flybys_include_secular_encounters=False,include_flybys=True,save_data=False,plot_only=False,wall_time_max_s=1.8e4,common_envelope_timescale=1.0e3,binary_evolution_SNe_Ia_single_degenerate_model=0,binary_evolution_SNe_Ia_double_degenerate_model=0):
 
         np.random.seed(random_seed)
         
@@ -2432,6 +2432,8 @@ class Tools(object):
             code.binary_evolution_use_eCAML_model = False
             code.NS_model = NS_model
             code.ECSNe_model = ECSNe_model
+            code.binary_evolution_SNe_Ia_single_degenerate_model = binary_evolution_SNe_Ia_single_degenerate_model
+            code.binary_evolution_SNe_Ia_double_degenerate_model = binary_evolution_SNe_Ia_double_degenerate_model
 
             ### set up custom output printing arrays ###
             t_print = [[]]
@@ -3076,12 +3078,15 @@ class Tools(object):
             text = "$\mathrm{Stellar\,type\,change}$"
         elif event_flag == 2:
             if SNe_type != None:
+                SNe_type_string = ""
                 if SNe_type == 1:
                     SNe_type_string = "Type\,Ia"
                 if SNe_type == 2:
                     SNe_type_string = "Type\,II"
                 if SNe_type == 3:
                     SNe_type_string = "Electron\,capture"
+                if SNe_type == 4:
+                    SNe_type_string = "Type\,Ib"
                 text = "$\mathrm{SNe\,start\,(%s)}$"%SNe_type_string
             else:
                 text = "$\mathrm{SNe\,start}$"

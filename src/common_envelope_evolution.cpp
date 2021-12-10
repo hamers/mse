@@ -934,6 +934,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
             }
             else
             {
+                log_info.SNe_type = 2; 
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
             }
             #endif
@@ -1270,6 +1271,7 @@ void triple_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
         
         #ifdef LOGGING
         log_info.index1 = star1->index;
+        log_info.SNe_type = 2; 
         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
         #endif
         

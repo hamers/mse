@@ -882,6 +882,7 @@ class Particle
     double sse_k2,sse_k3;
     bool has_formed_MSP;
     double WD_He_layer_mass;
+    double m_dot_accretion_SD;
 
     /* dots needed in case of correction after root finding */
     double sse_initial_mass_dot;
@@ -1152,6 +1153,7 @@ class Particle
         initial_NS_period_s = 0.0;
         has_formed_MSP = false;
         WD_He_layer_mass = 0.0;
+        m_dot_accretion_SD = 0.0;
 
         /* dots needed in case of correction after root finding */
         sse_initial_mass_dot = 0.0;

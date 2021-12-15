@@ -982,7 +982,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     else if (kw1 <= 6 and kw2 >= 10 and kw2 <= 12)
     {
         /* White dwarf secondary. */
-
+        /* Hydrogen-rich donor */
 
         /* The default boundary values are adopted from HTP02 */
         double m_dot_upper = 2.71e-7; /* Above this accretion rate, the WD will swell up to a giant star */
@@ -1005,8 +1005,22 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             }
             else
             {
-                /* Steady burning at the surface */
-                dm2 = dm1;
+                if (binary_evolution_SNe_Ia_single_degenerate_model == 0)
+                {
+                    /* Steady burning at the surface (to C/O) */
+                    dm2 = dm1;
+                }
+                else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
+                {
+                    /* Assume accreted hydrogen is quickly burned to helium; the latter accumulates as an outer layer on to the WD (100% efficiency) */
+                    /* Since SSE does not model any He layer on WDs, treat this separately; dm2 should be zero to avoid the mass being accumulated as C/O. */
+                    /* WD_He_layer_mass and m_dot_accretion_SD will be used in handle_mass_accretion_events_with_degenerate_objects() to check for SNe */
+                    accretor->WD_He_layer_mass += dm1;
+                    accretor->m_dot_accretion_SD = dm1/dt;
+                    dm2 = 0.0;
+                }
+
+                
             }
                 
         }
@@ -1085,20 +1099,21 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
     {
         /* Model for He accretion onto CO WDs *
          * Based on Neunteufel+ 2016, 2016A&A...589A..43N */
-        if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+        if (kw1 >= 7 and kw1 <= 10 and kw2 == 11)
         {
             double eta;
             int WD_accretion_mode = -1;
             double m_dot_mass_transfer_SD = dm1/dt; // always positive
             white_dwarf_helium_mass_accumulation_efficiency(m_accretor, m_dot_mass_transfer_SD, accretor->luminosity, &eta, &WD_accretion_mode);
             double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+            accretor->m_dot_accretion_SD = m_dot_accretion_SD;
             
             if (WD_accretion_mode == 1) // mass gets added in the form of a He layer on top of the CO core (tracked with the parameter "WD_He_layer_mass"); do not change the SSE CO WD mass
             {
                 accretor->WD_He_layer_mass += eta * dm1;
                 dm2 = 0.0;
             }
-            if (WD_accretion_mode == 2) // no retention
+            if (WD_accretion_mode == 2) // no retention (novae)
             {
                 dm2 = 0.0;
             }
@@ -2252,64 +2267,70 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             break;
                         }
                     }
-                    else if (kw1 <= 10 and kw2 == 11 and m2_new - star2->sse_initial_mass >= 0.15)
+                    else if (kw1 <= 10 and kw2 == 11)
                     {
                         if (binary_evolution_SNe_Ia_single_degenerate_model == 0)
                         {
-                            /* CO and ONeWDs accrete helium-rich material until the accumulated 
-                            * material exceeds a mass of 0.15 when it ignites. For a COWD with 
-                            * mass less than 0.95 the system will be destroyed as an ELD in a 
-                            * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-                            * will survive with all the material converted to ONe (JH 30/09/99). 
-                            * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
-
-                            found_new_event = true;
-                            structure_change = true;
-                                
-                            Delta_m1 = m1_new - m1;
-                            Delta_m2 = -m2;
-
-                            #ifdef VERBOSE
-                            if (verbose_flag > 0)
+                            if (m2_new - star2->sse_initial_mass >= 0.15)
                             {
-                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                                print_system(particlesMap,*integration_flag);
-                            }
-                            #endif
+                                /* CO and ONeWDs accrete helium-rich material until the accumulated 
+                                * material exceeds a mass of 0.15 when it ignites. For a COWD with 
+                                * mass less than 0.95 the system will be destroyed as an ELD in a 
+                                * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
+                                * will survive with all the material converted to ONe (JH 30/09/99). 
+                                * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
 
-                            #ifdef LOGGING
-                            Log_info_type log_info;
-                            log_info.index1 = star2->index;
-                            log_info.SNe_type = 1;
-                            log_info.SNe_info = 1;
-                            update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                            #endif
+                                found_new_event = true;
+                                structure_change = true;
+                                    
+                                Delta_m1 = m1_new - m1;
+                                Delta_m2 = -m2;
 
-                            get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                        
-                            handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
-                                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-        
-                            star1->mass += Delta_m1;
-                            update_stellar_evolution_properties(star1);
-                            reset_ODE_mass_dot_quantities(star1);
+                                #ifdef VERBOSE
+                                if (verbose_flag > 0)
+                                {
+                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                    print_system(particlesMap,*integration_flag);
+                                }
+                                #endif
+
+                                #ifdef LOGGING
+                                Log_info_type log_info;
+                                log_info.index1 = star2->index;
+                                log_info.SNe_type = 1;
+                                log_info.SNe_info = 1;
+                                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                                #endif
+
+                                get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                    r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
                             
-                            particlesMap->erase(star2->index);
+                                handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                                    r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+            
+                                star1->mass += Delta_m1;
+                                update_stellar_evolution_properties(star1);
+                                reset_ODE_mass_dot_quantities(star1);
+                                
+                                particlesMap->erase(star2->index);
 
-                            *integration_flag = 1;
-                            break;
+                                *integration_flag = 1;
+                                break;
+                            }
                         }
                         else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
                         {
-                            /* Model for He accretion onto CO WDs */
-                            if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+                            /* Model for H or He accretion onto CO WDs */
+                            /* Currently, do not distinguish between accumulation of helium, or accumulation of hydrogen which quickly burns to helium */
+                            //if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+                            if (kw1 >= 0 and kw1 <= 9 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
                             {
-                                double eta;
-                                int WD_accretion_mode = -1;
-                                double m_dot_mass_transfer_SD = star1->mass_dot_RLOF;
-                                white_dwarf_helium_mass_accumulation_efficiency(m2, m_dot_mass_transfer_SD, star2->luminosity, &eta, &WD_accretion_mode);
-                                double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+                                //double eta;
+                                //int WD_accretion_mode = -1;
+                                //double m_dot_mass_transfer_SD = star1->mass_dot_RLOF;
+                                //white_dwarf_helium_mass_accumulation_efficiency(m2, m_dot_mass_transfer_SD, star2->luminosity, &eta, &WD_accretion_mode);
+                                //double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+                                double m_dot_accretion_SD = star1->m_dot_accretion_SD;
 
                                 bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
                                 

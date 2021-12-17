@@ -2338,6 +2338,7 @@ int test_binary_evolution()
     flag += test_handle_instantaneous_and_adiabatic_mass_changes_in_orbit();
     flag += test_wind_accretion();
     flag += test_mass_accretion_events_with_degenerate_objects();
+    flag += test_mass_accretion_events_with_degenerate_objects_single_degenerate_model_1();
     flag += test_compute_bse_mass_transfer_amount_averaged();
     flag += test_binary_common_envelope_evolution();
     flag += test_binary_evolution_emt_model_optimised_functions();
@@ -2584,7 +2585,7 @@ int test_mass_accretion_events_with_degenerate_objects()
 
     star2->mass_dot_RLOF = 0.1;
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
-    
+
     //Log_type &last_entry = logData.back();
     //printf("log SNe type %d info %d\n",last_entry.log_info.SNe_type,last_entry.log_info.SNe_info);
     
@@ -2605,6 +2606,10 @@ int test_mass_accretion_events_with_degenerate_objects()
     /* ONe WD electron capture SNe */
     int ECSNe_model_old = ECSNe_model;
     int NS_model_old = NS_model;
+    int binary_evolution_SNe_Ia_single_degenerate_model_old = binary_evolution_SNe_Ia_single_degenerate_model;
+    
+    binary_evolution_SNe_Ia_single_degenerate_model = 0;
+    
     ECSNe_model = 1;
     NS_model = 1;
     stellar_types[1] = 12;
@@ -2724,9 +2729,85 @@ int test_mass_accretion_events_with_degenerate_objects()
     evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
     reset_interface();
 
+    return flag;
+}
+
+int test_mass_accretion_events_with_degenerate_objects_single_degenerate_model_1()
+{
+    printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects_model_1\n");
+
+    int flag = 0;
+    
+    int ECSNe_model_old = ECSNe_model;
+    int NS_model_old = NS_model;
+    int binary_evolution_SNe_Ia_single_degenerate_model_old = binary_evolution_SNe_Ia_single_degenerate_model;
+    
+    //verbose_flag = 1;
+    
+    ECSNe_model = 0;
+    NS_model = 0;
+    binary_evolution_SNe_Ia_single_degenerate_model = 1;
+    
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double m1 = 1.0;
+    double m2 = 6.0;
+    double a = 1.0;
+    double e = 0.01;
+    
+    double masses[2] = {m1,m2};
+    int stellar_types[2] = {1,11};
+    int object_types[2] = {1,1};
+    double smas[1] = {a};
+    double es[1] = {e};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);
+
+    initialize_code(&particlesMap);
+    
+    int donor_index = 0;
+    int accretor_index = 1;
+    int parent_index = 2;
+        
+    Particle *star1 = particlesMap[donor_index];
+    Particle *star2 = particlesMap[accretor_index];
+    Particle *orbit = particlesMap[parent_index];
+
+    int integration_flag = 0;
+    double t_old = 0.0;
+    double t = 1.0e1;
+    double dt_binary_evolution;
+
+    star2->mass = 0.81;
+
+    star2->m_dot_accretion_SD = 1.0e-8;
+    star2->WD_He_layer_mass = 0.1;
+    handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
+
+    //Log_type &last_entry = logData.back();
+    //printf("log SNe type %d info %d\n",last_entry.log_info.SNe_type,last_entry.log_info.SNe_info);
+    
+    double start_time = 0.0;
+    double end_time = 1.0e1;
+    double output_time,hamiltonian;
+    int state,CVODE_flag,CVODE_error_code;
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+
+    if (particlesMap.size() != 1)
+    {
+        printf("test.cpp -- test_mass_accretion_events_with_degenerate_objects_model_1 -- error: incorrect number (%d) of particles after SNe \n",particlesMap.size());
+        flag = 1;
+    }
+
+    reset_interface();
 
     ECSNe_model = ECSNe_model_old;
     NS_model = NS_model_old;
+    binary_evolution_SNe_Ia_single_degenerate_model = binary_evolution_SNe_Ia_single_degenerate_model_old;
 
     return flag;
 }

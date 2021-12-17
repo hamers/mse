@@ -1710,7 +1710,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
                     M_WD1 = tab_m;
                 }
             }
-            else if (M_WD > tab_m and M_WD < tab_m + SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
+            else if (M_WD > tab_m and M_WD <= tab_m + SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
             {
                 He_data2[data_length2] = tab_He;
                 acc_data2[data_length2] = tab_acc;
@@ -1739,7 +1739,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
         
         ret_val = (ret_val2 - ret_val1) * (M_WD - M_WD1) / (M_WD2 - M_WD1) + ret_val1;
     }
-    
+
     return ret_val;
 }
 
@@ -2289,7 +2289,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                                 #ifdef VERBOSE
                                 if (verbose_flag > 0)
                                 {
-                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- SNe Ia -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
                                     print_system(particlesMap,*integration_flag);
                                 }
                                 #endif
@@ -2323,16 +2323,17 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             /* Model for H or He accretion onto CO WDs */
                             /* Currently, do not distinguish between accumulation of helium, or accumulation of hydrogen which quickly burns to helium */
                             //if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
-                            if (kw1 >= 0 and kw1 <= 9 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
+                            if (kw1 >= 0 and kw1 <= 10 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
                             {
                                 //double eta;
                                 //int WD_accretion_mode = -1;
                                 //double m_dot_mass_transfer_SD = star1->mass_dot_RLOF;
                                 //white_dwarf_helium_mass_accumulation_efficiency(m2, m_dot_mass_transfer_SD, star2->luminosity, &eta, &WD_accretion_mode);
                                 //double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
-                                double m_dot_accretion_SD = star1->m_dot_accretion_SD;
+                                double m_dot_accretion_SD = star2->m_dot_accretion_SD;
 
                                 bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
+                                //printf("EXPL input %g %g %g %g out %d\n",m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity,SNe_explosion);
                                 
                                 if (SNe_explosion == true)
                                 {
@@ -2345,7 +2346,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                                     #ifdef VERBOSE
                                     if (verbose_flag > 0)
                                     {
-                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ELD -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- SNe Ia -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
                                         print_system(particlesMap,*integration_flag);
                                     }
                                     #endif

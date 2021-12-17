@@ -1866,6 +1866,7 @@ class test_mse():
         ### He donor case ###
         #M_WDs = np.linspace(0.5,1.5,5)
         M_WDs = np.linspace(0.73,1.12,6)
+        #M_WDs = [0.8,0.8,0.8,0.8,0.8,0.8]
         accretion_rates = pow(10.0,np.linspace(-9,-6,400))
         M_Hes = np.linspace(0.01,0.3,100)
         

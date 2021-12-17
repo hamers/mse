@@ -1700,7 +1700,16 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
             tab_acc = SD_table[i][1]; // unit: 1e-8 MSun/yr
             tab_He = SD_table[i][2];
 
-            if (M_WD <= tab_m and M_WD > tab_m - SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
+            if (M_WD == tab_m)
+            {
+                He_data1[data_length1] = tab_He;
+                acc_data1[data_length1] = tab_acc;
+                data_length1++;
+
+                M_WD1 = -2;
+                M_WD2 = -2;
+            }
+            else if (M_WD < tab_m and M_WD > tab_m - SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
             {
                 He_data1[data_length1] = tab_He;
                 acc_data1[data_length1] = tab_acc;
@@ -1710,7 +1719,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
                     M_WD1 = tab_m;
                 }
             }
-            else if (M_WD > tab_m and M_WD <= tab_m + SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
+            else if (M_WD > tab_m and M_WD < tab_m + SINGLE_DEGENERATE_WK_DATA_DELTA_M_WD)
             {
                 He_data2[data_length2] = tab_He;
                 acc_data2[data_length2] = tab_acc;
@@ -1733,11 +1742,18 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
             longjmp(jump_buf,1);
         }
         
-        /* Interpolate over WD mass */
-        double ret_val1 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data1,He_data1,data_length1);
-        double ret_val2 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data2,He_data2,data_length2);
-        
-        ret_val = (ret_val2 - ret_val1) * (M_WD - M_WD1) / (M_WD2 - M_WD1) + ret_val1;
+        if (M_WD1 == -2 and M_WD2 == -2)
+        {
+            ret_val = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data1,He_data1,data_length1);
+        }
+        else
+        {
+            /* Interpolate over WD mass */
+            double ret_val1 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data1,He_data1,data_length1);
+            double ret_val2 = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data2,He_data2,data_length2);
+            
+            ret_val = (ret_val2 - ret_val1) * (M_WD - M_WD1) / (M_WD2 - M_WD1) + ret_val1;
+        }
     }
 
     return ret_val;

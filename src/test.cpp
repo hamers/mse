@@ -1457,7 +1457,7 @@ int test_stellar_evolution(int mode)
     
     int flag = 0;
     
-    //flag += test_SNe_Ia_single_and_double_degenerate_model_1();
+    flag += test_SNe_Ia_single_and_double_degenerate_model_1();
     flag += test_spin_conversion();
     flag += test_apsidal_motion_constant();
     flag += test_sse();
@@ -1476,6 +1476,8 @@ int test_stellar_evolution(int mode)
 
 int test_SNe_Ia_single_and_double_degenerate_model_1()
 {
+    int flag = 0;
+    
     printf("test.cpp -- test_SNe_Ia_single_and_double_degenerate_model_1\n");
     //determine_if_He_accreting_WD_explodes(1.05, 1.0e-8, 0.02, 0.5*CONST_L_SUN);
     //determine_if_He_accreting_WD_explodes(0.95, 1.0e-8, 0.03, 0.5*CONST_L_SUN);
@@ -1500,19 +1502,50 @@ int test_SNe_Ia_single_and_double_degenerate_model_1()
         
     int WD_accretion_mode;
     //white_dwarf_helium_mass_accumulation_efficiency(1.42, 1.0e-8, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
-    white_dwarf_helium_mass_accumulation_efficiency(1.12, 1.0e-8, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
-    white_dwarf_helium_mass_accumulation_efficiency(1.11, 5.0e-6, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
-        
-    //determine_if_He_accreting_WD_explodes(1.05, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
-    //determine_if_He_accreting_WD_explodes(0.95, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
-    //determine_if_He_accreting_WD_explodes(0.85, 1.0e-7, 0.1, 0.01*CONST_L_SUN);
+    //white_dwarf_helium_mass_accumulation_efficiency(1.12, 1.0e-8, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
+    //white_dwarf_helium_mass_accumulation_efficiency(1.11, 5.0e-6, 0.01*CONST_L_SUN,&eta,&WD_accretion_mode);
 
-    //determine_if_He_accreting_WD_explodes(1.05, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
-    //determine_if_He_accreting_WD_explodes(0.95, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
-    //determine_if_He_accreting_WD_explodes(0.85, 1.0e-8, 0.1, 0.01*CONST_L_SUN);
+
     
+    if (determine_if_He_accreting_WD_explodes(1.05, 1.0e-7, 0.1, 0.01*CONST_L_SUN) != 0)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.95, 1.0e-7, 0.1, 0.01*CONST_L_SUN) != 0)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.8, 1.0e-7, 0.1, 0.01*CONST_L_SUN) != 0)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(1.05, 1.0e-8, 0.1, 0.01*CONST_L_SUN) != 1)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.95, 1.0e-8, 0.1, 0.01*CONST_L_SUN) != 1)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.8, 1.0e-8, 0.1, 0.01*CONST_L_SUN) != 1)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.8, 3.0e-8, 0.2, 0.01*CONST_L_SUN) != 0)
+    {
+        flag = 1;
+    }
+    if (determine_if_He_accreting_WD_explodes(0.8, 3.0e-8, 0.1, 0.01*CONST_L_SUN) != 1)
+    {
+        flag = 1;
+    }
     
-    return 0;
+    if (flag != 0)
+    {
+        printf("test.cpp -- test_SNe_Ia_single_and_double_degenerate_model_1 -- ERROR\n");
+    }
+    
+    return flag;
 }
 
 int test_spin_conversion()
@@ -2339,6 +2372,7 @@ int test_binary_evolution()
     flag += test_wind_accretion();
     flag += test_mass_accretion_events_with_degenerate_objects();
     flag += test_mass_accretion_events_with_degenerate_objects_single_degenerate_model_1();
+    //flag += test_mass_transfer_with_degenerate_objects_single_degenerate_model_1();
     flag += test_compute_bse_mass_transfer_amount_averaged();
     flag += test_binary_common_envelope_evolution();
     flag += test_binary_evolution_emt_model_optimised_functions();
@@ -2812,6 +2846,90 @@ int test_mass_accretion_events_with_degenerate_objects_single_degenerate_model_1
     return flag;
 }
 
+
+int test_mass_transfer_with_degenerate_objects_single_degenerate_model_1()
+{
+    int verbose_flag_old = verbose_flag;
+    verbose_flag = 1;
+    int ECSNe_model_old = ECSNe_model;
+    int NS_model_old = NS_model;
+    int binary_evolution_SNe_Ia_single_degenerate_model_old = binary_evolution_SNe_Ia_single_degenerate_model;
+    
+    binary_evolution_SNe_Ia_single_degenerate_model = 1;
+    
+    printf("test.cpp -- test_mass_transfer_with_degenerate_objects_single_degenerate_model_1\n");
+    
+    double a0 = 0.05;
+    double e0 = 0.01;
+    
+    ParticlesMap particlesMap;
+    int N_bodies = 2;
+    double masses[2] = {4.0,3.0};
+    int stellar_types[2] = {11,1};
+    int object_types[2] = {1,1};
+    double smas[1] = {a0};
+    double es[1] = {e0};
+    double TAs[1] = {0.01};
+    double INCLs[1] = {0.01};
+    double APs[1] = {0.01};
+    double LANs[1] = {0.01};
+    //random_seed=0;
+    
+    create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
+//    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
+    initialize_code(&particlesMap);
+
+    Particle *star1 = particlesMap[0];
+    Particle *star2 = particlesMap[1];
+
+       
+    double q = star2->mass/star1->mass;
+    double RL2 = roche_radius_pericenter_eggleton(a0*(1.0-e0), q);
+    printf("R2 %g RL2 %g\n",star2->radius,RL2);
+    int integration_flag = 0;
+    //int integration_flag_init = 0;
+    //printf("test_collision_stars -- pre merge\n");
+    print_system(&particlesMap,integration_flag);
+
+    double start_time = 0.0;
+    double end_time = 1.0e9;
+    double output_time,hamiltonian;
+    int state,CVODE_flag,CVODE_error_code;
+    //int integration_flag = 0;
+
+    int kw = particlesMap[0]->stellar_type;
+    double t_old=0.0;
+    double t = 0.0;
+    double dt;
+    double dt_stev;
+    bool apply_SNe_effects;
+    bool unbound_orbits;
+
+    int N_binaries,N_root_finding,N_ODE_equations;
+
+   
+    print_system(&particlesMap,integration_flag);
+    
+    evolve(&particlesMap,start_time,end_time,&output_time,&hamiltonian,&state,&CVODE_flag,&CVODE_error_code,&integration_flag);
+    
+    print_system(&particlesMap,integration_flag);
+    
+    clear_particles(&particlesMap);
+   
+    reset_interface();
+    verbose_flag = verbose_flag_old;
+   
+    ECSNe_model = ECSNe_model_old;
+    NS_model = NS_model_old;
+    binary_evolution_SNe_Ia_single_degenerate_model = binary_evolution_SNe_Ia_single_degenerate_model_old;
+
+   
+    int flag;
+    
+    
+    return 0;
+}
+
 int test_compute_bse_mass_transfer_amount_averaged()
 {
     printf("test.cpp -- test_compute_bse_mass_transfer_amount_averaged\n");
@@ -3105,7 +3223,7 @@ int test_collisions()
                 //continue;
             }
             flag += test_collision_stars(10.0,i,13,j,0);
-            random_seed = 0;
+            //random_seed = 0;
             
         }
     }
@@ -3135,7 +3253,7 @@ int test_collision_stars(double m1, int kw1, double m2, int kw2, int integration
     double INCLs[3] = {0.01,0.01,0.01};
     double APs[3] = {0.01,0.01,0.01};
     double LANs[3] = {0.01,0.01,0.01};
-    random_seed=6;
+    //random_seed=6;
     
     create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
 //    printf("post s %d b %d %g r %g\n",particlesMap2.size(),particlesMap2[0]->is_binary,particlesMap2[0]->mass,particlesMap2[0]->radius);
@@ -3236,7 +3354,7 @@ int test_binary_common_envelope_evolution()
             double INCLs[2] = {0.01,0.01};
             double APs[2] = {0.01,0.01};
             double LANs[2] = {0.01,0.01};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);
@@ -3394,7 +3512,7 @@ int test_triple_common_envelope_evolution()
             double INCLs[2] = {0.01,0.01};
             double APs[2] = {0.01,0.01};
             double LANs[2] = {0.01,0.01};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);
@@ -3480,7 +3598,7 @@ int test_triple_common_envelope_evolution()
             double INCLs[2] = {0.01,0.01};
             double APs[2] = {0.01,0.01};
             double LANs[2] = {0.01,0.01};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);
@@ -3567,7 +3685,7 @@ int test_triple_common_envelope_evolution()
             double INCLs[3] = {0.01,0.01,0.1};
             double APs[3] = {0.01,0.01,0.1};
             double LANs[3] = {0.01,0.01,0.1};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);
@@ -3654,7 +3772,7 @@ int test_triple_common_envelope_evolution()
             double INCLs[3] = {0.01,0.01,0.1};
             double APs[3] = {0.01,0.01,0.1};
             double LANs[3] = {0.01,0.01,0.1};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);
@@ -3742,7 +3860,7 @@ int test_triple_common_envelope_evolution()
             double INCLs[3] = {0.01,0.01,0.1};
             double APs[3] = {0.01,0.01,0.1};
             double LANs[3] = {0.01,0.01,0.1};
-            random_seed=6;
+            //random_seed=6;
             
             create_nested_system(particlesMap,N_bodies,masses,stellar_types,object_types,smas,es,TAs,INCLs,APs,LANs);// = create_nested_system();
             initialize_code(&particlesMap);

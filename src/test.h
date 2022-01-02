@@ -33,6 +33,7 @@ int test_stellar_evolution(int mode);
 int test_binary_evolution_SNe_Ia_single_degenerate_model_1_accumulation_efficiency(double M_WD, double accretion_rate, double luminosity, double *eta, int *WD_accretion_mode);
 int test_binary_evolution_SNe_Ia_single_degenerate_model_1_explosion(double M_WD, double accretion_rate, double M_He, double luminosity, bool *explosion);
 int test_binary_evolution_SNe_Ia_single_degenerate_model_1_white_dwarf_hydrogen_accretion_boundaries(double m_WD, double *m_dot_lower, double *m_dot_upper);
+int test_mass_transfer_with_degenerate_objects_single_degenerate_model_1();
 int test_SNe_Ia_single_and_double_degenerate_model_1();
 int test_spin_conversion();
 int test_apsidal_motion_constant();

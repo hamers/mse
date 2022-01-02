@@ -1046,13 +1046,6 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     remove_massless_remnants_from_system(particlesMap, integration_flag);
     reset_RLOF_flags(particlesMap);
 
-    //double t_eps = 1e0;
-    //double dt_stev;
-    //bool apply_SNe_effects;
-    //evolve_stars(particlesMap,t,t+t_eps,&dt_stev,false,&apply_SNe_effects,integration_flag);
-    
-    //printf("NO COEL2 %d %d\n",star1->stellar_type,star2->stellar_type);
-
 //    #ifdef LOGGING
     //log_info.binary_index = binary_index;
     //log_info.index1 = index1;
@@ -1063,7 +1056,7 @@ void binary_common_envelope_evolution(ParticlesMap *particlesMap, int binary_ind
     #ifdef VERBOSE
     if (verbose_flag > 0)
     {
-        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- end\n");
+        printf("common_envelope_evolution.cpp -- binary_common_envelope_evolution() -- end -- COEL %d a_f/au %g \n",COEL,SEPF * CONST_R_SUN);
         print_system(particlesMap,*integration_flag);
     }
     #endif

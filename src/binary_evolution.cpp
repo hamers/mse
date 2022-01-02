@@ -1002,6 +1002,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 nova = true;
 
                 dm2 = nova_accretion_factor * CV_min(dm1, dme);
+
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- nova m_dot %g dm1 %g dm2 %g m_dot_lower %g m_dot_upper %g\n",dm1/dt,dm1,dm2,m_dot_lower,m_dot_upper);
+                }
+                #endif
+
             }
             else
             {
@@ -1009,6 +1017,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 {
                     /* Steady burning at the surface (to C/O) */
                     dm2 = dm1;
+                    
                 }
                 else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
                 {
@@ -1018,9 +1027,16 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                     accretor->WD_He_layer_mass += dm1;
                     accretor->m_dot_accretion_SD = dm1/dt;
                     dm2 = 0.0;
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- accumulation onto He layer H donor m_dot %g He layer mass %g m_dot_lower %g m_dot_upper %g m_dot_accretion_SD %g\n",dm1/dt,accretor->WD_He_layer_mass,m_dot_lower,m_dot_upper,accretor->m_dot_accretion_SD);
+                    }
+                    #endif
+                    
                 }
 
-                
             }
                 
         }
@@ -1029,7 +1045,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             /* Make a new giant envelope. */
 
             dm2 = dm1;
-
+            
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- mass transfer rate %g MSun/yr is high enough to make a giant star -- m_dot_lower %g m_dot_upper %g\n",dm1/dt,m_dot_lower,m_dot_upper);
+            }
+            #endif
+            
             int kw;
             if ( (kw2 == 10 and m_accretor < 0.05) or (kw2 >= 11 and m_accretor < 0.5) ) /* Check for planets or low-mass WDs. */
             {
@@ -1681,7 +1704,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
     }
     else
     {
-        /* Extract (M_dot_acc,M_He) data for the two WD masses nearest to M_WD in the data table; this will later be interpolated over both M_WD and M_He. */
+        /* Extract (M_dot_acc,M_He) data for the two WD masses nearest to M_WD in the data table (M_WD1 & M_WD2); this will later be interpolated over both M_WD and M_He. */
         
         double acc_data1[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
         double He_data1[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
@@ -1691,16 +1714,16 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
         double He_data2[SINGLE_DEGENERATE_WK_DATA_LONGEST_TABLELENGTH_FIXED_M_WD];
         int data_length2 = 0;
 
-        double M_WD1 = -1;
-        double M_WD2 = -1;
+        double M_WD1 = -1; // Lower WD mass from data table
+        double M_WD2 = -1; // Upper WD mass from data table
         
         for (i=0; i<SD_table_length; i++)
         {
-            tab_m = SD_table[i][0];
+            tab_m = SD_table[i][0]; // WD mass
             tab_acc = SD_table[i][1]; // unit: 1e-8 MSun/yr
-            tab_He = SD_table[i][2];
+            tab_He = SD_table[i][2]; // He layer mass
 
-            if (M_WD == tab_m)
+            if (M_WD == tab_m) // WD mass happens to match exactly one of the tabulated values; no need to interpolate over WD mass and hence M_WD1 and M_WD2 do not apply
             {
                 He_data1[data_length1] = tab_He;
                 acc_data1[data_length1] = tab_acc;
@@ -1737,6 +1760,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
 
         if (M_WD1 == -1 or M_WD2 == -1)
         {
+            /* Upper and lower WD masses were not found in the table; this is an error */
             printf("binary_evolution.cpp -- determine_if_He_accreting_WD_explodes_for_given_luminosity() -- ERROR: M_WD=%g M_WD1 = %g; M_WD2 = %g\n",M_WD,M_WD1,M_WD2);
             error_code = 43;
             longjmp(jump_buf,1);
@@ -1744,6 +1768,7 @@ double determine_if_He_accreting_WD_explodes_for_given_luminosity(double M_WD, d
         
         if (M_WD1 == -2 and M_WD2 == -2)
         {
+            /* WD mass happens to match exactly one of the tabulated values; no need to interpolate over WD mass */
             ret_val = determine_if_He_accreting_WD_explodes_for_given_luminosity_and_WD_mass(M_He,M_dot_acc_1e8,acc_data1,He_data1,data_length1);
         }
         else
@@ -2341,16 +2366,19 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             //if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
                             if (kw1 >= 0 and kw1 <= 10 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
                             {
-                                //double eta;
-                                //int WD_accretion_mode = -1;
-                                //double m_dot_mass_transfer_SD = star1->mass_dot_RLOF;
-                                //white_dwarf_helium_mass_accumulation_efficiency(m2, m_dot_mass_transfer_SD, star2->luminosity, &eta, &WD_accretion_mode);
-                                //double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
+
                                 double m_dot_accretion_SD = star2->m_dot_accretion_SD;
 
                                 bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
-                                //printf("EXPL input %g %g %g %g out %d\n",m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity,SNe_explosion);
-                                
+
+                                #ifdef VERBOSE
+                                if (verbose_flag > 1)
+                                {
+                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- M_WD %g m_dot %g He Mass %g Lum %g\n",m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity,star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                    print_system(particlesMap,*integration_flag);
+                                }
+                                #endif
+                                    
                                 if (SNe_explosion == true)
                                 {
                                     found_new_event = true;
@@ -2362,7 +2390,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                                     #ifdef VERBOSE
                                     if (verbose_flag > 0)
                                     {
-                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- SNe Ia -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- SNe Ia -- M_WD %g m_dot %g He Mass %g Lum %g  star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity);
                                         print_system(particlesMap,*integration_flag);
                                     }
                                     #endif

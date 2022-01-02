@@ -489,6 +489,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
 
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("collision.cpp -- collision_product () -- SNe Ia CO + CO WD\n");
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
+
                 destroyed = true;
             }
         }
@@ -506,6 +514,13 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
             
+                #ifdef VERBOSE
+                if (verbose_flag > 0)
+                {
+                    printf("collision.cpp -- collision_product () -- SNe Ia CO + CO WD -- eccentric collision\n");
+                    print_system(particlesMap,*integration_flag);
+                }
+                #endif
                 destroyed = true;
             }
             else
@@ -522,6 +537,14 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                     log_info.SNe_info = 2;
                     log_info.eccentric_collision = int(eccentric_collision);
                     update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                    #endif
+                    
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("collision.cpp -- collision_product () -- SNe Ia CO + CO WD -- circular merger\n");
+                        print_system(particlesMap,*integration_flag);
+                    }
                     #endif
                     
                     destroyed = false;

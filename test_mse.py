@@ -45,7 +45,8 @@ def parse_arguments():
 class test_mse():
 
     def test1(self,args):
-        print("Test secular equations of motion using reference triple system of Naoz et al. (2009)")
+        print("Test secular evolution")
+        print("Test 1a: secular equations of motion using reference triple system of Naoz et al. (2009)")
 
         particles = Tools.create_fully_nested_multiple(3, [1.0,1.0e-3,40.0e-3],[6.0,100.0],[0.001,0.6],[0.0,65.0*np.pi/180.0],[45.0*np.pi/180.0,0.0],[0.0,0.0],metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[2,2,2])
         binaries = [x for x in particles if x.is_binary==True]
@@ -113,7 +114,7 @@ class test_mse():
         assert round(e_print[-1],2) == 0.20
         assert round(rel_INCL_print[-1],2) == 1.22
 
-        print("Test passed")
+        print("Test 1a passed")
 
         code.reset()
                 
@@ -127,6 +128,95 @@ class test_mse():
             plot1.set_ylabel("$i_\mathrm{rel}/\mathrm{deg}$")
             plot2.set_ylabel("$1-e_\mathrm{in}$")
             pyplot.show()
+
+
+        print("Test 1b: test of canonical e_max expression (quadruple order; test particle; zero initial inner eccentricity)")
+        
+        i_rel = 85.0*np.pi/180.0
+        particles = Tools.create_fully_nested_multiple(3, [1.0,0.001,1.0],[1.0,100.0],[0.0001,0.0001],[0.0,i_rel],[45.0*np.pi/180.0,0.0],[0.0,0.0],metallicities=[0.02,0.02,0.02],stellar_types=[1,1,1],object_types=[2,2,2])
+        binaries = [x for x in particles if x.is_binary==True]
+        inner_binary = binaries[0]
+        outer_binary = binaries[1]
+        bodies = [x for x in particles if x.is_binary==False]
+        
+        for b in bodies:
+            b.evolve_as_star = False
+            b.include_mass_transfer_terms = False
+
+        for b in binaries:
+            b.include_pairwise_1PN_terms = False
+            b.include_pairwise_25PN_terms = False
+        
+        code = MSE()
+        code.add_particles(particles)
+
+        code.relative_tolerance = 1.0e-14
+        code.absolute_tolerance_eccentricity_vectors = 1.0e-14
+
+        code.include_flybys = False
+        code.enable_tides = False
+        code.enable_root_finding = False
+        code.verbose_flag = 0
+        e_print = []
+        INCL_print = []
+        rel_INCL_print = []
+        t_print = []
+        
+        start = time.time()
+    
+        t = 0.0
+        N = 1000
+        tend = 2.0e6
+
+        dt = tend/float(N)
+        while t<=tend:
+
+            code.evolve_model(t)
+            t+=dt
+            
+            particles=code.particles
+            binaries = [x for x in particles if x.is_binary==True]
+            inner_binary = binaries[0]
+            outer_binary = binaries[1]
+            bodies = [x for x in particles if x.is_binary==False]
+        
+            if args.verbose==True:
+                print( 't',t,'es',[x.e for x in binaries],'INCL_parent',inner_binary.INCL_parent,[x.mass for x in bodies])
+
+            rel_INCL_print.append(inner_binary.INCL_parent)
+            e_print.append(inner_binary.e)
+            INCL_print.append(inner_binary.INCL)
+            t_print.append(t)
+        
+        t_print = np.array(t_print)
+        rel_INCL_print = np.array(rel_INCL_print)
+        e_print = np.array(e_print)
+
+        e_max_an = np.sqrt(1.0 - (5.0/3.0)*np.cos(i_rel)**2)
+        e_max_num = np.amax(e_print)
+
+        if args.verbose==True:
+            print('wall time',time.time()-start)
+            print("e_max_an",e_max_an,"e_max_num",e_max_num)
+
+        N_r = 3
+        assert round(e_max_an,N_r) == round(e_max_num,N_r)
+
+        print("Test 1b passed")
+
+        code.reset()
+
+        if HAS_MATPLOTLIB==True and args.plot==True:
+            fig=pyplot.figure()
+            plot1=fig.add_subplot(2,1,1)
+            plot2=fig.add_subplot(2,1,2,yscale="log")
+            plot1.plot(1.0e-6*t_print,rel_INCL_print*180.0/np.pi)
+            plot2.plot(1.0e-6*t_print,1.0-e_print)
+            plot2.set_xlabel("$t/\mathrm{Myr}$")
+            plot1.set_ylabel("$i_\mathrm{rel}/\mathrm{deg}$")
+            plot2.set_ylabel("$1-e_\mathrm{in}$")
+            pyplot.show()
+        
 
     def test2(self,args):
         print("Test 1PN precession in 2-body system")

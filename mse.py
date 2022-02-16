@@ -219,7 +219,7 @@ class MSE(object):
         self.lib.set_orbital_elements.restype = ctypes.c_int
 
         self.lib.get_orbital_elements.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),\
-            ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+            ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_orbital_elements.restype = ctypes.c_int
 
         self.lib.get_inclination_relative_to_parent_interface.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_double))
@@ -430,7 +430,7 @@ class MSE(object):
         self.lib.initialize_code_interface()
         
         self.__update_particles_from_code()
-        
+
         end_time,initial_hamiltonian,state,CVODE_flag,CVODE_error_code,integration_flag = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
         error_code = self.lib.evolve_interface(0.0,0.0,ctypes.byref(end_time),ctypes.byref(initial_hamiltonian), \
             ctypes.byref(state),ctypes.byref(CVODE_flag),ctypes.byref(CVODE_error_code),ctypes.byref(integration_flag))
@@ -2836,28 +2836,31 @@ class Tools(object):
         #plot.autoscale(enable=True,axis='both')
         
     @staticmethod
-    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=-1,index2=-1,event_flag=-1):
+    def draw_binary_node(plot,particle,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=-1,index2=-1,event_flag=-1,i_rel=None):
+        CONST_MJUP = 0.000954248
+        
         x = particle.x
         y = particle.y
         
         child1 = particle.child1
         child2 = particle.child2
 
+        from matplotlib.patches import Ellipse
+
         N_ra = 1
         if (particle.a<=0.1): N_ra = 2
-        text = "$a=\mathrm{%s\,au}$\n $e= %.2f$"%(round(particle.a,N_ra),particle.e)
+        if i_rel == None:
+            text = "$a\simeq \mathrm{%s\,au}$\n $e\simeq  %.2f$"%(round(particle.a,N_ra),particle.e)
+        else:
+            text = "$a\simeq \mathrm{%s\,au}$\n $e\simeq %.2f$ \n $i_\mathrm{rel} \simeq %.0f^\circ$"%(round(particle.a,N_ra),particle.e,i_rel)
         x_plot = x - 0*0.8*line_width_horizontal
         y_plot = y - 0.3*line_width_vertical
 
         bbox_props = dict(boxstyle="round", pad=0.1, fc=particle.color, ec="k", lw=0.5,alpha=0.9)
         plot.text(x_plot, y_plot, text, ha="center", va="center", rotation=0,
             size=0.7*fontsize,
-            bbox=bbox_props)
-        
+            bbox=bbox_props,zorder=9)
    
-        #text = "$e = %.2f$"%(particle.e)
-        #plot.annotate(text,xy=(x - 0.8*line_width_horizontal,y - 0.6*line_width_vertical),fontsize=fontsize,color=particle.color)
-
         alpha = 1.0
         if child1.is_binary == True and child2.is_binary == True:
             alpha = 3.5
@@ -2896,13 +2899,15 @@ class Tools(object):
         if (child2.y<y_min): y_min = child2.y
         if (child2.y>y_max): y_max = child2.y
 
-        CONST_MJUP = 0.000954248
-        
-        
-       
         ### handle children ###
         if child1.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag)
+            
+            if event_flag in [14]: ### Triple CE
+                ell = Ellipse(xy=[x,child1.y],width=2.0*(child2.x-child1.x),height=3.5*(y - child1.y),angle=0.0,color='tab:red',alpha=0.5)
+                plot.add_artist(ell)
+
+            i_rel = Tools.compute_mutual_inclination(particle.INCL,child1.INCL,particle.LAN,child1.LAN) * (180.0/np.pi)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child1,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag,i_rel=i_rel)
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child1.stellar_type,child1.radius)
             plot.scatter([child1.x],[child1.y],color=color,s=s,zorder=10)
@@ -2913,13 +2918,22 @@ class Tools(object):
                 
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
 
-            if event_flag in [4,6,8]:
+            if event_flag in [4,6,8,14]:
+
+                if event_flag in [4] and child1.index == index1: ### RLOF
+                    ell = Ellipse(xy=[child1.x,child1.y],width=0.5*np.fabs(child2.x-child1.x),height=0.5*np.fabs(y - child1.y),angle=0.0,color='tab:orange',alpha=0.5)
+                    plot.add_artist(ell)
+                
+                if event_flag in [6] and child1.index == index1: ### CE
+                    ell = Ellipse(xy=[x,child1.y],width=1.5*np.fabs(child2.x-child1.x),height=1.5*np.fabs(y - child1.y),angle=0.0,color='tab:red',alpha=0.5)
+                    plot.add_artist(ell)
+
                 if child1.index in [index1,index2] or child2.index in [index1,index2]:
                     plot.plot([child1.x,child2.x],[child1.y,child2.y],color='r',zorder=8)
                     if child1.index == index1:
-                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.08, head_length=0.3*np.fabs(child2.x-child1.x),zorder=9, color='r')
                     else:
-                        plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+                        plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.08, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
             if event_flag in [2,12]:
                 if child1.index == index1:
                     plot.scatter([child1.x],[child1.y],color=color,s=3*s,zorder=9,marker='*')
@@ -2927,8 +2941,15 @@ class Tools(object):
                     plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=9,marker='*')
             
             
+            
         if child2.is_binary == True:
-            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag)
+            
+            if event_flag in [14]: ### Triple CE
+                ell = Ellipse(xy=[x,child2.y],width=2.0*(child2.x-child1.x),height=3.5*(y - child2.y),angle=0.0,color='tab:red',alpha=0.5)
+                plot.add_artist(ell)
+            
+            i_rel = Tools.compute_mutual_inclination(particle.INCL,child2.INCL,particle.LAN,child2.LAN) * (180.0/np.pi)
+            x_min,x_max,y_min,y_max = Tools.draw_binary_node(plot,child2,line_width_horizontal,line_width_vertical,line_color,line_width,fontsize,x_min,x_max,y_min,y_max,index1=index1,index2=index2,event_flag=event_flag,i_rel=i_rel)
         else:
             color,s,description = Tools.get_color_and_size_and_description_for_star(child2.stellar_type,child2.radius)
             plot.scatter([child2.x],[child2.y],color=color,s=s,zorder=10)
@@ -2939,12 +2960,21 @@ class Tools(object):
                 text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
 
             plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
+                
+            if event_flag in [4,6,8,14]:
+                if event_flag in [4] and child2.index == index1: ### RLOF
+                    ell = Ellipse(xy=[child2.x,child2.y],width=0.5*np.fabs(child2.x-child1.x),height=0.5*np.fabs(y - child1.y),angle=0.0,color='tab:orange',alpha=0.5)
+                    plot.add_artist(ell)
+                
+                if event_flag in [6] and child2.index == index1: ### CE
+                    ell = Ellipse(xy=[x,child1.y],width=1.5*np.fabs(child2.x-child1.x),height=1.5*np.fabs(y - child1.y),angle=0.0,color='tab:red',alpha=0.5)
+                    plot.add_artist(ell)
 
-            if event_flag in [4,6,8]:
+                
                 if child1.index in [index1,index2] or child2.index in [index1,index2]:
                     plot.plot([child1.x,child2.x],[child1.y,child2.y],color='r',zorder=8)
                     if child1.index == index1:
-                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
+                        plot.arrow(child1.x, child1.y, 0.5*(child2.x-child1.x), 0, head_width=0.05, head_length=0.3*np.fabs(child2.x-child1.x),zorder=9, color='r')
                     else:
                         plot.arrow(child2.x, child2.y, -0.5*np.fabs(child2.x-child1.x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.x-child1.x),zorder=9, color='r')
 
@@ -2954,8 +2984,8 @@ class Tools(object):
                 if child2.index == index1:
                     plot.scatter([child2.x],[child2.y],color=color,s=3*s,zorder=9,marker='*')
 
-
         return x_min,x_max,y_min,y_max
+
 
     @staticmethod
     def draw_bodies(plot,bodies,fontsize,y_ref=1.0,dx=0.5,dy=0.5,index1=-1,index2=-1,event_flag=-1):
@@ -2970,7 +3000,6 @@ class Tools(object):
             if body.index == index1:
                 if event_flag in [2,12]:
                     plot.scatter([index],[y_ref],color=color,s=3*s,zorder=9,marker='*')
-
             try:
                 VX = body.VX
                 VY = body.VY
@@ -2990,7 +3019,7 @@ class Tools(object):
             if event_flag in [4,6,8]:
                 child1=event_bodies[0]
                 child2=event_bodies[1]
-                #if body.index in [index1,index2] or body.index in [index1,index2]:
+
                 plot.plot([child1.plot_x,child2.plot_x],[child1.plot_y,child2.plot_y],color='r',zorder=8)
                 if child1.index == index1:
                     plot.arrow(child1.plot_x, child1.plot_y, 0.5*(child2.plot_x-child1.plot_x), 0, head_width=0.05, head_length=0.1*np.fabs(child2.plot_x-child1.plot_x),zorder=9, color='r')
@@ -3003,7 +3032,8 @@ class Tools(object):
 
         plot.set_xticks([])
         plot.set_yticks([])
-        
+
+
     @staticmethod
     def get_color_and_size_and_description_for_star(stellar_type,radius):
         if (stellar_type == 0): 
@@ -3070,7 +3100,8 @@ class Tools(object):
         s = np.fabs(s)
         
         return color,s,description
-        
+
+
     @staticmethod
     def get_description_for_event_flag(event_flag, SNe_type = None):
         if event_flag == 0:

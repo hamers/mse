@@ -2622,7 +2622,7 @@ int test_mass_accretion_events_with_degenerate_objects()
 
     //Log_type &last_entry = logData.back();
     //printf("log SNe type %d info %d\n",last_entry.log_info.SNe_type,last_entry.log_info.SNe_info);
-    
+
     double start_time = 0.0;
     double end_time = 1.0e1;
     double output_time,hamiltonian;
@@ -3149,7 +3149,7 @@ int test_binary_evolution_emt_model_optimised_functions()
     
     //printf("TA %g %g\n",fm_old,fa_old);
     
-    double tol=1.0e-14;
+    double tol=1.0e-13;
     if (!equal_number(fm_new,fm_old,tol))
     {
         printf("test.cpp -- error in test_binary_evolution_emt_model_optimised_functions fm_old %g fm_new %g\n",fm_old,fm_new);
@@ -3455,7 +3455,7 @@ int test_binary_common_envelope_evolution()
         }
             
     }
-    return 0;
+    return flag;
 
 
 }

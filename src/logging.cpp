@@ -50,7 +50,8 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 0: not eccentric
  * 1: eccentric
  */
- 
+
+
 {
     Log_type new_entry;
     new_entry.index = logData.size();

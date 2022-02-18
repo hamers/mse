@@ -65,7 +65,7 @@ void custom_segfault_handler(int s)
 
 int evolve(ParticlesMap *particlesMap, double start_time, double end_time, double *output_time, double *hamiltonian, int *state, int *CVODE_flag, int *CVODE_error_code, int *integration_flag)
 {
-    
+
     /* Error handling -- begin */
     int setjmp_return_val = setjmp(jump_buf);
     if (setjmp_return_val == 1) // error occurred somewhere in the code; will return control to Python

@@ -1281,6 +1281,7 @@ class Log_info_type
     int SNe_type = -1;
     int SNe_info = -1;
     int eccentric_collision = -1;
+    double eccentricity = -1;
     
     Log_info_type()
     {

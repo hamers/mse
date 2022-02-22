@@ -194,7 +194,7 @@ class MSE(object):
         self.lib.set_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_int)
         self.lib.set_stellar_evolution_properties.restype = ctypes.c_int
 
-        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
+        self.lib.get_stellar_evolution_properties.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_double))
         self.lib.get_stellar_evolution_properties.restype = ctypes.c_int
 
         ### kicks ###
@@ -673,10 +673,10 @@ class MSE(object):
                 particle.radius = radius.value
                 particle.radius_dot = radius_dot.value
 
-                stellar_type,object_type,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter = ctypes.c_int(0),ctypes.c_int(0), \
-                    ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                stellar_type,object_type,sse_initial_mass,metallicity,sse_time_step,epoch,age,convective_envelope_mass,convective_envelope_radius,core_mass,core_radius,luminosity,apsidal_motion_constant,gyration_radius,tides_viscous_time_scale,roche_lobe_radius_pericenter,WD_He_layer_mass,m_dot_accretion_SD = ctypes.c_int(0),ctypes.c_int(0), \
+                    ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                 flag += self.lib.get_stellar_evolution_properties(particle.index,ctypes.byref(stellar_type),ctypes.byref(object_type),ctypes.byref(sse_initial_mass),ctypes.byref(metallicity),ctypes.byref(sse_time_step), \
-                    ctypes.byref(epoch),ctypes.byref(age),ctypes.byref(convective_envelope_mass),ctypes.byref(convective_envelope_radius),ctypes.byref(core_mass),ctypes.byref(core_radius),ctypes.byref(luminosity),ctypes.byref(apsidal_motion_constant),ctypes.byref(gyration_radius),ctypes.byref(tides_viscous_time_scale),ctypes.byref(roche_lobe_radius_pericenter))
+                    ctypes.byref(epoch),ctypes.byref(age),ctypes.byref(convective_envelope_mass),ctypes.byref(convective_envelope_radius),ctypes.byref(core_mass),ctypes.byref(core_radius),ctypes.byref(luminosity),ctypes.byref(apsidal_motion_constant),ctypes.byref(gyration_radius),ctypes.byref(tides_viscous_time_scale),ctypes.byref(roche_lobe_radius_pericenter),ctypes.byref(WD_He_layer_mass),ctypes.byref(m_dot_accretion_SD))
                 particle.stellar_type = stellar_type.value
                 particle.object_type = object_type.value
                 particle.sse_initial_mass = sse_initial_mass.value
@@ -693,7 +693,9 @@ class MSE(object):
                 particle.gyration_radius = gyration_radius.value
                 particle.tides_viscous_time_scale = tides_viscous_time_scale.value
                 particle.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter.value
-
+                particle.WD_He_layer_mass = WD_He_layer_mass.value
+                particle.m_dot_accretion_SD = m_dot_accretion_SD.value
+                
                 kick_distribution,include_WD_kicks,kick_distribution_sigma_km_s_NS,kick_distribution_sigma_km_s_BH,kick_distribution_sigma_km_s_WD,kick_distribution_2_m_NS,kick_distribution_4_m_NS,kick_distribution_4_m_ej,kick_distribution_5_v_km_s_NS,kick_distribution_5_v_km_s_BH,kick_distribution_5_sigma,kick_distribution_sigma_km_s_NS_ECSN \
                     = ctypes.c_int(0),ctypes.c_bool(False),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                 flag += self.lib.get_kick_properties(particle.index,ctypes.byref(kick_distribution),ctypes.byref(include_WD_kicks),ctypes.byref(kick_distribution_sigma_km_s_NS),ctypes.byref(kick_distribution_sigma_km_s_BH),ctypes.byref(kick_distribution_sigma_km_s_WD), \
@@ -831,17 +833,18 @@ class MSE(object):
                 append = False
                 if is_binary == False:
                     parent,stellar_type,object_type = ctypes.c_int(0),ctypes.c_int(0),ctypes.c_int(0)
-                    mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin,X,Y,Z,VX,VY,VZ,metallicity,spin_vec_x,spin_vec_y,spin_vec_z = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
+                    mass,radius,core_mass,sse_initial_mass,convective_envelope_mass,epoch,age,core_radius,convective_envelope_radius,luminosity,ospin,X,Y,Z,VX,VY,VZ,metallicity,spin_vec_x,spin_vec_y,spin_vec_z,WD_He_layer_mass,m_dot_accretion_SD = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
                     flag = self.lib.get_body_properties_from_log_entry(index_log,internal_index,ctypes.byref(parent),ctypes.byref(mass),ctypes.byref(radius),ctypes.byref(stellar_type), \
                         ctypes.byref(core_mass),ctypes.byref(sse_initial_mass),ctypes.byref(convective_envelope_mass), \
                         ctypes.byref(epoch),ctypes.byref(age), \
                         ctypes.byref(core_radius),ctypes.byref(convective_envelope_radius),ctypes.byref(luminosity),ctypes.byref(ospin), \
                         ctypes.byref(X), ctypes.byref(Y), ctypes.byref(Z), ctypes.byref(VX), ctypes.byref(VY), ctypes.byref(VZ), \
                         ctypes.byref(object_type),ctypes.byref(metallicity), \
-                        ctypes.byref(spin_vec_x),ctypes.byref(spin_vec_y),ctypes.byref(spin_vec_z))
+                        ctypes.byref(spin_vec_x),ctypes.byref(spin_vec_y),ctypes.byref(spin_vec_z), \
+                        ctypes.byref(WD_He_layer_mass),ctypes.byref(m_dot_accretion_SD))
 
                     p = Particle(is_binary=is_binary,mass=mass.value,radius=radius.value,stellar_type=stellar_type.value,core_mass=core_mass.value,sse_initial_mass=sse_initial_mass.value, \
-                        convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value, metallicity=metallicity.value)
+                        convective_envelope_mass=convective_envelope_mass.value, epoch=epoch.value, age=age.value, core_radius=core_radius.value, convective_envelope_radius=convective_envelope_radius.value, luminosity=luminosity.value, metallicity=metallicity.value, WD_He_layer_mass=WD_He_layer_mass.value, m_dot_accretion_SD=m_dot_accretion_SD.value)
                     p.index = internal_index
                     p.parent = parent.value
                     p.ospin = ospin.value
@@ -1693,7 +1696,7 @@ class Particle(object):
             VRR_eta_20_init=0.0, VRR_eta_a_22_init=0.0, VRR_eta_b_22_init=0.0, VRR_eta_a_21_init=0.0, VRR_eta_b_21_init=0.0, \
             VRR_eta_20_final=0.0, VRR_eta_a_22_final=0.0, VRR_eta_b_22_final=0.0, VRR_eta_a_21_final=0.0, VRR_eta_b_21_final=0.0, \
             VRR_initial_time = 0.0, VRR_final_time = 1.0,roche_lobe_radius_pericenter=0.0, \
-            dynamical_mass_transfer_low_mass_donor_timescale=1.0e3, dynamical_mass_transfer_WD_donor_timescale=1.0e3, compact_object_disruption_mass_loss_timescale=1.0e3, common_envelope_alpha=1.0, common_envelope_lambda=1.0, common_envelope_timescale=1.0e3, triple_common_envelope_alpha=1.0):
+            dynamical_mass_transfer_low_mass_donor_timescale=1.0e3, dynamical_mass_transfer_WD_donor_timescale=1.0e3, compact_object_disruption_mass_loss_timescale=1.0e3, common_envelope_alpha=1.0, common_envelope_lambda=1.0, common_envelope_timescale=1.0e3, triple_common_envelope_alpha=1.0, WD_He_layer_mass=0.0, m_dot_accretion_SD=0.0):
                 
         ### spin_vec: nonzero spin_vec_z: need to specify a finite initial direction 
 
@@ -1826,6 +1829,8 @@ class Particle(object):
             self.convective_envelope_radius=convective_envelope_radius
             self.luminosity=luminosity
             self.roche_lobe_radius_pericenter = roche_lobe_radius_pericenter
+            self.WD_He_layer_mass = WD_He_layer_mass
+            self.m_dot_accretion_SD = m_dot_accretion_SD
         
         else:
             if is_external==False:
@@ -2897,7 +2902,7 @@ class Tools(object):
         if (child1.y>y_max): y_max = child1.y
         if (child2.y<y_min): y_min = child2.y
         if (child2.y>y_max): y_max = child2.y
-
+            
         ### handle children ###
         if child1.is_binary == True:
             
@@ -2916,7 +2921,7 @@ class Tools(object):
                 text = "$\mathrm{%s}$"%(str(round(child1.mass,1)))
                 
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
-
+            
             if event_flag in [4,6,8,14]:
 
                 if event_flag in [4] and child1.index == index1: ### RLOF

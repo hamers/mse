@@ -33,7 +33,7 @@ int get_level(int index, int *level);
 int set_stellar_evolution_properties(int index, int stellar_type, int object_type, double sse_initial_mass, double metallicity, double sse_time_step, double epoch, double age, 
     double convective_envelope_mass, double convective_envelope_radius, double core_mass, double core_radius, double luminosity, double apsidal_motion_constant, double gyration_radius, double tides_viscous_time_scale, int tides_viscous_time_scale_prescription);
 int get_stellar_evolution_properties(int index, int *stellar_type, int *object_type, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
-    double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter);  
+    double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter, double *WD_He_layer_mass, double *m_dot_accretion_SD);
 int set_kick_properties(int index, int kick_distribution, bool include_WD_kicks, double kick_distribution_sigma_km_s_NS, double kick_distribution_sigma_km_s_BH, double kick_distribution_sigma_km_s_WD, double kick_distribution_2_m_NS, double kick_distribution_4_m_NS, double kick_distribution_4_m_ej, \
     double kick_distribution_5_v_km_s_NS, double kick_distribution_5_v_km_s_BH, double kick_distribution_5_sigma, double kick_distribution_sigma_km_s_NS_ECSN);
 int get_kick_properties(int index, int *kick_distribution, bool *include_WD_kicks, double *kick_distribution_sigma_km_s_NS, double *kick_distribution_sigma_km_s_BH,  double *kick_distribution_sigma_km_s_WD, double *kick_distribution_2_m_NS, double *kick_distribution_4_m_NS, double *kick_distribution_4_m_ej, \
@@ -210,7 +210,7 @@ bool get_is_binary_log(int log_index, int particle_index);
 int get_log_entry_properties(int log_index, double *time, int *event_flag, int *integration_flag, int *N_particles, int *index1, int *index2, int *binary_index, double *kick_speed_km_s, int *SNe_type, int *SNe_info, int *eccentric_collision, double *eccentricity);
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
     double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity, 
-    double *spin_vec_x, double *spin_vec_y, double *spin_vec_z);
+    double *spin_vec_x, double *spin_vec_y, double *spin_vec_z, double *WD_He_layer_mass, double *m_dot_accretion_SD);
 int get_binary_properties_from_log_entry(int log_index, int particle_index, int *parent, int *child1, int *child2, \
     double *mass, double *a, double *e, double *TA, double *INCL, double *AP, double *LAN, \
     double *h_vec_x, double *h_vec_y, double *h_vec_z, \

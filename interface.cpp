@@ -383,8 +383,7 @@ int set_stellar_evolution_properties(int index, int stellar_type, int object_typ
     return 0;
 }
 int get_stellar_evolution_properties(int index, int *stellar_type, int *object_type, double *sse_initial_mass, double *metallicity, double *sse_time_step, double *epoch, double *age, 
-    double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter)
-
+    double *convective_envelope_mass, double *convective_envelope_radius, double *core_mass, double *core_radius, double *luminosity, double *apsidal_motion_constant, double *gyration_radius, double *tides_viscous_time_scale, double *roche_lobe_radius_pericenter, double *WD_He_layer_mass, double *m_dot_accretion_SD)
 {
     if (index > particlesMap.size())
     {
@@ -407,6 +406,8 @@ int get_stellar_evolution_properties(int index, int *stellar_type, int *object_t
     *apsidal_motion_constant = p->apsidal_motion_constant;
     *gyration_radius = p->gyration_radius;
     *tides_viscous_time_scale = p->tides_viscous_time_scale;
+    *WD_He_layer_mass = p->WD_He_layer_mass;
+    *m_dot_accretion_SD = p->m_dot_accretion_SD;
     
     if (p->is_binary == false) /* TO DO: streamline with same code in root_finding.cpp */
     {
@@ -1316,7 +1317,7 @@ int get_internal_index_in_particlesMap_log(int log_index, int absolute_index)
  
 int get_body_properties_from_log_entry(int log_index, int particle_index, int *parent, double *mass, double *radius, int *stellar_type, double *core_mass, double *sse_initial_mass, double *convective_envelope_mass, \
     double *epoch, double *age, double *core_radius, double *convective_envelope_radius, double *luminosity, double *ospin, double *X, double *Y, double *Z, double *VX, double *VY, double *VZ, int *object_type, double *metallicity, 
-    double *spin_vec_x, double *spin_vec_y, double *spin_vec_z)
+    double *spin_vec_x, double *spin_vec_y, double *spin_vec_z, double *WD_He_layer_mass, double *m_dot_accretion_SD)
 {
     Log_type entry = logData[log_index];
     ParticlesMap entry_particlesMap = entry.particlesMap;
@@ -1348,6 +1349,8 @@ int get_body_properties_from_log_entry(int log_index, int particle_index, int *p
     *VZ = p->V_vec[2];
     *object_type = p->object_type;
     *metallicity = p->metallicity;
+    *WD_He_layer_mass = p->WD_He_layer_mass;
+    *m_dot_accretion_SD = p->m_dot_accretion_SD;
 
     *spin_vec_x = p->spin_vec[0];
     *spin_vec_y = p->spin_vec[1];

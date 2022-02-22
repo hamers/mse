@@ -100,6 +100,8 @@ ParticlesMap copy_particlesMap_for_logging(ParticlesMap *particlesMap)
             q->core_radius = p->core_radius;
             q->convective_envelope_radius = p->convective_envelope_radius;
             q->luminosity = p->luminosity;
+            q->WD_He_layer_mass = p->WD_He_layer_mass;
+            q->m_dot_accretion_SD = p->m_dot_accretion_SD;
             
             for (int k=0; k<3; k++)
             {

@@ -987,7 +987,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
         /* The default boundary values are adopted from HTP02 */
         double m_dot_upper = 2.71e-7; /* Above this accretion rate, the WD will swell up to a giant star */
         double m_dot_lower = 1.03e-7; /* Below this accretion rate, nova outbursts will occur that blow away most of the accreted material */
-        
+
         if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
         {
             
@@ -1006,7 +1006,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                 #ifdef VERBOSE
                 if (verbose_flag > 0)
                 {
-                    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- nova m_dot %g dm1 %g dm2 %g m_dot_lower %g m_dot_upper %g\n",dm1/dt,dm1,dm2,m_dot_lower,m_dot_upper);
+                    printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD H accretion -- nova m_dot %g dm1 %g dm2 %g m_dot_lower %g m_dot_upper %g\n",dm1/dt,dm1,dm2,m_dot_lower,m_dot_upper);
                 }
                 #endif
 
@@ -1031,7 +1031,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
                     #ifdef VERBOSE
                     if (verbose_flag > 0)
                     {
-                        printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- accumulation onto He layer H donor m_dot %g He layer mass %g m_dot_lower %g m_dot_upper %g m_dot_accretion_SD %g\n",dm1/dt,accretor->WD_He_layer_mass,m_dot_lower,m_dot_upper,accretor->m_dot_accretion_SD);
+                        printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD H accretion -- accumulation onto He layer H donor m_dot %g He layer mass %g m_dot_lower %g m_dot_upper %g m_dot_accretion_SD %g\n",dm1/dt,accretor->WD_He_layer_mass,m_dot_lower,m_dot_upper,accretor->m_dot_accretion_SD);
                     }
                     #endif
                     
@@ -1049,7 +1049,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             #ifdef VERBOSE
             if (verbose_flag > 0)
             {
-                printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD accretion -- mass transfer rate %g MSun/yr is high enough to make a giant star -- m_dot_lower %g m_dot_upper %g\n",dm1/dt,m_dot_lower,m_dot_upper);
+                printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD H accretion -- mass transfer rate %g MSun/yr is high enough to make a giant star -- m_dot_lower %g m_dot_upper %g\n",dm1/dt,m_dot_lower,m_dot_upper);
             }
             #endif
             
@@ -1144,6 +1144,14 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             {
                 dm2 = eta * dm1;
             }
+
+            #ifdef VERBOSE
+            if (verbose_flag > 0)
+            {
+                printf("binary_evolution.cpp -- binary_stable_mass_transfer_evolution -- WD He accretion -- WD_accretion_mode %d m_dot %g He layer mass %g m_dot_accretion_SD %g\n",WD_accretion_mode,dm1/dt,accretor->WD_He_layer_mass,accretor->m_dot_accretion_SD);
+            }
+            #endif
+            
         }
     }
    

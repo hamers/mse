@@ -313,7 +313,6 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
         Particle *p = (*it_p).second;
         if (p->is_binary == false and p->object_type == 1)
         {
-
             /* Extract stellar evolution parameters */
             /* Note the different units used in SSE vs. MSE */
             mt = mt_old = p->mass;

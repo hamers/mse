@@ -2902,7 +2902,7 @@ class Tools(object):
         if (child1.y>y_max): y_max = child1.y
         if (child2.y<y_min): y_min = child2.y
         if (child2.y>y_max): y_max = child2.y
-            
+        
         ### handle children ###
         if child1.is_binary == True:
             

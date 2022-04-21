@@ -32,7 +32,7 @@ def parse_arguments():
     parser.add_argument("--metallicities", "--zs",                    type=float,  nargs="+",     dest="metallicities",                     default=[],                         help="Metallicities")
     parser.add_argument("--smas", "--semimajor_axes",                 type=float,  nargs="+",     dest="semimajor_axes",                    default=[15.0,120.0],               help="Semimajor axes (au)")
     parser.add_argument("--es",  "--eccentricities",                  type=float,  nargs="+",     dest="eccentricities",                    default=[0.1,0.1],                  help="Eccentricities")
-    parser.add_argument("--is", "--inclinations",                     type=float,  nargs="+",     dest="inclinations",                      default=[],                         help="Inclinations (rad)")
+    parser.add_argument("--is", "--inclinations",                     type=float,  nargs="+",     dest="inclinations",                      default=[0.0,1.0],                         help="Inclinations (rad)")
     parser.add_argument("--LANs", "--longitudes_of_ascending_node",   type=float,  nargs="+",     dest="longitudes_of_ascending_node",      default=[],                         help="Longitudes of the ascending node (rad)")
     parser.add_argument("--APs", "--arguments_of_pericentre",         type=float,  nargs="+",     dest="arguments_of_pericentre",           default=[],                         help="Arguments of periapsis (rad)")
     

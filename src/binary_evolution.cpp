@@ -1130,7 +1130,7 @@ int binary_stable_mass_transfer_evolution(ParticlesMap *particlesMap, int parent
             white_dwarf_helium_mass_accumulation_efficiency(m_accretor, m_dot_mass_transfer_SD, accretor->luminosity, &eta, &WD_accretion_mode);
             double m_dot_accretion_SD = eta * m_dot_mass_transfer_SD; // always positive
             accretor->m_dot_accretion_SD = m_dot_accretion_SD;
-            
+
             if (WD_accretion_mode == 1) // mass gets added in the form of a He layer on top of the CO core (tracked with the parameter "WD_He_layer_mass"); do not change the SSE CO WD mass
             {
                 accretor->WD_He_layer_mass += eta * dm1;
@@ -2219,7 +2219,8 @@ double compute_bse_mass_transfer_amount(int kw1, double m_donor, double core_mas
 
 void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particlesMap, double t_old, double t, int *integration_flag, double *dt_binary_evolution)
 {
-    /* Special cases (in particular, when WDs become "too" massive) -- will potentially return before reaching the end of the current function. */
+    /* Check for "special cases" such as SNe Ia involving WDs. */
+    
     if (*integration_flag != 0)
     {
         return;
@@ -2237,217 +2238,51 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
     
     double m1,m2,mdot1,mdot2,m1_new,m2_new,Delta_m1,Delta_m2;
     int kw1,kw2;
-    
+
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
     double h_vec[3],h_vec_unit[3],e_vec[3],e_vec_unit[3],r_vec[3],v_vec[3];
 
     double final_R_CM[3],final_V_CM[3],final_momentum[3];
 
     ParticlesMapIterator it_p;
-    bool found_new_event = true;
     bool structure_change = false;
     
-    while (found_new_event == true)
+    for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
     {
+        Particle *star2 = (*it_p).second;
+        kw2 = star2->stellar_type;
 
-        found_new_event = false;
-        for (it_p = particlesMap->begin(); it_p != particlesMap->end(); it_p++)
+        if (star2->is_binary == false and star2->is_bound == true and star2->object_type == 1 and kw2 >= 10 and kw2 <= 12)
         {
-            Particle *star2 = (*it_p).second;
-            kw2 = star2->stellar_type;
-
-            if (star2->is_binary == false and star2->is_bound == true and star2->object_type == 1 and kw2 >= 10 and kw2 <= 12)
+            Particle *star1 = (*particlesMap)[star2->sibling];
+            Particle *parent = (*particlesMap)[star2->parent];
+            if (star1->is_binary == false and star1->object_type == 1)
             {
-                Particle *star1 = (*particlesMap)[star2->sibling];
-                Particle *parent = (*particlesMap)[star2->parent];
-                if (star1->is_binary == false and star1->object_type == 1)
+                m1 = star1->mass;
+                m2 = star2->mass;
+                
+                mdot1 = star1->mass_dot_wind + star1->mass_dot_wind_accretion + star1->mass_dot_adiabatic_ejection + star1->mass_dot_RLOF + star1->mass_dot_RLOF_triple;
+                mdot2 = star2->mass_dot_wind + star2->mass_dot_wind_accretion + star2->mass_dot_adiabatic_ejection + star2->mass_dot_RLOF + star2->mass_dot_RLOF_triple;
+                m1_new = m1 + mdot1 * dt; // new mass donor/accretor would have after this time-step (taking account wind mass losses)
+                m2_new = m2 + mdot2 * dt;
+                
+                kw1 = star1->stellar_type;
+
+                if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7)
                 {
-                    m1 = star1->mass;
-                    m2 = star2->mass;
-                    
-                    mdot1 = star1->mass_dot_wind + star1->mass_dot_wind_accretion + star1->mass_dot_adiabatic_ejection + star1->mass_dot_RLOF + star1->mass_dot_RLOF_triple;
-                    mdot2 = star2->mass_dot_wind + star2->mass_dot_wind_accretion + star2->mass_dot_adiabatic_ejection + star2->mass_dot_RLOF + star2->mass_dot_RLOF_triple;
-                    m1_new = m1 + mdot1 * dt; // new mass donor/accretor would have after this time-step (taking account wind mass losses)
-                    m2_new = m2 + mdot2 * dt;
-                    
-                    kw1 = star1->stellar_type;
-
-                    if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7)
+                    if (binary_evolution_SNe_Ia_single_degenerate_model == 0 or binary_evolution_SNe_Ia_single_degenerate_model == 1)
                     {
-                        if (binary_evolution_SNe_Ia_single_degenerate_model == 0 or binary_evolution_SNe_Ia_single_degenerate_model == 1)
-                        {
-                             /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
-                             
-                            found_new_event = true;
-                            structure_change = true;
-                        
-                            Delta_m1 = m1_new - m1;
-                            Delta_m2 = -m2;
-
-                            #ifdef VERBOSE
-                            if (verbose_flag > 0)
-                            {
-                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects --  HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN  -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                                print_system(particlesMap,*integration_flag);
-                            }
-                            #endif
-
-                            #ifdef LOGGING
-                            Log_info_type log_info;
-                            log_info.index1 = star2->index;
-                            log_info.SNe_type = 1;
-                            log_info.SNe_info = 1;
-                            update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                            #endif
-                
-                            get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                
-                            handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
-                                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-
-                            star1->mass += Delta_m1;
-                            update_stellar_evolution_properties(star1);
-                            reset_ODE_mass_dot_quantities(star1);
-
-                            particlesMap->erase(star2->index);
-
-                            *integration_flag = 1;
-                            break;
-                        }
-                    }
-                    else if (kw1 <= 10 and kw2 == 11)
-                    {
-                        if (binary_evolution_SNe_Ia_single_degenerate_model == 0)
-                        {
-                            if (m2_new - star2->sse_initial_mass >= 0.15)
-                            {
-                                /* CO and ONeWDs accrete helium-rich material until the accumulated 
-                                * material exceeds a mass of 0.15 when it ignites. For a COWD with 
-                                * mass less than 0.95 the system will be destroyed as an ELD in a 
-                                * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
-                                * will survive with all the material converted to ONe (JH 30/09/99). 
-                                * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
-
-                                found_new_event = true;
-                                structure_change = true;
-                                    
-                                Delta_m1 = m1_new - m1;
-                                Delta_m2 = -m2;
-
-                                #ifdef VERBOSE
-                                if (verbose_flag > 0)
-                                {
-                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- SNe Ia -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                                    print_system(particlesMap,*integration_flag);
-                                }
-                                #endif
-
-                                #ifdef LOGGING
-                                Log_info_type log_info;
-                                log_info.index1 = star2->index;
-                                log_info.SNe_type = 1;
-                                log_info.SNe_info = 1;
-                                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                                #endif
-
-                                get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                                    r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                            
-                                handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
-                                    r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-            
-                                star1->mass += Delta_m1;
-                                update_stellar_evolution_properties(star1);
-                                reset_ODE_mass_dot_quantities(star1);
-                                
-                                particlesMap->erase(star2->index);
-
-                                *integration_flag = 1;
-                                break;
-                            }
-                        }
-                        else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
-                        {
-                            /* Model for H or He accretion onto CO WDs */
-                            /* Currently, do not distinguish between accumulation of helium, or accumulation of hydrogen which quickly burns to helium */
-                            //if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
-                            if (kw1 >= 0 and kw1 <= 10 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
-                            {
-
-                                double m_dot_accretion_SD = star2->m_dot_accretion_SD;
-
-                                bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
-
-                                #ifdef VERBOSE
-                                if (verbose_flag > 1)
-                                {
-                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- M_WD %g m_dot %g He Mass %g Lum %g\n",m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity,star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
-                                    print_system(particlesMap,*integration_flag);
-                                }
-                                #endif
-                                    
-                                if (SNe_explosion == true)
-                                {
-                                    found_new_event = true;
-                                    structure_change = true;
-                                        
-                                    Delta_m1 = m1_new - m1;
-                                    Delta_m2 = -m2;
-
-                                    #ifdef VERBOSE
-                                    if (verbose_flag > 0)
-                                    {
-                                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- SNe Ia -- M_WD %g m_dot %g He Mass %g Lum %g  star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity);
-                                        print_system(particlesMap,*integration_flag);
-                                    }
-                                    #endif
-
-                                    #ifdef LOGGING
-                                    Log_info_type log_info;
-                                    log_info.index1 = star2->index;
-                                    log_info.SNe_type = 1;
-                                    log_info.SNe_info = 3;
-                                    update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
-                                    #endif
-
-                                    get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
-                                        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                                
-                                    handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
-                                        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-                
-                                    star1->mass += Delta_m1;
-                                    update_stellar_evolution_properties(star1);
-                                    reset_ODE_mass_dot_quantities(star1);
-                                    
-                                    particlesMap->erase(star2->index);
-
-                                    *integration_flag = 1;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    else if ((kw2 == 10 or kw2 == 11) and m2_new >= chandrasekhar_mass)
-                    {
-                        
-                        /* If the Chandrasekhar limit is exceeded for a white dwarf then destroy
-                        * the white dwarf in a supernova. If the WD is ONe then a neutron star
-                        * will survive the supernova and we let HRDIAG take care of this when
-                        * the stars are next updated. */
-
-                        found_new_event = true;
+                         /* HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN. */
+                         
                         structure_change = true;
-                        
-                        //dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
+                    
                         Delta_m1 = m1_new - m1;
                         Delta_m2 = -m2;
 
                         #ifdef VERBOSE
                         if (verbose_flag > 0)
                         {
-                            printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Chandrasekhar limit of accretor exceeded -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                            printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects --  HeWD can only accrete helium-rich material up to a mass of 0.7 when it is destroyed in a possible Type 1a SN  -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
                             print_system(particlesMap,*integration_flag);
                         }
                         #endif
@@ -2459,13 +2294,13 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         log_info.SNe_info = 1;
                         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                         #endif
-
+            
                         get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
                             r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
-                    
-                        handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+            
+                        handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->dynamical_mass_transfer_low_mass_donor_timescale, \
                             r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
-    
+
                         star1->mass += Delta_m1;
                         update_stellar_evolution_properties(star1);
                         reset_ODE_mass_dot_quantities(star1);
@@ -2475,65 +2310,221 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         *integration_flag = 1;
                         break;
                     }
-                    else if (kw2 == 12 and m2_new > 1.38)
+                }
+                if (kw1 <= 10 and kw2 == 11)
+                {
+                    if (binary_evolution_SNe_Ia_single_degenerate_model == 0)
                     {
-
-                        if (ECSNe_model == 1)
+                        if (m2_new - star2->sse_initial_mass >= 0.15)
                         {
-                            /* If an ONeMg WD exceeds 1.38 MSun, assume an electron-capture SNe (ECSN) occurs. */
-                        
-                            found_new_event = true;
-                            structure_change = true;
+                            /* CO and ONeWDs accrete helium-rich material until the accumulated 
+                            * material exceeds a mass of 0.15 when it ignites. For a COWD with 
+                            * mass less than 0.95 the system will be destroyed as an ELD in a 
+                            * possible Type 1a SN. COWDs with mass greater than 0.95 and ONeWDs 
+                            * will survive with all the material converted to ONe (JH 30/09/99). 
+                            * Now changed to an ELD for all COWDs when 0.15 accreted (JH 11/01/00).  */
 
+                            structure_change = true;
+                                
                             Delta_m1 = m1_new - m1;
-                            Delta_m2 = m2_new - m2;
+                            Delta_m2 = -m2;
 
                             #ifdef VERBOSE
                             if (verbose_flag > 0)
                             {
-                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ONeMg WD exceeds 1.38 MSun - electron-capture SNe -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- SNe Ia -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
                                 print_system(particlesMap,*integration_flag);
                             }
                             #endif
-                           
+
                             #ifdef LOGGING
                             Log_info_type log_info;
                             log_info.index1 = star2->index;
-                            log_info.SNe_type = 3;
+                            log_info.SNe_type = 1;
                             log_info.SNe_info = 1;
                             update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                             #endif
 
-                            star2->stellar_type = 13;
-                            star2->apply_ECSN_kick = true;
-
-                            star1->instantaneous_perturbation_delta_mass = Delta_m1;
-                            star1->instantaneous_perturbation_delta_mass = Delta_m2;
-                            star2->apply_kick = true;
-                            star2->apply_ECSN_kick == true;
-
-                            bool unbound_orbits;
-                            handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
-
+                            get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                        
+                            handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                                r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+        
+                            star1->mass += Delta_m1;
                             update_stellar_evolution_properties(star1);
-                            update_stellar_evolution_properties(star2);
-
                             reset_ODE_mass_dot_quantities(star1);
-                            reset_ODE_mass_dot_quantities(star2);
                             
-                            if (NS_model == 1)
-                            {
-                                double ospin;
-                                compute_NS_formation_properties_Ye19_model(false, &ospin, &star2->magnetic_field_strength_gauss);
-                                rescale_vector(star2->spin_vec, ospin/norm3(star2->spin_vec));
-                                star2->time_of_NS_formation = t;
-                                star2->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
-                                star2->initial_magnetic_field_strength_gauss = star2->magnetic_field_strength_gauss;
-                            }
-                            
+                            particlesMap->erase(star2->index);
+
                             *integration_flag = 1;
                             break;
                         }
+                    }
+                    else if (binary_evolution_SNe_Ia_single_degenerate_model == 1)
+                    {
+                        /* Model for H or He accretion onto CO WDs */
+                        /* Currently, do not distinguish between accumulation of helium, or accumulation of hydrogen which quickly burns to helium */
+                        //if (kw1 >= 7 and kw1 <= 9 and kw2 == 11)
+                        if (kw1 >= 0 and kw1 <= 10 and kw2 == 11) /* Donor can have hydrogen or helium envelope */
+                        {
+
+                            double m_dot_accretion_SD = star2->m_dot_accretion_SD;
+
+                            bool SNe_explosion = determine_if_He_accreting_WD_explodes(m2, m_dot_accretion_SD, star2->WD_He_layer_mass, star2->luminosity);
+
+                            #ifdef VERBOSE
+                            if (verbose_flag > 0)
+                            {
+                                printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- SNe_explosion %d M_WD %g m_dot %g He Mass %g Lum %g\n",SNe_explosion,m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity);
+                                print_system(particlesMap,*integration_flag);
+                            }
+                            #endif
+                                
+                            if (SNe_explosion == true)
+                            {
+                                structure_change = true;
+                                    
+                                Delta_m1 = m1_new - m1;
+                                Delta_m2 = -m2;
+
+                                #ifdef VERBOSE
+                                if (verbose_flag > 0)
+                                {
+                                    printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Model for H or He accretion onto CO WDs -- SNe Ia -- M_WD %g m_dot %g He Mass %g Lum %g  star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",m2,m_dot_accretion_SD,star2->WD_He_layer_mass,star2->luminosity,star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                                    print_system(particlesMap,*integration_flag);
+                                }
+                                #endif
+
+                                #ifdef LOGGING
+                                Log_info_type log_info;
+                                log_info.index1 = star2->index;
+                                log_info.SNe_type = 1;
+                                log_info.SNe_info = 3;
+                                update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                                #endif
+
+                                get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                                    r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+
+                                handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                                    r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+                                star1->mass += Delta_m1;
+                                update_stellar_evolution_properties(star1);
+
+                                reset_ODE_mass_dot_quantities(star1);
+
+                                particlesMap->erase(star2->index);
+
+                                *integration_flag = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if ((kw2 == 10 or kw2 == 11) and m2_new >= chandrasekhar_mass)
+                {
+
+                    /* If the Chandrasekhar limit is exceeded for a white dwarf then destroy
+                    * the white dwarf in a supernova. If the WD is ONe then a neutron star
+                    * will survive the supernova and we let HRDIAG take care of this when
+                    * the stars are next updated. */
+
+                    structure_change = true;
+                    
+                    //dm1 = chandrasekhar_mass - m_accretor + dms_accretor;
+                    Delta_m1 = m1_new - m1;
+                    Delta_m2 = -m2;
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- Chandrasekhar limit of accretor exceeded -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                        print_system(particlesMap,*integration_flag);
+                    }
+                    #endif
+
+                    #ifdef LOGGING
+                    Log_info_type log_info;
+                    log_info.index1 = star2->index;
+                    log_info.SNe_type = 1;
+                    log_info.SNe_info = 1;
+                    update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                    #endif
+
+                    get_initial_binary_orbital_properties_from_position_and_velocity(star1->R_vec, star1->V_vec, star2->R_vec, star2->V_vec, m1, m2, \
+                        r_vec, v_vec, initial_momentum, initial_R_CM, initial_V_CM, h_vec, e_vec);
+                
+                    handle_gradual_mass_loss_event_in_system(particlesMap, star1, star2, m1 + Delta_m1, m1, m2 + Delta_m2, m2, parent->compact_object_disruption_mass_loss_timescale, \
+                        r_vec, v_vec, initial_R_CM, initial_V_CM, final_R_CM, final_V_CM, final_momentum);
+
+                    star1->mass += Delta_m1;
+                    update_stellar_evolution_properties(star1);
+                    reset_ODE_mass_dot_quantities(star1);
+
+                    particlesMap->erase(star2->index);
+
+                    *integration_flag = 1;
+                    break;
+                }
+                if (kw2 == 12 and m2_new > 1.38)
+                {
+
+                    if (ECSNe_model == 1)
+                    {
+                        /* If an ONeMg WD exceeds 1.38 MSun, assume an electron-capture SNe (ECSN) occurs. */
+                    
+                        structure_change = true;
+
+                        Delta_m1 = m1_new - m1;
+                        Delta_m2 = m2_new - m2;
+
+                        #ifdef VERBOSE
+                        if (verbose_flag > 0)
+                        {
+                            printf("binary_evolution.cpp -- handle_mass_accretion_events_with_degenerate_objects -- ONeMg WD exceeds 1.38 MSun - electron-capture SNe -- star1 %d star2 %d - Delta_m1 %g Delta_m2 %g m1 %g m2 %g m1dot %g m2dot %g m1_new %g m2_new %g\n",star1->index,star2->index,Delta_m1,Delta_m2,m1,m2,mdot1,mdot2,m1_new,m2_new);
+                            print_system(particlesMap,*integration_flag);
+                        }
+                        #endif
+                       
+                        #ifdef LOGGING
+                        Log_info_type log_info;
+                        log_info.index1 = star2->index;
+                        log_info.SNe_type = 3;
+                        log_info.SNe_info = 1;
+                        update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
+                        #endif
+
+                        star2->stellar_type = 13;
+                        star2->apply_ECSN_kick = true;
+
+                        star1->instantaneous_perturbation_delta_mass = Delta_m1;
+                        star1->instantaneous_perturbation_delta_mass = Delta_m2;
+                        star2->apply_kick = true;
+                        star2->apply_ECSN_kick == true;
+
+                        bool unbound_orbits;
+                        handle_SNe_in_system(particlesMap, &unbound_orbits, integration_flag);
+
+                        update_stellar_evolution_properties(star1);
+                        update_stellar_evolution_properties(star2);
+
+                        reset_ODE_mass_dot_quantities(star1);
+                        reset_ODE_mass_dot_quantities(star2);
+                        
+                        if (NS_model == 1)
+                        {
+                            double ospin;
+                            compute_NS_formation_properties_Ye19_model(false, &ospin, &star2->magnetic_field_strength_gauss);
+                            rescale_vector(star2->spin_vec, ospin/norm3(star2->spin_vec));
+                            star2->time_of_NS_formation = t;
+                            star2->initial_NS_period_s = compute_spin_period_from_spin_angular_frequency(ospin) * yr_to_s;
+                            star2->initial_magnetic_field_strength_gauss = star2->magnetic_field_strength_gauss;
+                        }
+                        
+                        *integration_flag = 1;
+                        break;
                     }
                 }
             }

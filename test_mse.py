@@ -2090,6 +2090,279 @@ class test_mse():
     
             pyplot.show()
 
+    def test20(self,args):
+        print("Test Helium star system")
+
+        #particles = Tools.create_fully_nested_multiple(2,[5.958893384591632, 3.574547072971755], [0.03], [0.0], [0.01], [0.01], [0.01], metallicities=[0.02,0.02],stellar_types=[11,7],object_types=[1,1])
+        particles = Tools.create_fully_nested_multiple(2,[5.958893384591632, 1.0], [0.0043], [0.0], [0.01], [0.01], [0.01], metallicities=[0.02,0.02],stellar_types=[11,7],object_types=[1,1])
+        
+        particles = Tools.create_fully_nested_multiple(2,[5.958893384591632, 1.0], [0.0015], [0.0], [0.01], [0.01], [0.01], metallicities=[0.02,0.02],stellar_types=[11,7],object_types=[1,1])
+        
+        binaries = [x for x in particles if x.is_binary == True]
+        bodies = [x for x in particles if x.is_binary == False]
+
+        code = MSE()
+        code.add_particles(particles)
+
+        t = 0.0
+        N=1000
+        tend = 1.0e9
+        dt=tend/float(N)
+
+        t_print_array = []
+        a_print_array = []
+        e_print_array = []
+        AP_print_array = []
+
+        code.evolve_model(0.0) ### make sure that stellar_evolution.cpp -- initialize_stars() is run
+        code.particles[1].stellar_type = 10
+        code.particles[0].age = 1.60722e+08
+        code.particles[1].age = 0.0
+
+        code.binary_evolution_SNe_Ia_single_degenerate_model = 0
+        code.binary_evolution_SNe_Ia_double_degenerate_model = 0
+
+        code.effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e0
+
+        N_bodies = 2
+        N_orbits = 1
+        t_print = [[]]
+        internal_indices_print = [[[] for x in range(N_bodies)]]
+        k_print = [[[] for x in range(N_bodies)]]
+        m_print = [[[] for x in range(N_bodies)]]
+        L_print = [[[] for x in range(N_bodies)]]
+        T_eff_print = [[[] for x in range(N_bodies)]]
+        R_print = [[[] for x in range(N_bodies)]]
+        X_print = [[[] for x in range(N_bodies)]]
+        Y_print = [[[] for x in range(N_bodies)]]
+        Z_print = [[[] for x in range(N_bodies)]]
+        Rc_print = [[[] for x in range(N_bodies)]]
+        R_L_print = [[[] for x in range(N_bodies)]]
+        t_V_print = [[[] for x in range(N_bodies)]]
+        mc_print = [[[] for x in range(N_bodies)]]
+        a_print = [[[] for x in range(N_orbits)]]
+        e_print = [[[] for x in range(N_orbits)]]
+        rel_INCL_print = [[[] for x in range(N_orbits)]]
+        spin_frequency_print = [[[] for x in range(N_bodies)]]
+        
+        i_status = 0
+        integration_flags = [[]]
+        code.verbose_flag = 1
+        N_orbits_status = [N_orbits]
+        N_bodies_status = [N_bodies]
+
+        while (t<tend):
+            t+=dt
+            code.evolve_model(t)
+            
+            #particles = code.particles
+            #binaries = [x for x in particles if x.is_binary == True]
+            #bodies = [x for x in particles if x.is_binary == False]
+
+
+            particles = code.particles
+            orbits = [x for x in particles if x.is_binary==True]
+            bodies = [x for x in particles if x.is_binary==False]
+            N_orbits = len(orbits)
+            N_bodies = len(bodies)
+
+            if args.verbose==True:
+                print( 't/Myr',t,'smas',[x.a for x in orbits],'stellar types',[x.stellar_type for x in bodies],'masses',[x.mass for x in bodies],'ages',[x.age for x in bodies],'WD_He_layer_mass',[x.WD_He_layer_mass for x in bodies],'m_dot_accretion_SD',[x.m_dot_accretion_SD for x in bodies])
+              
+            if code.structure_change == True:
+                #print("Python restruct")#,children1,children1_old,children2,children2_old)
+                t_print.append([])
+                integration_flags.append([])
+                internal_indices_print.append([[] for x in range(N_bodies)])
+                k_print.append([[] for x in range(N_bodies)])
+                m_print.append([[] for x in range(N_bodies)])
+                L_print.append([[] for x in range(N_bodies)])
+                T_eff_print.append([[] for x in range(N_bodies)])
+                R_print.append([[] for x in range(N_bodies)])
+                X_print.append([[] for x in range(N_bodies)])
+                Y_print.append([[] for x in range(N_bodies)])
+                Z_print.append([[] for x in range(N_bodies)])
+                Rc_print.append([[] for x in range(N_bodies)])
+                R_L_print.append([[] for x in range(N_bodies)])
+                t_V_print.append([[] for x in range(N_bodies)])
+                mc_print.append([[] for x in range(N_bodies)])
+                a_print.append([[] for x in range(N_orbits)])
+                e_print.append([[] for x in range(N_orbits)])
+                rel_INCL_print.append([[] for x in range(N_orbits)])
+                spin_frequency_print.append([[] for x in range(N_bodies)])
+                
+                N_orbits_status.append(N_orbits)
+                N_bodies_status.append(N_bodies)
+                
+                i_status += 1
+                
+            for index in range(N_orbits):
+                rel_INCL_print[i_status][index].append(orbits[index].INCL_parent)
+                e_print[i_status][index].append(orbits[index].e)
+                a_print[i_status][index].append(orbits[index].a)
+            for index in range(N_bodies):
+                internal_indices_print[i_status][index].append(bodies[index].index)
+                m_print[i_status][index].append(bodies[index].mass)
+                L_print[i_status][index].append(bodies[index].luminosity)
+                k_print[i_status][index].append(bodies[index].stellar_type)
+                R_print[i_status][index].append(bodies[index].radius)
+                X_print[i_status][index].append(bodies[index].X)
+                Y_print[i_status][index].append(bodies[index].Y)
+                Z_print[i_status][index].append(bodies[index].Z)
+                t_V_print[i_status][index].append(bodies[index].tides_viscous_time_scale)
+                Rc_print[i_status][index].append(bodies[index].convective_envelope_radius)
+                R_L_print[i_status][index].append(bodies[index].roche_lobe_radius_pericenter)
+                mc_print[i_status][index].append(bodies[index].convective_envelope_mass)
+                T_eff = Tools.compute_effective_temperature(bodies[index].luminosity, bodies[index].radius, code.CONST_L_SUN, code.CONST_R_SUN)
+                T_eff_print[i_status][index].append(T_eff)
+                spin_frequency_print[i_status][index].append( np.sqrt( bodies[index].spin_vec_x**2 + bodies[index].spin_vec_y**2 + bodies[index].spin_vec_z**2) )
+
+            t_print[i_status].append(t)        
+            integration_flags[i_status].append(code.integration_flag)        
+
+        code.write_final_log_entry() ### This has to be done within Python, since the C++ code does not know if the desired Python simulation end time has been reached!
+        N_status = i_status+1
+        
+        for i_status in range(N_status):
+            t_print[i_status] = np.array(t_print[i_status])
+
+        import copy
+        error_code_copy = copy.deepcopy(code.error_code)
+        log_copy = copy.deepcopy(code.log)
+
+        code.reset()
+                
+        if HAS_MATPLOTLIB == True and args.plot==True:
+            from matplotlib import lines
+            
+            parsec_in_AU = 206201.0
+            CONST_L_SUN = 0.0002710404109745588
+
+            plot_log = []
+            previous_event_flag = -1
+            for index_log,log in enumerate(log_copy):
+                event_flag = log["event_flag"]
+                if previous_event_flag == event_flag and (event_flag == 4 or event_flag == 10):
+                    
+                    continue
+                plot_log.append(log)
+                previous_event_flag = event_flag
+                            
+            N_l = len(plot_log)
+            N_r = int(np.ceil(np.sqrt(N_l)))#+1
+            N_c = N_r
+            panel_length = 3
+
+            fontsize=10
+            fig=pyplot.figure(figsize=(N_r*panel_length,N_r*panel_length))
+            
+            legend_elements = []
+            for k in range(15):
+                color,s,description = Tools.get_color_and_size_and_description_for_star(k,1.0)
+                legend_elements.append( lines.Line2D([0],[0], marker = 'o', markerfacecolor = color, color = 'w', markersize = 10 ,label="$\mathrm{%s}$"%description))
+
+            for index_log,log in enumerate(plot_log):
+                plot=fig.add_subplot(N_r,N_c,index_log+1)
+                particles = log["particles"]
+                event_flag = log["event_flag"]
+                index1 = log["index1"]
+                index2 = log["index2"]
+
+                Tools.generate_mobile_diagram(particles,plot,fontsize=fontsize,index1=index1,index2=index2,event_flag=event_flag)
+
+                text = Tools.get_description_for_event_flag(event_flag,log["SNe_type"])
+                plot.set_title(text,fontsize=fontsize)
+                plot.annotate("$t\simeq %s\,\mathrm{Myr}$"%round(log["time"]*1e-6,2),xy=(0.1,0.9),xycoords='axes fraction',fontsize=fontsize)
+
+                if index_log == 0:
+                    plot.legend(handles = legend_elements, bbox_to_anchor = (-0.05, 1.50), loc = 'upper left', ncol = 5,fontsize=0.85*fontsize)
+                
+            #fig.savefig(plot_filename + "_mobile.pdf")
+        
+            fig=pyplot.figure(figsize=(8,10))
+            Np=4
+            plot1=fig.add_subplot(Np,1,1)
+            plot2=fig.add_subplot(Np,1,2,yscale="log")
+            plot3=fig.add_subplot(Np,1,3,yscale="linear")
+            plot4=fig.add_subplot(Np,1,4,yscale="log")
+            
+            fig_pos=pyplot.figure(figsize=(8,8))
+            plot_pos=fig_pos.add_subplot(1,1,1)
+
+            fig_HRD=pyplot.figure(figsize=(8,8))
+            plot_HRD=fig_HRD.add_subplot(1,1,1)
+            
+            colors = ['k','tab:red','tab:green','tab:blue','y','k','tab:red','tab:green','tab:blue','y']
+            linewidth=1.0
+            for i_status in range(N_status):
+                N_bodies = N_bodies_status[i_status]
+                N_orbits = N_orbits_status[i_status]
+                
+                #if i_status==0:
+                #    plot1.plot(1.0e-6*t_print[i_status],np.array(m_print[i_status][0])**2*np.array(m_print[i_status][1])**2*np.array(a_print[i_status][0]),color='y',linewidth=3)
+                #    plot1.plot(1.0e-6*t_print[i_status],(np.array(m_print[i_status][0])+np.array(m_print[i_status][1]))*np.array(a_print[i_status][0]),color='y',linewidth=3)
+                for index in range(N_bodies):
+                    color=colors[index]
+                    plot1.plot(1.0e-6*t_print[i_status],m_print[i_status][index],color=color,linewidth=linewidth)
+                    plot1.plot(1.0e-6*t_print[i_status],mc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
+                    plot3.plot(1.0e-6*t_print[i_status],k_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],R_print[i_status][index],color=color,linestyle='solid',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],Rc_print[i_status][index],color=color,linestyle='dotted',linewidth=linewidth)
+                    
+                    plot_pos.plot(np.array(X_print[i_status][index])/parsec_in_AU,np.array(Y_print[i_status][index])/parsec_in_AU,color=color,linestyle='solid',linewidth=linewidth)
+                    
+                    plot_HRD.scatter(np.log10(np.array(T_eff_print[i_status][index])), np.log10(np.array(L_print[i_status][index])/CONST_L_SUN),color=color,linestyle='solid',linewidth=linewidth,s=10)
+                    #plot4.plot(1.0e-6*t_print[i_status],spin_frequency_print[i_status][index],color=color,linewidth=linewidth) 
+                    plot4.plot(1.0e-6*t_print[i_status],3.15576e7*2.0*np.pi/np.array(spin_frequency_print[i_status][index]),color=color,linewidth=linewidth) 
+                   
+                linewidth=1.0
+                for index in range(N_orbits):
+                    color = colors[index]
+                    smas = np.array(a_print[i_status][index])
+                    es = np.array(e_print[i_status][index])
+                    plot2.plot(1.0e-6*t_print[i_status],smas,color=color,linestyle='dotted',linewidth=linewidth)
+                    plot2.plot(1.0e-6*t_print[i_status],smas*(1.0-es),color=color,linestyle='solid',linewidth=linewidth)
+                
+                linewidth+=0.4
+
+            fontsize=18
+            labelsize=12
+
+            plots = [plot1,plot2,plot3,plot4]
+            for plot in plots:
+                plot.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+
+            log_CEs = [x for x in plot_log if x["event_flag"] == 6]
+            t_CEs_Myr = np.array([x["time"]*1e-6 for x in log_CEs])
+            
+            for k,t in enumerate(t_CEs_Myr):
+                plot2.axvline(x=t,linestyle='dotted',color='tab:red',linewidth=0.5)
+                plot2.annotate("$\mathrm{CE}$",xy=(1.02*t,1.0e3),fontsize=0.8*fontsize)
+            
+            plot1.set_ylabel("$m/\mathrm{M}_\odot$",fontsize=fontsize)
+            plot2.set_ylabel("$r/\mathrm{au}$",fontsize=fontsize)
+            plot3.set_ylabel("$\mathrm{Stellar\,Type}$",fontsize=fontsize)
+            #plot4.set_ylabel("$\Omega_\mathrm{spin}/\mathrm{yr^{-1}}$",fontsize=fontsize)
+            plot4.set_ylabel("$P_\mathrm{spin}/\mathrm{s}$",fontsize=fontsize)
+            plot4.set_xlabel("$t/\mathrm{Myr}$",fontsize=fontsize)
+            plot2.set_ylim(1.0e-5,1.0e5)
+            
+            plot_pos.set_xlabel("$X/\mathrm{pc}$",fontsize=fontsize)
+            plot_pos.set_ylabel("$Y/\mathrm{pc}$",fontsize=fontsize)
+            plot_pos.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            
+
+            plot_HRD.set_xlim(5.0,3.0)
+            plot_HRD.set_ylim(-4.0,6.0)
+            plot_HRD.set_xlabel("$\mathrm{log}_{10}(T_\mathrm{eff}/\mathrm{K})$",fontsize=fontsize)
+            plot_HRD.set_ylabel(r"$\mathrm{log}_{10}(L/L_\odot)$",fontsize=fontsize)
+            plot_HRD.tick_params(axis='both', which ='major', labelsize = labelsize,bottom=True, top=True, left=True, right=True)
+            
+            #fig.savefig(plot_filename + ".pdf")
+            #fig_pos.savefig(plot_filename + "_pos.pdf")
+            #fig_HRD.savefig(plot_filename + "_HRD.pdf")
+            
+            pyplot.show()
 
 
     def test100(self,args):

@@ -2305,6 +2305,11 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         update_stellar_evolution_properties(star1);
                         reset_ODE_mass_dot_quantities(star1);
 
+                        if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
+                        {
+                            particlesMap->erase(star1->index);
+                        }
+
                         particlesMap->erase(star2->index);
 
                         *integration_flag = 1;
@@ -2355,6 +2360,11 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             update_stellar_evolution_properties(star1);
                             reset_ODE_mass_dot_quantities(star1);
                             
+                            if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
+                            {
+                                particlesMap->erase(star1->index);
+                                printf("REMOVE\n");
+                            }
                             particlesMap->erase(star2->index);
 
                             *integration_flag = 1;
@@ -2415,6 +2425,12 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
 
                                 reset_ODE_mass_dot_quantities(star1);
 
+                                if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
+                                {
+                                    particlesMap->erase(star1->index);
+                                    printf("REMOVE\n");
+                                }
+
                                 particlesMap->erase(star2->index);
 
                                 *integration_flag = 1;
@@ -2462,6 +2478,12 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                     star1->mass += Delta_m1;
                     update_stellar_evolution_properties(star1);
                     reset_ODE_mass_dot_quantities(star1);
+
+                    if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
+                    {
+                        particlesMap->erase(star1->index);
+                        printf("REMOVE\n");
+                    }
 
                     particlesMap->erase(star2->index);
 

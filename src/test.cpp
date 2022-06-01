@@ -2621,6 +2621,7 @@ int test_mass_accretion_events_with_degenerate_objects()
     star2->mass_dot_wind_accretion = 0.0;
     star2->mass_dot_adiabatic_ejection = 0.0;
     star2->mass_dot_RLOF_triple = 0.0;
+    star1->mass_dot_RLOF = -0.1;
     star2->mass_dot_RLOF = 0.1;
     handle_mass_accretion_events_with_degenerate_objects(&particlesMap, t_old, t, &integration_flag, &dt_binary_evolution);
     //bool stable = check_system_for_dynamical_stability(&particlesMap, &integration_flag);

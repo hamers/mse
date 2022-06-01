@@ -1857,13 +1857,13 @@ class Particle(object):
 
         if self.index is None:
             if self.is_binary == False:
-                return "Particle(is_binary={0}, mass={1:g})".format(self.is_binary,self.mass)
+                return "Particle(is_binary={0}, mass={1:g}, stellar_type={2:d})".format(self.is_binary,self.mass,self.stellar_type)
             else:
                 #return "Particle(is_binary={0}, child1={1:d}, child2={2:d}, a={3:g}, e={4:g}, INCL={5:g}, AP={6:g}, LAN={7:g})".format(self.is_binary,self.child1,self.child2,self.a,self.e,self.INCL,self.AP,self.LAN)
                 return "Particle(is_binary={0})".format(self.is_binary)
         else:
             if self.is_binary == False:
-                return "Particle(is_binary={0}, index={1:d}, mass={2:g})".format(self.is_binary,self.index,self.mass)
+                return "Particle(is_binary={0}, index={1:d}, mass={2:g}, stellar_type={3:d})".format(self.is_binary,self.index,self.mass,self.stellar_type)
             else:
                 return "Particle(is_binary={0}, index={1:d}, child1={2:d}, child2={3:d}, a={4:g}, e={5:g}, INCL={6:g}, AP={7:g}, LAN={8:g})".format(self.is_binary,self.index,self.child1.index,self.child2.index,self.a,self.e,self.INCL,self.AP,self.LAN)
 
@@ -1928,7 +1928,7 @@ class Tools(object):
             particle.object_type = object_types[index]
                 
             particles.append(particle)
-        
+
         for index in range(N_binaries):
             if index==0:
                 child1 = particles[0]

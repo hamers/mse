@@ -2291,7 +2291,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         Log_info_type log_info;
                         log_info.index1 = star2->index;
                         log_info.SNe_type = 1;
-                        log_info.SNe_info = 1;
+                        log_info.SNe_info = 2; // Since two degenerate objects are involved, consider this to be a double degenerate SNe Ia explosion
                         update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                         #endif
             
@@ -2363,7 +2363,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                             if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
                             {
                                 particlesMap->erase(star1->index);
-                                printf("REMOVE\n");
                             }
                             particlesMap->erase(star2->index);
 
@@ -2428,7 +2427,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                                 if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
                                 {
                                     particlesMap->erase(star1->index);
-                                    printf("REMOVE\n");
                                 }
 
                                 particlesMap->erase(star2->index);
@@ -2482,7 +2480,6 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                     if (m1_new <= 0.0) // Remove donor if there is nothing left (can happen if the mass transfer rate is very high)
                     {
                         particlesMap->erase(star1->index);
-                        printf("REMOVE\n");
                     }
 
                     particlesMap->erase(star2->index);

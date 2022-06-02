@@ -167,6 +167,9 @@ extern double NS_Ye19_model_NS_RLOF_threshold_accreted_mass;
 
 extern int ECSNe_model;
 
+/* sdB formation */
+extern double defining_upper_mass_for_sdB_formation;
+
 /* Used in MSTAR only */
 extern double SPEEDOFLIGHT;
 extern double GCONST;

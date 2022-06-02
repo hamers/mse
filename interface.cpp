@@ -1035,7 +1035,8 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     double wall_time_max_s_, \
     int NS_model_, int ECSNe_model_, \
     int system_index_, \
-    int binary_evolution_mass_transfer_model_, int binary_evolution_SNe_Ia_single_degenerate_model_, int binary_evolution_SNe_Ia_double_degenerate_model_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO_)
+    int binary_evolution_mass_transfer_model_, int binary_evolution_SNe_Ia_single_degenerate_model_, int binary_evolution_SNe_Ia_double_degenerate_model_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision_, double binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO_, \
+    double defining_upper_mass_for_sdB_formation_)
 {
     relative_tolerance = relative_tolerance_;
     absolute_tolerance_eccentricity_vectors = absolute_tolerance_eccentricity_vectors_;
@@ -1098,6 +1099,7 @@ int set_parameters(double relative_tolerance_, double absolute_tolerance_eccentr
     beta_wind_accretion = beta_wind_accretion_;
     NS_model = NS_model_;
     ECSNe_model = ECSNe_model_;
+    defining_upper_mass_for_sdB_formation = defining_upper_mass_for_sdB_formation_;
     
     triple_mass_transfer_primary_star_accretion_efficiency_no_disk = triple_mass_transfer_primary_star_accretion_efficiency_no_disk_;
     triple_mass_transfer_secondary_star_accretion_efficiency_no_disk = triple_mass_transfer_secondary_star_accretion_efficiency_no_disk_;

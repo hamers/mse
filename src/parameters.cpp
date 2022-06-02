@@ -209,6 +209,9 @@ double NS_Ye19_model_NS_RLOF_threshold_accreted_mass = 1.0e-6;
 
 int ECSNe_model = 0;
 
+/* sdB formation */
+double defining_upper_mass_for_sdB_formation = 0.65;
+
 /* Used in MSTAR only */
 double SPEEDOFLIGHT = CONST_C_LIGHT;
 double GCONST = CONST_G;

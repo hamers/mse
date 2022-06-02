@@ -42,6 +42,7 @@ extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine 
 #define LOG_TRIPLE_CE_END           (int)   15
 #define LOG_MSP_FORMATION           (int)   16
 #define LOG_FIN                     (int)   17
+#define LOG_SDB_FORMATION           (int)   18
 #endif
 
 
@@ -881,6 +882,7 @@ class Particle
     double apsidal_motion_constant, gyration_radius;
     double sse_k2,sse_k3;
     bool has_formed_MSP;
+    bool has_formed_sdB;
     double WD_He_layer_mass;
     double m_dot_accretion_SD;
 
@@ -1152,6 +1154,7 @@ class Particle
         time_of_NS_formation = 0.0;
         initial_NS_period_s = 0.0;
         has_formed_MSP = false;
+        has_formed_sdB = false;
         WD_He_layer_mass = 0.0;
         m_dot_accretion_SD = 0.0;
 

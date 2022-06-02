@@ -73,7 +73,7 @@ class MSE(object):
         self.__nbody_other_direct_integration_time_multiplier = 1.5
         
         self.__effective_radius_multiplication_factor_for_collisions_stars = 1.0
-        self.__effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e2
+        self.__effective_radius_multiplication_factor_for_collisions_compact_objects = 1.0e0
         
         self.__binary_evolution_CE_energy_flag = 0
         self.__binary_evolution_CE_spin_flag = 1
@@ -88,6 +88,7 @@ class MSE(object):
         self.__beta_wind_accretion = 0.125
         self.__NS_model = 0
         self.__ECSNe_model = 0
+        self.__defining_upper_mass_for_sdB_formation = 0.65
         self.__binary_evolution_SNe_Ia_single_degenerate_model = 0
         self.__binary_evolution_SNe_Ia_double_degenerate_model = 0
         self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision = 0.9
@@ -277,7 +278,8 @@ class MSE(object):
             ctypes.c_double, \
             ctypes.c_int, ctypes.c_int, \
             ctypes.c_int, \
-            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double)
+            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, \
+            ctypes.c_double)
         self.lib.set_parameters.restype = ctypes.c_int
 
         self.__set_parameters_in_code() 
@@ -797,7 +799,8 @@ class MSE(object):
             self.__wall_time_max_s, \
             self.__NS_model, self.__ECSNe_model, \
             self.__system_index, \
-            self.__binary_evolution_mass_transfer_model, self.__binary_evolution_SNe_Ia_single_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO)
+            self.__binary_evolution_mass_transfer_model, self.__binary_evolution_SNe_Ia_single_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_eccentricity_for_eccentric_collision, self.__binary_evolution_SNe_Ia_double_degenerate_model_minimum_primary_mass_CO_CO, \
+            self.__defining_upper_mass_for_sdB_formation)
 
     def reset(self):
         self.__init__()
@@ -1566,6 +1569,14 @@ class MSE(object):
     @beta_wind_accretion.setter
     def beta_wind_accretion(self, value):
         self.__beta_wind_accretion = value
+        self.__set_parameters_in_code()
+
+    @property
+    def defining_upper_mass_for_sdB_formation(self):
+        return self.__defining_upper_mass_for_sdB_formation
+    @defining_upper_mass_for_sdB_formation.setter
+    def defining_upper_mass_for_sdB_formation(self, value):
+        self.__defining_upper_mass_for_sdB_formation = value
         self.__set_parameters_in_code()
 
     @property
@@ -3158,6 +3169,8 @@ class Tools(object):
             text = "$\mathrm{MSP\,formation}$"
         elif event_flag == 17:
             text = "$\mathrm{Final\,state}$"
+        elif event_flag == 18:
+            text = "$\mathrm{sdB\,formation}$"
         else:
             text = ""
         return text

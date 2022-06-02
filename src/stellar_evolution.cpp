@@ -552,7 +552,13 @@ int evolve_stars(ParticlesMap *particlesMap, double start_time, double end_time,
                     if (kw < 13)
                     {
                         update_log_data(particlesMap, start_time, *integration_flag, LOG_ST_CHANGE, log_info);
-                        
+
+                        if (kw == 7 and mt < defining_upper_mass_for_sdB_formation)
+                        {
+                           update_log_data(particlesMap, start_time, *integration_flag, LOG_SDB_FORMATION, log_info);
+                           p->has_formed_sdB = true;
+                        }
+                                               
                         if (kw >= 10 and kw <= 12 and p->include_WD_kicks == true)
                         {
                             update_log_data(particlesMap, start_time, *integration_flag, LOG_WD_KICK_START, log_info);

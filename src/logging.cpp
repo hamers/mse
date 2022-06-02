@@ -26,6 +26,7 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 15: Triple CE end
  * 16: MSP formation
  * 17: final state (written when write_final_log_entry is called within Python)
+ * 18: sdB_formation
  */
  
  /* SNe types

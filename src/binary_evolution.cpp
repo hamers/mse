@@ -2236,7 +2236,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
     
     double dt = t - t_old;
     
-    double m1,m2,mdot1,mdot2,m1_new,m2_new,Delta_m1,Delta_m2;
+    double m1,m2,mdot1,mdot2,m1_new,m2_new,Delta_m1,Delta_m2,m2_new_max;
     int kw1,kw2;
 
     double initial_momentum[3],initial_R_CM[3],initial_V_CM[3];
@@ -2265,10 +2265,11 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                 mdot2 = star2->mass_dot_wind + star2->mass_dot_wind_accretion + star2->mass_dot_adiabatic_ejection + star2->mass_dot_RLOF + star2->mass_dot_RLOF_triple;
                 m1_new = m1 + mdot1 * dt; // new mass donor/accretor would have after this time-step (taking account wind mass losses)
                 m2_new = m2 + mdot2 * dt;
+                m2_new_max = m1 + m2;
                 
                 kw1 = star1->stellar_type;
 
-                if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7)
+                if (kw1 <= 10 and kw2 == 10 and m2_new >= 0.7 and m2_new_max >= 0.7)
                 {
                     if (binary_evolution_SNe_Ia_single_degenerate_model == 0 or binary_evolution_SNe_Ia_single_degenerate_model == 1)
                     {
@@ -2437,7 +2438,7 @@ void handle_mass_accretion_events_with_degenerate_objects(ParticlesMap *particle
                         }
                     }
                 }
-                if ((kw2 == 10 or kw2 == 11) and m2_new >= chandrasekhar_mass)
+                if ((kw2 == 10 or kw2 == 11) and m2_new >= chandrasekhar_mass and m2_new_max >= chandrasekhar_mass)
                 {
 
                     /* If the Chandrasekhar limit is exceeded for a white dwarf then destroy

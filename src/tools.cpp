@@ -982,7 +982,6 @@ int clear_particles(ParticlesMap *particlesMap)
         Particle *p = it->second;
         if (p->zpars_allocated == true) // Only delete zpars if the memory was allocated on the heap (in case of stars with zpars originally initialised in stellar_evolution.cpp)
         {
-//            printf("ZTEST %g %g\n",p->zpars[0],p->zpars[1]);
             delete[] p->zpars;
         }
         delete p;

@@ -90,7 +90,7 @@ int system_index = 0;
 double secular_integration_exclusion_safety_factor = 1.0e-5;
 double ODE_min_dt = 1.0;
 time_t wall_time_start = 0.0;
-double wall_time_max_s = 1.8e4;
+double wall_time_max_s = 3.6e4;
 
 double epsilon = 1.0e-12; /* used for tiny numbers close to machine precision */
 

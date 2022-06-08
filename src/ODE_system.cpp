@@ -162,6 +162,13 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
         flag = CV_ROOT_RETURN;
         *output_flag = CV_ROOT_RETURN;
         *output_time = start_time;
+        
+        N_VDestroy_Serial(y);
+        N_VDestroy_Serial(y_out);
+        N_VDestroy_Serial(y_abs_tol);
+        CVodeFree(&cvode_mem);
+        free(data);
+        
         return 0;
     }
     else
@@ -219,7 +226,8 @@ int integrate_ODE_system(ParticlesMap *particlesMap, double start_time, double e
     N_VDestroy_Serial(y_out);
     N_VDestroy_Serial(y_abs_tol);
     CVodeFree(&cvode_mem);
-
+    free(data);
+        
 	return 0;
 }
 
@@ -557,7 +565,7 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
                 {
                    
                     #ifdef VERBOSE
-                    if (verbose_flag > 0)
+                    if (verbose_flag > 1)
                     {
                         printf("ODE_system.cpp -- extract_ODE_variables -- p %d e = %g > 1; original e_vec %g %g %g\n",p->index,norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
                     }
@@ -571,7 +579,7 @@ void extract_ODE_variables(ParticlesMap *particlesMap, N_Vector &y, double delta
                     }
 
                     #ifdef VERBOSE
-                    if (verbose_flag > 0)
+                    if (verbose_flag > 1)
                     {
                         printf("ODE_system.cpp -- extract_ODE_variables -- p %d; new adjusted e = %g; e_vec %g %g %g\n",p->index,norm3(p->e_vec),p->e_vec[0],p->e_vec[1],p->e_vec[2]); 
                     }

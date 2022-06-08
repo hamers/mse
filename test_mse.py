@@ -1600,6 +1600,7 @@ class test_mse():
         assert(round(np.mean(np.array(delta_Ms)),3) == 0.036)
         assert(round(np.mean(np.array(alphas)),3) == 0.631)
         
+        code.reset()
         
         if args.plot == True:
             Nb=50
@@ -1696,6 +1697,8 @@ class test_mse():
         assert(round(np.mean(np.array(vs2)),N_r) == round(mu,N_r))
         assert(round(np.std(np.array(vs2)),N_r) == round(sigma,N_r))
 
+        code.reset()
+
         if args.plot == True:
             Nb=100
             fontsize=20
@@ -1743,7 +1746,9 @@ class test_mse():
         ms = np.array(ms)
 
         assert(round(np.mean(ms),1) == 0.50)
-        
+
+        code.reset()
+
         if args.verbose==True:
             print("mean ms/MSun",np.mean(ms))
         
@@ -1808,6 +1813,7 @@ class test_mse():
             vs_NS[index_kick] = np.array(vs_NS[index_kick])
             vs_BH[index_kick] = np.array(vs_BH[index_kick])
 
+        code.reset()
        
         if args.plot == True:
             Nb=50
@@ -1907,6 +1913,8 @@ class test_mse():
         assert( np.mean(np.array( [x[1] for x in b_vecs]))/b_mean_an <= tol ) 
         assert( np.mean(np.array( [x[2] for x in b_vecs]))/b_mean_an <= tol ) 
         
+        code.reset()
+
         if args.verbose==True:
             print("mean bs/au",np.mean(bs),' an ',b_mean_an)
         
@@ -1995,6 +2003,8 @@ class test_mse():
         
         if args.verbose==True:
             print("np.amin(all_etas)",np.amin(all_etas),"np.amax(all_etas)",np.amax(all_etas),"np.mean(all_etas)",np.mean(all_etas))
+
+        code.reset()
 
         if args.plot == True:
             Nb=50

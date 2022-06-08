@@ -81,12 +81,12 @@ int initialize_stars(ParticlesMap *particlesMap)
                 error_code = 17;
                 longjmp(jump_buf,1);
             }
+           
+            p->zpars = new double[20];
+            p->zpars_allocated = true;
 
-            double *zpars;
-            zpars = new double[20];
-            //double zpars[20];
+            double *zpars = p->zpars;
             zcnsts_(&z,zpars);
-            p->zpars = zpars;
             
             kw_desired = p->stellar_type;
             sse_initial_mass = p->sse_initial_mass;

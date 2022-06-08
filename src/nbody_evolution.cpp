@@ -393,7 +393,7 @@ void analyze_mstar_system(struct RegularizedRegion *R, bool *stable_system, Part
     {
         *stable_system = false;
     }
-    
+
     clear_particles(&future_particlesMap);
     
     #ifdef VERBOSE

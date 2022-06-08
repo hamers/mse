@@ -875,6 +875,7 @@ class Particle
     double epoch,age;
     double metallicity;
     double *zpars;
+    bool zpars_allocated;
     double convective_envelope_mass,convective_envelope_radius;
     double core_mass,core_mass_old,core_radius;
     double luminosity;
@@ -1132,6 +1133,7 @@ class Particle
         sse_initial_mass = 0.0;
         sse_time_step = 1.0;
         metallicity = 0.02;
+        zpars_allocated = false;
         epoch = 0.0;
         age = 0.0;
         convective_envelope_mass = 0.0;

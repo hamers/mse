@@ -519,7 +519,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                 log_info.eccentricity = e_old;
                 update_log_data(particlesMap, t, *integration_flag, LOG_SNE_START, log_info);
                 #endif
-            
+
                 #ifdef VERBOSE
                 if (verbose_flag > 0)
                 {
@@ -557,6 +557,7 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
                     destroyed = false;
 
                     kw = 11;
+                    m = m_secondary;
                     m0 = m_secondary;
                     mc = m_secondary;
                     age = 0.0;
@@ -718,8 +719,6 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
         return;
     }
     
-    
-    
     if (destroyed == false and (m0 == -1 or age == -1))
     {
         printf("merger.cpp -- collision_product -- destroyed = false -- was not able to determine all properties of merged object! Will ignore the collision. \n");
@@ -752,9 +751,9 @@ void collision_product(ParticlesMap *particlesMap, int binary_index, int child1_
     {
         /* child1 will become the merged object */
         particlesMap->erase(child2->index);
-        //it_p = particlesMap->erase(particlesMap->find(child2->index));
 
         /* Update properties of merged star */
+
         child1->stellar_type = kw;
         child1->mass = m;
         child1->sse_initial_mass = m0;

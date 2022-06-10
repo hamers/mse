@@ -450,7 +450,15 @@ int dynamical_mass_transfer_low_mass_donor(ParticlesMap *particlesMap, int paren
         print_system(particlesMap,*integration_flag);
     }
     #endif
-    
+
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = parent_index;
+    log_info.index1 = donor_index;
+    log_info.index2 = accretor_index;
+    update_log_data(particlesMap, t, *integration_flag, LOG_DYN_MT_LOW_MASS_DONOR, log_info);
+    #endif
+
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];
@@ -654,6 +662,14 @@ int dynamical_mass_transfer_WD_donor(ParticlesMap *particlesMap, int parent_inde
     }
     #endif
 
+    #ifdef LOGGING
+    Log_info_type log_info;
+    log_info.binary_index = parent_index;
+    log_info.index1 = donor_index;
+    log_info.index2 = accretor_index;
+    update_log_data(particlesMap, t, *integration_flag, LOG_DYN_MT_WD_DONOR, log_info);
+    #endif
+    
     Particle *parent = (*particlesMap)[parent_index];
     Particle *donor = (*particlesMap)[donor_index];
     Particle *accretor = (*particlesMap)[accretor_index];

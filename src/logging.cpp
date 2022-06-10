@@ -27,6 +27,8 @@ void update_log_data(ParticlesMap *particlesMap, double time, int integration_fl
  * 16: MSP formation
  * 17: final state (written when write_final_log_entry is called within Python)
  * 18: sdB_formation
+ * 19: dynamical mass transfer from a low-mass donor star (which, following BSE, is assumed to destroy the donor star)
+ * 20: dynamical mass transfer from a WD donor star (which, following BSE, is assumed to destroy the donor star)
  */
  
  /* SNe types

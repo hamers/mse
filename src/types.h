@@ -43,6 +43,8 @@ extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine 
 #define LOG_MSP_FORMATION           (int)   16
 #define LOG_FIN                     (int)   17
 #define LOG_SDB_FORMATION           (int)   18
+#define LOG_DYN_MT_LOW_MASS_DONOR   (int)   19
+#define LOG_DYN_MT_WD_DONOR         (int)   20
 #endif
 
 

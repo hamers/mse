@@ -2935,9 +2935,9 @@ class Tools(object):
                 
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
             
-            if event_flag in [4,6,8,14]:
+            if event_flag in [4,6,8,14,19,20]:
 
-                if event_flag in [4] and child1.index == index1: ### RLOF
+                if event_flag in [4,19,20] and child1.index == index1: ### RLOF
                     ell = Ellipse(xy=[child1.x,child1.y],width=0.5*np.fabs(child2.x-child1.x),height=0.5*np.fabs(y - child1.y),angle=0.0,color='tab:orange',alpha=0.5)
                     plot.add_artist(ell)
                 
@@ -2978,8 +2978,8 @@ class Tools(object):
 
             plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
                 
-            if event_flag in [4,6,8,14]:
-                if event_flag in [4] and child2.index == index1: ### RLOF
+            if event_flag in [4,6,8,14,19,20]:
+                if event_flag in [4,19,20] and child2.index == index1: ### RLOF
                     ell = Ellipse(xy=[child2.x,child2.y],width=0.5*np.fabs(child2.x-child1.x),height=0.5*np.fabs(y - child1.y),angle=0.0,color='tab:orange',alpha=0.5)
                     plot.add_artist(ell)
                 
@@ -3171,6 +3171,10 @@ class Tools(object):
             text = "$\mathrm{Final\,state}$"
         elif event_flag == 18:
             text = "$\mathrm{sdB\,formation}$"
+        elif event_flag == 19:
+            text = "$\mathrm{RLOF\,low\,mass\,donor}$"
+        elif event_flag == 20:
+            text = "$\mathrm{RLOF\,WD\,donor}$"
         else:
             text = ""
         return text

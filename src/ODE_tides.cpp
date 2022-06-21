@@ -89,6 +89,7 @@ double from_k_AM_div_T_to_t_V(double k_AM_div_T, double apsidal_motion_constant)
 double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
 {
     int tides_viscous_time_scale_prescription = star->tides_viscous_time_scale_prescription;
+
     double t_V = 1.0e10; /* large value by default, i.e. weak tides if tides_viscous_time_scale_prescription is not given the correct value */
     
     if (tides_viscous_time_scale_prescription == 0 or star->object_type != 1)
@@ -112,7 +113,25 @@ double compute_t_V(Particle *star, Particle *companion, double semimajor_axis)
             star->apsidal_motion_constant
         ); 
     }
-
+    else if (tides_viscous_time_scale_prescription == 2)
+    {
+        t_V = compute_t_V_preece
+        (
+            star->stellar_type,
+            star->mass,
+            star->convective_envelope_mass,
+            companion->mass,
+            semimajor_axis,
+            star->radius,
+            star->convective_envelope_radius,
+            star->luminosity,
+            star->spin_vec_norm,
+            star->gyration_radius,
+            star->apsidal_motion_constant,
+            star->metallicity
+        ); 
+    }
+    
     #ifdef VERBOSE
     if (verbose_flag > 2)
     {
@@ -211,6 +230,96 @@ double compute_t_V_hurley
 			}
 		}
 #endif
+        
+        k_AM_div_T = E2*pow(1.0 + companion_mass/mass,5.0/6.0)*radius*sqrt(CONST_G*mass/(pow(semimajor_axis,5.0)));
+        t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
+        return t_V;
+        
+    }
+    else if (USE_CONVECTIVE_DAMPING == true) // convective damping
+    {
+        double P_orb = compute_orbital_period_from_semimajor_axis(mass + companion_mass, semimajor_axis);
+        double P_spin,P_tid;
+        
+        if (spin_angular_frequency < epsilon)
+        {
+            P_tid = P_orb;
+        }
+        else
+        {
+            P_spin = TWOPI/spin_angular_frequency;
+            P_tid = 1.0/( 1e-10 + fabs( 1.0/P_orb - 1.0/P_spin) );
+        }
+        double radius_arg = (radius - (1.0/2.0)*convective_envelope_radius);
+        if (radius_arg <= 0.0)
+        {
+            radius_arg = convective_envelope_radius;
+        }
+            
+        double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*radius_arg)/(3.0*luminosity), 1.0/3.0);
+
+        double f_convective = pow(P_tid/(2.0*tau_convective),2.0);
+        f_convective = CV_min(1.0,f_convective);
+
+        k_AM_div_T = (2.0/21.0)*(f_convective/tau_convective)*(convective_envelope_mass/mass);
+        t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
+        
+        return t_V;
+
+    }
+    else // degenerate damping -- 1984MNRAS.207..433C
+    {
+        k_AM_div_T = 2.564e-8 * gyration_radius*gyration_radius * pow((luminosity/CONST_L_SUN)/(mass/CONST_MSUN),5.0/7.0);
+
+        t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
+        
+        return t_V;
+    }
+}
+
+double compute_t_V_preece
+(
+    int stellar_type,
+    double mass,
+    double convective_envelope_mass,
+    double companion_mass,
+    double semimajor_axis,
+    double radius,
+    double convective_envelope_radius,
+    double luminosity,
+    double spin_angular_frequency,
+    double gyration_radius,
+    double apsidal_motion_constant,
+    double metallicity
+)
+{
+    #ifdef VERBOSE
+    if (verbose_flag > 2)
+    {
+        printf("ODE_tides.cpp -- compute_t_V_preece kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
+    }
+    #endif
+    
+    printf("ODE_tides.cpp -- compute_t_V_preece kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
+    printf("ERROR: Preece tides prescription not yet implemented. Fatal error, exiting. \n");
+    exit(-1);    
+    
+    bool USE_RADIATIVE_DAMPING = check_for_radiative_damping(stellar_type,mass,convective_envelope_mass,convective_envelope_radius);
+    bool USE_CONVECTIVE_DAMPING = check_for_convective_damping(stellar_type);
+    double k_AM_div_T,t_V;
+    
+    if (USE_CONVECTIVE_DAMPING == true && ((convective_envelope_mass <= 0.0) || (convective_envelope_radius <= 0.0)))
+    {
+        USE_RADIATIVE_DAMPING = true;
+    }
+    if (radius <= 0.0)
+    {
+        return 1.0e100;
+    }
+    
+    if (USE_RADIATIVE_DAMPING == true) // radiative damping
+    {
+        double E2 = 1.592e-09*pow(mass/CONST_MSUN,2.84); // Hurley prescription; Zahn, 1977, A&A, 57, 383 and 1975, A&A, 41, 329
         
         k_AM_div_T = E2*pow(1.0 + companion_mass/mass,5.0/6.0)*radius*sqrt(CONST_G*mass/(pow(semimajor_axis,5.0)));
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);

@@ -24,6 +24,21 @@ double compute_t_V_hurley
     double gyration_radius,
     double apsidal_motion_constant
 );
+double compute_t_V_preece
+(
+    int stellar_type,
+    double mass,
+    double convective_envelope_mass,
+    double companion_mass,
+    double semimajor_axis,
+    double radius,
+    double convective_envelope_radius,
+    double luminosity,
+    double spin_angular_frequency,
+    double gyration_radius,
+    double apsidal_motion_constant,
+    double metallicity
+);
 
 double compute_EOM_equilibrium_tide(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession);
 double f_tides1_function(double e_p2, double j_p10_inv, double j_p13_inv);

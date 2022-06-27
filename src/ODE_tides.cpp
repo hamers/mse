@@ -291,18 +291,18 @@ double compute_t_V_preece
     double gyration_radius,
     double apsidal_motion_constant,
     double metallicity
+    
+
 )
 {
+    /* "Preece" prescription -- https://ui.adsabs.harvard.edu/abs/2022arXiv220606068P/abstract */
+    
     #ifdef VERBOSE
     if (verbose_flag > 2)
     {
         printf("ODE_tides.cpp -- compute_t_V_preece kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
     }
     #endif
-    
-    printf("ODE_tides.cpp -- compute_t_V_preece kw %d m %g menv %g mcomp %g a %g r %g renv %g lum %g omega %g rg %g kam %g \n",stellar_type,mass,convective_envelope_mass,companion_mass,semimajor_axis,radius,convective_envelope_radius,luminosity,spin_angular_frequency,gyration_radius,apsidal_motion_constant);
-    printf("ERROR: Preece tides prescription not yet implemented. Fatal error, exiting. \n");
-    exit(-1);    
     
     bool USE_RADIATIVE_DAMPING = check_for_radiative_damping(stellar_type,mass,convective_envelope_mass,convective_envelope_radius);
     bool USE_CONVECTIVE_DAMPING = check_for_convective_damping(stellar_type);
@@ -346,13 +346,19 @@ double compute_t_V_preece
             radius_arg = convective_envelope_radius;
         }
             
-        double tau_convective = pow( (convective_envelope_mass*convective_envelope_radius*radius_arg)/(3.0*luminosity), 1.0/3.0);
-
+        double tau_convective = pow( (3.0*convective_envelope_mass*convective_envelope_radius*convective_envelope_radius)/(luminosity), 1.0/3.0);
+        double logz = log10(metallicity);
+        double atid = 2.72 + (0.063*logz);
+        double btid = 0.68 + (-0.219*logz);
+        double ctid = 0.22 + (-0.023*logz);
+        double mrtid = pow((convective_envelope_radius/radius),atid) * pow((convective_envelope_mass/mass),btid) * ctid;
+        
         double f_convective = pow(P_tid/(2.0*tau_convective),2.0);
         f_convective = CV_min(1.0,f_convective);
 
-        k_AM_div_T = (2.0/21.0)*(f_convective/tau_convective)*(convective_envelope_mass/mass);
+        k_AM_div_T = (f_convective/tau_convective)*(mrtid);
         t_V = from_k_AM_div_T_to_t_V(k_AM_div_T,apsidal_motion_constant);
+//        printf("tvisc func = %g",t_V );
         
         return t_V;
 
@@ -366,6 +372,7 @@ double compute_t_V_preece
         return t_V;
     }
 }
+
 
 double compute_EOM_equilibrium_tide_BO_full(ParticlesMap *particlesMap, int binary_index, int star_index, int companion_index, bool include_tidal_friction_terms, bool include_tidal_bulges_precession_terms, bool include_rotation_precession_terms, double minimum_eccentricity_for_tidal_precession, int tides_method)
 /* Barker & Ogilvie (2009; http://adsabs.harvard.edu/abs/2009MNRAS.395.2268B) */

@@ -2932,7 +2932,7 @@ class Tools(object):
             if child1.object_type == 2:
                 text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child1.mass/CONST_MJUP,1)))    
             else:
-                text = "$\mathrm{%s}$"%(str(round(child1.mass,1)))
+                text = "$\mathrm{%s}$"%(str(round(child1.mass,2)))
                 
             plot.annotate(text,xy=(child1.x - 0.6*line_width_horizontal,child1.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
             
@@ -2975,7 +2975,7 @@ class Tools(object):
             if child2.object_type == 2:
                 text = "$\mathrm{%s}\,\mathrm{M_J}$"%(str(round(child2.mass/CONST_MJUP,1)))    
             else:
-                text = "$\mathrm{%s}$"%(str(round(child2.mass,1)))
+                text = "$\mathrm{%s}$"%(str(round(child2.mass,2)))
 
             plot.annotate(text,xy=(child2.x - 0.3*line_width_horizontal,child2.y - 0.5*line_width_vertical),color='k',fontsize=fontsize,zorder=10)
                 

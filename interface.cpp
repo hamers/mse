@@ -802,7 +802,7 @@ int set_VRR_properties(int index, int VRR_model, int VRR_include_mass_precession
 /* root finding *
  ****************/
 int set_root_finding_terms(int index, bool check_for_secular_breakdown, bool check_for_dynamical_instability, int dynamical_instability_criterion, int dynamical_instability_central_particle, double dynamical_instability_K_parameter,
-    bool check_for_physical_collision_or_orbit_crossing, bool check_for_minimum_periapse_distance, double check_for_minimum_periapse_distance_value, bool check_for_RLOF_at_pericentre, bool check_for_RLOF_at_pericentre_use_sepinsky_fit, bool check_for_GW_condition)
+    bool check_for_physical_collision_or_orbit_crossing, bool check_for_minimum_periapse_distance, double check_for_minimum_periapse_distance_value, bool check_for_RLOF_at_pericentre, bool check_for_RLOF_at_pericentre_use_sepinsky_fit, bool check_for_GW_condition, bool check_for_entering_LISA_band, double check_for_entering_LISA_band_critical_GW_frequency)
 {
     if (index > particlesMap.size())
     {
@@ -821,10 +821,12 @@ int set_root_finding_terms(int index, bool check_for_secular_breakdown, bool che
     p->check_for_RLOF_at_pericentre = check_for_RLOF_at_pericentre;
     p->check_for_RLOF_at_pericentre_use_sepinsky_fit = check_for_RLOF_at_pericentre_use_sepinsky_fit;
     p->check_for_GW_condition = check_for_GW_condition;
+    p->check_for_entering_LISA_band = check_for_entering_LISA_band;
+    p->check_for_entering_LISA_band_critical_GW_frequency = check_for_entering_LISA_band_critical_GW_frequency;
     return 0;
 }
 int get_root_finding_terms(int index, bool *check_for_secular_breakdown, bool *check_for_dynamical_instability, int *dynamical_instability_criterion, int *dynamical_instability_central_particle, double *dynamical_instability_K_parameter,
-    bool *check_for_physical_collision_or_orbit_crossing, bool *check_for_minimum_periapse_distance, double *check_for_minimum_periapse_distance_value, bool *check_for_RLOF_at_pericentre, bool *check_for_RLOF_at_pericentre_use_sepinsky_fit, bool *check_for_GW_condition)
+    bool *check_for_physical_collision_or_orbit_crossing, bool *check_for_minimum_periapse_distance, double *check_for_minimum_periapse_distance_value, bool *check_for_RLOF_at_pericentre, bool *check_for_RLOF_at_pericentre_use_sepinsky_fit, bool *check_for_GW_condition, bool *check_for_entering_LISA_band, double *check_for_entering_LISA_band_critical_GW_frequency)
 {
     if (index > particlesMap.size())
     {
@@ -843,11 +845,13 @@ int get_root_finding_terms(int index, bool *check_for_secular_breakdown, bool *c
     *check_for_RLOF_at_pericentre = p->check_for_RLOF_at_pericentre;
     *check_for_RLOF_at_pericentre_use_sepinsky_fit = p->check_for_RLOF_at_pericentre_use_sepinsky_fit;
     *check_for_GW_condition = p->check_for_GW_condition;
+    *check_for_entering_LISA_band = p->check_for_entering_LISA_band;
+    *check_for_entering_LISA_band_critical_GW_frequency = p->check_for_entering_LISA_band_critical_GW_frequency;
     return 0;
 }
 
 /* retrieve root finding state */
-int set_root_finding_state(int index, bool secular_breakdown_has_occurred, bool dynamical_instability_has_occurred, bool physical_collision_or_orbit_crossing_has_occurred, bool minimum_periapse_distance_has_occurred, bool RLOF_at_pericentre_has_occurred, bool GW_condition_has_occurred)
+int set_root_finding_state(int index, bool secular_breakdown_has_occurred, bool dynamical_instability_has_occurred, bool physical_collision_or_orbit_crossing_has_occurred, bool minimum_periapse_distance_has_occurred, bool RLOF_at_pericentre_has_occurred, bool GW_condition_has_occurred, bool entering_LISA_band_has_occurred)
 {
     if (index > particlesMap.size())
     {
@@ -862,10 +866,11 @@ int set_root_finding_state(int index, bool secular_breakdown_has_occurred, bool 
     p->minimum_periapse_distance_has_occurred = minimum_periapse_distance_has_occurred;
     p->RLOF_at_pericentre_has_occurred = RLOF_at_pericentre_has_occurred;
     p->GW_condition_has_occurred = GW_condition_has_occurred;
+    p->entering_LISA_band_has_occurred = entering_LISA_band_has_occurred;
     
     return 0;
 }
-int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool *dynamical_instability_has_occurred, bool *physical_collision_or_orbit_crossing_has_occurred, bool *minimum_periapse_distance_has_occurred, bool *RLOF_at_pericentre_has_occurred, bool *GW_condition_has_occurred)
+int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool *dynamical_instability_has_occurred, bool *physical_collision_or_orbit_crossing_has_occurred, bool *minimum_periapse_distance_has_occurred, bool *RLOF_at_pericentre_has_occurred, bool *GW_condition_has_occurred, bool *entering_LISA_band_has_occurred)
 {
     if (index > particlesMap.size())
     {
@@ -880,6 +885,7 @@ int get_root_finding_state(int index, bool *secular_breakdown_has_occurred, bool
     *minimum_periapse_distance_has_occurred = p->minimum_periapse_distance_has_occurred;
     *RLOF_at_pericentre_has_occurred = p->RLOF_at_pericentre_has_occurred;
     *GW_condition_has_occurred = p->GW_condition_has_occurred;
+    *entering_LISA_band_has_occurred = p->entering_LISA_band_has_occurred;
     
     return 0;
 }

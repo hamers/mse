@@ -58,6 +58,10 @@ int determine_binary_parents_and_levels(ParticlesMap *particlesMap, int *N_bodie
             {
                 (*N_root_finding)++;
             }
+            if (P_p->check_for_entering_LISA_band == true)
+            {
+                (*N_root_finding)++;
+            }
 
             /* parents and siblings */
             for (it_q = particlesMap->begin(); it_q != particlesMap->end(); it_q++)

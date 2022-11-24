@@ -246,13 +246,13 @@ class MSE(object):
         self.lib.get_tides_terms.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_double),ctypes.POINTER(ctypes.c_bool))
         self.lib.get_tides_terms.restype = ctypes.c_int
 
-        self.lib.set_root_finding_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool);
+        self.lib.set_root_finding_terms.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_int,ctypes.c_int,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_double,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_double);
         self.lib.set_root_finding_terms.restype = ctypes.c_int
 
-        self.lib.set_root_finding_state.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
+        self.lib.set_root_finding_state.argtypes = (ctypes.c_int,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool,ctypes.c_bool)
         self.lib.set_root_finding_state.restype = ctypes.c_int
 
-        self.lib.get_root_finding_state.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool))
+        self.lib.get_root_finding_state.argtypes = (ctypes.c_int,ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool),ctypes.POINTER(ctypes.c_bool))
         self.lib.get_root_finding_state.restype = ctypes.c_int
 
         self.lib.set_constants.argtypes = (ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double,ctypes.c_double)
@@ -536,11 +536,12 @@ class MSE(object):
             particle.check_for_physical_collision_or_orbit_crossing = False
             particle.check_for_RLOF_at_pericentre = False
             particle.check_for_GW_condition = False
+            particle.check_for_entering_LISA_band = False
             
         flag += self.lib.set_root_finding_terms(particle.index,particle.check_for_secular_breakdown,particle.check_for_dynamical_instability,particle.dynamical_instability_criterion,particle.dynamical_instability_central_particle,particle.dynamical_instability_K_parameter, \
-                particle.check_for_physical_collision_or_orbit_crossing,particle.check_for_minimum_periapse_distance,particle.check_for_minimum_periapse_distance_value,particle.check_for_RLOF_at_pericentre,particle.check_for_RLOF_at_pericentre_use_sepinsky_fit,particle.check_for_GW_condition)
+                particle.check_for_physical_collision_or_orbit_crossing,particle.check_for_minimum_periapse_distance,particle.check_for_minimum_periapse_distance_value,particle.check_for_RLOF_at_pericentre,particle.check_for_RLOF_at_pericentre_use_sepinsky_fit,particle.check_for_GW_condition,particle.check_for_entering_LISA_band,particle.check_for_entering_LISA_band_critical_GW_frequency)
         flag += self.lib.set_root_finding_state(particle.index,particle.secular_breakdown_has_occurred,particle.dynamical_instability_has_occurred, \
-                particle.physical_collision_or_orbit_crossing_has_occurred,particle.minimum_periapse_distance_has_occurred,particle.RLOF_at_pericentre_has_occurred,particle.GW_condition_has_occurred)
+                particle.physical_collision_or_orbit_crossing_has_occurred,particle.minimum_periapse_distance_has_occurred,particle.RLOF_at_pericentre_has_occurred,particle.GW_condition_has_occurred,particle.entering_LISA_band_has_occurred)
 
         if self.enable_VRR == True:
             flag += self.lib.set_VRR_properties(particle.index,particle.VRR_model,particle.VRR_include_mass_precession,particle.VRR_mass_precession_rate, \
@@ -622,15 +623,16 @@ class MSE(object):
         particle.triple_common_envelope_alpha = triple_common_envelope_alpha.value
 
         if self.enable_root_finding == True:
-            secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
+            secular_breakdown_has_occurred,dynamical_instability_has_occurred,physical_collision_or_orbit_crossing_has_occurred,minimum_periapse_distance_has_occurred,RLOF_at_pericentre_has_occurred,GW_condition_has_occurred,entering_LISA_band_has_occurred = ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False),ctypes.c_bool(False)
             flag += self.lib.get_root_finding_state(particle.index,ctypes.byref(secular_breakdown_has_occurred),ctypes.byref(dynamical_instability_has_occurred), \
-                ctypes.byref(physical_collision_or_orbit_crossing_has_occurred),ctypes.byref(minimum_periapse_distance_has_occurred),ctypes.byref(RLOF_at_pericentre_has_occurred),ctypes.byref(GW_condition_has_occurred))
+                ctypes.byref(physical_collision_or_orbit_crossing_has_occurred),ctypes.byref(minimum_periapse_distance_has_occurred),ctypes.byref(RLOF_at_pericentre_has_occurred),ctypes.byref(GW_condition_has_occurred),ctypes.byref(entering_LISA_band_has_occurred))
             particle.secular_breakdown_has_occurred = secular_breakdown_has_occurred.value
             particle.dynamical_instability_has_occurred = dynamical_instability_has_occurred.value
             particle.physical_collision_or_orbit_crossing_has_occurred = physical_collision_or_orbit_crossing_has_occurred.value
             particle.minimum_periapse_distance_has_occurred = minimum_periapse_distance_has_occurred.value
             particle.RLOF_at_pericentre_has_occurred = RLOF_at_pericentre_has_occurred.value
             particle.GW_condition_has_occurred = GW_condition_has_occurred.value
+            particle.entering_LISA_band_has_occurred = entering_LISA_band_has_occurred.value
 
         if particle.is_binary==True:
             a,e,TA,INCL,AP,LAN = ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0),ctypes.c_double(0.0)
@@ -1698,8 +1700,8 @@ class Particle(object):
             minimum_eccentricity_for_tidal_precession = 1.0e-3, apsidal_motion_constant=0.19, gyration_radius=0.08, tides_viscous_time_scale=1.0e100, tides_viscous_time_scale_prescription=1, \
             convective_envelope_mass=1.0e-10, convective_envelope_radius=1.0e-10, luminosity=1.0e-10, \
             check_for_secular_breakdown=True,check_for_dynamical_instability=True,dynamical_instability_criterion=0,dynamical_instability_central_particle=0,dynamical_instability_K_parameter=0, \
-            check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, \
-            secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, \
+            check_for_physical_collision_or_orbit_crossing=True,check_for_minimum_periapse_distance=False,check_for_minimum_periapse_distance_value=0.0,check_for_RLOF_at_pericentre=True,check_for_RLOF_at_pericentre_use_sepinsky_fit=False, check_for_GW_condition=False, check_for_entering_LISA_band=True, check_for_entering_LISA_band_critical_GW_frequency=31557.6, \
+            secular_breakdown_has_occurred=False, dynamical_instability_has_occurred=False, physical_collision_or_orbit_crossing_has_occurred=False, minimum_periapse_distance_has_occurred=False, RLOF_at_pericentre_has_occurred = False, GW_condition_has_occurred = False, entering_LISA_band_has_occurred=False, \
             is_external=False, external_t_ref=0.0, external_r_p=0.0, \
             sample_orbital_phase_randomly=False, instantaneous_perturbation_delta_mass=0.0, instantaneous_perturbation_delta_X=0.0, instantaneous_perturbation_delta_Y=0.0, instantaneous_perturbation_delta_Z=0.0, \
             instantaneous_perturbation_delta_VX=0.0, instantaneous_perturbation_delta_VY=0.0, instantaneous_perturbation_delta_VZ=0.0, \
@@ -1769,6 +1771,8 @@ class Particle(object):
         self.check_for_RLOF_at_pericentre=check_for_RLOF_at_pericentre
         self.check_for_RLOF_at_pericentre_use_sepinsky_fit=check_for_RLOF_at_pericentre_use_sepinsky_fit
         self.check_for_GW_condition=check_for_GW_condition
+        self.check_for_entering_LISA_band = check_for_entering_LISA_band
+        self.check_for_entering_LISA_band_critical_GW_frequency = check_for_entering_LISA_band_critical_GW_frequency
 
         self.secular_breakdown_has_occurred=secular_breakdown_has_occurred
         self.dynamical_instability_has_occurred=dynamical_instability_has_occurred
@@ -1776,6 +1780,7 @@ class Particle(object):
         self.minimum_periapse_distance_has_occurred=minimum_periapse_distance_has_occurred
         self.RLOF_at_pericentre_has_occurred=RLOF_at_pericentre_has_occurred
         self.GW_condition_has_occurred=GW_condition_has_occurred
+        self.entering_LISA_band_has_occurred = entering_LISA_band_has_occurred
 
         self.sample_orbital_phase_randomly=sample_orbital_phase_randomly
         self.instantaneous_perturbation_delta_mass=instantaneous_perturbation_delta_mass
@@ -3176,6 +3181,8 @@ class Tools(object):
             text = "$\mathrm{RLOF\,low\,mass\,donor}$"
         elif event_flag == 20:
             text = "$\mathrm{RLOF\,WD\,donor}$"
+        elif event_flag == 21:
+            text = "$\mathrm{Entering\,LISA\,band}$"
         else:
             text = ""
         return text

@@ -371,6 +371,51 @@ void check_for_roots(ParticlesMap *particlesMap, bool use_root_functions, realty
 
                 i_root++;
             }
+            if (P_p->check_for_entering_LISA_band == true)
+            {
+                #ifdef VERBOSE
+                if (verbose_flag > 2)
+                {
+                    printf("root_finding.cpp -- check_for_roots -- check_for_entering_LISA_band\n");
+                }
+                #endif
+
+                if (P_p->parent != -1)
+                {
+                
+                    double M = P_p->mass;
+                    double a = P_p->a;
+                    double e = P_p->e;
+                    double e_p2 = e*e;
+                    double e_p3 = e*e_p2;
+                    double e_p4 = e_p2*e_p2;
+                    
+                    double f_orb = 1.0/compute_orbital_period_from_semimajor_axis(M,a);
+
+                    double n_peak = 2.0*( 1.0 - 1.01678*e + 5.57372*e_p2 - 4.9271*e_p3 + 1.68506*e_p4 ) * pow(1.0 - e_p2,-1.5);
+                    double f_peak = f_orb * n_peak;
+
+                    f_root = 1.0 - f_peak/P_p->check_for_entering_LISA_band_critical_GW_frequency;
+
+                    if (use_root_functions == true)
+                    {
+                        root_functions[i_root] = f_root;
+                    }
+                    else
+                    {
+                        if (f_root <= 0.0 and P_p->check_for_entering_LISA_band_occurrences == 0)
+                        {
+                            P_p->entering_LISA_band_has_occurred = true;
+                        }
+                        else
+                        {
+                            P_p->entering_LISA_band_has_occurred = false;
+                        }
+                    }   
+                }
+
+                i_root++;
+            }
         }
         else /* P_p not a binary */
         {
@@ -548,6 +593,20 @@ int investigate_roots_in_system(ParticlesMap *particlesMap, double t, int integr
                     collision_occurred = true;
                 }
             }
+            if (p->entering_LISA_band_has_occurred == true and return_flag == 0)
+            {
+                p->entering_LISA_band_has_occurred = false;
+                p->check_for_entering_LISA_band_occurrences++;
+
+                return_flag = 5;
+
+                #ifdef LOGGING
+                Log_info_type log_info;
+                log_info.binary_index = p->index;
+                update_log_data(particlesMap, t, integration_flag, LOG_ENTER_LISA_BAND, log_info);
+                #endif
+            }
+            
         }
         
     }
@@ -745,6 +804,14 @@ int read_root_finding_data(ParticlesMap *particlesMap, int *roots_found)
                 }
                 i_root++;                
             }
+            if (P_p->check_for_entering_LISA_band == true)
+            {
+                if FOUND_ROOT
+                {
+                    P_p->entering_LISA_band_has_occurred = true;
+                }
+                i_root++;                
+            }
         }
         else /* P_p not a binary */
         {
@@ -871,6 +938,21 @@ int check_for_initial_roots(ParticlesMap *particlesMap)
                     #endif
                 }
             }   
+            if (P_p->check_for_entering_LISA_band == true)
+            {
+                if (P_p->entering_LISA_band_has_occurred == true)
+                {
+                    N_root_found++;
+
+                    #ifdef VERBOSE
+                    if (verbose_flag > 0)
+                    {
+                        printf("ODE_root_finding.cpp -- check_for_initial_roots -- p %d LISA band \n",P_p->index);
+                        print_system(particlesMap,0);
+                    }
+                    #endif
+                }
+            } 
         }
         else /* P_p not a binary */
         {
@@ -949,6 +1031,17 @@ void handle_roots(ParticlesMap *particlesMap, int root_flag, int *integration_fl
 
         *CVODE_flag = 0;
         handle_collisions(particlesMap, t, integration_flag);
+    }
+    else if (root_flag == 5) // Entered LISA band
+    {
+        #ifdef VERBOSE
+        if (verbose_flag > 0)
+        {
+            printf("root_finding.cpp -- handle_roots -- Entered LISA band\n");
+        }
+        #endif
+
+        *CVODE_flag = 0;
     }
     else
     {

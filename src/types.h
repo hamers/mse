@@ -45,6 +45,7 @@ extern std::mt19937 random_number_generator; //Standard mersenne_twister_engine 
 #define LOG_SDB_FORMATION           (int)   18
 #define LOG_DYN_MT_LOW_MASS_DONOR   (int)   19
 #define LOG_DYN_MT_WD_DONOR         (int)   20
+#define LOG_ENTER_LISA_BAND         (int)   21
 #endif
 
 
@@ -1016,6 +1017,9 @@ class Particle
     double check_for_minimum_periapse_distance_value;
     bool check_for_RLOF_at_pericentre,check_for_RLOF_at_pericentre_use_sepinsky_fit,RLOF_at_pericentre_has_occurred;
     bool check_for_GW_condition,GW_condition_has_occurred;    
+    bool check_for_entering_LISA_band,entering_LISA_band_has_occurred;
+    double check_for_entering_LISA_band_critical_GW_frequency;
+    int check_for_entering_LISA_band_occurrences;
 
     /* used in ODE solver only */
     double e_vec[3],h_vec[3];
@@ -1092,6 +1096,7 @@ class Particle
         check_for_RLOF_at_pericentre = true;
         check_for_RLOF_at_pericentre_use_sepinsky_fit = false; /* 0: use Eggleton formula for consistency with emt model */
         check_for_GW_condition = false;
+        check_for_entering_LISA_band = false;
 
         dynamical_instability_criterion = 0;
 
@@ -1105,6 +1110,9 @@ class Particle
         minimum_periapse_distance_has_occurred = false;
         RLOF_at_pericentre_has_occurred = false;
         GW_condition_has_occurred = false;
+        entering_LISA_band_has_occurred = false;
+        check_for_entering_LISA_band_critical_GW_frequency = 31557.6;
+        check_for_entering_LISA_band_occurrences = 0;
        
         include_pairwise_1PN_terms = true;
         include_pairwise_25PN_terms = true;
